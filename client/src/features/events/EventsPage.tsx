@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Loader2 } from 'lucide-react';
+import { FadeIn, BlurText } from '@/components/reactbits';
+import { motion } from 'motion/react';
 
 export default function EventsPage() {
   const [status, setStatus] = useState('');
@@ -25,69 +27,100 @@ export default function EventsPage() {
   const pagination = data?.pagination;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Events</h1>
+    <div className="max-w-5xl mx-auto py-12 px-4">
+      <BlurText
+        text="Events"
+        className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"
+        delay={80}
+        animateBy="words"
+        direction="bottom"
+      />
 
-      <div className="flex gap-2 mb-6">
-        {['', 'upcoming', 'ongoing', 'completed'].map((s) => (
-          <button
-            key={s}
-            onClick={() => { setStatus(s); setPage(1); }}
-            className={`px-4 py-2 text-sm rounded-md border transition-colors ${
-              status === s ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
-            }`}
-          >
-            {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
-          </button>
-        ))}
-      </div>
+      <FadeIn delay={0.2}>
+        <div className="flex gap-2 mb-8 flex-wrap">
+          {['', 'upcoming', 'ongoing', 'completed'].map((s) => (
+            <motion.button
+              key={s}
+              onClick={() => { setStatus(s); setPage(1); }}
+              className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                status === s ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
+            </motion.button>
+          ))}
+        </div>
+      </FadeIn>
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : events.length === 0 ? (
-        <div className="text-center py-12">
-          <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No events found</p>
-        </div>
+        <FadeIn>
+          <div className="text-center py-12">
+            <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">No events found</p>
+          </div>
+        </FadeIn>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map((e: any) => (
-              <Link key={e._id} to={`/events/${e._id}`} className="border rounded-lg overflow-hidden bg-background hover:shadow-md transition-shadow">
-                {e.coverImage && (
-                  <img src={e.coverImage} alt="" className="w-full h-40 object-cover" />
-                )}
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <StatusBadge status={e.status} />
-                    {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
-                  </div>
-                  <h3 className="font-semibold mb-2 line-clamp-2">{e.title}</h3>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {new Date(e.startDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
-                    </div>
-                    {e.venue && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span className="truncate">{e.venue}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {events.map((e: any, i: number) => (
+              <FadeIn key={e._id} delay={i * 0.05} direction="up">
+                <Link to={`/events/${e._id}`}>
+                  <motion.div
+                    className="border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"
+                    whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+                  >
+                    {e.coverImage && (
+                      <div className="overflow-hidden">
+                        <motion.img
+                          src={e.coverImage}
+                          alt=""
+                          className="w-full h-40 object-cover"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.3 }}
+                        />
                       </div>
                     )}
-                  </div>
-                </div>
-              </Link>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <StatusBadge status={e.status} />
+                        {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
+                      </div>
+                      <h3 className="font-semibold mb-2 line-clamp-2">{e.title}</h3>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {new Date(e.startDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                        </div>
+                        {e.venue && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="truncate">{e.venue}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              </FadeIn>
             ))}
           </div>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-6">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
-              <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-              <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Next</button>
-            </div>
+            <FadeIn>
+              <div className="flex justify-center gap-2 mt-8">
+                <motion.button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent"
+                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Prev</motion.button>
+                <span className="px-4 py-2 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
+                <motion.button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
+                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent"
+                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Next</motion.button>
+              </div>
+            </FadeIn>
           )}
         </>
       )}

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'motion/react';
 import api from '@/lib/api';
 import { FileText, Download, Loader2, Search } from 'lucide-react';
+import { FadeIn, BlurText } from '@/components/reactbits';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -34,54 +36,75 @@ export default function DocumentsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Documents</h1>
+      <BlurText
+        text="Documents"
+        className="text-3xl md:text-4xl font-bold mb-6"
+        delay={80}
+        animateBy="words"
+        direction="bottom"
+      />
 
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..."
-            className="w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+      <FadeIn delay={0.1} direction="up">
+        <div className="flex flex-wrap gap-3 mb-6">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..."
+              className="w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+          </div>
+          <div className="flex gap-2">
+            {categories.map((c) => (
+              <motion.button
+                key={c}
+                onClick={() => setCategory(c)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-3 py-2 text-sm rounded-md border capitalize ${
+                  category === c ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
+                }`}
+              >
+                {c || 'All'}
+              </motion.button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {categories.map((c) => (
-            <button key={c} onClick={() => setCategory(c)}
-              className={`px-3 py-2 text-sm rounded-md border capitalize ${
-                category === c ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
-              }`}>
-              {c || 'All'}
-            </button>
-          ))}
-        </div>
-      </div>
+      </FadeIn>
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : documents.length === 0 ? (
-        <div className="text-center py-12">
-          <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No documents found</p>
-        </div>
+        <FadeIn delay={0.1} direction="up">
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">No documents found</p>
+          </div>
+        </FadeIn>
       ) : (
         <div className="space-y-3">
-          {documents.map((doc: any) => (
-            <div key={doc._id} className="border rounded-lg p-4 bg-background flex items-center gap-4">
-              {getFileIcon(doc.fileType)}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium truncate">{doc.title}</h3>
-                {doc.description && <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{doc.description}</p>}
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                  <span className="capitalize">{doc.category}</span>
-                  {doc.fileType && <span className="uppercase">{doc.fileType}</span>}
-                  {doc.fileSize && <span>{formatSize(doc.fileSize)}</span>}
-                  {doc.downloadCount > 0 && <span>{doc.downloadCount} downloads</span>}
-                  <span>{new Date(doc.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
+          {documents.map((doc: any, index: number) => (
+            <FadeIn key={doc._id} delay={0.05 * index} direction="up">
+              <motion.div
+                whileHover={{ y: -4 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="border rounded-lg p-4 bg-background flex items-center gap-4"
+              >
+                {getFileIcon(doc.fileType)}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium truncate">{doc.title}</h3>
+                  {doc.description && <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{doc.description}</p>}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <span className="capitalize">{doc.category}</span>
+                    {doc.fileType && <span className="uppercase">{doc.fileType}</span>}
+                    {doc.fileSize && <span>{formatSize(doc.fileSize)}</span>}
+                    {doc.downloadCount > 0 && <span>{doc.downloadCount} downloads</span>}
+                    <span>{new Date(doc.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
+                  </div>
                 </div>
-              </div>
-              <a href={doc.fileUrl} target="_blank" rel="noreferrer"
-                className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md" title="Download">
-                <Download className="h-5 w-5" />
-              </a>
-            </div>
+                <a href={doc.fileUrl} target="_blank" rel="noreferrer"
+                  className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md" title="Download">
+                  <Download className="h-5 w-5" />
+                </a>
+              </motion.div>
+            </FadeIn>
           ))}
         </div>
       )}

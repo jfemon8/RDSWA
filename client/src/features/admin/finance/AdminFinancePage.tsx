@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { DollarSign, Loader2, CheckCircle, TrendingUp, TrendingDown, Plus } from 'lucide-react';
+import { motion } from 'motion/react';
+import { FadeIn } from '@/components/reactbits';
 
 export default function AdminFinancePage() {
   const [tab, setTab] = useState<'donations' | 'expenses' | 'campaigns'>('donations');
@@ -16,52 +18,78 @@ export default function AdminFinancePage() {
 
   const report = reportData?.data;
 
+  const summaryCards = [
+    {
+      label: 'Total Donations',
+      value: `৳${(report?.totalDonations || 0).toLocaleString()}`,
+      icon: TrendingUp,
+      iconColor: 'text-green-600',
+      valueColor: 'text-green-600',
+    },
+    {
+      label: 'Total Expenses',
+      value: `৳${(report?.totalExpenses || 0).toLocaleString()}`,
+      icon: TrendingDown,
+      iconColor: 'text-red-600',
+      valueColor: 'text-red-600',
+    },
+    {
+      label: 'Balance',
+      value: `৳${(report?.balance || 0).toLocaleString()}`,
+      icon: DollarSign,
+      iconColor: 'text-primary',
+      valueColor: (report?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600',
+    },
+  ];
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Finance</h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="border rounded-lg p-5 bg-background">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Total Donations</span>
-            <TrendingUp className="h-5 w-5 text-green-600" />
-          </div>
-          <p className="text-2xl font-bold text-green-600">৳{(report?.totalDonations || 0).toLocaleString()}</p>
-        </div>
-        <div className="border rounded-lg p-5 bg-background">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Total Expenses</span>
-            <TrendingDown className="h-5 w-5 text-red-600" />
-          </div>
-          <p className="text-2xl font-bold text-red-600">৳{(report?.totalExpenses || 0).toLocaleString()}</p>
-        </div>
-        <div className="border rounded-lg p-5 bg-background">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Balance</span>
-            <DollarSign className="h-5 w-5 text-primary" />
-          </div>
-          <p className={`text-2xl font-bold ${(report?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ৳{(report?.balance || 0).toLocaleString()}
-          </p>
-        </div>
+        {summaryCards.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <FadeIn key={card.label} direction="up" delay={i * 0.06}>
+              <motion.div
+                whileHover={{ y: -2 }}
+                transition={{ duration: 0.2 }}
+                className="border rounded-lg p-5 bg-background"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">{card.label}</span>
+                  <Icon className={`h-5 w-5 ${card.iconColor}`} />
+                </div>
+                <p className={`text-2xl font-bold ${card.valueColor}`}>{card.value}</p>
+              </motion.div>
+            </FadeIn>
+          );
+        })}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b">
         {(['donations', 'expenses', 'campaigns'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
+          <motion.button
+            key={t}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 capitalize ${
               tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}>
+            }`}
+          >
             {t}
-          </button>
+          </motion.button>
         ))}
       </div>
 
-      {tab === 'donations' && <DonationsList />}
-      {tab === 'expenses' && <ExpensesList />}
-      {tab === 'campaigns' && <CampaignsList />}
+      <FadeIn key={tab} direction="up" duration={0.4}>
+        {tab === 'donations' && <DonationsList />}
+        {tab === 'expenses' && <ExpensesList />}
+        {tab === 'campaigns' && <CampaignsList />}
+      </FadeIn>
     </div>
   );
 }
@@ -100,7 +128,12 @@ function DonationsList() {
         </tr></thead>
         <tbody>
           {donations.map((d: any) => (
-            <tr key={d._id} className="border-t hover:bg-accent/30">
+            <motion.tr
+              key={d._id}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.15 }}
+              className="border-t hover:bg-accent/30"
+            >
               <td className="p-3">{d.donor?.name || d.donorName || 'Anonymous'}</td>
               <td className="p-3 font-medium">৳{d.amount?.toLocaleString()}</td>
               <td className="p-3 capitalize text-xs">{d.type?.replace('-', ' ')}</td>
@@ -113,13 +146,18 @@ function DonationsList() {
               <td className="p-3 text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleDateString()}</td>
               <td className="p-3">
                 {d.paymentStatus === 'pending' && (
-                  <button onClick={() => verifyMutation.mutate(d._id)}
-                    className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Verify">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => verifyMutation.mutate(d._id)}
+                    className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                    title="Verify"
+                  >
                     <CheckCircle className="h-4 w-4" />
-                  </button>
+                  </motion.button>
                 )}
               </td>
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>
@@ -155,10 +193,14 @@ function ExpensesList() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+        >
           <Plus className="h-4 w-4" /> Add Expense
-        </button>
+        </motion.button>
       </div>
 
       {showForm && (
@@ -182,7 +224,15 @@ function ExpensesList() {
             <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
               className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
             <div className="flex gap-2">
-              <button type="submit" disabled={createMutation.isPending} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">Add</button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="submit"
+                disabled={createMutation.isPending}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+              >
+                Add
+              </motion.button>
               <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
             </div>
           </form>
@@ -202,12 +252,17 @@ function ExpensesList() {
             </tr></thead>
             <tbody>
               {expenses.map((e: any) => (
-                <tr key={e._id} className="border-t">
+                <motion.tr
+                  key={e._id}
+                  whileHover={{ y: -2 }}
+                  transition={{ duration: 0.15 }}
+                  className="border-t"
+                >
                   <td className="p-3">{e.title}</td>
                   <td className="p-3 font-medium text-red-600">৳{e.amount?.toLocaleString()}</td>
                   <td className="p-3 capitalize text-xs">{e.category}</td>
                   <td className="p-3 text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleDateString()}</td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
@@ -243,9 +298,14 @@ function CampaignsList() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+        >
           <Plus className="h-4 w-4" /> New Campaign
-        </button>
+        </motion.button>
       </div>
 
       {showForm && (
@@ -264,7 +324,15 @@ function CampaignsList() {
                 className="px-3 py-2 border rounded-md bg-background text-sm" />
             </div>
             <div className="flex gap-2">
-              <button type="submit" disabled={createMutation.isPending} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">Create</button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="submit"
+                disabled={createMutation.isPending}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+              >
+                Create
+              </motion.button>
               <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
             </div>
           </form>
@@ -275,19 +343,25 @@ function CampaignsList() {
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : (
         <div className="space-y-3">
-          {campaigns.map((c: any) => (
-            <div key={c._id} className="border rounded-lg p-4 bg-background">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{c.title}</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
+          {campaigns.map((c: any, i: number) => (
+            <FadeIn key={c._id} direction="up" delay={i * 0.06}>
+              <motion.div
+                whileHover={{ y: -2 }}
+                transition={{ duration: 0.15 }}
+                className="border rounded-lg p-4 bg-background"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{c.title}</h3>
+                    <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
+                  </div>
+                  <p className="font-semibold">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</p>
                 </div>
-                <p className="font-semibold">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</p>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 mt-2">
-                <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />
-              </div>
-            </div>
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                  <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />
+                </div>
+              </motion.div>
+            </FadeIn>
           ))}
         </div>
       )}

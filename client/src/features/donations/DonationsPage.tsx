@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { Heart, Loader2, TrendingUp } from 'lucide-react';
+import { FadeIn, BlurText } from '@/components/reactbits';
 
 export default function DonationsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -20,50 +22,83 @@ export default function DonationsPage() {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Donations</h1>
-        <button onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-sm">
-          <Heart className="h-4 w-4" /> Make a Donation
-        </button>
+        <BlurText
+          text="Donations"
+          className="text-3xl md:text-4xl font-bold"
+          delay={80}
+          animateBy="words"
+          direction="bottom"
+        />
+        <FadeIn delay={0.3} direction="right">
+          <motion.button
+            onClick={() => setShowForm(!showForm)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-sm"
+          >
+            <Heart className="h-4 w-4" /> Make a Donation
+          </motion.button>
+        </FadeIn>
       </div>
 
-      {showForm && <DonationForm onClose={() => setShowForm(false)} />}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <DonationForm onClose={() => setShowForm(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Active campaigns */}
       {campaigns.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Active Campaigns</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {campaigns.filter((c: any) => c.status === 'active').map((c: any) => (
-              <div key={c._id} className="border rounded-lg p-5 bg-background">
-                {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
-                <h3 className="font-semibold mb-2">{c.title}</h3>
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Raised</span>
-                    <span className="font-medium">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary rounded-full h-2 transition-all"
-                      style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-                {c.endDate && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Ends {new Date(c.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
-                  </p>
-                )}
-              </div>
-            ))}
+        <FadeIn delay={0.2} direction="up">
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Active Campaigns</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {campaigns.filter((c: any) => c.status === 'active').map((c: any, index: number) => (
+                <FadeIn key={c._id} delay={0.1 * index} direction="up">
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    className="border rounded-lg p-5 bg-background"
+                  >
+                    {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
+                    <h3 className="font-semibold mb-2">{c.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Raised</span>
+                        <span className="font-medium">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-primary rounded-full h-2 transition-all"
+                          style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    {c.endDate && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Ends {new Date(c.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                      </p>
+                    )}
+                  </motion.div>
+                </FadeIn>
+              ))}
+            </div>
           </div>
-        </div>
+        </FadeIn>
       )}
 
       {/* Recent donations */}
-      <RecentDonations />
+      <FadeIn delay={0.3} direction="up">
+        <RecentDonations />
+      </FadeIn>
     </div>
   );
 }
@@ -182,21 +217,27 @@ function RecentDonations() {
         <p className="text-muted-foreground text-sm">No donations yet</p>
       ) : (
         <div className="space-y-2">
-          {donations.map((d: any) => (
-            <div key={d._id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
-              <div>
-                <p className="font-medium">
-                  {d.visibility === 'private' ? 'Anonymous' : (d.donor?.name || d.donorName || 'Unknown')}
-                </p>
-                <p className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-green-600">৳{d.amount?.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(d.createdAt).toLocaleDateString('en-US', { dateStyle: 'short' })}
-                </p>
-              </div>
-            </div>
+          {donations.map((d: any, index: number) => (
+            <FadeIn key={d._id} delay={0.05 * index} direction="up">
+              <motion.div
+                whileHover={{ y: -4 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="flex items-center justify-between p-3 border rounded-lg text-sm"
+              >
+                <div>
+                  <p className="font-medium">
+                    {d.visibility === 'private' ? 'Anonymous' : (d.donor?.name || d.donorName || 'Unknown')}
+                  </p>
+                  <p className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-green-600">৳{d.amount?.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(d.createdAt).toLocaleDateString('en-US', { dateStyle: 'short' })}
+                  </p>
+                </div>
+              </motion.div>
+            </FadeIn>
           ))}
         </div>
       )}

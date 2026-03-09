@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
+import { motion, AnimatePresence } from 'motion/react';
+import { GradientText } from '@/components/reactbits';
 
 const sidebarLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: Home },
@@ -39,7 +41,11 @@ export default function DashboardLayout() {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <Link to="/" className="text-xl font-bold text-primary">RDSWA</Link>
+          <Link to="/" className="text-xl font-bold">
+            <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
+              RDSWA
+            </GradientText>
+          </Link>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground hidden sm:block">{user?.name}</span>
@@ -61,32 +67,42 @@ export default function DashboardLayout() {
               const Icon = link.icon;
               const isActive = location.pathname === link.href;
               return (
-                <Link
+                <motion.div
                   key={link.href}
-                  to={link.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                  }`}
+                  whileHover={{ backgroundColor: isActive ? undefined : 'var(--color-accent)', borderRadius: '0.375rem' }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <Icon className="h-4 w-4" />
-                  {link.label}
-                </Link>
+                  <Link
+                    to={link.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+                </motion.div>
               );
             })}
 
             {/* Admin panel link for moderator+ */}
             {user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR) && (
-              <Link
-                to="/admin"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              <motion.div
+                whileHover={{ backgroundColor: 'var(--color-accent)', borderRadius: '0.375rem' }}
+                transition={{ duration: 0.2 }}
               >
-                <Shield className="h-4 w-4" />
-                Admin Panel
-              </Link>
+                <Link
+                  to="/admin"
+                  onClick={() => setSidebarOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin Panel
+                </Link>
+              </motion.div>
             )}
 
             <div className="pt-4 border-t mt-4">
@@ -102,16 +118,32 @@ export default function DashboardLayout() {
         </aside>
 
         {/* Overlay for mobile */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6 min-h-[calc(100vh-4rem)]">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

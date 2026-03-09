@@ -4,6 +4,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { FadeIn } from '@/components/reactbits';
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
@@ -70,94 +72,131 @@ export default function ProfilePage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
 
-      <div className="flex gap-2 mb-6 border-b">
+      <div className="flex gap-2 mb-6 border-b relative">
         {tabs.map((tab) => (
-          <button
+          <motion.button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             {tab.label}
-          </button>
+            {activeTab === tab.key && (
+              <motion.div
+                layoutId="profile-tab-indicator"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+          </motion.button>
         ))}
       </div>
 
-      {updateMutation.isSuccess && (
-        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
-          Profile updated successfully!
-        </div>
-      )}
-      {updateMutation.isError && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm">
-          {(updateMutation.error as any)?.response?.data?.message || 'Failed to update profile'}
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {updateMutation.isSuccess && (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm"
+          >
+            Profile updated successfully!
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence mode="wait">
+        {updateMutation.isError && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm"
+          >
+            {(updateMutation.error as any)?.response?.data?.message || 'Failed to update profile'}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
         {activeTab === 'personal' && (
-          <>
-            <InputField label="Full Name" value={form.name} onChange={(v) => set('name', v)} required />
-            <InputField label="Name (Bangla)" value={form.namebn} onChange={(v) => set('namebn', v)} />
-            <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
-            <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
-            <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={['male', 'female', 'other']} />
-            <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
-            <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
-            <InputField label="Home District" value={form.homeDistrict} onChange={(v) => set('homeDistrict', v)} />
-            <fieldset className="border rounded-md p-4">
-              <legend className="text-sm font-medium px-2">Present Address</legend>
-              <div className="space-y-3">
-                <InputField label="District" value={form.presentAddress.district} onChange={(v) => setNested('presentAddress', 'district', v)} />
-                <InputField label="Upazila" value={form.presentAddress.upazila} onChange={(v) => setNested('presentAddress', 'upazila', v)} />
-                <InputField label="Details" value={form.presentAddress.details} onChange={(v) => setNested('presentAddress', 'details', v)} />
-              </div>
-            </fieldset>
-            <fieldset className="border rounded-md p-4">
-              <legend className="text-sm font-medium px-2">Permanent Address</legend>
-              <div className="space-y-3">
-                <InputField label="District" value={form.permanentAddress.district} onChange={(v) => setNested('permanentAddress', 'district', v)} />
-                <InputField label="Upazila" value={form.permanentAddress.upazila} onChange={(v) => setNested('permanentAddress', 'upazila', v)} />
-                <InputField label="Details" value={form.permanentAddress.details} onChange={(v) => setNested('permanentAddress', 'details', v)} />
-              </div>
-            </fieldset>
-          </>
+          <FadeIn direction="up" duration={0.4}>
+            <div className="space-y-4">
+              <InputField label="Full Name" value={form.name} onChange={(v) => set('name', v)} required />
+              <InputField label="Name (Bangla)" value={form.namebn} onChange={(v) => set('namebn', v)} />
+              <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
+              <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
+              <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={['male', 'female', 'other']} />
+              <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
+              <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
+              <InputField label="Home District" value={form.homeDistrict} onChange={(v) => set('homeDistrict', v)} />
+              <fieldset className="border rounded-md p-4">
+                <legend className="text-sm font-medium px-2">Present Address</legend>
+                <div className="space-y-3">
+                  <InputField label="District" value={form.presentAddress.district} onChange={(v) => setNested('presentAddress', 'district', v)} />
+                  <InputField label="Upazila" value={form.presentAddress.upazila} onChange={(v) => setNested('presentAddress', 'upazila', v)} />
+                  <InputField label="Details" value={form.presentAddress.details} onChange={(v) => setNested('presentAddress', 'details', v)} />
+                </div>
+              </fieldset>
+              <fieldset className="border rounded-md p-4">
+                <legend className="text-sm font-medium px-2">Permanent Address</legend>
+                <div className="space-y-3">
+                  <InputField label="District" value={form.permanentAddress.district} onChange={(v) => setNested('permanentAddress', 'district', v)} />
+                  <InputField label="Upazila" value={form.permanentAddress.upazila} onChange={(v) => setNested('permanentAddress', 'upazila', v)} />
+                  <InputField label="Details" value={form.permanentAddress.details} onChange={(v) => setNested('permanentAddress', 'details', v)} />
+                </div>
+              </fieldset>
+            </div>
+          </FadeIn>
         )}
 
         {activeTab === 'academic' && (
-          <>
-            <InputField label="Student ID" value={form.studentId} onChange={(v) => set('studentId', v)} />
-            <InputField label="Batch" type="number" value={String(form.batch)} onChange={(v) => set('batch', v)} />
-            <InputField label="Session" value={form.session} onChange={(v) => set('session', v)} placeholder="e.g. 2019-20" />
-            <InputField label="Department" value={form.department} onChange={(v) => set('department', v)} />
-            <InputField label="Faculty" value={form.faculty} onChange={(v) => set('faculty', v)} />
-          </>
+          <FadeIn direction="up" duration={0.4}>
+            <div className="space-y-4">
+              <InputField label="Student ID" value={form.studentId} onChange={(v) => set('studentId', v)} />
+              <InputField label="Batch" type="number" value={String(form.batch)} onChange={(v) => set('batch', v)} />
+              <InputField label="Session" value={form.session} onChange={(v) => set('session', v)} placeholder="e.g. 2019-20" />
+              <InputField label="Department" value={form.department} onChange={(v) => set('department', v)} />
+              <InputField label="Faculty" value={form.faculty} onChange={(v) => set('faculty', v)} />
+            </div>
+          </FadeIn>
         )}
 
         {activeTab === 'professional' && (
-          <>
-            <InputField label="Skills (comma separated)" value={form.skills} onChange={(v) => set('skills', v)} placeholder="e.g. JavaScript, React, Node.js" />
-            <p className="text-sm text-muted-foreground">Job history and business info can be managed from the full profile editor.</p>
-          </>
+          <FadeIn direction="up" duration={0.4}>
+            <div className="space-y-4">
+              <InputField label="Skills (comma separated)" value={form.skills} onChange={(v) => set('skills', v)} placeholder="e.g. JavaScript, React, Node.js" />
+              <p className="text-sm text-muted-foreground">Job history and business info can be managed from the full profile editor.</p>
+            </div>
+          </FadeIn>
         )}
 
         {activeTab === 'social' && (
-          <>
-            <InputField label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="https://facebook.com/..." />
-            <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => set('linkedin', v)} placeholder="https://linkedin.com/in/..." />
-            <InputField label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="https://..." />
-          </>
+          <FadeIn direction="up" duration={0.4}>
+            <div className="space-y-4">
+              <InputField label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="https://facebook.com/..." />
+              <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => set('linkedin', v)} placeholder="https://linkedin.com/in/..." />
+              <InputField label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="https://..." />
+            </div>
+          </FadeIn>
         )}
 
-        <button
+        <motion.button
           type="submit"
           disabled={updateMutation.isPending}
           className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
         >
           {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save Changes
-        </button>
+        </motion.button>
       </form>
     </div>
   );

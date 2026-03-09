@@ -4,6 +4,8 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { Vote, Loader2, CheckCircle, Clock, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
+import { motion } from 'motion/react';
+import { FadeIn, BlurText } from '@/components/reactbits';
 
 export default function VotingPage() {
   const { data, isLoading } = useQuery({
@@ -24,35 +26,49 @@ export default function VotingPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Voting & Polls</h1>
+      <BlurText text="Voting & Polls" className="text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
       {votes.length === 0 ? (
-        <div className="text-center py-12">
-          <Vote className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No polls available</p>
-        </div>
+        <FadeIn delay={0.2} direction="up">
+          <div className="text-center py-12">
+            <Vote className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">No polls available</p>
+          </div>
+        </FadeIn>
       ) : (
         <>
           {active.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-blue-500" /> Active Polls
-              </h2>
-              <div className="space-y-4">
-                {active.map((v: any) => <VoteCard key={v._id} vote={v} />)}
+            <FadeIn delay={0.1} direction="up">
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-500" /> Active Polls
+                </h2>
+                <div className="space-y-4">
+                  {active.map((v: any, i: number) => (
+                    <FadeIn key={v._id} delay={0.1 + i * 0.08} direction="up">
+                      <VoteCard vote={v} />
+                    </FadeIn>
+                  ))}
+                </div>
               </div>
-            </div>
+            </FadeIn>
           )}
 
           {closed.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-gray-500" /> Past Polls
-              </h2>
-              <div className="space-y-4">
-                {closed.map((v: any) => <VoteCard key={v._id} vote={v} />)}
+            <FadeIn delay={0.2} direction="up">
+              <div>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-gray-500" /> Past Polls
+                </h2>
+                <div className="space-y-4">
+                  {closed.map((v: any, i: number) => (
+                    <FadeIn key={v._id} delay={0.1 + i * 0.08} direction="up">
+                      <VoteCard vote={v} />
+                    </FadeIn>
+                  ))}
+                </div>
               </div>
-            </div>
+            </FadeIn>
           )}
         </>
       )}
@@ -77,7 +93,7 @@ function VoteCard({ vote }: { vote: any }) {
   const totalVotes = vote.options?.reduce((sum: number, o: any) => sum + (o.voteCount || 0), 0) || 1;
 
   return (
-    <div className="border rounded-lg p-5 bg-background">
+    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="border rounded-lg p-5 bg-background">
       <h3 className="font-semibold mb-1">{vote.title}</h3>
       {vote.description && <p className="text-sm text-muted-foreground mb-3">{vote.description}</p>}
 
@@ -111,11 +127,16 @@ function VoteCard({ vote }: { vote: any }) {
       </div>
 
       {isActive && !hasVoted && (
-        <button onClick={() => castMutation.mutate()} disabled={!selected || castMutation.isPending}
-          className="mt-3 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => castMutation.mutate()}
+          disabled={!selected || castMutation.isPending}
+          className="mt-3 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+        >
           {castMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
           Cast Vote
-        </button>
+        </motion.button>
       )}
 
       {hasVoted && isActive && (
@@ -123,6 +144,6 @@ function VoteCard({ vote }: { vote: any }) {
           <CheckCircle className="h-4 w-4" /> You have voted
         </p>
       )}
-    </div>
+    </motion.div>
   );
 }

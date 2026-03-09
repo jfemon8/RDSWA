@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Users, Loader2 } from 'lucide-react';
+import { FadeIn, BlurText } from '@/components/reactbits';
+import { motion } from 'motion/react';
 
 export default function MembersPage() {
   const [search, setSearch] = useState('');
@@ -29,7 +31,7 @@ export default function MembersPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Members</h1>
+      <BlurText text="Members" className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -67,8 +69,9 @@ export default function MembersPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {members.map((m: any) => (
-              <div key={m._id} className="border rounded-lg p-4 bg-background">
+            {members.map((m: any, i: number) => (
+              <FadeIn key={m._id} delay={i * 0.04} direction="up">
+              <motion.div className="border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors" whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
                 <div className="flex items-center gap-3">
                   {m.avatar ? (
                     <img src={m.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
@@ -86,7 +89,8 @@ export default function MembersPage() {
                 {m.homeDistrict && (
                   <p className="text-xs text-muted-foreground mt-2">From: {m.homeDistrict}</p>
                 )}
-              </div>
+              </motion.div>
+              </FadeIn>
             ))}
           </div>
 

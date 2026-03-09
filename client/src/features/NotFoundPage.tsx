@@ -1,19 +1,53 @@
 import { Link } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import { motion } from 'motion/react';
+import { GradientText } from '@/components/reactbits';
 
 export default function NotFoundPage() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="text-center">
-        <h1 className="text-7xl font-bold text-primary mb-4">404</h1>
-        <h2 className="text-2xl font-semibold mb-2">Page Not Found</h2>
-        <p className="text-muted-foreground mb-6">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        >
+          <GradientText
+            colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
+            animationSpeed={3}
+            className="text-8xl font-bold mb-4"
+          >
+            404
+          </GradientText>
+        </motion.div>
+        <motion.h2
+          className="text-2xl font-semibold mb-2"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          Page Not Found
+        </motion.h2>
+        <motion.p
+          className="text-muted-foreground mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           The page you're looking for doesn't exist or has been moved.
-        </p>
-        <Link to="/"
-          className="inline-flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-sm">
-          <Home className="h-4 w-4" /> Go Home
-        </Link>
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Link to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 text-sm font-semibold shadow-lg shadow-primary/20">
+            <Home className="h-4 w-4" /> Go Home
+          </Link>
+        </motion.div>
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Image, Loader2, X } from 'lucide-react';
+import { FadeIn, BlurText } from '@/components/reactbits';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export default function GalleryPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Gallery</h1>
+      <BlurText text="Gallery" className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
       {selectedAlbum && albumDetail ? (
         <div>
@@ -66,21 +68,26 @@ export default function GalleryPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {albums.map((a: any) => (
-                <div key={a._id} onClick={() => setSelectedAlbum(a._id)}
-                  className="border rounded-lg overflow-hidden bg-background cursor-pointer hover:shadow-md transition-shadow">
-                  {a.coverPhoto ? (
-                    <img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" />
-                  ) : (
-                    <div className="w-full h-40 bg-muted flex items-center justify-center">
-                      <Image className="h-8 w-8 text-muted-foreground/30" />
+              {albums.map((a: any, i: number) => (
+                <FadeIn key={a._id} delay={i * 0.08} direction="up">
+                  <motion.div onClick={() => setSelectedAlbum(a._id)}
+                    className="border rounded-xl overflow-hidden bg-card cursor-pointer hover:border-primary/30 transition-colors"
+                    whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}>
+                    {a.coverPhoto ? (
+                      <div className="overflow-hidden">
+                        <motion.img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }} />
+                      </div>
+                    ) : (
+                      <div className="w-full h-40 bg-muted flex items-center justify-center">
+                        <Image className="h-8 w-8 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <h3 className="font-medium">{a.title}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{a.photoCount || 0} photos</p>
                     </div>
-                  )}
-                  <div className="p-3">
-                    <h3 className="font-medium">{a.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{a.photoCount || 0} photos</p>
-                  </div>
-                </div>
+                  </motion.div>
+                </FadeIn>
               ))}
             </div>
           )}
@@ -88,14 +95,30 @@ export default function GalleryPage() {
       )}
 
       {/* Lightbox */}
-      {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <button className="absolute top-4 right-4 text-white hover:text-gray-300" onClick={() => setLightbox(null)}>
-            <X className="h-6 w-6" />
-          </button>
-          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setLightbox(null)}
+          >
+            <button className="absolute top-4 right-4 text-white hover:text-gray-300" onClick={() => setLightbox(null)}>
+              <X className="h-6 w-6" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              src={lightbox}
+              alt=""
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
