@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@rdswa/shared': path.resolve(__dirname, '../shared/src'),
     },
   },
   server: {
