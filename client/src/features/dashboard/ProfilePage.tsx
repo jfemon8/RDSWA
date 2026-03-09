@@ -1,0 +1,200 @@
+import { useState } from 'react';
+import { useAuthStore } from '@/stores/authStore';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { Save, Loader2 } from 'lucide-react';
+
+export default function ProfilePage() {
+  const { user, setUser } = useAuthStore();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'professional' | 'social'>('personal');
+
+  const [form, setForm] = useState({
+    name: user?.name || '',
+    namebn: user?.namebn || '',
+    phone: user?.phone || '',
+    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+    gender: user?.gender || '',
+    bloodGroup: user?.bloodGroup || '',
+    isBloodDonor: user?.isBloodDonor || false,
+    homeDistrict: user?.homeDistrict || '',
+    presentAddress: user?.presentAddress || { district: '', upazila: '', details: '' },
+    permanentAddress: user?.permanentAddress || { district: '', upazila: '', details: '' },
+    studentId: user?.studentId || '',
+    batch: user?.batch || '',
+    session: user?.session || '',
+    department: user?.department || '',
+    faculty: user?.faculty || '',
+    facebook: user?.facebook || '',
+    linkedin: user?.linkedin || '',
+    website: user?.website || '',
+    skills: user?.skills?.join(', ') || '',
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      const { data: res } = await api.patch('/users/me', data);
+      return res;
+    },
+    onSuccess: (res) => {
+      setUser(res.data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload: Record<string, any> = { ...form };
+    if (payload.skills) {
+      payload.skills = payload.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
+    } else {
+      payload.skills = [];
+    }
+    if (payload.batch) payload.batch = Number(payload.batch);
+    updateMutation.mutate(payload);
+  };
+
+  const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
+  const setNested = (parent: string, field: string, value: string) =>
+    setForm((prev) => ({ ...prev, [parent]: { ...(prev as any)[parent], [field]: value } }));
+
+  const tabs = [
+    { key: 'personal', label: 'Personal' },
+    { key: 'academic', label: 'Academic' },
+    { key: 'professional', label: 'Professional' },
+    { key: 'social', label: 'Social' },
+  ] as const;
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
+
+      <div className="flex gap-2 mb-6 border-b">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {updateMutation.isSuccess && (
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
+          Profile updated successfully!
+        </div>
+      )}
+      {updateMutation.isError && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm">
+          {(updateMutation.error as any)?.response?.data?.message || 'Failed to update profile'}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+        {activeTab === 'personal' && (
+          <>
+            <InputField label="Full Name" value={form.name} onChange={(v) => set('name', v)} required />
+            <InputField label="Name (Bangla)" value={form.namebn} onChange={(v) => set('namebn', v)} />
+            <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
+            <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
+            <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={['male', 'female', 'other']} />
+            <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
+            <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
+            <InputField label="Home District" value={form.homeDistrict} onChange={(v) => set('homeDistrict', v)} />
+            <fieldset className="border rounded-md p-4">
+              <legend className="text-sm font-medium px-2">Present Address</legend>
+              <div className="space-y-3">
+                <InputField label="District" value={form.presentAddress.district} onChange={(v) => setNested('presentAddress', 'district', v)} />
+                <InputField label="Upazila" value={form.presentAddress.upazila} onChange={(v) => setNested('presentAddress', 'upazila', v)} />
+                <InputField label="Details" value={form.presentAddress.details} onChange={(v) => setNested('presentAddress', 'details', v)} />
+              </div>
+            </fieldset>
+            <fieldset className="border rounded-md p-4">
+              <legend className="text-sm font-medium px-2">Permanent Address</legend>
+              <div className="space-y-3">
+                <InputField label="District" value={form.permanentAddress.district} onChange={(v) => setNested('permanentAddress', 'district', v)} />
+                <InputField label="Upazila" value={form.permanentAddress.upazila} onChange={(v) => setNested('permanentAddress', 'upazila', v)} />
+                <InputField label="Details" value={form.permanentAddress.details} onChange={(v) => setNested('permanentAddress', 'details', v)} />
+              </div>
+            </fieldset>
+          </>
+        )}
+
+        {activeTab === 'academic' && (
+          <>
+            <InputField label="Student ID" value={form.studentId} onChange={(v) => set('studentId', v)} />
+            <InputField label="Batch" type="number" value={String(form.batch)} onChange={(v) => set('batch', v)} />
+            <InputField label="Session" value={form.session} onChange={(v) => set('session', v)} placeholder="e.g. 2019-20" />
+            <InputField label="Department" value={form.department} onChange={(v) => set('department', v)} />
+            <InputField label="Faculty" value={form.faculty} onChange={(v) => set('faculty', v)} />
+          </>
+        )}
+
+        {activeTab === 'professional' && (
+          <>
+            <InputField label="Skills (comma separated)" value={form.skills} onChange={(v) => set('skills', v)} placeholder="e.g. JavaScript, React, Node.js" />
+            <p className="text-sm text-muted-foreground">Job history and business info can be managed from the full profile editor.</p>
+          </>
+        )}
+
+        {activeTab === 'social' && (
+          <>
+            <InputField label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="https://facebook.com/..." />
+            <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => set('linkedin', v)} placeholder="https://linkedin.com/in/..." />
+            <InputField label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="https://..." />
+          </>
+        )}
+
+        <button
+          type="submit"
+          disabled={updateMutation.isPending}
+          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+        >
+          {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save Changes
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function InputField({ label, value, onChange, type = 'text', required, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} placeholder={placeholder}
+        className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50">
+        <option value="">Select...</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function CheckboxField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded" />
+      <span className="text-sm">{label}</span>
+    </label>
+  );
+}

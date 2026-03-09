@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment (all .env files except .env.example)
+.env
+.env.local
+.env.*.local
+server/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+
+# Claude Code
+.claude/
+
+# Project documents (confidential)
+FRS of RDSWA.pdf
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+.cache/
+
+# Uploads (if any local uploads)
+uploads/

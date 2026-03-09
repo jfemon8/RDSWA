@@ -1,0 +1,28 @@
+import { Router } from 'express';
+import * as committeeController from '../controllers/committee.controller';
+import { authenticate } from '../middlewares/auth.middleware';
+import { authorize } from '../middlewares/rbac.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import { auditLog } from '../middlewares/audit.middleware';
+import { UserRole } from '@rdswa/shared';
+import {
+  createCommitteeSchema,
+  updateCommitteeSchema,
+  addCommitteeMemberSchema,
+} from '../validators/committee.validator';
+
+const router = Router();
+
+// Public
+router.get('/', committeeController.getAll);
+router.get('/current', committeeController.getCurrent);
+router.get('/:id', committeeController.getById);
+
+// Admin+
+router.post('/', authenticate(), authorize(UserRole.ADMIN), validate({ body: createCommitteeSchema }), auditLog('committee.create', 'committees'), committeeController.create);
+router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body: updateCommitteeSchema }), auditLog('committee.update', 'committees'), committeeController.update);
+router.post('/:id/archive', authenticate(), authorize(UserRole.ADMIN), auditLog('committee.archive', 'committees'), committeeController.archive);
+router.post('/:id/members', authenticate(), authorize(UserRole.ADMIN), validate({ body: addCommitteeMemberSchema }), auditLog('committee.add_member', 'committees'), committeeController.addMember);
+router.delete('/:id/members/:userId', authenticate(), authorize(UserRole.ADMIN), auditLog('committee.remove_member', 'committees'), committeeController.removeMember);
+
+export default router;
