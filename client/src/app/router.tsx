@@ -28,6 +28,9 @@ const Donations = lazy(() => import('@/features/donations/DonationsPage'));
 const Voting = lazy(() => import('@/features/voting/VotingPage'));
 const BusSchedule = lazy(() => import('@/features/bus-schedule/BusSchedulePage'));
 const Gallery = lazy(() => import('@/features/gallery/GalleryPage'));
+const PrivacyPolicy = lazy(() => import('@/features/legal/PrivacyPolicyPage'));
+const Terms = lazy(() => import('@/features/legal/TermsPage'));
+const FAQ = lazy(() => import('@/features/legal/FAQPage'));
 const NotFound = lazy(() => import('@/features/NotFoundPage'));
 
 // Dashboard pages
@@ -86,6 +89,9 @@ export default function AppRouter() {
           <Route path="/voting" element={<Voting />} />
           <Route path="/bus-schedule" element={<BusSchedule />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/faq" element={<FAQ />} />
         </Route>
 
         {/* Dashboard routes (authenticated) */}

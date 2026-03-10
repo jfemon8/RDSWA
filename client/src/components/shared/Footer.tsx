@@ -45,10 +45,12 @@ export default function Footer() {
           </FadeIn>
           <FadeIn delay={0.3}>
             <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
+              <h4 className="font-semibold mb-4">Legal & Help</h4>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
-                <li>University of Barishal Campus</li>
-                <li>Barishal, Bangladesh</li>
+                <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</Link></li>
+                <li><Link to="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
+                <li className="pt-1 text-xs">University of Barishal Campus</li>
               </ul>
             </div>
           </FadeIn>
