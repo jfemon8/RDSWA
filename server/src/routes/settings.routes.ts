@@ -5,7 +5,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { SiteSettings } from '../models';
+import { SiteSettings, User, Event } from '../models';
 import { UserRole } from '@rdswa/shared';
 
 const router = Router();
@@ -36,12 +36,31 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       objectivesContent: settings.objectivesContent,
       historyContent: settings.historyContent,
       universityInfo: settings.universityInfo,
+      foundedYear: settings.foundedYear,
       homePageContent: settings.homePageContent,
+      faq: settings.faq,
+      privacyPolicy: settings.privacyPolicy,
+      termsConditions: settings.termsConditions,
     };
     return ApiResponse.success(res, publicFields);
   }
 
   ApiResponse.success(res, settings);
+}));
+
+// Public stats for homepage
+router.get('/public-stats', asyncHandler(async (_req, res) => {
+  const [totalMembers, totalEvents, districts] = await Promise.all([
+    User.countDocuments({ membershipStatus: 'approved', isDeleted: false }),
+    Event.countDocuments({ isDeleted: false }),
+    User.distinct('homeDistrict', { homeDistrict: { $exists: true, $ne: '' }, isDeleted: false }),
+  ]);
+
+  ApiResponse.success(res, {
+    totalMembers,
+    totalEvents,
+    totalDistricts: districts.length,
+  });
 }));
 
 // Update site settings (SuperAdmin)

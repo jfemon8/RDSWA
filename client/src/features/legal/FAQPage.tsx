@@ -1,44 +1,13 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
-const faqs = [
-  {
-    question: 'Who can become a member of RDSWA?',
-    answer: 'Any student from Rangpur Division currently studying at the University of Barishal can apply for membership. Alumni who were previously members can retain alumni status.',
-  },
-  {
-    question: 'How do I register on the platform?',
-    answer: 'Click the "Register" button on the homepage, fill in your details including student ID and department, and verify your email address. Your membership will be reviewed and approved by the administration.',
-  },
-  {
-    question: 'How long does membership approval take?',
-    answer: 'Membership approval typically takes 1-3 business days. You will receive an email notification once your application is reviewed.',
-  },
-  {
-    question: 'How can I participate in voting?',
-    answer: 'Active members can participate in elections and polls through the Voting section. Voting is time-limited and each member gets one vote per election.',
-  },
-  {
-    question: 'How do I update my profile information?',
-    answer: 'Log in to your account, go to Dashboard > Profile, and update your information. Some fields like student ID may require admin approval to change.',
-  },
-  {
-    question: 'Can I donate to RDSWA?',
-    answer: 'Yes! Visit the Donations page to contribute to RDSWA funds or specific campaigns. All donations are tracked and verified by the administration.',
-  },
-  {
-    question: 'How do I join the blood donor directory?',
-    answer: 'When updating your profile, make sure your blood group is set and enable the "Available as blood donor" option. You will then appear in the public blood donor directory.',
-  },
-  {
-    question: 'Who do I contact for technical issues?',
-    answer: 'For technical issues, reach out to the RDSWA administration through the contact information on the website or use the notification system to send a message.',
-  },
-];
-
-function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
+function FAQItem({ faq, index }: { faq: { question: string; answer: string }; index: number }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -80,6 +49,17 @@ function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
 }
 
 export default function FAQPage() {
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.settings.all,
+    queryFn: async () => {
+      const { data } = await api.get('/settings');
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const faqs: Array<{ question: string; answer: string }> = data?.data?.faq || [];
+
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
       <BlurText
@@ -96,11 +76,23 @@ export default function FAQPage() {
         </p>
       </FadeIn>
 
-      <div className="space-y-4">
-        {faqs.map((faq, i) => (
-          <FAQItem key={faq.question} faq={faq} index={i} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : faqs.length === 0 ? (
+        <FadeIn>
+          <p className="text-center text-muted-foreground py-12">No FAQs available yet.</p>
+        </FadeIn>
+      ) : (
+        <div className="space-y-4">
+          {faqs.map((faq, i) => (
+            <FAQItem key={i} faq={faq} index={i} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
