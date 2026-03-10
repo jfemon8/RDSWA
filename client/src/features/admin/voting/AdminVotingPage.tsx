@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Trash2, Eye } from 'lucide-react';
+import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 export default function AdminVotingPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [statsId, setStatsId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', description: '', startTime: '', endTime: '',
     eligibleVoters: 'all_members', options: ['', ''],
@@ -142,29 +143,59 @@ export default function AdminVotingPage() {
             {votes.map((v: any, index: number) => (
               <FadeIn key={v._id} direction="up" delay={index * 0.05} duration={0.4}>
                 <motion.div
-                  whileHover={{ scale: 1.01, backgroundColor: 'var(--accent)' }}
+                  layout
                   transition={{ duration: 0.2 }}
-                  className="border rounded-lg p-4 bg-background"
+                  className="border rounded-lg bg-background overflow-hidden"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between p-4">
                     <div>
                       <h3 className="font-medium">{v.title}</h3>
                       <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                        <span className="capitalize">{v.status}</span>
+                        <span className={`capitalize px-1.5 py-0.5 rounded ${
+                          v.status === 'active' ? 'bg-green-100 text-green-700'
+                          : v.status === 'published' ? 'bg-blue-100 text-blue-700'
+                          : v.status === 'closed' ? 'bg-gray-100 text-gray-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                        }`}>{v.status}</span>
                         <span>{v.totalVotes || 0} votes</span>
                         <span>Ends {new Date(v.endTime).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    {v.status === 'closed' && !v.isResultPublic && (
+                    <div className="flex items-center gap-2">
+                      {v.status === 'closed' && !v.isResultPublic && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => publishMutation.mutate(v._id)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md">
+                          <Eye className="h-3 w-3" /> Publish
+                        </motion.button>
+                      )}
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => publishMutation.mutate(v._id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md">
-                        <Eye className="h-3 w-3" /> Publish Results
+                        onClick={() => setStatsId(statsId === v._id ? null : v._id)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs border rounded-md hover:bg-accent"
+                      >
+                        <BarChart3 className="h-3 w-3" /> Stats
+                        {statsId === v._id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </motion.button>
-                    )}
+                    </div>
                   </div>
+
+                  <AnimatePresence>
+                    {statsId === v._id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <VoteStatsPanel voteId={v._id} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               </FadeIn>
             ))}
@@ -172,5 +203,140 @@ export default function AdminVotingPage() {
         )}
       </div>
     </FadeIn>
+  );
+}
+
+function VoteStatsPanel({ voteId }: { voteId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['votes', 'stats', voteId],
+    queryFn: async () => {
+      const { data } = await api.get(`/votes/${voteId}/stats`);
+      return data;
+    },
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center py-6 border-t"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>;
+  }
+
+  const stats = data?.data;
+  if (!stats) return null;
+
+  return (
+    <div className="border-t p-4 space-y-4 bg-muted/20">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <FadeIn delay={0} direction="up">
+          <div className="border rounded-lg p-3 bg-background text-center">
+            <p className="text-xs text-muted-foreground">Total Voters</p>
+            <p className="text-xl font-bold">{stats.totalVoters}</p>
+          </div>
+        </FadeIn>
+        <FadeIn delay={0.05} direction="up">
+          <div className="border rounded-lg p-3 bg-background text-center">
+            <p className="text-xs text-muted-foreground">Total Votes</p>
+            <p className="text-xl font-bold text-primary">{stats.totalVotes}</p>
+          </div>
+        </FadeIn>
+        <FadeIn delay={0.1} direction="up">
+          <div className="border rounded-lg p-3 bg-background text-center">
+            <p className="text-xs text-muted-foreground">Skipped</p>
+            <p className="text-xl font-bold text-orange-500">{stats.skippedCount}</p>
+          </div>
+        </FadeIn>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* By Batch */}
+        {stats.byBatch?.length > 0 && (
+          <FadeIn delay={0.15} direction="up">
+            <div className="border rounded-lg p-3 bg-background">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2">By Batch</h4>
+              <div className="space-y-1.5">
+                {stats.byBatch.map((b: any) => (
+                  <div key={b.batch} className="flex items-center justify-between text-sm">
+                    <span>Batch {b.batch}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-muted rounded-full h-1.5">
+                        <motion.div
+                          className="bg-blue-500 rounded-full h-1.5"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(b.count / stats.totalVoters) * 100}%` }}
+                          transition={{ duration: 0.5, delay: 0.1 }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{b.count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        )}
+
+        {/* By Role */}
+        {stats.byRole?.length > 0 && (
+          <FadeIn delay={0.2} direction="up">
+            <div className="border rounded-lg p-3 bg-background">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2">By Role</h4>
+              <div className="space-y-1.5">
+                {stats.byRole.map((r: any) => (
+                  <div key={r.role} className="flex items-center justify-between text-sm">
+                    <span className="capitalize">{r.role.replace('_', ' ')}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-muted rounded-full h-1.5">
+                        <motion.div
+                          className="bg-purple-500 rounded-full h-1.5"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(r.count / stats.totalVoters) * 100}%` }}
+                          transition={{ duration: 0.5, delay: 0.1 }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{r.count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        )}
+      </div>
+
+      {/* Voter List */}
+      <FadeIn delay={0.25} direction="up">
+        <div className="border rounded-lg p-3 bg-background">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+            <Users className="h-3 w-3" /> Voters ({stats.voters?.length || 0})
+          </h4>
+          {stats.voters?.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {stats.voters.map((v: any, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  className="flex items-center justify-between text-xs py-1 border-b border-border/50 last:border-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{v.name}</span>
+                    {v.batch && <span className="text-muted-foreground">Batch {v.batch}</span>}
+                    <span className="capitalize text-muted-foreground">{v.role?.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {v.skipped && <span className="text-orange-500 text-xs">Skipped</span>}
+                    <span className="text-muted-foreground">
+                      {new Date(v.votedAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No voters yet</p>
+          )}
+        </div>
+      </FadeIn>
+    </div>
   );
 }

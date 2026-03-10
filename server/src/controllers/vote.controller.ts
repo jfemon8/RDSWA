@@ -36,6 +36,11 @@ export const getResults = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.success(res, results);
 });
 
+export const getStats = asyncHandler(async (req: Request, res: Response) => {
+  const stats = await voteService.getStats(req.params.id as string);
+  ApiResponse.success(res, stats);
+});
+
 export const publishResults = asyncHandler(async (req: Request, res: Response) => {
   const vote = await voteService.publishResults(req.params.id as string);
   ApiResponse.success(res, vote, 'Results published');

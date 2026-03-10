@@ -1,4 +1,5 @@
 import { Vote } from '../models';
+import { broadcastVoteStatus } from '../socket';
 
 /**
  * Auto-close expired votes.
@@ -6,17 +7,25 @@ import { Vote } from '../models';
  */
 export async function runVoteCloser(): Promise<void> {
   try {
-    const result = await Vote.updateMany(
-      {
-        status: 'active',
-        endTime: { $lte: new Date() },
-        isDeleted: false,
-      },
-      { $set: { status: 'closed' } }
-    );
+    // Find votes to close first (so we can broadcast)
+    const expiredVotes = await Vote.find({
+      status: 'active',
+      endTime: { $lte: new Date() },
+      isDeleted: false,
+    }).select('_id');
 
-    if (result.modifiedCount > 0) {
-      console.log(`Vote closer: closed ${result.modifiedCount} expired votes`);
+    if (expiredVotes.length > 0) {
+      await Vote.updateMany(
+        { _id: { $in: expiredVotes.map((v) => v._id) } },
+        { $set: { status: 'closed' } }
+      );
+
+      // Broadcast status change to all watchers
+      for (const vote of expiredVotes) {
+        broadcastVoteStatus((vote._id as any).toString(), 'closed');
+      }
+
+      console.log(`Vote closer: closed ${expiredVotes.length} expired votes`);
     }
   } catch (err) {
     console.error('Vote closer error:', err);

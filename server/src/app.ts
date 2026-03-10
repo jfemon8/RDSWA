@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -13,8 +14,10 @@ import { startAlumniTagger } from './jobs/alumniTagger';
 import { startVoteCloser } from './jobs/voteCloser';
 import { startReminderSender } from './jobs/reminderSender';
 import { startPaymentReminder } from './jobs/paymentReminder';
+import { initSocket } from './socket';
 
 const app = express();
+const httpServer = createServer(app);
 
 // Security & parsing middleware
 app.use(helmet());
@@ -46,13 +49,16 @@ async function start() {
   await connectDB();
   await connectRedis();
 
+  // Initialize Socket.IO
+  initSocket(httpServer);
+
   // Start scheduled jobs
   startAlumniTagger();
   startVoteCloser();
   startReminderSender();
   startPaymentReminder();
 
-  app.listen(env.PORT, () => {
+  httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
   });
 }

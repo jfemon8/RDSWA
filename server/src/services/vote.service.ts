@@ -2,6 +2,7 @@ import { Vote, IVoteDocument, IUserDocument } from '../models';
 import { ApiError } from '../utils/ApiError';
 import { UserRole } from '@rdswa/shared';
 import mongoose from 'mongoose';
+import { broadcastVoteUpdate, broadcastVoteStatus } from '../socket';
 
 export class VoteService {
   async list() {
@@ -65,6 +66,16 @@ export class VoteService {
     option.voteCount += 1;
     vote.totalVotes += 1;
     await vote.save();
+
+    // Broadcast real-time update
+    broadcastVoteUpdate(voteId, {
+      totalVotes: vote.totalVotes,
+      options: vote.options.map((o) => ({
+        _id: (o._id as any).toString(),
+        text: o.text,
+        voteCount: o.voteCount,
+      })),
+    });
   }
 
   async getResults(id: string): Promise<any> {
@@ -87,6 +98,46 @@ export class VoteService {
     };
   }
 
+  async getStats(id: string): Promise<any> {
+    const vote = await Vote.findOne({ _id: id, isDeleted: false })
+      .populate('voters.user', 'name batch role department');
+    if (!vote) throw ApiError.notFound('Vote not found');
+
+    const voters = vote.voters || [];
+    const totalVoters = voters.length;
+    const skippedCount = voters.filter((v) => v.skipped).length;
+
+    // Participation by batch
+    const byBatch: Record<number, number> = {};
+    const byRole: Record<string, number> = {};
+    for (const v of voters) {
+      const u = v.user as any;
+      if (u?.batch) byBatch[u.batch] = (byBatch[u.batch] || 0) + 1;
+      if (u?.role) byRole[u.role] = (byRole[u.role] || 0) + 1;
+    }
+
+    return {
+      voteId: id,
+      title: vote.title,
+      status: vote.status,
+      totalVotes: vote.totalVotes,
+      totalVoters,
+      skippedCount,
+      byBatch: Object.entries(byBatch).map(([batch, count]) => ({ batch: Number(batch), count })).sort((a, b) => a.batch - b.batch),
+      byRole: Object.entries(byRole).map(([role, count]) => ({ role, count })).sort((a, b) => b.count - a.count),
+      voters: voters.map((v) => {
+        const u = v.user as any;
+        return {
+          name: u?.name || 'Unknown',
+          batch: u?.batch,
+          role: u?.role,
+          votedAt: v.votedAt,
+          skipped: v.skipped,
+        };
+      }),
+    };
+  }
+
   async publishResults(id: string): Promise<IVoteDocument> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false });
     if (!vote) throw ApiError.notFound('Vote not found');
@@ -95,6 +146,8 @@ export class VoteService {
     vote.status = 'published';
     vote.isResultPublic = true;
     await vote.save();
+
+    broadcastVoteStatus(id, 'published');
     return vote;
   }
 }
