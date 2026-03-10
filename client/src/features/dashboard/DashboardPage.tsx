@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, FileText, Calendar, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Bell, FileText, Calendar, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -147,6 +147,8 @@ export default function DashboardPage() {
         {user?.membershipStatus === 'none' && (
           <QuickAction to="/dashboard/forms/new" label="Apply for Membership" description="Submit your membership application" />
         )}
+        <QuickAction to="/dashboard/attendance" label="Attendance History" description="View your event check-in records" icon={<ClipboardCheck className="h-4 w-4 text-primary" />} />
+        <QuickAction to="/meetings" label="Meeting Records" description="View past and upcoming meetings" icon={<BookOpen className="h-4 w-4 text-primary" />} />
         <QuickAction to="/dashboard/forms" label="My Submissions" description="Track your form submissions" />
         <QuickAction to="/donations" label="Make Donation" description="Support RDSWA activities" />
       </div>

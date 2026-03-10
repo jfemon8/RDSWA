@@ -10,6 +10,7 @@ import { createEventSchema, updateEventSchema, feedbackSchema } from '../validat
 const router = Router();
 
 router.get('/', authenticate(true), eventController.list);
+router.get('/my-attendance', authenticate(), eventController.myAttendance);
 router.get('/:id', eventController.getById);
 router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createEventSchema }), auditLog('event.create', 'events'), eventController.create);
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateEventSchema }), auditLog('event.update', 'events'), eventController.update);

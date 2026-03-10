@@ -21,6 +21,8 @@ const Members = lazy(() => import('@/features/members/MembersPage'));
 const BloodDonors = lazy(() => import('@/features/members/BloodDonorsPage'));
 const Events = lazy(() => import('@/features/events/EventsPage'));
 const EventDetail = lazy(() => import('@/features/events/EventDetailPage'));
+const CheckInScanner = lazy(() => import('@/features/events/CheckInScannerPage'));
+const MeetingRecords = lazy(() => import('@/features/events/MeetingRecordsPage'));
 const Notices = lazy(() => import('@/features/notices/NoticesPage'));
 const NoticeDetail = lazy(() => import('@/features/notices/NoticeDetailPage'));
 const Documents = lazy(() => import('@/features/documents/DocumentsPage'));
@@ -41,6 +43,7 @@ const Profile = lazy(() => import('@/features/dashboard/ProfilePage'));
 const Notifications = lazy(() => import('@/features/dashboard/NotificationsPage'));
 const MyForms = lazy(() => import('@/features/dashboard/MyFormsPage'));
 const SubmitForm = lazy(() => import('@/features/dashboard/SubmitFormPage'));
+const AttendanceHistory = lazy(() => import('@/features/dashboard/AttendanceHistoryPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
@@ -84,6 +87,7 @@ export default function AppRouter() {
           <Route path="/blood-donors" element={<BloodDonors />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
+          <Route path="/meetings" element={<MeetingRecords />} />
           <Route path="/notices" element={<Notices />} />
           <Route path="/notices/:id" element={<NoticeDetail />} />
           <Route path="/documents" element={<Documents />} />
@@ -106,6 +110,7 @@ export default function AppRouter() {
             <Route path="/dashboard/forms/new" element={<SubmitForm />} />
             <Route path="/dashboard/jobs" element={<JobBoard />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
+            <Route path="/dashboard/attendance" element={<AttendanceHistory />} />
           </Route>
         </Route>
 
@@ -117,6 +122,7 @@ export default function AppRouter() {
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/committees" element={<AdminCommittees />} />
               <Route path="/admin/events" element={<AdminEvents />} />
+              <Route path="/admin/events/:id/checkin" element={<CheckInScanner />} />
               <Route path="/admin/notices" element={<AdminNotices />} />
               <Route path="/admin/gallery" element={<AdminGallery />} />
               <Route path="/admin/finance" element={<AdminFinance />} />

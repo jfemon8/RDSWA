@@ -199,6 +199,30 @@ export class EventService {
     return event;
   }
 
+  async getMyAttendance(userId: string) {
+    const events = await Event.find({
+      isDeleted: false,
+      'attendance.user': new mongoose.Types.ObjectId(userId),
+    })
+      .select('title type status startDate endDate venue attendance')
+      .sort({ startDate: -1 });
+
+    return events.map((event) => {
+      const myRecord = event.attendance.find((a) => a.user.toString() === userId);
+      return {
+        _id: event._id,
+        title: event.title,
+        type: event.type,
+        status: event.status,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        venue: event.venue,
+        checkedInAt: myRecord?.checkedInAt,
+        checkedInVia: myRecord?.checkedInVia,
+      };
+    });
+  }
+
   async untagUserFromPhoto(
     eventId: string,
     photoIndex: number,

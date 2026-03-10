@@ -3,9 +3,9 @@ import { useParams } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
-import { Calendar, MapPin, Users, Loader2, UserPlus, Star } from 'lucide-react';
+import { Calendar, MapPin, Users, Loader2, UserPlus, Star, QrCode, CheckCircle2, Image, Clock, Bell } from 'lucide-react';
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
 export default function EventDetailPage() {
@@ -14,6 +14,8 @@ export default function EventDetailPage() {
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [showPhotos, setShowPhotos] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.events.detail(id!),
@@ -45,8 +47,12 @@ export default function EventDetailPage() {
   const event = data?.data;
   if (!event) return <p className="text-center py-12 text-muted-foreground">Event not found</p>;
 
-  const isRegistered = event.registeredUsers?.includes(user?._id);
+  const isRegistered = event.registeredUsers?.some?.((u: any) => (typeof u === 'string' ? u : u._id) === user?._id)
+    || event.registeredUsers?.includes?.(user?._id);
   const canRegister = isAuthenticated && event.registrationRequired && event.status === 'upcoming' && !isRegistered;
+  const myAttendance = event.attendance?.find?.((a: any) => (typeof a.user === 'string' ? a.user : a.user?._id) === user?._id);
+  const hasSubmittedFeedback = event.feedbacks?.some?.((f: any) => (typeof f.user === 'string' ? f.user : f.user?._id) === user?._id);
+  const photos = event.photos || [];
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -62,10 +68,13 @@ export default function EventDetailPage() {
       )}
 
       <FadeIn delay={0.1} direction="up">
-        <h1 className="text-3xl font-bold mb-4">{event.title}</h1>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <h1 className="text-3xl font-bold">{event.title}</h1>
+          <StatusBadge status={event.status} />
+        </div>
       </FadeIn>
 
-      <FadeIn delay={0.2} direction="up">
+      <FadeIn delay={0.15} direction="up">
         <div className="flex flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
@@ -85,11 +94,15 @@ export default function EventDetailPage() {
               {event.maxParticipants && ` / ${event.maxParticipants} max`}
             </div>
           )}
+          {event.type && (
+            <span className="capitalize px-2 py-0.5 bg-muted rounded text-xs">{event.type}</span>
+          )}
         </div>
       </FadeIn>
 
+      {/* Registration */}
       {canRegister && (
-        <FadeIn delay={0.25} direction="up">
+        <FadeIn delay={0.2} direction="up">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -104,23 +117,150 @@ export default function EventDetailPage() {
       )}
 
       {isRegistered && (
-        <FadeIn delay={0.25} direction="up">
+        <FadeIn delay={0.2} direction="up">
           <div className="mb-6 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
-            You are registered for this event
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              You are registered for this event
+              {myAttendance && (
+                <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-800/30 rounded text-xs">
+                  Checked in via {myAttendance.checkedInVia} at {new Date(myAttendance.checkedInAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            {event.status === 'upcoming' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-2 flex items-center gap-2 text-xs text-green-600 dark:text-green-500"
+              >
+                <Bell className="h-3.5 w-3.5" />
+                Event reminder will be sent 24 hours before the event starts
+              </motion.div>
+            )}
           </div>
         </FadeIn>
       )}
 
+      {/* QR Code for check-in */}
+      {event.qrCode && event.status !== 'completed' && isRegistered && (
+        <FadeIn delay={0.25} direction="up">
+          <div className="mb-6 p-4 border rounded-lg bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <QrCode className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-sm">Check-in QR Code</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">Show this QR code at the venue for check-in</p>
+            <motion.img
+              src={event.qrCode}
+              alt="Check-in QR Code"
+              className="w-48 h-48 mx-auto border rounded-lg"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            />
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Description */}
       <FadeIn delay={0.3} direction="up">
         <div className="prose dark:prose-invert max-w-none mb-8">
           <p className="whitespace-pre-wrap">{event.description}</p>
         </div>
       </FadeIn>
 
-      {/* Feedback form */}
-      {event.feedbackEnabled && event.status === 'completed' && isAuthenticated && (
+      {/* Attendance Summary */}
+      {event.attendance && event.attendance.length > 0 && (
         <FadeIn delay={0.35} direction="up">
-          <div className="border rounded-lg p-6 bg-background">
+          <div className="mb-8 p-4 border rounded-lg bg-card">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Attendance</h3>
+              <span className="text-sm text-muted-foreground">({event.attendance.length} checked in)</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {event.attendance.slice(0, 10).map((a: any, i: number) => (
+                <motion.span
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="px-2 py-1 bg-muted rounded-md text-xs"
+                >
+                  {a.user?.name || 'User'} • {a.checkedInVia}
+                </motion.span>
+              ))}
+              {event.attendance.length > 10 && (
+                <span className="px-2 py-1 text-xs text-muted-foreground">+{event.attendance.length - 10} more</span>
+              )}
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Event Photos */}
+      {photos.length > 0 && (
+        <FadeIn delay={0.4} direction="up">
+          <div className="mb-8">
+            <motion.button
+              onClick={() => setShowPhotos(!showPhotos)}
+              className="flex items-center gap-2 mb-3 text-sm font-semibold hover:text-primary transition-colors"
+              whileHover={{ x: 2 }}
+            >
+              <Image className="h-5 w-5" />
+              Event Photos ({photos.length})
+            </motion.button>
+            <AnimatePresence>
+              {showPhotos && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {photos.map((photo: any, i: number) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="relative group cursor-pointer"
+                        onClick={() => setSelectedPhoto(selectedPhoto === i ? null : i)}
+                      >
+                        <motion.img
+                          src={photo.url}
+                          alt={photo.caption || ''}
+                          className="w-full h-36 object-cover rounded-lg"
+                          whileHover={{ scale: 1.03 }}
+                          transition={{ duration: 0.2 }}
+                        />
+                        {photo.caption && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1.5 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            {photo.caption}
+                          </div>
+                        )}
+                        {photo.taggedUsers?.length > 0 && (
+                          <span className="absolute top-1 right-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                            <Users className="h-2.5 w-2.5 inline mr-0.5" />{photo.taggedUsers.length}
+                          </span>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Feedback form */}
+      {event.feedbackEnabled && event.status === 'completed' && isAuthenticated && !hasSubmittedFeedback && (
+        <FadeIn delay={0.45} direction="up">
+          <div className="border rounded-lg p-6 bg-background mb-8">
             <h3 className="font-semibold mb-4">Submit Feedback</h3>
             <div className="flex gap-1 mb-4">
               {[1, 2, 3, 4, 5].map((n) => (
@@ -149,6 +289,63 @@ export default function EventDetailPage() {
           </div>
         </FadeIn>
       )}
+
+      {/* Already submitted feedback */}
+      {hasSubmittedFeedback && (
+        <FadeIn delay={0.45} direction="up">
+          <div className="mb-8 p-3 bg-muted rounded-md text-sm text-muted-foreground flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            You have already submitted feedback for this event
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Feedbacks list */}
+      {event.feedbacks && event.feedbacks.length > 0 && (
+        <FadeIn delay={0.5} direction="up">
+          <div className="border rounded-lg p-6 bg-background">
+            <h3 className="font-semibold mb-4">Feedback ({event.feedbacks.length})</h3>
+            <div className="space-y-3">
+              {event.feedbacks.slice(0, 5).map((fb: any, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="p-3 bg-muted/50 rounded-md"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} className={`h-3.5 w-3.5 ${n <= fb.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {fb.user?.name || 'Anonymous'} • {new Date(fb.submittedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {fb.comment && <p className="text-sm">{fb.comment}</p>}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+      )}
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    upcoming: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    ongoing: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    completed: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    draft: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  };
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap ${colors[status] || colors.upcoming}`}>
+      {status}
+    </span>
   );
 }

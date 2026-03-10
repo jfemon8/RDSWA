@@ -68,6 +68,12 @@ export const getAttendance = asyncHandler(async (req: Request, res: Response) =>
   ApiResponse.success(res, attendance);
 });
 
+export const myAttendance = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const records = await eventService.getMyAttendance((req.user._id as any).toString());
+  ApiResponse.success(res, records);
+});
+
 export const generateQrCode = asyncHandler(async (req: Request, res: Response) => {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   const qrCode = await eventService.generateQrCode(req.params.id as string, baseUrl);

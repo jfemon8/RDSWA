@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
@@ -10,6 +11,7 @@ export default function AdminEventsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [form, setForm] = useState({
     title: '', description: '', type: 'event', status: 'draft',
@@ -41,6 +43,11 @@ export default function AdminEventsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/events/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+  });
+
+  const qrMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/events/${id}/qr`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
   });
 
@@ -81,6 +88,7 @@ export default function AdminEventsPage() {
         </motion.button>
       </div>
 
+      {/* Create/Edit Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -166,6 +174,7 @@ export default function AdminEventsPage() {
         )}
       </AnimatePresence>
 
+      {/* Events List */}
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : events.length === 0 ? (
@@ -177,35 +186,83 @@ export default function AdminEventsPage() {
               <motion.div
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.15 }}
-                className="border rounded-lg p-4 bg-background flex items-center justify-between"
+                className="border rounded-lg bg-background"
               >
-                <div>
-                  <h3 className="font-medium">{e.title}</h3>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                    <span className="capitalize">{e.type}</span>
-                    <span className="capitalize">{e.status}</span>
-                    <span>{new Date(e.startDate).toLocaleDateString()}</span>
-                    {e.registeredUsers && <span>{e.registeredUsers.length} registered</span>}
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium">{e.title}</h3>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                      <span className="capitalize">{e.type}</span>
+                      <span className="capitalize">{e.status}</span>
+                      <span>{new Date(e.startDate).toLocaleDateString()}</span>
+                      {e.registeredUsers && <span>{e.registeredUsers.length} registered</span>}
+                      {e.attendance && <span>{e.attendance.length} attended</span>}
+                      {e.qrCode && <span className="text-green-600">QR ✓</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <Link to={`/admin/events/${e._id}/checkin`}>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-2 hover:bg-accent rounded"
+                        title="Check-in Scanner"
+                      >
+                        <ScanLine className="h-4 w-4" />
+                      </motion.div>
+                    </Link>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => qrMutation.mutate(e._id)}
+                      disabled={qrMutation.isPending}
+                      className="p-2 hover:bg-accent rounded"
+                      title="Generate QR Code"
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setExpandedId(expandedId === e._id ? null : e._id)}
+                      className="p-2 hover:bg-accent rounded"
+                      title="Details"
+                    >
+                      {expandedId === e._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => startEdit(e)}
+                      className="p-2 hover:bg-accent rounded"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => deleteMutation.mutate(e._id)}
+                      className="p-2 hover:bg-destructive/10 text-destructive rounded"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </motion.button>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => startEdit(e)}
-                    className="p-2 hover:bg-accent rounded"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => deleteMutation.mutate(e._id)}
-                    className="p-2 hover:bg-destructive/10 text-destructive rounded"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </motion.button>
-                </div>
+
+                {/* Expanded detail panel */}
+                <AnimatePresence>
+                  {expandedId === e._id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden border-t"
+                    >
+                      <EventDetailPanel event={e} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </FadeIn>
           ))}
@@ -221,6 +278,183 @@ export default function AdminEventsPage() {
             className="px-3 py-1 border rounded text-sm disabled:opacity-50">Next</button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Expanded panel for each event — shows QR, attendance list, photos management */
+function EventDetailPanel({ event }: { event: any }) {
+  const queryClient = useQueryClient();
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [manualUserId, setManualUserId] = useState('');
+
+  // Fetch full event detail
+  const { data } = useQuery({
+    queryKey: queryKeys.events.detail(event._id),
+    queryFn: async () => {
+      const { data } = await api.get(`/events/${event._id}`);
+      return data;
+    },
+  });
+
+  const fullEvent = data?.data || event;
+
+  const checkinMutation = useMutation({
+    mutationFn: (userId: string) => api.post(`/events/${event._id}/checkin`, { userId, method: 'manual' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      setManualUserId('');
+    },
+  });
+
+  const addPhotoMutation = useMutation({
+    mutationFn: () => api.post(`/events/${event._id}/photos`, { url: photoUrl, caption: photoCaption }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
+      setPhotoUrl('');
+      setPhotoCaption('');
+    },
+  });
+
+  const removePhotoMutation = useMutation({
+    mutationFn: (index: number) => api.delete(`/events/${event._id}/photos/${index}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }),
+  });
+
+  const photos = fullEvent.photos || [];
+  const attendance = fullEvent.attendance || [];
+
+  return (
+    <div className="p-4 space-y-6">
+      {/* QR Code Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+            <QrCode className="h-4 w-4 text-primary" /> QR Code
+          </h4>
+          {fullEvent.qrCode ? (
+            <motion.img
+              src={fullEvent.qrCode}
+              alt="QR Code"
+              className="w-40 h-40 border rounded-lg"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">No QR code generated. Click the QR icon above to generate one.</p>
+          )}
+        </div>
+
+        {/* Attendance Section */}
+        <div className="md:col-span-2">
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+            <Users className="h-4 w-4 text-primary" /> Attendance ({attendance.length})
+          </h4>
+
+          {/* Manual check-in */}
+          <div className="flex gap-2 mb-3">
+            <input
+              placeholder="User ID for manual check-in"
+              value={manualUserId}
+              onChange={(e) => setManualUserId(e.target.value)}
+              className="flex-1 px-3 py-1.5 border rounded-md bg-background text-sm"
+            />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => manualUserId && checkinMutation.mutate(manualUserId)}
+              disabled={!manualUserId || checkinMutation.isPending}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              {checkinMutation.isPending ? '...' : 'Check In'}
+            </motion.button>
+          </div>
+
+          {attendance.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {attendance.map((a: any, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-center justify-between py-1.5 px-2 bg-muted/50 rounded text-xs"
+                >
+                  <span>{a.user?.name || a.user || 'Unknown'}</span>
+                  <span className="text-muted-foreground">
+                    {a.checkedInVia} • {new Date(a.checkedInAt).toLocaleTimeString()}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No attendance records yet</p>
+          )}
+        </div>
+      </div>
+
+      {/* Photos Management */}
+      <div>
+        <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+          <Image className="h-4 w-4 text-primary" /> Photos ({photos.length})
+        </h4>
+
+        {/* Add photo form */}
+        <div className="flex gap-2 mb-3">
+          <input
+            placeholder="Photo URL"
+            value={photoUrl}
+            onChange={(e) => setPhotoUrl(e.target.value)}
+            className="flex-1 px-3 py-1.5 border rounded-md bg-background text-sm"
+          />
+          <input
+            placeholder="Caption (optional)"
+            value={photoCaption}
+            onChange={(e) => setPhotoCaption(e.target.value)}
+            className="flex-1 px-3 py-1.5 border rounded-md bg-background text-sm"
+          />
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => photoUrl && addPhotoMutation.mutate()}
+            disabled={!photoUrl || addPhotoMutation.isPending}
+            className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
+          >
+            {addPhotoMutation.isPending ? '...' : 'Add'}
+          </motion.button>
+        </div>
+
+        {photos.length > 0 && (
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+            {photos.map((photo: any, i: number) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="relative group"
+              >
+                <img src={photo.url} alt={photo.caption || ''} className="w-full h-24 object-cover rounded" />
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => removePhotoMutation.mutate(i)}
+                  className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </motion.button>
+                {photo.caption && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{photo.caption}</p>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
