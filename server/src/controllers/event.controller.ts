@@ -67,3 +67,41 @@ export const getAttendance = asyncHandler(async (req: Request, res: Response) =>
   const attendance = await eventService.getAttendance(req.params.id as string);
   ApiResponse.success(res, attendance);
 });
+
+export const generateQrCode = asyncHandler(async (req: Request, res: Response) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const qrCode = await eventService.generateQrCode(req.params.id as string, baseUrl);
+  ApiResponse.success(res, { qrCode }, 'QR code generated');
+});
+
+export const addPhoto = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const event = await eventService.addPhoto(
+    req.params.id as string,
+    req.body,
+    (req.user._id as any).toString()
+  );
+  ApiResponse.success(res, event, 'Photo added');
+});
+
+export const removePhoto = asyncHandler(async (req: Request, res: Response) => {
+  const photoIndex = parseInt(req.params.photoIndex as string, 10);
+  const event = await eventService.removePhoto(req.params.id as string, photoIndex);
+  ApiResponse.success(res, event, 'Photo removed');
+});
+
+export const tagPhoto = asyncHandler(async (req: Request, res: Response) => {
+  const photoIndex = parseInt(req.params.photoIndex as string, 10);
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds) || userIds.length === 0) throw ApiError.badRequest('userIds array required');
+  const event = await eventService.tagUsersOnPhoto(req.params.id as string, photoIndex, userIds);
+  ApiResponse.success(res, event, 'Users tagged');
+});
+
+export const untagPhoto = asyncHandler(async (req: Request, res: Response) => {
+  const photoIndex = parseInt(req.params.photoIndex as string, 10);
+  const { userId } = req.body;
+  if (!userId) throw ApiError.badRequest('userId required');
+  const event = await eventService.untagUserFromPhoto(req.params.id as string, photoIndex, userId);
+  ApiResponse.success(res, event, 'User untagged');
+});

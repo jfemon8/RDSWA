@@ -3,6 +3,7 @@ import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import mongoose from 'mongoose';
+import QRCode from 'qrcode';
 
 interface ListEventsQuery {
   page?: string;
@@ -128,6 +129,92 @@ export class EventService {
       .populate('attendance.verifiedBy', 'name');
     if (!event) throw ApiError.notFound('Event not found');
     return event.attendance;
+  }
+
+  async generateQrCode(eventId: string, baseUrl: string): Promise<string> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const checkinUrl = `${baseUrl}/events/${eventId}/checkin`;
+    const qrDataUrl = await QRCode.toDataURL(checkinUrl, {
+      width: 400,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+    });
+
+    event.qrCode = qrDataUrl;
+    await event.save();
+    return qrDataUrl;
+  }
+
+  async addPhoto(
+    eventId: string,
+    photo: { url: string; caption?: string; taggedUsers?: string[] },
+    uploadedBy: string
+  ): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    event.photos.push({
+      url: photo.url,
+      caption: photo.caption,
+      taggedUsers: (photo.taggedUsers || []).map((id) => new mongoose.Types.ObjectId(id)),
+      uploadedBy: new mongoose.Types.ObjectId(uploadedBy),
+    } as any);
+    await event.save();
+    return event;
+  }
+
+  async removePhoto(eventId: string, photoIndex: number): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (photoIndex < 0 || photoIndex >= event.photos.length) {
+      throw ApiError.badRequest('Invalid photo index');
+    }
+
+    event.photos.splice(photoIndex, 1);
+    await event.save();
+    return event;
+  }
+
+  async tagUsersOnPhoto(
+    eventId: string,
+    photoIndex: number,
+    userIds: string[]
+  ): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (photoIndex < 0 || photoIndex >= event.photos.length) {
+      throw ApiError.badRequest('Invalid photo index');
+    }
+
+    const photo = event.photos[photoIndex];
+    const existingIds = new Set(photo.taggedUsers.map((u) => u.toString()));
+    for (const id of userIds) {
+      if (!existingIds.has(id)) {
+        photo.taggedUsers.push(new mongoose.Types.ObjectId(id));
+      }
+    }
+    await event.save();
+    return event;
+  }
+
+  async untagUserFromPhoto(
+    eventId: string,
+    photoIndex: number,
+    userId: string
+  ): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (photoIndex < 0 || photoIndex >= event.photos.length) {
+      throw ApiError.badRequest('Invalid photo index');
+    }
+
+    event.photos[photoIndex].taggedUsers = event.photos[photoIndex].taggedUsers.filter(
+      (u) => u.toString() !== userId
+    );
+    await event.save();
+    return event;
   }
 }
 

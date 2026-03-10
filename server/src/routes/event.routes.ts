@@ -20,4 +20,13 @@ router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), ev
 router.post('/:id/feedback', authenticate(), authorize(UserRole.MEMBER), validate({ body: feedbackSchema }), eventController.submitFeedback);
 router.get('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.getAttendance);
 
+// QR code generation
+router.post('/:id/qr', authenticate(), authorize(UserRole.MODERATOR), eventController.generateQrCode);
+
+// Event photos
+router.post('/:id/photos', authenticate(), authorize(UserRole.MODERATOR), eventController.addPhoto);
+router.delete('/:id/photos/:photoIndex', authenticate(), authorize(UserRole.MODERATOR), eventController.removePhoto);
+router.post('/:id/photos/:photoIndex/tag', authenticate(), authorize(UserRole.MODERATOR), eventController.tagPhoto);
+router.delete('/:id/photos/:photoIndex/tag', authenticate(), authorize(UserRole.MODERATOR), eventController.untagPhoto);
+
 export default router;
