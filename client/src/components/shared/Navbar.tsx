@@ -103,7 +103,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-1 w-48 bg-background border rounded-xl shadow-xl py-1 z-50 overflow-hidden"
+                  className="absolute right-0 top-full mt-1 w-48 bg-background border rounded-xl shadow-xl py-1 z-50"
                 >
                   {moreLinks.map((link, i) => (
                     <motion.div
@@ -213,8 +213,8 @@ export default function Navbar() {
               {[...publicLinks, ...moreLinks].map((link, i) => (
                 <motion.div
                   key={link.href}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
                 >
                   <Link

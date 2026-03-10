@@ -58,7 +58,7 @@ export default function DashboardLayout() {
       <div className="flex">
         {/* Sidebar */}
         <aside className={`
-          fixed lg:sticky top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 border-r bg-background
+          fixed lg:sticky top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 border-r bg-background overflow-y-auto
           transition-transform lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>

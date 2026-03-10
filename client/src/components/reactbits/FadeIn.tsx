@@ -18,14 +18,14 @@ export default function FadeIn({
   direction = 'up',
   delay = 0,
   duration = 0.6,
-  distance = 30,
+  distance = 20,
   className = '',
   once = true,
   blur = false,
   scale = false
 }: FadeInProps) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once, margin: '-50px' });
+  const isInView = useInView(ref, { once, margin: '-20px' });
 
   const directionMap = {
     up: { y: distance },
@@ -59,6 +59,7 @@ export default function FadeIn({
       animate={animate}
       transition={{ duration, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
+      style={{ overflow: 'visible' }}
     >
       {children}
     </motion.div>

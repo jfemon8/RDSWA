@@ -6,27 +6,31 @@ import { queryKeys } from '@/lib/queryKeys';
 
 export function useAuth() {
   const { user, isAuthenticated, isLoading, setUser, setLoading, logout } = useAuthStore();
+  const hasToken = !!localStorage.getItem('accessToken');
 
-  const { data, isLoading: queryLoading } = useQuery({
+  const { data, isLoading: queryLoading, isError } = useQuery({
     queryKey: queryKeys.auth.me,
     queryFn: async () => {
       const { data } = await api.get('/users/me');
       return data.data;
     },
-    enabled: !!localStorage.getItem('accessToken'),
+    enabled: hasToken && !isAuthenticated,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
+    if (!hasToken) {
+      setLoading(false);
+      return;
+    }
+
     if (data) {
       setUser(data);
-    } else if (!queryLoading && !data && localStorage.getItem('accessToken')) {
-      setLoading(false);
-    } else if (!localStorage.getItem('accessToken')) {
-      setLoading(false);
+    } else if (isError) {
+      logout();
     }
-  }, [data, queryLoading, setUser, setLoading]);
+  }, [data, isError, hasToken, setUser, setLoading, logout]);
 
-  return { user, isAuthenticated, isLoading: isLoading || queryLoading, logout };
+  return { user, isAuthenticated, isLoading: isLoading && (queryLoading || hasToken), logout };
 }

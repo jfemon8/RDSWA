@@ -29,7 +29,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
       onBlur={() => { setIsFocused(false); setOpacity(0); }}
       onMouseEnter={() => setOpacity(0.6)}
       onMouseLeave={() => setOpacity(0)}
-      className={`relative rounded-2xl border overflow-hidden ${className}`}
+      className={`relative rounded-2xl border ${className}`}
     >
       <div
         className="pointer-events-none absolute inset-0 transition-opacity duration-500 ease-in-out"
