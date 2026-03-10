@@ -56,8 +56,9 @@ export default function Footer() {
           </FadeIn>
         </div>
         <FadeIn>
-          <div className="mt-10 pt-6 border-t text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} RDSWA. All rights reserved.
+          <div className="mt-10 pt-6 border-t flex items-center justify-between text-sm text-muted-foreground">
+            <span>&copy; {new Date().getFullYear()} RDSWA. All rights reserved.</span>
+            <span className="text-xs">Developed by <a href="https://github.com/jfemon8" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline underline-offset-2">Emon</a></span>
           </div>
         </FadeIn>
       </div>

@@ -5,6 +5,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import AdminLayout from '@/layouts/AdminLayout';
 import RouteGuard from '@/components/guards/RouteGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
+import AdminRoleGuard from '@/components/guards/AdminRoleGuard';
 import { UserRole } from '@rdswa/shared';
 
 // Public pages
@@ -49,6 +50,9 @@ const MyDonations = lazy(() => import('@/features/dashboard/MyDonationsPage'));
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
 const AdminUsers = lazy(() => import('@/features/admin/users/AdminUsersPage'));
+const AdminRoles = lazy(() => import('@/features/admin/roles/AdminRolesPage'));
+const AdminModerators = lazy(() => import('@/features/admin/moderators/AdminModeratorsPage'));
+const AdminAdmins = lazy(() => import('@/features/admin/admins/AdminAdminsPage'));
 const AdminCommittees = lazy(() => import('@/features/admin/committees/AdminCommitteesPage'));
 const AdminEvents = lazy(() => import('@/features/admin/events/AdminEventsPage'));
 const AdminNotices = lazy(() => import('@/features/admin/notices/AdminNoticesPage'));
@@ -57,6 +61,7 @@ const AdminFinance = lazy(() => import('@/features/admin/finance/AdminFinancePag
 const AdminVoting = lazy(() => import('@/features/admin/voting/AdminVotingPage'));
 const AdminForms = lazy(() => import('@/features/admin/forms/AdminFormsPage'));
 const AdminBus = lazy(() => import('@/features/admin/bus/AdminBusPage'));
+const AdminReports = lazy(() => import('@/features/admin/reports/AdminReportsPage'));
 const AdminNotifications = lazy(() => import('@/features/admin/notifications/AdminNotificationsPage'));
 const AdminSettings = lazy(() => import('@/features/admin/settings/AdminSettingsPage'));
 const AdminLogs = lazy(() => import('@/features/admin/logs/AdminLogsPage'));
@@ -120,6 +125,7 @@ export default function AppRouter() {
         <Route element={<RouteGuard />}>
           <Route element={<RoleGuard requiredRole={UserRole.MODERATOR} />}>
             <Route element={<AdminLayout />}>
+              {/* Moderator+ routes */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/committees" element={<AdminCommittees />} />
@@ -127,13 +133,21 @@ export default function AppRouter() {
               <Route path="/admin/events/:id/checkin" element={<CheckInScanner />} />
               <Route path="/admin/notices" element={<AdminNotices />} />
               <Route path="/admin/gallery" element={<AdminGallery />} />
-              <Route path="/admin/finance" element={<AdminFinance />} />
               <Route path="/admin/voting" element={<AdminVoting />} />
               <Route path="/admin/forms" element={<AdminForms />} />
-              <Route path="/admin/bus" element={<AdminBus />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
-              <Route path="/admin/settings" element={<AdminSettings />} />
-              <Route path="/admin/logs" element={<AdminLogs />} />
+
+              {/* Admin+ routes */}
+              <Route path="/admin/roles" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminRoles /></AdminRoleGuard>} />
+              <Route path="/admin/moderators" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminModerators /></AdminRoleGuard>} />
+              <Route path="/admin/finance" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminFinance /></AdminRoleGuard>} />
+              <Route path="/admin/bus" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBus /></AdminRoleGuard>} />
+              <Route path="/admin/reports" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminReports /></AdminRoleGuard>} />
+              <Route path="/admin/logs" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminLogs /></AdminRoleGuard>} />
+
+              {/* SuperAdmin only */}
+              <Route path="/admin/settings" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminSettings /></AdminRoleGuard>} />
+              <Route path="/admin/admins" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminAdmins /></AdminRoleGuard>} />
             </Route>
           </Route>
         </Route>

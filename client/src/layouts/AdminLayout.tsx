@@ -4,27 +4,44 @@ import api from '@/lib/api';
 import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image,
   DollarSign, Vote, Bus, Bell, Settings, ScrollText, Shield,
-  LogOut, Menu, X, ChevronLeft,
+  LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound,
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import type { LucideIcon } from 'lucide-react';
 
-const adminLinks = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Committees', href: '/admin/committees', icon: Building2 },
-  { label: 'Events', href: '/admin/events', icon: Calendar },
-  { label: 'Notices', href: '/admin/notices', icon: FileText },
-  { label: 'Gallery', href: '/admin/gallery', icon: Image },
-  { label: 'Finance', href: '/admin/finance', icon: DollarSign },
-  { label: 'Voting', href: '/admin/voting', icon: Vote },
-  { label: 'Forms', href: '/admin/forms', icon: ScrollText },
-  { label: 'Bus Schedules', href: '/admin/bus', icon: Bus },
-  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
-  { label: 'Audit Logs', href: '/admin/logs', icon: Shield },
+interface AdminLink {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  minRole: UserRole;
+}
+
+const adminLinks: AdminLink[] = [
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: UserRole.MODERATOR },
+  { label: 'Users', href: '/admin/users', icon: Users, minRole: UserRole.MODERATOR },
+  { label: 'Roles', href: '/admin/roles', icon: KeyRound, minRole: UserRole.ADMIN },
+  { label: 'Moderators', href: '/admin/moderators', icon: UserCog, minRole: UserRole.ADMIN },
+  { label: 'Admins', href: '/admin/admins', icon: Crown, minRole: UserRole.SUPER_ADMIN },
+  { label: 'Committees', href: '/admin/committees', icon: Building2, minRole: UserRole.MODERATOR },
+  { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
+  { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },
+  { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
+  { label: 'Finance', href: '/admin/finance', icon: DollarSign, minRole: UserRole.ADMIN },
+  { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },
+  { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
+  { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
+  { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.ADMIN },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
+  { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },
 ];
+
+function hasMinRole(userRole: string, minRole: UserRole): boolean {
+  return ROLE_HIERARCHY.indexOf(userRole as UserRole) >= ROLE_HIERARCHY.indexOf(minRole);
+}
 
 export default function AdminLayout() {
   const { user, logout } = useAuthStore();
@@ -37,6 +54,10 @@ export default function AdminLayout() {
     logout();
     navigate('/login');
   };
+
+  const visibleLinks = adminLinks.filter((link) =>
+    user?.role ? hasMinRole(user.role, link.minRole) : false
+  );
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -71,7 +92,7 @@ export default function AdminLayout() {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <nav className="p-4 space-y-1">
-            {adminLinks.map((link) => {
+            {visibleLinks.map((link) => {
               const Icon = link.icon;
               const isActive = location.pathname === link.href;
               return (

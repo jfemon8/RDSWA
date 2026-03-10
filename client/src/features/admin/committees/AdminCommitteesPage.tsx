@@ -2,14 +2,18 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Pencil, Archive } from 'lucide-react';
+import { Plus, Loader2, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { CommitteePosition } from '@rdswa/shared';
+
+const POSITIONS = Object.values(CommitteePosition);
 
 export default function AdminCommitteesPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', description: '', startDate: '', endDate: '' });
 
   const { data, isLoading } = useQuery({
@@ -127,10 +131,10 @@ export default function AdminCommitteesPage() {
               <motion.div
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.15 }}
-                className="border rounded-lg p-4 bg-background"
+                className="border rounded-lg bg-background"
               >
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold">{c.name}</h3>
                       {c.isCurrent && (
@@ -146,6 +150,15 @@ export default function AdminCommitteesPage() {
                     </p>
                   </div>
                   <div className="flex gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setExpandedId(expandedId === c._id ? null : c._id)}
+                      className="p-2 hover:bg-accent rounded"
+                      title="Manage Members"
+                    >
+                      {expandedId === c._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -168,8 +181,175 @@ export default function AdminCommitteesPage() {
                     )}
                   </div>
                 </div>
+
+                <AnimatePresence>
+                  {expandedId === c._id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t p-4">
+                        <CommitteeMembersPanel committeeId={c._id} members={c.members || []} />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </FadeIn>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; members: any[] }) {
+  const queryClient = useQueryClient();
+  const [showAdd, setShowAdd] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [position, setPosition] = useState(CommitteePosition.MEMBER);
+
+  const { data: searchData } = useQuery({
+    queryKey: ['users', 'committee-search', search],
+    queryFn: async () => {
+      const { data } = await api.get(`/users?search=${search}&limit=10`);
+      return data;
+    },
+    enabled: search.length >= 2,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: () => api.post(`/committees/${committeeId}/members`, { userId: selectedUserId, position }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.committees.all });
+      setShowAdd(false);
+      setSearch('');
+      setSelectedUserId('');
+      setPosition(CommitteePosition.MEMBER);
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) => api.delete(`/committees/${committeeId}/members/${userId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }),
+  });
+
+  const searchResults = searchData?.data || [];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold">Members ({members.length})</h4>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowAdd(!showAdd)}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md"
+        >
+          <UserPlus className="h-3 w-3" /> Add Member
+        </motion.button>
+      </div>
+
+      <AnimatePresence>
+        {showAdd && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border rounded-md p-3 bg-muted/30 space-y-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search user..."
+                  className="w-full pl-8 pr-3 py-1.5 border rounded-md bg-background text-sm"
+                />
+              </div>
+              {search.length >= 2 && searchResults.length > 0 && (
+                <div className="border rounded-md max-h-32 overflow-y-auto bg-background">
+                  {searchResults.map((u: any) => (
+                    <button
+                      key={u._id}
+                      onClick={() => { setSelectedUserId(u._id); setSearch(u.name); }}
+                      className={`w-full text-left px-3 py-1.5 text-xs border-b last:border-b-0 hover:bg-accent ${
+                        selectedUserId === u._id ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      {u.name} <span className="text-muted-foreground">({u.email})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <select
+                value={position}
+                onChange={(e) => setPosition(e.target.value as CommitteePosition)}
+                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm capitalize"
+              >
+                {POSITIONS.map((p) => (
+                  <option key={p} value={p} className="capitalize">{p.replace('_', ' ')}</option>
+                ))}
+              </select>
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => addMutation.mutate()}
+                  disabled={!selectedUserId || addMutation.isPending}
+                  className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs disabled:opacity-50"
+                >
+                  {addMutation.isPending ? 'Adding...' : 'Add'}
+                </motion.button>
+                <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 border rounded-md text-xs hover:bg-accent">Cancel</button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {members.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">No members in this committee</p>
+      ) : (
+        <div className="space-y-1.5">
+          {members.map((m: any, i: number) => (
+            <motion.div
+              key={m.user?._id || i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="flex items-center justify-between p-2.5 rounded-md hover:bg-accent/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {m.user?.avatar ? (
+                  <img src={m.user.avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium">
+                    {m.user?.name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium">{m.user?.name || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{m.position?.replace('_', ' ')}</p>
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => removeMutation.mutate(m.user?._id)}
+                disabled={removeMutation.isPending}
+                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"
+                title="Remove"
+              >
+                <UserMinus className="h-3.5 w-3.5" />
+              </motion.button>
+            </motion.div>
           ))}
         </div>
       )}

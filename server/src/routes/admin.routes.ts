@@ -8,6 +8,8 @@ import { ApiError } from '../utils/ApiError';
 import { User, AuditLog, LoginHistory, Notification, Donation, Event, Form } from '../models';
 import { UserRole, SUPER_ADMIN_EMAILS } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { sendEmail } from '../config/mail';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -137,6 +139,187 @@ router.get('/login-history', authenticate(), authorize(UserRole.ADMIN), asyncHan
     LoginHistory.countDocuments(filter),
   ]);
   ApiResponse.paginated(res, history, total, page, limit);
+}));
+
+// ─── Bulk Operations ───
+
+// Bulk approve members
+router.post('/bulk/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('admin.bulk_approve', 'users'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    throw ApiError.badRequest('userIds array is required');
+  }
+
+  const users = await User.find({
+    _id: { $in: userIds },
+    membershipStatus: 'pending',
+    isDeleted: false,
+  });
+
+  let approved = 0;
+  for (const target of users) {
+    target.membershipStatus = 'approved';
+    target.role = UserRole.MEMBER;
+    target.memberApprovedBy = req.user._id as any;
+    target.memberApprovedAt = new Date();
+    await target.save();
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'member_approved',
+      title: 'Membership Approved',
+      message: 'Your RDSWA membership has been approved!',
+      link: '/dashboard',
+    });
+    approved++;
+  }
+
+  ApiResponse.success(res, { approved }, `${approved} members approved`);
+}));
+
+// Bulk reject members
+router.post('/bulk/reject', authenticate(), authorize(UserRole.MODERATOR), auditLog('admin.bulk_reject', 'users'), asyncHandler(async (req, res) => {
+  const { userIds, reason } = req.body;
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    throw ApiError.badRequest('userIds array is required');
+  }
+
+  const users = await User.find({
+    _id: { $in: userIds },
+    membershipStatus: 'pending',
+    isDeleted: false,
+  });
+
+  let rejected = 0;
+  for (const target of users) {
+    target.membershipStatus = 'rejected';
+    target.memberRejectionReason = reason || 'Application rejected';
+    await target.save();
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'member_rejected',
+      title: 'Membership Rejected',
+      message: reason || 'Your RDSWA membership application has been rejected.',
+      link: '/dashboard',
+    });
+    rejected++;
+  }
+
+  ApiResponse.success(res, { rejected }, `${rejected} members rejected`);
+}));
+
+// Bulk email
+router.post('/bulk/email', authenticate(), authorize(UserRole.ADMIN), auditLog('admin.bulk_email', 'users'), asyncHandler(async (req, res) => {
+  const { userIds, subject, body } = req.body;
+  if (!subject || !body) throw ApiError.badRequest('subject and body are required');
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    throw ApiError.badRequest('userIds array is required');
+  }
+
+  const users = await User.find({
+    _id: { $in: userIds },
+    isDeleted: false,
+  }).select('email name');
+
+  let sent = 0;
+  const errors: string[] = [];
+  for (const user of users) {
+    try {
+      await sendEmail(user.email, subject, body);
+      sent++;
+    } catch {
+      errors.push(user.email);
+    }
+  }
+
+  ApiResponse.success(res, { sent, failed: errors.length, errors }, `${sent} emails sent`);
+}));
+
+// ─── Backup & Restore ───
+
+// List all collections and their document counts
+router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (_req, res) => {
+  const db = mongoose.connection.db;
+  if (!db) throw ApiError.internal('Database not connected');
+
+  const collections = await db.listCollections().toArray();
+  const info = await Promise.all(
+    collections.map(async (col) => ({
+      name: col.name,
+      count: await db.collection(col.name).countDocuments(),
+    }))
+  );
+
+  ApiResponse.success(res, {
+    database: db.databaseName,
+    collections: info.sort((a, b) => a.name.localeCompare(b.name)),
+    totalCollections: info.length,
+    totalDocuments: info.reduce((sum, c) => sum + c.count, 0),
+  });
+}));
+
+// Export a collection as JSON
+router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.backup_export', 'system'), asyncHandler(async (req, res) => {
+  const db = mongoose.connection.db;
+  if (!db) throw ApiError.internal('Database not connected');
+
+  const collectionName = req.params.collection as string;
+  const collections = await db.listCollections({ name: collectionName }).toArray();
+  if (collections.length === 0) throw ApiError.notFound('Collection not found');
+
+  const documents = await db.collection(collectionName).find().toArray();
+
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename=${collectionName}-${new Date().toISOString().slice(0, 10)}.json`);
+  res.send(JSON.stringify(documents, null, 2));
+}));
+
+// Restore a collection from JSON
+router.post('/backup/restore/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.backup_restore', 'system'), asyncHandler(async (req, res) => {
+  const db = mongoose.connection.db;
+  if (!db) throw ApiError.internal('Database not connected');
+
+  const collectionName = req.params.collection as string;
+  const { documents, mode } = req.body;
+
+  if (!Array.isArray(documents) || documents.length === 0) {
+    throw ApiError.badRequest('documents array is required');
+  }
+
+  const collection = db.collection(collectionName);
+
+  if (mode === 'replace') {
+    // Drop existing data and insert new
+    await collection.deleteMany({});
+    const result = await collection.insertMany(documents);
+    ApiResponse.success(res, {
+      inserted: result.insertedCount,
+      mode: 'replace',
+    }, `Collection ${collectionName} restored (replaced)`);
+  } else {
+    // Default: merge (insert, skip duplicates)
+    let inserted = 0;
+    let skipped = 0;
+    for (const doc of documents) {
+      try {
+        await collection.insertOne(doc);
+        inserted++;
+      } catch (err: any) {
+        if (err?.code === 11000) {
+          skipped++; // Duplicate key
+        } else {
+          throw err;
+        }
+      }
+    }
+    ApiResponse.success(res, {
+      inserted,
+      skipped,
+      mode: 'merge',
+    }, `Collection ${collectionName} restored (merged)`);
+  }
 }));
 
 export default router;

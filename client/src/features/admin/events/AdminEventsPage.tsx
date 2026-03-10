@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -455,6 +455,84 @@ function EventDetailPanel({ event }: { event: any }) {
           </div>
         )}
       </div>
+
+      {/* Feedback Review */}
+      {fullEvent.feedbackEnabled && (
+        <div>
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+            <MessageCircle className="h-4 w-4 text-primary" /> Feedback ({(fullEvent.feedback || []).length})
+          </h4>
+
+          {/* Stats Summary */}
+          {(fullEvent.feedback || []).length > 0 && (
+            <div className="flex gap-4 mb-3">
+              <div className="border rounded-lg px-3 py-2 bg-muted/30">
+                <span className="text-xs text-muted-foreground">Avg Rating</span>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  <span className="font-bold">
+                    {((fullEvent.feedback || []).reduce((sum: number, f: any) => sum + (f.rating || 0), 0) / (fullEvent.feedback || []).length).toFixed(1)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/ 5</span>
+                </div>
+              </div>
+              <div className="border rounded-lg px-3 py-2 bg-muted/30">
+                <span className="text-xs text-muted-foreground">Responses</span>
+                <p className="font-bold">{(fullEvent.feedback || []).length}</p>
+              </div>
+              {/* Rating distribution */}
+              <div className="border rounded-lg px-3 py-2 bg-muted/30 flex-1">
+                <span className="text-xs text-muted-foreground mb-1 block">Distribution</span>
+                <div className="flex items-end gap-1 h-6">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = (fullEvent.feedback || []).filter((f: any) => f.rating === star).length;
+                    const total = (fullEvent.feedback || []).length;
+                    const pct = total > 0 ? (count / total) * 100 : 0;
+                    return (
+                      <div key={star} className="flex-1 flex flex-col items-center gap-0.5">
+                        <div className="w-full bg-yellow-400/80 rounded-sm" style={{ height: `${Math.max(pct * 0.24, 2)}px` }} />
+                        <span className="text-[9px] text-muted-foreground">{star}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Feedback List */}
+          {(fullEvent.feedback || []).length > 0 ? (
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {(fullEvent.feedback || []).map((fb: any, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border rounded-md p-3 bg-muted/20"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{fb.user?.name || 'Anonymous'}</span>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star key={s} className={`h-3 w-3 ${s <= (fb.rating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                  {fb.comment && <p className="text-sm text-muted-foreground">{fb.comment}</p>}
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No feedback submitted yet</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

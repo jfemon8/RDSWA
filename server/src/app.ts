@@ -14,6 +14,7 @@ import { startAlumniTagger } from './jobs/alumniTagger';
 import { startVoteCloser } from './jobs/voteCloser';
 import { startReminderSender } from './jobs/reminderSender';
 import { startPaymentReminder } from './jobs/paymentReminder';
+import { startNoticePublisher } from './jobs/noticePublisher';
 import { initSocket } from './socket';
 
 const app = express();
@@ -57,6 +58,7 @@ async function start() {
   startVoteCloser();
   startReminderSender();
   startPaymentReminder();
+  startNoticePublisher();
 
   httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
