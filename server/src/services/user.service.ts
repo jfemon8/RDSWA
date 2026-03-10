@@ -15,6 +15,7 @@ interface ListUsersQuery {
   bloodGroup?: string;
   profession?: string;
   role?: string;
+  membershipStatus?: string;
   search?: string;
 }
 
@@ -46,6 +47,7 @@ export class UserService {
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
     if (query.profession) filter.profession = { $regex: query.profession, $options: 'i' };
     if (query.role) filter.role = query.role;
+    if (query.membershipStatus) filter.membershipStatus = query.membershipStatus;
     if (query.search) {
       filter.$or = [
         { name: { $regex: query.search, $options: 'i' } },

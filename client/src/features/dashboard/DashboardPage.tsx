@@ -1,10 +1,18 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, FileText, Calendar, Users } from 'lucide-react';
+import { Bell, FileText, Calendar, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+
+const membershipStatusConfig: Record<string, { icon: typeof Clock; color: string; bgColor: string; label: string; description: string }> = {
+  none: { icon: AlertCircle, color: 'text-muted-foreground', bgColor: 'bg-muted', label: 'Not Applied', description: 'You haven\'t applied for membership yet.' },
+  pending: { icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-50 dark:bg-yellow-900/20', label: 'Pending Review', description: 'Your application is being reviewed by the admin team.' },
+  approved: { icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-900/20', label: 'Active Member', description: 'Your membership is active.' },
+  rejected: { icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-900/20', label: 'Rejected', description: 'Your application was not approved. You may re-apply.' },
+  suspended: { icon: XCircle, color: 'text-orange-600', bgColor: 'bg-orange-50 dark:bg-orange-900/20', label: 'Suspended', description: 'Your membership has been suspended.' },
+};
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -18,13 +26,15 @@ export default function DashboardPage() {
   });
 
   const unreadCount = notifications?.data?.filter((n: any) => !n.isRead).length || 0;
+  const msStatus = membershipStatusConfig[user?.membershipStatus || 'none'] || membershipStatusConfig.none;
+  const MsIcon = msStatus.icon;
 
   const statusCards = [
     {
       icon: <Users className="h-5 w-5" />,
       label: 'Membership',
-      value: user?.membershipStatus === 'approved' ? 'Active' : user?.membershipStatus || 'None',
-      color: user?.membershipStatus === 'approved' ? 'text-green-600' : 'text-yellow-600',
+      value: msStatus.label,
+      color: msStatus.color,
     },
     {
       icon: <Bell className="h-5 w-5" />,
@@ -52,6 +62,65 @@ export default function DashboardPage() {
         Welcome, {user?.name}
       </h1>
 
+      {/* Membership Status Tracker */}
+      <AnimatePresence>
+        {user?.membershipStatus && user.membershipStatus !== 'approved' && (
+          <FadeIn delay={0.05} direction="up">
+            <motion.div
+              className={`mb-6 p-4 rounded-xl border ${msStatus.bgColor}`}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex items-start gap-3">
+                <MsIcon className={`h-6 w-6 mt-0.5 ${msStatus.color}`} />
+                <div className="flex-1">
+                  <h3 className={`font-semibold ${msStatus.color}`}>{msStatus.label}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{msStatus.description}</p>
+
+                  {/* Status timeline */}
+                  <div className="flex items-center gap-2 mt-3">
+                    {['Applied', 'Under Review', 'Decision'].map((step, idx) => {
+                      const statusIdx = user.membershipStatus === 'none' ? -1 :
+                        user.membershipStatus === 'pending' ? 1 :
+                        user.membershipStatus === 'approved' ? 3 :
+                        user.membershipStatus === 'rejected' ? 3 : 0;
+                      const isActive = idx < statusIdx;
+                      const isCurrent = idx === statusIdx - 1;
+                      return (
+                        <div key={step} className="flex items-center gap-2">
+                          {idx > 0 && (
+                            <div className={`h-0.5 w-6 ${isActive ? 'bg-primary' : 'bg-muted-foreground/20'}`} />
+                          )}
+                          <div className="flex items-center gap-1">
+                            <div className={`h-2.5 w-2.5 rounded-full ${
+                              isActive ? 'bg-primary' : isCurrent ? 'bg-primary animate-pulse' : 'bg-muted-foreground/20'
+                            }`} />
+                            <span className={`text-xs ${isActive || isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                              {step}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {(user.membershipStatus === 'none' || user.membershipStatus === 'rejected') && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="mt-3">
+                      <Link
+                        to="/dashboard/forms/new"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                      >
+                        {user.membershipStatus === 'rejected' ? 'Re-apply' : 'Apply Now'}
+                      </Link>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </FadeIn>
+        )}
+      </AnimatePresence>
+
       {/* Status cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statusCards.map((card, i) => (
@@ -73,9 +142,12 @@ export default function DashboardPage() {
         <QuickAction to="/dashboard/notifications" label="View Notifications" description="Check recent notifications" />
         <QuickAction to="/events" label="Browse Events" description="See upcoming events" />
         <QuickAction to="/notices" label="Read Notices" description="Latest announcements" />
+        <QuickAction to="/dashboard/jobs" label="Job Board" description="Find job opportunities from alumni" icon={<Briefcase className="h-4 w-4 text-primary" />} />
+        <QuickAction to="/dashboard/mentorship" label="Mentorship" description="Connect with mentors for guidance" icon={<GraduationCap className="h-4 w-4 text-primary" />} />
         {user?.membershipStatus === 'none' && (
-          <QuickAction to="/dashboard/forms" label="Apply for Membership" description="Submit your membership application" />
+          <QuickAction to="/dashboard/forms/new" label="Apply for Membership" description="Submit your membership application" />
         )}
+        <QuickAction to="/dashboard/forms" label="My Submissions" description="Track your form submissions" />
         <QuickAction to="/donations" label="Make Donation" description="Support RDSWA activities" />
       </div>
 
@@ -111,7 +183,7 @@ function StatusCard({ icon, label, value, color }: { icon: React.ReactNode; labe
   );
 }
 
-function QuickAction({ to, label, description }: { to: string; label: string; description: string }) {
+function QuickAction({ to, label, description, icon }: { to: string; label: string; description: string; icon?: React.ReactNode }) {
   return (
     <motion.div
       whileHover={{ y: -4, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
@@ -119,8 +191,11 @@ function QuickAction({ to, label, description }: { to: string; label: string; de
       className="rounded-lg"
     >
       <Link to={to} className="block p-4 border rounded-lg hover:bg-accent transition-colors h-full">
-        <p className="font-medium">{label}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="flex items-center gap-2">
+          {icon}
+          <p className="font-medium">{label}</p>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">{description}</p>
       </Link>
     </motion.div>
   );

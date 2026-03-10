@@ -25,6 +25,10 @@ export interface AuthUser {
   linkedin?: string;
   website?: string;
   skills?: string[];
+  profession?: string;
+  earningSource?: string;
+  jobHistory?: any[];
+  businessInfo?: any[];
   isEmailVerified: boolean;
   membershipStatus: string;
   isModerator?: boolean;
