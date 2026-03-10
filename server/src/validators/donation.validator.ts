@@ -8,13 +8,17 @@ export const createDonationSchema = z.object({
   type: z.enum(['one-time', 'monthly', 'event-based', 'construction-fund', 'membership']).optional(),
   campaign: z.string().optional(),
   paymentMethod: z.enum(['bkash', 'nagad', 'rocket', 'bank', 'cash', 'other']),
+  senderNumber: z.string().optional(),
   transactionId: z.string().optional(),
   visibility: z.enum(['public', 'private']).optional(),
   note: z.string().optional(),
+  isRecurring: z.boolean().optional(),
+  recurringInterval: z.enum(['monthly', 'yearly']).optional(),
 });
 
 export const verifyDonationSchema = z.object({
-  paymentStatus: z.enum(['completed', 'failed', 'refunded']),
+  paymentStatus: z.enum(['completed', 'failed', 'refunded', 'revision']),
+  revisionNote: z.string().optional(),
 });
 
 export const createCampaignSchema = z.object({

@@ -44,6 +44,7 @@ const Notifications = lazy(() => import('@/features/dashboard/NotificationsPage'
 const MyForms = lazy(() => import('@/features/dashboard/MyFormsPage'));
 const SubmitForm = lazy(() => import('@/features/dashboard/SubmitFormPage'));
 const AttendanceHistory = lazy(() => import('@/features/dashboard/AttendanceHistoryPage'));
+const MyDonations = lazy(() => import('@/features/dashboard/MyDonationsPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
@@ -111,6 +112,7 @@ export default function AppRouter() {
             <Route path="/dashboard/jobs" element={<JobBoard />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
             <Route path="/dashboard/attendance" element={<AttendanceHistory />} />
+            <Route path="/dashboard/my-donations" element={<MyDonations />} />
           </Route>
         </Route>
 

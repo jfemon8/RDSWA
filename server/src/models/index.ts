@@ -70,6 +70,9 @@ export type { IForumTopicDocument } from './ForumTopic';
 export { ForumReply } from './ForumReply';
 export type { IForumReplyDocument } from './ForumReply';
 
+export { Budget } from './Budget';
+export type { IBudgetDocument } from './Budget';
+
 export { SiteSettings } from './SiteSettings';
 export type { ISiteSettingsDocument } from './SiteSettings';
 

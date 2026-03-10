@@ -18,6 +18,7 @@ import adminRoutes from './admin.routes';
 import communicationRoutes from './communication.routes';
 import mentorshipRoutes from './mentorship.routes';
 import jobRoutes from './job.routes';
+import budgetRoutes from './budget.routes';
 
 const router = Router();
 
@@ -40,6 +41,7 @@ router.use('/admin', adminRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/mentorships', mentorshipRoutes);
 router.use('/jobs', jobRoutes);
+router.use('/budgets', budgetRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

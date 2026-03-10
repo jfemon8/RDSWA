@@ -1,22 +1,54 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
-import { DollarSign, Loader2, CheckCircle, TrendingUp, TrendingDown, Plus } from 'lucide-react';
-import { motion } from 'motion/react';
+import {
+  DollarSign, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
+  Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
+} from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts';
+
+const CHART_COLORS = ['#2563eb', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
 export default function AdminFinancePage() {
   const [tab, setTab] = useState<'donations' | 'expenses' | 'campaigns'>('donations');
+  const [yearFilter, setYearFilter] = useState<string>('');
 
   const { data: reportData } = useQuery({
-    queryKey: ['reports', 'finance'],
+    queryKey: ['reports', 'finance', yearFilter],
     queryFn: async () => {
-      const { data } = await api.get('/reports/finance');
+      const params = yearFilter ? `?year=${yearFilter}` : '';
+      const { data } = await api.get(`/reports/finance${params}`);
       return data;
     },
   });
 
   const report = reportData?.data;
+
+  // Build chart data
+  const monthlyChartData = (report?.donationsByMonth || [])
+    .map((m: any) => ({
+      name: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+      donations: m.total,
+      count: m.count,
+    }))
+    .reverse();
+
+  const typeChartData = (report?.donationsByType || []).map((t: any) => ({
+    name: t._id || 'Other',
+    value: t.total,
+  }));
+
+  const expenseCategoryData = (report?.expensesByCategory || []).map((c: any) => ({
+    name: c._id || 'Other',
+    value: c.total,
+  }));
+
+  const yearOptions = (report?.donationsByYear || []).map((y: any) => y._id);
 
   const summaryCards = [
     {
@@ -42,9 +74,44 @@ export default function AdminFinancePage() {
     },
   ];
 
+  const exportCSV = (type: 'donations' | 'expenses') => {
+    const params = yearFilter ? `&year=${yearFilter}` : '';
+    window.open(`${api.defaults.baseURL}/reports/finance/export?type=${type}${params}`, '_blank');
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Finance</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Finance</h1>
+        <div className="flex items-center gap-2">
+          <select
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+            className="px-3 py-1.5 border rounded-md bg-background text-sm"
+          >
+            <option value="">All Years</option>
+            {yearOptions.map((y: number) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => exportCSV('donations')}
+            className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
+          >
+            <Download className="h-3.5 w-3.5" /> Donations CSV
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => exportCSV('expenses')}
+            className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
+          >
+            <Download className="h-3.5 w-3.5" /> Expenses CSV
+          </motion.button>
+        </div>
+      </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -66,6 +133,70 @@ export default function AdminFinancePage() {
             </FadeIn>
           );
         })}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <FadeIn delay={0.1} direction="up">
+          <div className="border rounded-lg p-4 bg-background">
+            <h3 className="text-sm font-medium mb-3">Monthly Donations</h3>
+            {monthlyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={monthlyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Bar dataKey="donations" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-10">No data</p>
+            )}
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.15} direction="up">
+          <div className="border rounded-lg p-4 bg-background">
+            <h3 className="text-sm font-medium mb-3">Donations by Type</h3>
+            {typeChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={typeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                    {typeChartData.map((_: any, i: number) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-10">No data</p>
+            )}
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.2} direction="up">
+          <div className="border rounded-lg p-4 bg-background">
+            <h3 className="text-sm font-medium mb-3">Expenses by Category</h3>
+            {expenseCategoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={expenseCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                    {expenseCategoryData.map((_: any, i: number) => (
+                      <Cell key={i} fill={CHART_COLORS[(i + 3) % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-10">No data</p>
+            )}
+          </div>
+        </FadeIn>
       </div>
 
       {/* Tabs */}
@@ -96,18 +227,27 @@ export default function AdminFinancePage() {
 
 function DonationsList() {
   const queryClient = useQueryClient();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [revisionNote, setRevisionNote] = useState('');
+  const [actionTarget, setActionTarget] = useState<{ id: string; action: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['donations', 'admin'],
     queryFn: async () => {
-      const { data } = await api.get('/donations?limit=20');
+      const { data } = await api.get('/donations?limit=50');
       return data;
     },
   });
 
   const verifyMutation = useMutation({
-    mutationFn: (id: string) => api.patch(`/donations/${id}/verify`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['donations'] }),
+    mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) =>
+      api.patch(`/donations/${id}/verify`, { paymentStatus: status, revisionNote: note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['donations'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      setActionTarget(null);
+      setRevisionNote('');
+    },
   });
 
   const donations = data?.data || [];
@@ -120,45 +260,146 @@ function DonationsList() {
         <thead><tr className="bg-muted/50 border-b">
           <th className="text-left p-3 font-medium">Donor</th>
           <th className="text-left p-3 font-medium">Amount</th>
-          <th className="text-left p-3 font-medium">Type</th>
-          <th className="text-left p-3 font-medium">Payment</th>
+          <th className="text-left p-3 font-medium">Method</th>
+          <th className="text-left p-3 font-medium">TxID / Sender</th>
           <th className="text-left p-3 font-medium">Status</th>
           <th className="text-left p-3 font-medium">Date</th>
           <th className="text-left p-3 font-medium">Actions</th>
         </tr></thead>
         <tbody>
-          {donations.map((d: any) => (
-            <motion.tr
-              key={d._id}
-              whileHover={{ y: -2 }}
-              transition={{ duration: 0.15 }}
-              className="border-t hover:bg-accent/30"
-            >
-              <td className="p-3">{d.donor?.name || d.donorName || 'Anonymous'}</td>
-              <td className="p-3 font-medium">৳{d.amount?.toLocaleString()}</td>
-              <td className="p-3 capitalize text-xs">{d.type?.replace('-', ' ')}</td>
-              <td className="p-3 capitalize text-xs">{d.paymentMethod}</td>
-              <td className="p-3">
-                <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${
-                  d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>{d.paymentStatus}</span>
-              </td>
-              <td className="p-3 text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleDateString()}</td>
-              <td className="p-3">
-                {d.paymentStatus === 'pending' && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => verifyMutation.mutate(d._id)}
-                    className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                    title="Verify"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                  </motion.button>
-                )}
-              </td>
-            </motion.tr>
-          ))}
+          {donations.map((d: any) => {
+            const isExpanded = expandedId === d._id;
+            const isActionOpen = actionTarget?.id === d._id;
+            return (
+              <motion.tr
+                key={d._id}
+                layout
+                className="border-t hover:bg-accent/30 align-top"
+              >
+                <td className="p-3">
+                  <p>{d.donor?.name || d.donorName || 'Anonymous'}</p>
+                  <p className="text-xs text-muted-foreground">{d.donor?.email || d.donorEmail || ''}</p>
+                </td>
+                <td className="p-3 font-medium">৳{d.amount?.toLocaleString()}</td>
+                <td className="p-3 capitalize text-xs">{d.paymentMethod}</td>
+                <td className="p-3 text-xs">
+                  {d.transactionId && <p>TxID: {d.transactionId}</p>}
+                  {d.senderNumber && <p>Sender: {d.senderNumber}</p>}
+                </td>
+                <td className="p-3">
+                  <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${
+                    d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700'
+                    : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700'
+                    : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                  }`}>{d.paymentStatus}</span>
+                </td>
+                <td className="p-3 text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleDateString()}</td>
+                <td className="p-3">
+                  <div className="flex items-center gap-1">
+                    {(d.paymentStatus === 'pending' || d.paymentStatus === 'revision') && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => verifyMutation.mutate({ id: d._id, status: 'completed' })}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                          title="Accept"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => verifyMutation.mutate({ id: d._id, status: 'failed' })}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          title="Reject"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setActionTarget(isActionOpen ? null : { id: d._id, action: 'revision' })}
+                          className="p-1.5 text-orange-600 hover:bg-orange-50 rounded"
+                          title="Request Revision"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </motion.button>
+                      </>
+                    )}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setExpandedId(isExpanded ? null : d._id)}
+                      className="p-1.5 text-muted-foreground hover:bg-accent rounded"
+                    >
+                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </motion.button>
+                  </div>
+
+                  {/* Revision note form */}
+                  <AnimatePresence>
+                    {isActionOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-2"
+                      >
+                        <textarea
+                          placeholder="Revision note for donor..."
+                          value={revisionNote}
+                          onChange={(e) => setRevisionNote(e.target.value)}
+                          rows={2}
+                          className="w-full px-2 py-1.5 border rounded text-xs bg-background"
+                        />
+                        <div className="flex gap-1 mt-1">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => verifyMutation.mutate({ id: d._id, status: 'revision', note: revisionNote })}
+                            disabled={verifyMutation.isPending}
+                            className="px-2 py-1 bg-orange-600 text-white rounded text-xs disabled:opacity-50"
+                          >
+                            <MessageSquare className="h-3 w-3 inline mr-1" />
+                            Send Revision
+                          </motion.button>
+                          <button
+                            onClick={() => { setActionTarget(null); setRevisionNote(''); }}
+                            className="px-2 py-1 border rounded text-xs"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Expanded details */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-2 text-xs text-muted-foreground space-y-1"
+                      >
+                        <p>Type: <span className="capitalize">{d.type?.replace('-', ' ')}</span></p>
+                        <p>Visibility: {d.visibility}</p>
+                        {d.receiptNumber && <p>Receipt: {d.receiptNumber}</p>}
+                        {d.note && <p>Note: {d.note}</p>}
+                        {d.isRecurring && <p>Recurring: {d.recurringInterval}</p>}
+                        {d.revisionNote && <p className="text-orange-600">Revision note: {d.revisionNote}</p>}
+                        {d.campaign && <p>Campaign: {d.campaign?.title || d.campaign}</p>}
+                        {d.verifiedBy && <p>Verified by: {d.verifiedBy?.name || d.verifiedBy}</p>}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </td>
+              </motion.tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -203,41 +444,48 @@ function ExpensesList() {
         </motion.button>
       </div>
 
-      {showForm && (
-        <div className="border rounded-lg p-5 bg-background mb-4">
-          <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
-            <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
-            <div className="grid grid-cols-2 gap-3">
-              <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="px-3 py-2 border rounded-md bg-background text-sm" required />
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="px-3 py-2 border rounded-md bg-background text-sm">
-                <option value="event">Event</option>
-                <option value="office">Office</option>
-                <option value="transport">Transport</option>
-                <option value="food">Food</option>
-                <option value="printing">Printing</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-              className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-            <div className="flex gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                type="submit"
-                disabled={createMutation.isPending}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
-              >
-                Add
-              </motion.button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border rounded-lg p-5 bg-background mb-4"
+          >
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
+              <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm" required />
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm">
+                  <option value="event">Event</option>
+                  <option value="office">Office</option>
+                  <option value="transport">Transport</option>
+                  <option value="food">Food</option>
+                  <option value="printing">Printing</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+                >
+                  Add
+                </motion.button>
+                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
@@ -308,36 +556,43 @@ function CampaignsList() {
         </motion.button>
       </div>
 
-      {showForm && (
-        <div className="border rounded-lg p-5 bg-background mb-4">
-          <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
-            <input placeholder="Campaign Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
-            <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-              className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-            <div className="grid grid-cols-3 gap-3">
-              <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
-                className="px-3 py-2 border rounded-md bg-background text-sm" required />
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                className="px-3 py-2 border rounded-md bg-background text-sm" />
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                className="px-3 py-2 border rounded-md bg-background text-sm" />
-            </div>
-            <div className="flex gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                type="submit"
-                disabled={createMutation.isPending}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
-              >
-                Create
-              </motion.button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border rounded-lg p-5 bg-background mb-4"
+          >
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
+              <input placeholder="Campaign Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+              <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+              <div className="grid grid-cols-3 gap-3">
+                <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm" required />
+                <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm" />
+                <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm" />
+              </div>
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+                >
+                  Create
+                </motion.button>
+                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>

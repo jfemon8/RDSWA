@@ -28,6 +28,8 @@ export const queryKeys = {
   donations: {
     all: ['donations'] as const,
     campaigns: ['donations', 'campaigns'] as const,
+    my: ['donations', 'my'] as const,
+    paymentMethods: ['donations', 'payment-methods'] as const,
   },
   votes: {
     all: ['votes'] as const,

@@ -12,6 +12,7 @@ import routes from './routes';
 import { startAlumniTagger } from './jobs/alumniTagger';
 import { startVoteCloser } from './jobs/voteCloser';
 import { startReminderSender } from './jobs/reminderSender';
+import { startPaymentReminder } from './jobs/paymentReminder';
 
 const app = express();
 
@@ -49,6 +50,7 @@ async function start() {
   startAlumniTagger();
   startVoteCloser();
   startReminderSender();
+  startPaymentReminder();
 
   app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
