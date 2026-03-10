@@ -1,7 +1,7 @@
 # RDSWA Web Platform
 
 ## Project Overview
-Rangpur Divisional Student Welfare Association (RDSWA) — Barishal University. A membership-based organization platform with RBAC, committee management, donations, voting, bus schedules, and communication features.
+Rangpur Divisional Student Welfare Association (RDSWA) — University of Barishal. A membership-based organization platform with RBAC, committee management, donations, voting, bus schedules, and communication features.
 
 ## Tech Stack
 - **Frontend**: React 19 + Vite + TypeScript, TanStack Query, React Router v7, Tailwind CSS + ShadCN UI, Zustand, React Hook Form + Zod

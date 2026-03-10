@@ -52,7 +52,7 @@ export default function HomePage() {
 
           <FadeIn delay={0.6} blur>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
-              Connecting students from Rangpur Division at Barishal University.
+              Connecting students from Rangpur Division at University of Barishal.
             </p>
           </FadeIn>
 
@@ -218,7 +218,7 @@ export default function HomePage() {
               ?
             </h2>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto mb-10">
-              Become a part of the largest Rangpur Division student community at Barishal University.
+              Become a part of the largest Rangpur Division student community at University of Barishal.
             </p>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
               <Link

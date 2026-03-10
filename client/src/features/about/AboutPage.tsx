@@ -31,7 +31,7 @@ export default function AboutPage() {
           <div className="prose dark:prose-invert max-w-none mb-12" dangerouslySetInnerHTML={{ __html: settings.aboutContent }} />
         ) : (
           <p className="text-muted-foreground mb-12 text-lg leading-relaxed">
-            Rangpur Divisional Student Welfare Association (RDSWA) is a student welfare organization at Barishal University,
+            Rangpur Divisional Student Welfare Association (RDSWA) is a student welfare organization at University of Barishal,
             dedicated to supporting students from the Rangpur Division.
           </p>
         )}
@@ -39,10 +39,10 @@ export default function AboutPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         {[
-          { icon: Target, title: 'Our Mission', content: settings?.missionContent || 'To promote welfare, unity, and academic excellence among students from Rangpur Division studying at Barishal University.', color: 'rgba(59, 130, 246, 0.15)' },
+          { icon: Target, title: 'Our Mission', content: settings?.missionContent || 'To promote welfare, unity, and academic excellence among students from Rangpur Division studying at University of Barishal.', color: 'rgba(59, 130, 246, 0.15)' },
           { icon: Eye, title: 'Our Vision', content: settings?.visionContent || 'A connected community where every student from Rangpur Division thrives academically, professionally, and socially.', color: 'rgba(139, 92, 246, 0.15)' },
           { icon: BookOpen, title: 'Objectives', content: settings?.objectivesContent || 'Foster brotherhood, organize cultural and educational events, provide academic support, and build a strong alumni network.', color: 'rgba(236, 72, 153, 0.15)' },
-          { icon: Users, title: 'History', content: settings?.historyContent || 'Founded by students from Rangpur Division to create a supportive community and preserve regional culture at Barishal University.', color: 'rgba(34, 197, 94, 0.15)' },
+          { icon: Users, title: 'History', content: settings?.historyContent || 'Founded by students from Rangpur Division to create a supportive community and preserve regional culture at University of Barishal.', color: 'rgba(34, 197, 94, 0.15)' },
         ].map((item, i) => (
           <FadeIn key={item.title} delay={0.1 + i * 0.1} direction="up" scale>
             <SpotlightCard className="bg-card border-border p-6 h-full" spotlightColor={item.color}>

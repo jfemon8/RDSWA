@@ -1,7 +1,7 @@
 {
   "name": "rdswa",
   "version": "1.0.0",
-  "description": "Rangpur Divisional Student Welfare Association - Barishal University",
+  "description": "Rangpur Divisional Student Welfare Association - University of Barishal",
   "private": true,
   "workspaces": [
     "client",

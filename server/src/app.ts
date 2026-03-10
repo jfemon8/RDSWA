@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { connectDB } from './config/db';
+import { connectRedis } from './config/redis';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 import routes from './routes';
@@ -42,6 +43,7 @@ app.use(errorHandler);
 // Start server
 async function start() {
   await connectDB();
+  await connectRedis();
 
   // Start scheduled jobs
   startAlumniTagger();

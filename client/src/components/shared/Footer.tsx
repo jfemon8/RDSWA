@@ -16,7 +16,7 @@ export default function Footer() {
                 RDSWA
               </GradientText>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Rangpur Divisional Student Welfare Association, Barishal University.
+                Rangpur Divisional Student Welfare Association, University of Barishal.
                 Connecting students from Rangpur Division.
               </p>
             </div>
@@ -47,7 +47,7 @@ export default function Footer() {
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
-                <li>Barishal University Campus</li>
+                <li>University of Barishal Campus</li>
                 <li>Barishal, Bangladesh</li>
               </ul>
             </div>
