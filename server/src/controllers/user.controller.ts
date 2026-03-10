@@ -64,3 +64,34 @@ export const suspendUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await userService.suspendUser(id, req.body.reason, req.user);
   ApiResponse.success(res, user, 'User suspended');
 });
+
+export const endorseSkill = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const { skill } = req.body;
+  if (!skill) throw ApiError.badRequest('Skill is required');
+  const user = await userService.endorseSkill(id, skill, (req.user._id as any).toString());
+  ApiResponse.success(res, user, 'Skill endorsed');
+});
+
+export const removeEndorsement = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const { skill } = req.body;
+  if (!skill) throw ApiError.badRequest('Skill is required');
+  const user = await userService.removeEndorsement(id, skill, (req.user._id as any).toString());
+  ApiResponse.success(res, user, 'Endorsement removed');
+});
+
+export const exportDirectory = asyncHandler(async (req: Request, res: Response) => {
+  const format = (req.query.format as string) === 'csv' ? 'csv' : 'json';
+  const result = await userService.exportDirectory(format);
+
+  if (format === 'csv') {
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=member-directory.csv');
+    res.send(result);
+  } else {
+    ApiResponse.success(res, result);
+  }
+});

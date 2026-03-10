@@ -32,6 +32,7 @@ export const updateProfileSchema = z.object({
   expectedGraduation: z.number().int().optional(),
 
   // Professional
+  profession: z.string().max(200).optional(),
   jobHistory: z.array(z.object({
     company: z.string(),
     position: z.string(),
@@ -84,5 +85,6 @@ export const listUsersQuerySchema = z.object({
   homeDistrict: z.string().optional(),
   bloodGroup: z.string().optional(),
   role: z.string().optional(),
+  profession: z.string().optional(),
   search: z.string().optional(),
 });

@@ -33,6 +33,7 @@ export interface IUserDocument extends Document {
   expectedGraduation?: number;
 
   // Profile — Professional
+  profession?: string;
   jobHistory: Array<{
     company: string;
     position: string;
@@ -153,6 +154,7 @@ const userSchema = new Schema<IUserDocument>(
     expectedGraduation: Number,
 
     // Profile — Professional
+    profession: String,
     jobHistory: [
       {
         company: String,
@@ -270,6 +272,7 @@ userSchema.index({ department: 1 });
 userSchema.index({ membershipStatus: 1 });
 userSchema.index({ homeDistrict: 1 });
 userSchema.index({ bloodGroup: 1, isBloodDonor: 1 });
+userSchema.index({ profession: 1 });
 userSchema.index({ 'jobHistory.isCurrent': 1 });
 userSchema.index({ isDeleted: 1 });
 

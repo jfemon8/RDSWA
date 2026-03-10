@@ -22,6 +22,13 @@ router.patch('/me', authenticate(), validate({ body: updateProfileSchema }), use
 router.get('/members', authenticate(), validate({ query: listUsersQuerySchema }), userController.listMembers);
 router.get('/blood-donors', authenticate(), userController.listBloodDonors);
 
+// Skill endorsement
+router.post('/:id/endorse', authenticate(), authorize(UserRole.MEMBER), userController.endorseSkill);
+router.delete('/:id/endorse', authenticate(), authorize(UserRole.MEMBER), userController.removeEndorsement);
+
+// Member directory export (Admin+)
+router.get('/export/directory', authenticate(), authorize(UserRole.ADMIN), userController.exportDirectory);
+
 // Admin routes
 router.get('/', authenticate(), authorize(UserRole.ADMIN), validate({ query: listUsersQuerySchema }), userController.listUsers);
 router.get('/:id', authenticate(), userController.getUserById);

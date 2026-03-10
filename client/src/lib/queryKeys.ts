@@ -38,4 +38,14 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
   },
+  jobs: {
+    all: ['jobs'] as const,
+    detail: (id: string) => ['jobs', 'detail', id] as const,
+    my: ['jobs', 'my'] as const,
+  },
+  mentorships: {
+    all: ['mentorships'] as const,
+    my: ['mentorships', 'my'] as const,
+    mentors: ['mentorships', 'mentors'] as const,
+  },
 };

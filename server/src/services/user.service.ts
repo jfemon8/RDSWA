@@ -13,6 +13,7 @@ interface ListUsersQuery {
   session?: string;
   homeDistrict?: string;
   bloodGroup?: string;
+  profession?: string;
   role?: string;
   search?: string;
 }
@@ -43,12 +44,14 @@ export class UserService {
     if (query.session) filter.session = query.session;
     if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
+    if (query.profession) filter.profession = { $regex: query.profession, $options: 'i' };
     if (query.role) filter.role = query.role;
     if (query.search) {
       filter.$or = [
         { name: { $regex: query.search, $options: 'i' } },
         { email: { $regex: query.search, $options: 'i' } },
         { studentId: { $regex: query.search, $options: 'i' } },
+        { profession: { $regex: query.search, $options: 'i' } },
       ];
     }
 
@@ -88,6 +91,90 @@ export class UserService {
     ]);
 
     return { users, total, page, limit };
+  }
+
+  async endorseSkill(
+    targetUserId: string,
+    skill: string,
+    endorserId: string
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    if (target._id.toString() === endorserId) {
+      throw ApiError.badRequest('Cannot endorse your own skill');
+    }
+
+    if (!target.skills.includes(skill)) {
+      throw ApiError.badRequest('User does not have this skill');
+    }
+
+    const alreadyEndorsed = target.skillEndorsements?.some(
+      (e) => e.skill === skill && e.endorsedBy.toString() === endorserId
+    );
+    if (alreadyEndorsed) {
+      throw ApiError.badRequest('You have already endorsed this skill');
+    }
+
+    target.skillEndorsements.push({
+      skill,
+      endorsedBy: endorserId as any,
+      endorsedAt: new Date(),
+    });
+    await target.save();
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'skill_endorsed',
+      title: 'Skill Endorsed',
+      message: `Someone endorsed your skill: ${skill}`,
+      link: '/dashboard/profile',
+    });
+
+    return target;
+  }
+
+  async removeEndorsement(
+    targetUserId: string,
+    skill: string,
+    endorserId: string
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    const idx = target.skillEndorsements?.findIndex(
+      (e) => e.skill === skill && e.endorsedBy.toString() === endorserId
+    );
+    if (idx === undefined || idx === -1) {
+      throw ApiError.notFound('Endorsement not found');
+    }
+
+    target.skillEndorsements.splice(idx, 1);
+    await target.save();
+    return target;
+  }
+
+  async exportDirectory(format: 'json' | 'csv') {
+    const users = await User.find({
+      isDeleted: false,
+      membershipStatus: 'approved',
+    })
+      .select('name email phone department batch session homeDistrict bloodGroup profession skills role createdAt')
+      .sort({ name: 1 })
+      .lean();
+
+    if (format === 'csv') {
+      const headers = ['Name', 'Email', 'Phone', 'Department', 'Batch', 'Session', 'District', 'Blood Group', 'Profession', 'Skills', 'Role'];
+      const rows = users.map((u: any) => [
+        u.name, u.email, u.phone || '', u.department || '', u.batch || '', u.session || '',
+        u.homeDistrict || '', u.bloodGroup || '', u.profession || '',
+        (u.skills || []).join('; '), u.role,
+      ]);
+      const csvLines = [headers.join(','), ...rows.map((r: string[]) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))];
+      return csvLines.join('\n');
+    }
+
+    return users;
   }
 
   async changeRole(

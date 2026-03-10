@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
@@ -32,6 +32,10 @@ export default function ProfilePage() {
     linkedin: user?.linkedin || '',
     website: user?.website || '',
     skills: user?.skills?.join(', ') || '',
+    profession: (user as any)?.profession || '',
+    earningSource: (user as any)?.earningSource || '',
+    jobHistory: (user as any)?.jobHistory || [],
+    businessInfo: (user as any)?.businessInfo || [],
   });
 
   const updateMutation = useMutation({
@@ -170,9 +174,95 @@ export default function ProfilePage() {
 
         {activeTab === 'professional' && (
           <FadeIn direction="up" duration={0.4}>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              <InputField label="Profession" value={form.profession} onChange={(v) => set('profession', v)} placeholder="e.g. Software Engineer, Teacher" />
+              <InputField label="Earning Source" value={form.earningSource} onChange={(v) => set('earningSource', v)} placeholder="e.g. Job, Freelancing, Business" />
               <InputField label="Skills (comma separated)" value={form.skills} onChange={(v) => set('skills', v)} placeholder="e.g. JavaScript, React, Node.js" />
-              <p className="text-sm text-muted-foreground">Job history and business info can be managed from the full profile editor.</p>
+
+              {/* Job History */}
+              <fieldset className="border rounded-md p-4">
+                <legend className="text-sm font-medium px-2">Job History</legend>
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {form.jobHistory.map((job: any, i: number) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="grid grid-cols-2 gap-3 p-3 border rounded-md relative"
+                      >
+                        <InputField label="Company" value={job.company || ''} onChange={(v) => {
+                          const updated = [...form.jobHistory]; updated[i] = { ...updated[i], company: v }; set('jobHistory', updated);
+                        }} />
+                        <InputField label="Position" value={job.position || ''} onChange={(v) => {
+                          const updated = [...form.jobHistory]; updated[i] = { ...updated[i], position: v }; set('jobHistory', updated);
+                        }} />
+                        <InputField label="Start Date" type="date" value={job.startDate ? new Date(job.startDate).toISOString().split('T')[0] : ''} onChange={(v) => {
+                          const updated = [...form.jobHistory]; updated[i] = { ...updated[i], startDate: v }; set('jobHistory', updated);
+                        }} />
+                        <InputField label="End Date" type="date" value={job.endDate ? new Date(job.endDate).toISOString().split('T')[0] : ''} onChange={(v) => {
+                          const updated = [...form.jobHistory]; updated[i] = { ...updated[i], endDate: v }; set('jobHistory', updated);
+                        }} />
+                        <CheckboxField label="Currently working here" checked={job.isCurrent || false} onChange={(v) => {
+                          const updated = [...form.jobHistory]; updated[i] = { ...updated[i], isCurrent: v }; set('jobHistory', updated);
+                        }} />
+                        <motion.button type="button" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          onClick={() => set('jobHistory', form.jobHistory.filter((_: any, j: number) => j !== i))}>
+                          <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                    onClick={() => set('jobHistory', [...form.jobHistory, { company: '', position: '', startDate: '', endDate: '', isCurrent: false }])}>
+                    <Plus className="h-4 w-4" /> Add Job
+                  </motion.button>
+                </div>
+              </fieldset>
+
+              {/* Business Info */}
+              <fieldset className="border rounded-md p-4">
+                <legend className="text-sm font-medium px-2">Business Info</legend>
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {form.businessInfo.map((biz: any, i: number) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="grid grid-cols-2 gap-3 p-3 border rounded-md relative"
+                      >
+                        <InputField label="Business Name" value={biz.businessName || ''} onChange={(v) => {
+                          const updated = [...form.businessInfo]; updated[i] = { ...updated[i], businessName: v }; set('businessInfo', updated);
+                        }} />
+                        <InputField label="Type" value={biz.type || ''} onChange={(v) => {
+                          const updated = [...form.businessInfo]; updated[i] = { ...updated[i], type: v }; set('businessInfo', updated);
+                        }} />
+                        <InputField label="Start Date" type="date" value={biz.startDate ? new Date(biz.startDate).toISOString().split('T')[0] : ''} onChange={(v) => {
+                          const updated = [...form.businessInfo]; updated[i] = { ...updated[i], startDate: v }; set('businessInfo', updated);
+                        }} />
+                        <CheckboxField label="Currently active" checked={biz.isCurrent || false} onChange={(v) => {
+                          const updated = [...form.businessInfo]; updated[i] = { ...updated[i], isCurrent: v }; set('businessInfo', updated);
+                        }} />
+                        <motion.button type="button" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          onClick={() => set('businessInfo', form.businessInfo.filter((_: any, j: number) => j !== i))}>
+                          <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                    onClick={() => set('businessInfo', [...form.businessInfo, { businessName: '', type: '', startDate: '', isCurrent: false }])}>
+                    <Plus className="h-4 w-4" /> Add Business
+                  </motion.button>
+                </div>
+              </fieldset>
             </div>
           </FadeIn>
         )}

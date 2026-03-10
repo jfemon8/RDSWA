@@ -31,6 +31,8 @@ const Gallery = lazy(() => import('@/features/gallery/GalleryPage'));
 const PrivacyPolicy = lazy(() => import('@/features/legal/PrivacyPolicyPage'));
 const Terms = lazy(() => import('@/features/legal/TermsPage'));
 const FAQ = lazy(() => import('@/features/legal/FAQPage'));
+const JobBoard = lazy(() => import('@/features/jobs/JobBoardPage'));
+const MentorshipPage = lazy(() => import('@/features/mentorship/MentorshipPage'));
 const NotFound = lazy(() => import('@/features/NotFoundPage'));
 
 // Dashboard pages
@@ -102,6 +104,8 @@ export default function AppRouter() {
             <Route path="/dashboard/notifications" element={<Notifications />} />
             <Route path="/dashboard/forms" element={<MyForms />} />
             <Route path="/dashboard/forms/new" element={<SubmitForm />} />
+            <Route path="/dashboard/jobs" element={<JobBoard />} />
+            <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
           </Route>
         </Route>
 

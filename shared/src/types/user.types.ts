@@ -74,6 +74,7 @@ export interface IUser {
   expectedGraduation?: number;
 
   // Professional
+  profession?: string;
   jobHistory: JobEntry[];
   businessInfo: BusinessEntry[];
   earningSource?: string;

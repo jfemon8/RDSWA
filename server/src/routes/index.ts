@@ -16,6 +16,8 @@ import reportRoutes from './report.routes';
 import settingsRoutes from './settings.routes';
 import adminRoutes from './admin.routes';
 import communicationRoutes from './communication.routes';
+import mentorshipRoutes from './mentorship.routes';
+import jobRoutes from './job.routes';
 
 const router = Router();
 
@@ -36,6 +38,8 @@ router.use('/reports', reportRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/admin', adminRoutes);
 router.use('/communication', communicationRoutes);
+router.use('/mentorships', mentorshipRoutes);
+router.use('/jobs', jobRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {
