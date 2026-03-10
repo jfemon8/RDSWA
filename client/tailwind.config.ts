@@ -43,6 +43,9 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground))',
         },
       },
+      fontFamily: {
+        bangla: ['"Noto Sans Bengali"', 'sans-serif'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

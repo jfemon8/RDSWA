@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Calendar, MapPin, Loader2 } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
+import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 
 export default function EventsPage() {
   const [status, setStatus] = useState('');
@@ -55,7 +56,9 @@ export default function EventsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
+        </div>
       ) : events.length === 0 ? (
         <FadeIn>
           <div className="text-center py-12">

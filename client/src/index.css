@@ -57,3 +57,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .font-bangla {
+    font-family: 'Noto Sans Bengali', sans-serif;
+  }
+}

@@ -3,16 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { FileText, Loader2, AlertTriangle } from 'lucide-react';
+import { FileText, AlertTriangle, Search, Archive } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function NoticesPage() {
   const [category, setCategory] = useState('');
+  const [search, setSearch] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const [page, setPage] = useState(1);
 
   const filters: Record<string, string> = { page: String(page), limit: '12' };
   if (category) filters.category = category;
+  if (search.trim()) filters.search = search.trim();
+  if (showArchived) filters.archived = 'true';
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.notices.list(filters),
@@ -37,8 +42,23 @@ export default function NoticesPage() {
         direction="bottom"
       />
 
+      {/* Search Bar */}
+      <FadeIn delay={0.15}>
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search notices..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="w-full pl-10 pr-4 py-2.5 border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+          />
+        </div>
+      </FadeIn>
+
+      {/* Category Filter + Archive Toggle */}
       <FadeIn delay={0.2}>
-        <div className="flex gap-2 mb-8 flex-wrap">
+        <div className="flex items-center gap-2 mb-8 flex-wrap">
           {categories.map((c) => (
             <motion.button key={c} onClick={() => { setCategory(c); setPage(1); }}
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors capitalize ${
@@ -49,20 +69,50 @@ export default function NoticesPage() {
               {c || 'All'}
             </motion.button>
           ))}
+          <div className="ml-auto">
+            <motion.button
+              onClick={() => { setShowArchived(!showArchived); setPage(1); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                showArchived ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' : 'hover:bg-accent'
+              }`}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Archived
+            </motion.button>
+          </div>
         </div>
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
       ) : notices.length === 0 ? (
         <FadeIn>
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No notices found</p>
+            <p className="text-muted-foreground">
+              {search ? `No notices found for "${search}"` : 'No notices found'}
+            </p>
           </div>
         </FadeIn>
       ) : (
         <>
+          <AnimatePresence>
+            {search.trim() && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="text-sm text-muted-foreground mb-4"
+              >
+                Showing results for "<span className="font-medium text-foreground">{search}</span>"
+                {pagination && ` (${pagination.total} found)`}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
           <div className="space-y-3">
             {notices.map((n: any, i: number) => (
               <FadeIn key={n._id} delay={i * 0.04} direction="left">
@@ -70,13 +120,14 @@ export default function NoticesPage() {
                   <motion.div
                     className={`p-4 border rounded-xl bg-card hover:border-primary/30 transition-colors ${
                       n.priority === 'urgent' ? 'border-red-300 dark:border-red-800' : ''
-                    }`}
+                    } ${n.isArchived ? 'opacity-70' : ''}`}
                     whileHover={{ x: 4, transition: { type: 'spring', stiffness: 300 } }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {n.priority === 'urgent' && <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />}
+                          {n.isArchived && <Archive className="h-4 w-4 text-amber-500 shrink-0" />}
                           <h3 className="font-semibold truncate">{n.title}</h3>
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2">{n.content?.replace(/<[^>]*>/g, '')}</p>

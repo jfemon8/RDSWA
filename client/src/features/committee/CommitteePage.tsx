@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Users, Crown, Loader2 } from 'lucide-react';
+import { Users, Crown } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -17,7 +18,29 @@ export default function CommitteePage() {
   const committees = data?.data || [];
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="max-w-4xl mx-auto py-12 px-4 space-y-8">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="border rounded-xl bg-card overflow-hidden">
+            <div className="p-6 border-b bg-muted/30 space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, j) => (
+                <div key={j} className="flex items-center gap-3 p-3 border rounded-xl">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Image, Loader2, X } from 'lucide-react';
+import { Image, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
+import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -30,7 +31,14 @@ export default function GalleryPage() {
   const albumDetail = photosData?.data;
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="max-w-5xl mx-auto py-8 px-4">
+        <div className="h-10 w-32 mb-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
+        </div>
+      </div>
+    );
   }
 
   return (

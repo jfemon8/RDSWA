@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, Loader2 } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
+import { ListItemSkeleton } from '@/components/ui/Skeleton';
 
 export default function MembersPage() {
   const [search, setSearch] = useState('');
@@ -60,7 +61,9 @@ export default function MembersPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 9 }).map((_, i) => <ListItemSkeleton key={i} />)}
+        </div>
       ) : members.length === 0 ? (
         <div className="text-center py-12">
           <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
