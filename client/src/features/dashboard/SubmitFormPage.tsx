@@ -1,16 +1,24 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
-import { Loader2, Send } from 'lucide-react';
+import { queryKeys } from '@/lib/queryKeys';
+import { useAuthStore } from '@/stores/authStore';
+import { Loader2, Send, UserPlus, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
 export default function SubmitFormPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user, setUser } = useAuthStore();
   const [type, setType] = useState('membership');
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+
+  const isMembershipForm = type === 'membership';
+  const alreadyMember = user?.membershipStatus === 'approved';
+  const alreadyPending = user?.membershipStatus === 'pending';
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -20,14 +28,48 @@ export default function SubmitFormPage() {
       });
       return data;
     },
-    onSuccess: () => navigate('/dashboard/forms'),
+    onSuccess: async () => {
+      // Refresh user data to pick up membershipStatus change
+      if (isMembershipForm) {
+        try {
+          const { data } = await api.get('/users/me');
+          setUser(data.data);
+        } catch {}
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      navigate('/dashboard/forms');
+    },
     onError: (err: any) => setError(err.response?.data?.message || 'Submission failed'),
   });
 
   return (
     <FadeIn direction="up" blur duration={0.5}>
       <div className="max-w-xl">
-        <h1 className="text-2xl font-bold mb-6">Submit Form</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          {isMembershipForm ? 'Membership Application' : 'Submit Form'}
+        </h1>
+
+        {/* Membership info banner */}
+        <AnimatePresence>
+          {isMembershipForm && !alreadyMember && !alreadyPending && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 p-4 rounded-xl border bg-primary/5 border-primary/20"
+            >
+              <div className="flex items-start gap-3">
+                <UserPlus className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-sm">Join RDSWA</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Submit your membership application below. After review by the admin team, you'll receive a notification about the decision. Make sure your profile is complete before applying.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait">
           {error && (
@@ -44,7 +86,7 @@ export default function SubmitFormPage() {
           )}
         </AnimatePresence>
 
-        <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); setError(''); mutation.mutate(); }} className="space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -60,30 +102,55 @@ export default function SubmitFormPage() {
             </select>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-          >
-            <label className="block text-sm font-medium mb-1">Details / Reason</label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={5}
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-              placeholder="Provide details about your application..." required />
-          </motion.div>
+          {isMembershipForm && (alreadyMember || alreadyPending) ? (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="p-4 rounded-md border bg-muted"
+            >
+              <div className="flex items-center gap-2 text-sm">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">
+                  {alreadyMember
+                    ? 'You are already an approved member.'
+                    : 'You already have a pending membership application. Please wait for admin review.'}
+                </span>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+              >
+                <label className="block text-sm font-medium mb-1">
+                  {isMembershipForm ? 'Why do you want to join RDSWA?' : 'Details / Reason'}
+                </label>
+                <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={5}
+                  className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder={isMembershipForm
+                    ? 'Tell us about yourself — your district, department, why you want to join...'
+                    : 'Provide details about your application...'}
+                  required />
+              </motion.div>
 
-          <motion.button
-            type="submit"
-            disabled={mutation.isPending}
-            className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-          >
-            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Submit
-          </motion.button>
+              <motion.button
+                type="submit"
+                disabled={mutation.isPending}
+                className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {isMembershipForm ? 'Submit Application' : 'Submit'}
+              </motion.button>
+            </>
+          )}
         </form>
       </div>
     </FadeIn>
