@@ -20,10 +20,11 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Set refresh token as httpOnly cookie
+  const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', tokens.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'strict', // 'none' needed for cross-origin (Vercel↔Render)
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
@@ -46,7 +47,12 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   if (req.user && refreshToken) {
     await authService.logout((req.user._id as any).toString(), refreshToken);
   }
-  res.clearCookie('refreshToken');
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'strict',
+  });
   ApiResponse.success(res, null, 'Logged out successfully');
 });
 
@@ -58,10 +64,11 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 
   const tokens = await authService.refreshToken(token);
 
+  const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', tokens.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
