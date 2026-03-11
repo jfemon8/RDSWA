@@ -38,7 +38,7 @@ jobs:
 
       - name: Run server tests
         env:
-          MONGODB_URI: mongodb://localhost:27017/rdswa_test
+          MONGOMS_SYSTEM_BINARY: /usr/bin/mongod
         run: npm test -w server
 
       - name: Run client tests
