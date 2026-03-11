@@ -33,7 +33,7 @@ const httpServer = createServer(app);
 // Security & parsing middleware
 app.use(helmet());
 app.use(cors({
-  origin: env.CLIENT_URL,
+  origin: env.CLIENT_URL.split(',').map((u) => u.trim()),
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
