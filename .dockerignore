@@ -1,0 +1,57 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+client/dist
+server/dist
+shared/dist
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+*.pdf
+LICENSE
+
+# Test & coverage
+coverage
+**/coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Misc
+.claude
+.env.local
+.env.*.local

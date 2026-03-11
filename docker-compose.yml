@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+  # --------------------------------------------------------------------------
+  # Backend API
+  # --------------------------------------------------------------------------
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rdswa-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/rdswa
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rdswa-network
+
+  # --------------------------------------------------------------------------
+  # Frontend (Nginx)
+  # --------------------------------------------------------------------------
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: rdswa-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - rdswa-network
+
+  # --------------------------------------------------------------------------
+  # MongoDB
+  # --------------------------------------------------------------------------
+  mongo:
+    image: mongo:6
+    container_name: rdswa-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=rdswa
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - rdswa-network
+
+  # --------------------------------------------------------------------------
+  # Redis
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:alpine
+    container_name: rdswa-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - rdswa-network
+
+volumes:
+  mongo-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  rdswa-network:
+    driver: bridge

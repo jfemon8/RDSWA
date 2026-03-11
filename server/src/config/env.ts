@@ -37,6 +37,9 @@ const envSchema = z.object({
   // Web Push (VAPID)
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
+
+  // Sentry
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 function validateEnv() {

@@ -4,7 +4,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import mongoose from 'mongoose';
 import { env } from './config/env';
+import { initSentry } from './config/sentry';
 import { connectDB } from './config/db';
 import { connectRedis } from './config/redis';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
@@ -19,6 +21,11 @@ import { startEmailDigest } from './jobs/emailDigest';
 import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
+
+// Initialize Sentry before anything else (skip in test mode)
+if (env.NODE_ENV !== 'test') {
+  initSentry();
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +78,32 @@ async function start() {
   httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
   });
+
+  // Graceful shutdown
+  const shutdown = (signal: string) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+
+    // Force-kill after 10 seconds if graceful shutdown stalls
+    const forceTimeout = setTimeout(() => {
+      console.error('Graceful shutdown timed out — forcing exit');
+      process.exit(1);
+    }, 10_000);
+    forceTimeout.unref();
+
+    httpServer.close(async () => {
+      console.log('HTTP server closed');
+      try {
+        await mongoose.disconnect();
+        console.log('MongoDB disconnected');
+      } catch (err) {
+        console.error('Error disconnecting MongoDB:', err);
+      }
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 // Only start when not in test mode (tests manage their own DB connection)
