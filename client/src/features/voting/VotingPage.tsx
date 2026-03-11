@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { useVoteSocket } from '@/hooks/useSocket';
+import SEO from '@/components/SEO';
 
 export default function VotingPage() {
   const { data, isLoading } = useQuery({
@@ -27,6 +28,7 @@ export default function VotingPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <SEO title="Voting" description="Participate in RDSWA polls and elections — cast your vote on active polls." />
       <BlurText text="Voting & Polls" className="text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
       {votes.length === 0 ? (

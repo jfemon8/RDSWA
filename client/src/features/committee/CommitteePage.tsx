@@ -5,6 +5,7 @@ import { Users, Crown } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import SEO from '@/components/SEO';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -45,6 +46,7 @@ export default function CommitteePage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
+      <SEO title="Committee" description="Meet the RDSWA committee members and leadership team." />
       <BlurText
         text="Committees"
         className="text-3xl md:text-4xl font-bold mb-8 justify-center md:justify-start"

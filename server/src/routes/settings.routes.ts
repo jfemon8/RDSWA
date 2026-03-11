@@ -7,6 +7,7 @@ import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { SiteSettings, User, Event } from '../models';
 import { UserRole } from '@rdswa/shared';
+import { cacheResponse } from '../middlewares/cache.middleware';
 
 const router = Router();
 

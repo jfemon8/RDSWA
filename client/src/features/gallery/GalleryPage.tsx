@@ -5,6 +5,7 @@ import { Image, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
+import SEO from '@/components/SEO';
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export default function GalleryPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
+      <SEO title="Gallery" description="Browse RDSWA photo albums — events, gatherings, and memorable moments." />
       <BlurText text="Gallery" className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
       {selectedAlbum && albumDetail ? (

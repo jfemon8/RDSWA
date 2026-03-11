@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Users, Target, Eye, BookOpen } from 'lucide-react';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
 import { motion } from 'motion/react';
+import SEO from '@/components/SEO';
 
 export default function AboutPage() {
   const { data } = useQuery({
@@ -18,6 +19,7 @@ export default function AboutPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
+      <SEO title="About Us" description="Learn about RDSWA — our mission, vision, objectives, and history at University of Barishal." />
       <BlurText
         text="About RDSWA"
         className="text-3xl md:text-4xl font-bold mb-8 justify-center md:justify-start"

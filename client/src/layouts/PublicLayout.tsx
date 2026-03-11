@@ -8,8 +8,14 @@ export default function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground"
+      >
+        Skip to main content
+      </a>
       <Navbar />
-      <main className="flex-1">
+      <main id="main-content" className="flex-1" role="main">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

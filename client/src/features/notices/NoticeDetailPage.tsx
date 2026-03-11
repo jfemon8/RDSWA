@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { ArrowLeft, Loader2, Paperclip } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import SEO from '@/components/SEO';
 
 export default function NoticeDetailPage() {
   const { id } = useParams();
@@ -27,6 +28,7 @@ export default function NoticeDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <SEO title={notice.title} description={notice.content?.replace(/<[^>]*>/g, '').slice(0, 160)} />
       <FadeIn delay={0.05} direction="left">
         <Link to="/notices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to Notices

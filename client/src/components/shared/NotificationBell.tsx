@@ -71,7 +71,8 @@ export default function NotificationBell() {
         whileTap={{ scale: 0.9 }}
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-md hover:bg-accent transition-colors"
-        aria-label="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-expanded={open}
       >
         <Bell className="h-5 w-5" />
         <AnimatePresence>
@@ -81,6 +82,7 @@ export default function NotificationBell() {
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+              aria-live="polite"
               className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -96,6 +98,8 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
+            role="menu"
+            aria-label="Notifications"
             className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-popover border rounded-lg shadow-lg z-50 overflow-hidden"
           >
             {/* Header */}
@@ -129,6 +133,7 @@ export default function NotificationBell() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
+                    role="menuitem"
                     className={`flex items-start gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-accent/50 transition-colors ${
                       !n.isRead ? 'bg-primary/5' : ''
                     }`}

@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
+import LanguageSwitcher from '@/components/shared/LanguageSwitcher';
 
 const publicLinks = [
   { label: 'Home', href: '/' },
@@ -50,6 +51,7 @@ export default function Navbar() {
 
   return (
     <motion.header
+      role="banner"
       className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -67,11 +69,12 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop navigation */}
-        <nav className="hidden lg:flex items-center space-x-1">
+        <nav aria-label="Main navigation" className="hidden lg:flex items-center space-x-1">
           {publicLinks.map((link) => (
             <Link
               key={link.href}
               to={link.href}
+              aria-current={isActive(link.href) ? 'page' : undefined}
               className={`relative text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
                 isActive(link.href) ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
@@ -114,6 +117,7 @@ export default function Navbar() {
                     >
                       <Link
                         to={link.href}
+                        aria-current={isActive(link.href) ? 'page' : undefined}
                         className={`block px-4 py-2 text-sm transition-colors ${
                           isActive(link.href) ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                         }`}
@@ -130,6 +134,8 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center space-x-2">
+          <LanguageSwitcher />
+
           <motion.button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-accent transition-colors"
@@ -182,6 +188,7 @@ export default function Navbar() {
             className="lg:hidden p-2 rounded-lg hover:bg-accent"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
             whileTap={{ scale: 0.9 }}
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -209,7 +216,7 @@ export default function Navbar() {
             transition={{ duration: 0.2 }}
             className="lg:hidden border-t bg-background overflow-hidden"
           >
-            <nav className="container mx-auto px-4 py-4 space-y-1">
+            <nav aria-label="Mobile navigation" className="container mx-auto px-4 py-4 space-y-1">
               {[...publicLinks, ...moreLinks].map((link, i) => (
                 <motion.div
                   key={link.href}
@@ -219,6 +226,7 @@ export default function Navbar() {
                 >
                   <Link
                     to={link.href}
+                    aria-current={isActive(link.href) ? 'page' : undefined}
                     className={`block text-sm font-medium py-2 px-3 rounded-lg transition-colors ${
                       isActive(link.href) ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}

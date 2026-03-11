@@ -6,6 +6,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import SEO from '@/components/SEO';
 
 function FAQItem({ faq, index }: { faq: { question: string; answer: string }; index: number }) {
   const [open, setOpen] = useState(false);
@@ -62,6 +63,7 @@ export default function FAQPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
+      <SEO title="FAQ" description="Frequently asked questions about RDSWA membership and the platform." />
       <BlurText
         text="Frequently Asked Questions"
         className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"

@@ -7,6 +7,7 @@ import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, Chevro
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
+import SEO from '@/components/SEO';
 
 const EVENT_TYPES = ['event', 'meeting', 'workshop', 'seminar', 'social', 'other'];
 const STATUSES = ['', 'upcoming', 'ongoing', 'completed'];
@@ -79,6 +80,7 @@ export default function EventsPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-12 px-4">
+      <SEO title="Events" description="Browse upcoming and past RDSWA events, workshops, seminars, and social gatherings." />
       <BlurText
         text="Events"
         className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"

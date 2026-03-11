@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import SEO from '@/components/SEO';
 
 interface PaymentMethod {
   provider: string;
@@ -28,6 +29,7 @@ export default function DonationsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
+      <SEO title="Donations" description="Support RDSWA through donations — view active campaigns and contribute to student welfare." />
       <div className="flex items-center justify-between mb-6">
         <BlurText
           text="Donations"

@@ -7,6 +7,7 @@ import { FileText, AlertTriangle, Search, Archive } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
+import SEO from '@/components/SEO';
 
 export default function NoticesPage() {
   const [category, setCategory] = useState('');
@@ -34,6 +35,7 @@ export default function NoticesPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
+      <SEO title="Notices" description="Stay updated with the latest RDSWA notices, announcements, and important updates." />
       <BlurText
         text="Notices"
         className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"

@@ -5,6 +5,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { Scale } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import SEO from '@/components/SEO';
 
 export default function TermsPage() {
   const { data, isLoading } = useQuery({
@@ -20,6 +21,7 @@ export default function TermsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
+      <SEO title="Terms & Conditions" description="Terms and conditions for using the RDSWA platform." />
       <BlurText
         text="Terms & Conditions"
         className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"

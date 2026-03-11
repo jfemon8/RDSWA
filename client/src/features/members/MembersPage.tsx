@@ -8,6 +8,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
+import SEO from '@/components/SEO';
 
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -43,6 +44,7 @@ export default function MembersPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
+      <SEO title="Members" description="Browse the RDSWA member directory — students and alumni from Rangpur Division at University of Barishal." />
       <div className="flex items-center justify-between mb-6">
         <BlurText text="Members" className="text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 

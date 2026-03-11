@@ -10,12 +10,13 @@ import {
   updateCommitteeSchema,
   addCommitteeMemberSchema,
 } from '../validators/committee.validator';
+import { cacheResponse } from '../middlewares/cache.middleware';
 
 const router = Router();
 
-// Public
-router.get('/', committeeController.getAll);
-router.get('/current', committeeController.getCurrent);
+// Public (cached)
+router.get('/', cacheResponse(600), committeeController.getAll);
+router.get('/current', cacheResponse(600), committeeController.getCurrent);
 router.get('/:id', committeeController.getById);
 
 // Admin+

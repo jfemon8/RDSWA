@@ -7,6 +7,7 @@ import { Calendar, MapPin, Users, Loader2, UserPlus, Star, QrCode, CheckCircle2,
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import SEO from '@/components/SEO';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -56,6 +57,7 @@ export default function EventDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <SEO title={event.title} description={event.description?.slice(0, 160)} image={event.coverImage} />
       {event.coverImage && (
         <motion.img
           src={event.coverImage}

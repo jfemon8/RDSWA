@@ -32,10 +32,10 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
-
-// Rate limiting
-app.use('/api', apiLimiter);
+if (env.NODE_ENV !== 'test') {
+  app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+  app.use('/api', apiLimiter);
+}
 
 // API routes
 app.use('/api', routes);
@@ -73,9 +73,12 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// Only start when not in test mode (tests manage their own DB connection)
+if (process.env.NODE_ENV !== 'test') {
+  start().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
 
 export default app;

@@ -4,6 +4,7 @@ import api from '@/lib/api';
 import { Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import SEO from '@/components/SEO';
 
 export default function BusSchedulePage() {
   const [routeType, setRouteType] = useState('university');
@@ -91,6 +92,7 @@ export default function BusSchedulePage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
+      <SEO title="Bus Schedule" description="Find university and intercity bus schedules, routes, and booking counters." />
       <BlurText text="Bus Schedules" className="text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
       {/* Route type toggle */}

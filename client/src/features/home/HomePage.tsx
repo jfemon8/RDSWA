@@ -6,6 +6,7 @@ import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapP
 import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, ShinyText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 const featureIconMap: Record<string, LucideIcon> = {
   Community: Users, Events: Calendar, Notices: Bell, Welfare: Heart,
@@ -69,6 +70,7 @@ export default function HomePage() {
 
   return (
     <div className="overflow-x-hidden">
+      <SEO description="Official platform of RDSWA — connecting students from Rangpur Division at University of Barishal. Events, notices, committees, and more." />
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center py-20 md:py-32">
         <div className="absolute inset-0 overflow-hidden -z-10">

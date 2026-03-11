@@ -9,6 +9,7 @@ import { ApiError } from '../utils/ApiError';
 import { BusOperator, BusRoute, BusSchedule, BusCounter } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { cacheResponse } from '../middlewares/cache.middleware';
 import {
   createOperatorSchema, updateOperatorSchema,
   createRouteSchema, updateRouteSchema,
@@ -20,7 +21,7 @@ const router = Router();
 
 // ── Operators ──
 
-router.get('/operators', asyncHandler(async (req, res) => {
+router.get('/operators', cacheResponse(600), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.scheduleType) filter.scheduleType = req.query.scheduleType;
   const operators = await BusOperator.find(filter).sort({ name: 1 });
@@ -59,7 +60,7 @@ router.delete('/operators/:id', authenticate(), authorize(UserRole.ADMIN),
 
 // ── Routes ──
 
-router.get('/routes', asyncHandler(async (req, res) => {
+router.get('/routes', cacheResponse(600), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.routeType) filter.routeType = req.query.routeType;
   if (req.query.operator) filter.operator = req.query.operator;
@@ -100,7 +101,7 @@ router.delete('/routes/:id', authenticate(), authorize(UserRole.ADMIN),
 
 // ── Schedules (with pagination & routeType filter) ──
 
-router.get('/schedules', asyncHandler(async (req, res) => {
+router.get('/schedules', cacheResponse(300), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = { isDeleted: false, isActive: true };
   if (req.query.route) filter.route = req.query.route;
@@ -152,7 +153,7 @@ router.delete('/schedules/:id', authenticate(), authorize(UserRole.ADMIN),
 
 // ── Counters ──
 
-router.get('/counters', asyncHandler(async (req, res) => {
+router.get('/counters', cacheResponse(600), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.operator) filter.operator = req.query.operator;
   const counters = await BusCounter.find(filter).populate('operator', 'name').sort({ name: 1 });
