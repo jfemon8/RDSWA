@@ -25,9 +25,11 @@ export interface IUserDocument extends Document {
 
   // Profile — Academic
   studentId?: string;
+  registrationNumber?: string;
   batch?: number;
   session?: string;
   department?: string;
+  university?: string;
   faculty?: string;
   admissionYear?: number;
   expectedGraduation?: number;
@@ -77,6 +79,21 @@ export interface IUserDocument extends Document {
     reason: string;
     assignedBy?: mongoose.Types.ObjectId;
     assignedAt: Date;
+  };
+
+  // Profile visibility (fields the user marks as private)
+  profileVisibility: {
+    phone: boolean;
+    email: boolean;
+    dateOfBirth: boolean;
+    nid: boolean;
+    presentAddress: boolean;
+    permanentAddress: boolean;
+    bloodGroup: boolean;
+    studentId: boolean;
+    registrationNumber: boolean;
+    facebook: boolean;
+    linkedin: boolean;
   };
 
   // Notification preferences
@@ -146,9 +163,11 @@ const userSchema = new Schema<IUserDocument>(
 
     // Profile — Academic
     studentId: String,
+    registrationNumber: String,
     batch: Number,
     session: String,
     department: String,
+    university: { type: String, default: 'University of Barishal' },
     faculty: String,
     admissionYear: Number,
     expectedGraduation: Number,
@@ -212,6 +231,21 @@ const userSchema = new Schema<IUserDocument>(
       reason: String,
       assignedBy: { type: Schema.Types.ObjectId, ref: 'User' },
       assignedAt: Date,
+    },
+
+    // Profile visibility (true = public, false = private)
+    profileVisibility: {
+      phone: { type: Boolean, default: false },
+      email: { type: Boolean, default: false },
+      dateOfBirth: { type: Boolean, default: true },
+      nid: { type: Boolean, default: false },
+      presentAddress: { type: Boolean, default: false },
+      permanentAddress: { type: Boolean, default: false },
+      bloodGroup: { type: Boolean, default: true },
+      studentId: { type: Boolean, default: true },
+      registrationNumber: { type: Boolean, default: false },
+      facebook: { type: Boolean, default: true },
+      linkedin: { type: Boolean, default: true },
     },
 
     // Notification preferences

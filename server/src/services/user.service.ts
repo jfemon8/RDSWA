@@ -1,9 +1,54 @@
-import { User, IUserDocument, RoleAssignment, Notification } from '../models';
+import { User, IUserDocument, RoleAssignment, Notification, ChatGroup } from '../models';
 import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { SUPER_ADMIN_EMAILS } from '../config/constants';
 import { FilterQuery } from 'mongoose';
+import { notificationService } from './notification.service';
+import { ensureDepartmentGroup } from '../jobs/groupInitializer';
+
+/** Fields that can be marked private by users */
+const PRIVATE_FIELDS = [
+  'phone', 'email', 'dateOfBirth', 'nid',
+  'presentAddress', 'permanentAddress', 'bloodGroup',
+  'studentId', 'registrationNumber', 'facebook', 'linkedin',
+] as const;
+
+/** Check if a role is at least Moderator level */
+function isModeratorOrAbove(role: string): boolean {
+  const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
+  const modIdx = ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+  return idx >= modIdx;
+}
+
+/** Check if a role is at least Admin level */
+function isAdminOrAbove(role: string): boolean {
+  const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
+  const adminIdx = ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+  return idx >= adminIdx;
+}
+
+/**
+ * Strip private fields from a user object based on their profileVisibility settings.
+ * Moderator+ can see all fields regardless.
+ */
+function applyVisibilityFilter(user: any, viewerRole?: string): any {
+  if (!user) return user;
+  // Moderator+ sees everything
+  if (viewerRole && isModeratorOrAbove(viewerRole)) return user;
+
+  const obj = typeof user.toObject === 'function' ? user.toObject() : { ...user };
+  const visibility = obj.profileVisibility || {};
+
+  for (const field of PRIVATE_FIELDS) {
+    // If visibility[field] is explicitly false (private), hide it
+    if (visibility[field] === false) {
+      delete obj[field];
+    }
+  }
+
+  return obj;
+}
 
 interface ListUsersQuery {
   page?: string;
@@ -20,10 +65,10 @@ interface ListUsersQuery {
 }
 
 export class UserService {
-  async getById(id: string): Promise<IUserDocument> {
+  async getById(id: string, viewerRole?: string): Promise<any> {
     const user = await User.findOne({ _id: id, isDeleted: false });
     if (!user) throw ApiError.notFound('User not found');
-    return user;
+    return applyVisibilityFilter(user, viewerRole);
   }
 
   async updateProfile(userId: string, data: Partial<IUserDocument>): Promise<IUserDocument> {
@@ -33,7 +78,51 @@ export class UserService {
       { new: true, runValidators: true }
     );
     if (!user) throw ApiError.notFound('User not found');
+
+    // Auto-create department group + add user if department was set
+    if (data.department && user.membershipStatus === 'approved') {
+      ensureDepartmentGroup(data.department as string).then(() => {
+        ChatGroup.findOneAndUpdate(
+          { type: 'department', department: data.department, isDeleted: false },
+          { $addToSet: { members: user._id } }
+        ).exec().catch(() => {});
+      }).catch(() => {});
+    }
+
     return user;
+  }
+
+  /**
+   * Admin+ can update any user's profile fields.
+   */
+  async adminUpdateUser(targetUserId: string, data: Record<string, any>, adminUser: IUserDocument): Promise<IUserDocument> {
+    if (!isAdminOrAbove(adminUser.role)) {
+      throw ApiError.forbidden('Only Admin or SuperAdmin can edit other users');
+    }
+
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    // Prevent editing SuperAdmin unless you are SuperAdmin
+    if (SUPER_ADMIN_EMAILS.includes(target.email) && adminUser.role !== UserRole.SUPER_ADMIN) {
+      throw ApiError.forbidden('Cannot edit SuperAdmin profile');
+    }
+
+    // Disallow changing sensitive auth fields
+    delete data.password;
+    delete data.refreshTokens;
+    delete data.role;
+    delete data.emailVerificationToken;
+    delete data.passwordResetToken;
+    delete data.otp;
+
+    const updated = await User.findByIdAndUpdate(
+      targetUserId,
+      { $set: data },
+      { new: true, runValidators: true }
+    );
+    if (!updated) throw ApiError.notFound('User not found');
+    return updated;
   }
 
   async listUsers(query: ListUsersQuery) {
@@ -250,13 +339,43 @@ export class UserService {
     target.memberApprovedAt = new Date();
     await target.save();
 
-    await Notification.create({
-      recipient: target._id,
+    // Send notification via centralized service (handles preferences/DND/socket/email/push)
+    await notificationService.send({
+      recipientId: target._id,
       type: 'member_approved',
       title: 'Membership Approved',
       message: 'Your RDSWA membership has been approved!',
       link: '/dashboard',
+      force: true, // Important notification — bypass DND
     });
+
+    // Auto-add to central RDSWA group
+    await ChatGroup.findOneAndUpdate(
+      { type: 'central', isDeleted: false },
+      { $addToSet: { members: target._id } }
+    );
+
+    // Auto-add to department group (create if needed)
+    if (target.department) {
+      let deptGroup = await ChatGroup.findOne({
+        type: 'department',
+        department: target.department,
+        isDeleted: false,
+      });
+      if (!deptGroup) {
+        deptGroup = await ChatGroup.create({
+          name: `${target.department} Group`,
+          type: 'department',
+          department: target.department,
+          members: [target._id],
+          admins: [],
+        });
+      } else {
+        await ChatGroup.findByIdAndUpdate(deptGroup._id, {
+          $addToSet: { members: target._id },
+        });
+      }
+    }
 
     return target;
   }

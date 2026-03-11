@@ -30,6 +30,11 @@ export function initSocket(httpServer: HTTPServer): Server {
   });
 
   io.on('connection', (socket: Socket) => {
+    // Auto-join user's personal room for notifications
+    if (socket.data.userId) {
+      socket.join(`user:${socket.data.userId}`);
+    }
+
     // Join a vote room to receive live updates
     socket.on('vote:join', (voteId: string) => {
       if (voteId && typeof voteId === 'string') {

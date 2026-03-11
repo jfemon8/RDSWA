@@ -42,10 +42,16 @@ const NotFound = lazy(() => import('@/features/NotFoundPage'));
 const Dashboard = lazy(() => import('@/features/dashboard/DashboardPage'));
 const Profile = lazy(() => import('@/features/dashboard/ProfilePage'));
 const Notifications = lazy(() => import('@/features/dashboard/NotificationsPage'));
+const NotificationSettings = lazy(() => import('@/features/dashboard/NotificationSettingsPage'));
 const MyForms = lazy(() => import('@/features/dashboard/MyFormsPage'));
 const SubmitForm = lazy(() => import('@/features/dashboard/SubmitFormPage'));
 const AttendanceHistory = lazy(() => import('@/features/dashboard/AttendanceHistoryPage'));
 const MyDonations = lazy(() => import('@/features/dashboard/MyDonationsPage'));
+
+// Communication pages
+const Forum = lazy(() => import('@/features/communication/ForumPage'));
+const TopicDetail = lazy(() => import('@/features/communication/TopicDetailPage'));
+const Messages = lazy(() => import('@/features/communication/MessagesPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
@@ -114,6 +120,10 @@ export default function AppRouter() {
             <Route path="/dashboard/notifications" element={<Notifications />} />
             <Route path="/dashboard/forms" element={<MyForms />} />
             <Route path="/dashboard/forms/new" element={<SubmitForm />} />
+            <Route path="/dashboard/forum" element={<Forum />} />
+            <Route path="/dashboard/forum/:id" element={<TopicDetail />} />
+            <Route path="/dashboard/messages" element={<Messages />} />
+            <Route path="/dashboard/settings" element={<NotificationSettings />} />
             <Route path="/dashboard/jobs" element={<JobBoard />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
             <Route path="/dashboard/attendance" element={<AttendanceHistory />} />

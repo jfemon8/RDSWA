@@ -6,7 +6,8 @@ import { ApiError } from '../utils/ApiError';
 
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const user = await userService.getById((req.user._id as any).toString());
+  // Own profile — always full visibility
+  const user = await userService.getById((req.user._id as any).toString(), req.user.role);
   ApiResponse.success(res, user);
 });
 
@@ -18,8 +19,18 @@ export const updateMe = asyncHandler(async (req: Request, res: Response) => {
 
 export const getUserById = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const user = await userService.getById(id);
+  // If viewing own profile, show everything; otherwise apply visibility
+  const isSelf = req.user && (req.user._id as any).toString() === id;
+  const viewerRole = isSelf ? 'super_admin' : req.user?.role;
+  const user = await userService.getById(id, viewerRole);
   ApiResponse.success(res, user);
+});
+
+export const adminUpdateUser = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const user = await userService.adminUpdateUser(id, req.body, req.user);
+  ApiResponse.success(res, user, 'User updated');
 });
 
 export const listUsers = asyncHandler(async (req: Request, res: Response) => {

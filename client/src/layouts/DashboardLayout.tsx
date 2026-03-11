@@ -3,17 +3,22 @@ import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
   Home, User, Bell, FileText, LogOut, Menu, X, Shield,
+  MessageSquare, MessagesSquare, Settings,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
+import NotificationBell from '@/components/shared/NotificationBell';
 
 const sidebarLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: Home },
   { label: 'Profile', href: '/dashboard/profile', icon: User },
   { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+  { label: 'Forum', href: '/dashboard/forum', icon: MessageSquare },
+  { label: 'Messages', href: '/dashboard/messages', icon: MessagesSquare },
   { label: 'My Forms', href: '/dashboard/forms', icon: FileText },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export default function DashboardLayout() {
@@ -48,6 +53,7 @@ export default function DashboardLayout() {
           </Link>
         </div>
         <div className="flex items-center gap-3">
+          <NotificationBell />
           <span className="text-sm text-muted-foreground hidden sm:block">{user?.name}</span>
           <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full capitalize">
             {user?.role?.replace('_', ' ')}

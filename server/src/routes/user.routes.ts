@@ -33,6 +33,9 @@ router.get('/export/directory', authenticate(), authorize(UserRole.ADMIN), userC
 router.get('/', authenticate(), authorize(UserRole.ADMIN), validate({ query: listUsersQuerySchema }), userController.listUsers);
 router.get('/:id', authenticate(), userController.getUserById);
 
+// Admin+ can edit any user's profile
+router.patch('/:id/profile', authenticate(), authorize(UserRole.ADMIN), auditLog('user.admin_edit', 'users'), userController.adminUpdateUser);
+
 // Role management
 router.patch('/:id/role', authenticate(), authorize(UserRole.ADMIN), validate({ body: changeRoleSchema }), auditLog('user.role_change', 'users'), userController.changeRole);
 router.patch('/:id/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('user.approve', 'users'), userController.approveMembership);

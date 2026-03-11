@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
-function getSocket(): Socket {
+export function getSocket(): Socket {
   if (!socket) {
     const token = localStorage.getItem('accessToken');
     socket = io(window.location.origin, {
@@ -16,6 +17,106 @@ function getSocket(): Socket {
     });
   }
   return socket;
+}
+
+export function disconnectSocket(): void {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
+
+/**
+ * Hook for real-time notification updates.
+ * Listens on the user's personal room for new notifications,
+ * invalidates TanStack queries to trigger refetch.
+ */
+export function useNotificationSocket(
+  onNewNotification?: (notification: any) => void,
+) {
+  const queryClient = useQueryClient();
+  const callbackRef = useRef(onNewNotification);
+  callbackRef.current = onNewNotification;
+
+  useEffect(() => {
+    const s = getSocket();
+
+    const handleNotification = (data: any) => {
+      // Invalidate notification queries for fresh data
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+      callbackRef.current?.(data);
+    };
+
+    s.on('notification:new', handleNotification);
+
+    return () => {
+      s.off('notification:new', handleNotification);
+    };
+  }, [queryClient]);
+}
+
+/**
+ * Hook for real-time chat messages in a group.
+ */
+export function useChatSocket(
+  groupId: string | undefined,
+  onNewMessage?: (message: any) => void,
+) {
+  const queryClient = useQueryClient();
+  const callbackRef = useRef(onNewMessage);
+  callbackRef.current = onNewMessage;
+
+  useEffect(() => {
+    if (!groupId) return;
+    const s = getSocket();
+
+    s.emit('chat:join', groupId);
+
+    const handleMessage = (data: any) => {
+      if (data.groupId === groupId) {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        callbackRef.current?.(data);
+      }
+    };
+
+    s.on('chat:message', handleMessage);
+
+    return () => {
+      s.emit('chat:leave', groupId);
+      s.off('chat:message', handleMessage);
+    };
+  }, [groupId, queryClient]);
+}
+
+/**
+ * Hook for real-time DM updates.
+ */
+export function useDMSocket(
+  partnerId: string | undefined,
+  onNewMessage?: (message: any) => void,
+) {
+  const queryClient = useQueryClient();
+  const callbackRef = useRef(onNewMessage);
+  callbackRef.current = onNewMessage;
+
+  useEffect(() => {
+    const s = getSocket();
+
+    const handleDM = (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
+      if (partnerId && (data.senderId === partnerId || data.recipientId === partnerId)) {
+        queryClient.invalidateQueries({ queryKey: ['dm', partnerId] });
+        callbackRef.current?.(data);
+      }
+    };
+
+    s.on('dm:message', handleDM);
+
+    return () => {
+      s.off('dm:message', handleDM);
+    };
+  }, [partnerId, queryClient]);
 }
 
 /**

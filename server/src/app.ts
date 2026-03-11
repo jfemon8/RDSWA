@@ -15,7 +15,10 @@ import { startVoteCloser } from './jobs/voteCloser';
 import { startReminderSender } from './jobs/reminderSender';
 import { startPaymentReminder } from './jobs/paymentReminder';
 import { startNoticePublisher } from './jobs/noticePublisher';
+import { startEmailDigest } from './jobs/emailDigest';
 import { initSocket } from './socket';
+import { initWebPush } from './config/webpush';
+import { initializeGroups } from './jobs/groupInitializer';
 
 const app = express();
 const httpServer = createServer(app);
@@ -50,8 +53,12 @@ async function start() {
   await connectDB();
   await connectRedis();
 
-  // Initialize Socket.IO
+  // Initialize Socket.IO & Web Push
   initSocket(httpServer);
+  initWebPush();
+
+  // Initialize central + department groups
+  initializeGroups();
 
   // Start scheduled jobs
   startAlumniTagger();
@@ -59,6 +66,7 @@ async function start() {
   startReminderSender();
   startPaymentReminder();
   startNoticePublisher();
+  startEmailDigest();
 
   httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);

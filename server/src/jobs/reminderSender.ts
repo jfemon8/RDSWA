@@ -1,4 +1,5 @@
 import { Event, Notification } from '../models';
+import { notificationService } from '../services/notification.service';
 
 /**
  * Send reminders for upcoming events (24h before start).
@@ -26,8 +27,8 @@ export async function runReminderSender(): Promise<void> {
         });
 
         if (!existing) {
-          await Notification.create({
-            recipient: userId,
+          await notificationService.send({
+            recipientId: (userId as any)._id || userId,
             type: 'event_reminder',
             title: 'Event Reminder',
             message: `Reminder: "${event.title}" starts tomorrow!`,

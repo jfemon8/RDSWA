@@ -24,9 +24,11 @@ export const updateProfileSchema = z.object({
 
   // Academic
   studentId: z.string().optional(),
+  registrationNumber: z.string().optional(),
   batch: z.number().int().positive().optional(),
   session: z.string().optional(),
   department: z.string().optional(),
+  university: z.string().optional(),
   faculty: z.string().optional(),
   admissionYear: z.number().int().optional(),
   expectedGraduation: z.number().int().optional(),
@@ -53,6 +55,21 @@ export const updateProfileSchema = z.object({
   facebook: z.string().url().optional().or(z.literal('')),
   linkedin: z.string().url().optional().or(z.literal('')),
   website: z.string().url().optional().or(z.literal('')),
+
+  // Profile visibility
+  profileVisibility: z.object({
+    phone: z.boolean().optional(),
+    email: z.boolean().optional(),
+    dateOfBirth: z.boolean().optional(),
+    nid: z.boolean().optional(),
+    presentAddress: z.boolean().optional(),
+    permanentAddress: z.boolean().optional(),
+    bloodGroup: z.boolean().optional(),
+    studentId: z.boolean().optional(),
+    registrationNumber: z.boolean().optional(),
+    facebook: z.boolean().optional(),
+    linkedin: z.boolean().optional(),
+  }).optional(),
 
   // Notification prefs
   notificationPrefs: z.object({

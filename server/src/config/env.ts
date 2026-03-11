@@ -33,6 +33,10 @@ const envSchema = z.object({
 
   // Redis
   REDIS_URL: z.string().optional(),
+
+  // Web Push (VAPID)
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
 });
 
 function validateEnv() {

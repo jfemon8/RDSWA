@@ -1,4 +1,4 @@
-import { User, IUserDocument, LoginHistory } from '../models';
+import { User, IUserDocument, LoginHistory, ChatGroup } from '../models';
 import { ApiError } from '../utils/ApiError';
 import {
   signAccessToken,
@@ -8,7 +8,7 @@ import {
   generateOTP,
 } from '../utils/token';
 import { SUPER_ADMIN_EMAILS } from '../config/constants';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { sendEmail } from '../config/mail';
 import { env } from '../config/env';
 
@@ -105,6 +105,16 @@ export class AuthService {
     await user.save();
 
     await this.logLogin(user._id as any, meta, true);
+
+    // Auto-join Admin/SuperAdmin to all existing groups with admin access
+    const roleIdx = ROLE_HIERARCHY.indexOf(user.role as UserRole);
+    const adminIdx = ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+    if (roleIdx >= adminIdx) {
+      ChatGroup.updateMany(
+        { isDeleted: false, members: { $ne: user._id } },
+        { $addToSet: { members: user._id, admins: user._id } }
+      ).exec().catch(() => { /* non-blocking */ });
+    }
 
     return { user, tokens };
   }

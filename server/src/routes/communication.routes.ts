@@ -4,44 +4,90 @@ import { authorize } from '../middlewares/rbac.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { ChatGroup, Message, ForumTopic, ForumReply } from '../models';
-import { UserRole } from '@rdswa/shared';
+import { ChatGroup, Message, ForumTopic, ForumReply, User } from '../models';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
+
+/** Check if role is Admin or above */
+function isAdminOrAbove(role: string): boolean {
+  return ROLE_HIERARCHY.indexOf(role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+}
 
 const router = Router();
 
 // ── Chat Groups ──
 
-// List my groups
+// List my groups (Admin+ sees all groups)
 router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-  const groups = await ChatGroup.find({
-    members: req.user._id,
-    isDeleted: false,
-  }).populate('members', 'name avatar').sort({ updatedAt: -1 });
+  const filter: any = { isDeleted: false };
+  // Admin+ can see all groups; others only their own
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const groups = await ChatGroup.find(filter)
+    .populate('members', 'name avatar').sort({ updatedAt: -1 });
   ApiResponse.success(res, groups);
 }));
 
-// Create group
+// Create group (auto-adds all Admin/SuperAdmin as members+admins)
 router.post('/groups', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+
+  // Fetch all admin/superadmin users to auto-add
+  const adminUsers = await User.find({
+    isDeleted: false, isActive: true,
+    role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+  }).select('_id').lean();
+  const adminIds = adminUsers.map((u) => u._id.toString());
+
+  const memberSet = new Set([
+    req.user._id.toString(),
+    ...(req.body.members || []).map(String),
+    ...adminIds,
+  ]);
+
   const group = await ChatGroup.create({
     ...req.body,
-    admins: [req.user._id],
-    members: [...new Set([req.user._id.toString(), ...(req.body.members || [])])],
+    admins: [...new Set([req.user._id.toString(), ...adminIds])],
+    members: [...memberSet],
   });
   ApiResponse.created(res, group);
 }));
 
-// Get group with recent messages
+// Browse groups user is NOT in (must be before :id route)
+router.get('/groups/browse', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const groups = await ChatGroup.find({
+    isDeleted: false,
+    members: { $ne: req.user._id },
+  }).select('name description type department avatar members joinRequests').sort({ updatedAt: -1 });
+
+  const result = groups.map((g) => ({
+    _id: g._id,
+    name: g.name,
+    description: (g as any).description,
+    type: g.type,
+    department: g.department,
+    avatar: g.avatar,
+    memberCount: g.members.length,
+    hasPendingRequest: g.joinRequests?.some(
+      (r) => r.user.toString() === req.user!._id.toString() && r.status === 'pending'
+    ) || false,
+  }));
+  ApiResponse.success(res, result);
+}));
+
+// Get group with recent messages (Admin+ can access any group)
 router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
-  const group = await ChatGroup.findOne({
-    _id: id,
-    members: req.user._id,
-    isDeleted: false,
-  }).populate('members', 'name avatar');
+  const filter: any = { _id: id, isDeleted: false };
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const group = await ChatGroup.findOne(filter).populate('members', 'name avatar');
   if (!group) throw ApiError.notFound('Group not found');
 
   const messages = await Message.find({ group: id, isDeleted: false })
@@ -52,11 +98,15 @@ router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, { group, messages: messages.reverse() });
 }));
 
-// Send message to group
+// Send message to group (Admin+ can post to any group)
 router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
-  const group = await ChatGroup.findOne({ _id: id, members: req.user._id, isDeleted: false });
+  const filter: any = { _id: id, isDeleted: false };
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const group = await ChatGroup.findOne(filter);
   if (!group) throw ApiError.notFound('Group not found');
 
   const message = await Message.create({
@@ -71,6 +121,178 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   await group.save();
 
   ApiResponse.created(res, message);
+}));
+
+// Edit message (own message or Admin+)
+router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  // Only sender or Admin+ can edit
+  if (message.sender.toString() !== req.user._id.toString() && !isAdminOrAbove(req.user.role)) {
+    throw ApiError.forbidden('Cannot edit this message');
+  }
+
+  message.content = req.body.content || message.content;
+  await message.save();
+  await message.populate('sender', 'name avatar');
+  ApiResponse.success(res, message, 'Message updated');
+}));
+
+// Delete message (own message or Admin+)
+router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  if (message.sender.toString() !== req.user._id.toString() && !isAdminOrAbove(req.user.role)) {
+    throw ApiError.forbidden('Cannot delete this message');
+  }
+
+  message.isDeleted = true;
+  await message.save();
+  ApiResponse.success(res, null, 'Message deleted');
+}));
+
+// Admin+ can delete entire group
+router.delete('/groups/:id', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const id = req.params.id as string;
+  const group = await ChatGroup.findById(id);
+  if (!group) throw ApiError.notFound('Group not found');
+  group.isDeleted = true;
+  await group.save();
+  ApiResponse.success(res, null, 'Group deleted');
+}));
+
+// ── Admin: Add/Remove Members ──
+
+// Admin+ add user to any group
+router.post('/groups/:id/members', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const id = req.params.id as string;
+  const { userId } = req.body;
+  if (!userId) throw ApiError.badRequest('userId is required');
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+
+  if (group.members.map(String).includes(userId)) {
+    throw ApiError.badRequest('User is already a member');
+  }
+
+  await ChatGroup.findByIdAndUpdate(id, { $addToSet: { members: userId } });
+  ApiResponse.success(res, null, 'User added to group');
+}));
+
+// Admin+ remove user from any group
+router.delete('/groups/:id/members/:userId', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const id = req.params.id as string;
+  const userId = req.params.userId as string;
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+
+  await ChatGroup.findByIdAndUpdate(id, {
+    $pull: { members: userId, admins: userId },
+  });
+  ApiResponse.success(res, null, 'User removed from group');
+}));
+
+// ── Join Requests ──
+
+// User requests to join a group
+router.post('/groups/:id/join', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+
+  if (group.members.map(String).includes(req.user._id.toString())) {
+    throw ApiError.badRequest('You are already a member of this group');
+  }
+
+  const existingRequest = group.joinRequests?.find(
+    (r) => r.user.toString() === req.user!._id.toString() && r.status === 'pending'
+  );
+  if (existingRequest) {
+    throw ApiError.badRequest('You already have a pending join request');
+  }
+
+  group.joinRequests.push({
+    user: req.user._id,
+    message: req.body.message || '',
+    status: 'pending',
+    requestedAt: new Date(),
+  } as any);
+  await group.save();
+
+  ApiResponse.success(res, null, 'Join request submitted');
+}));
+
+// List pending join requests for a group (Admin+ or group admin)
+router.get('/groups/:id/join-requests', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false })
+    .populate('joinRequests.user', 'name email avatar department batch');
+  if (!group) throw ApiError.notFound('Group not found');
+
+  const isGroupAdmin = group.admins.map(String).includes(req.user._id.toString());
+  if (!isGroupAdmin && !isAdminOrAbove(req.user.role)) {
+    throw ApiError.forbidden('Not authorized to view join requests');
+  }
+
+  const pending = group.joinRequests.filter((r) => r.status === 'pending');
+  ApiResponse.success(res, pending);
+}));
+
+// Approve/Reject join request (Admin+ or group admin)
+router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const requestId = req.params.requestId as string;
+  const { action } = req.body; // 'approve' or 'reject'
+
+  if (!['approve', 'reject'].includes(action)) {
+    throw ApiError.badRequest('action must be "approve" or "reject"');
+  }
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+
+  const isGroupAdmin = group.admins.map(String).includes(req.user._id.toString());
+  if (!isGroupAdmin && !isAdminOrAbove(req.user.role)) {
+    throw ApiError.forbidden('Not authorized to manage join requests');
+  }
+
+  const request = group.joinRequests.find((r: any) => r._id?.toString() === requestId);
+  if (!request) throw ApiError.notFound('Join request not found');
+  if (request.status !== 'pending') throw ApiError.badRequest('Request already processed');
+
+  request.status = action === 'approve' ? 'approved' : 'rejected';
+  request.reviewedBy = req.user._id;
+  request.reviewedAt = new Date();
+
+  if (action === 'approve') {
+    group.members.push(request.user);
+  }
+
+  await group.save();
+
+  // Notify the requester
+  await notificationService.send({
+    recipientId: request.user,
+    type: 'system',
+    title: action === 'approve' ? 'Join Request Approved' : 'Join Request Rejected',
+    message: action === 'approve'
+      ? `Your request to join "${group.name}" has been approved!`
+      : `Your request to join "${group.name}" has been rejected.`,
+    link: action === 'approve' ? `/communication/groups/${group._id}` : undefined,
+  });
+
+  ApiResponse.success(res, null, `Request ${action}d`);
 }));
 
 // ── Direct Messages ──
@@ -262,6 +484,75 @@ router.delete('/forum/:id', authenticate(), authorize(UserRole.MODERATOR), async
   const id = req.params.id as string;
   await ForumTopic.findByIdAndUpdate(id, { isDeleted: true });
   ApiResponse.noContent(res);
+}));
+
+// ── Announcement Channel ──
+
+// Post announcement to central group (Moderator+)
+router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { title, content, link } = req.body;
+  if (!title || !content) throw ApiError.badRequest('Title and content are required');
+
+  // Find or create the central announcement group
+  let centralGroup = await ChatGroup.findOne({ type: 'central', isDeleted: false });
+  if (!centralGroup) {
+    const allMembers = await User.find({ isDeleted: false, isActive: true }).select('_id');
+    centralGroup = await ChatGroup.create({
+      name: 'RDSWA Central',
+      type: 'central',
+      members: allMembers.map((u) => u._id),
+      admins: [req.user._id],
+    });
+  }
+
+  // Post message to the central group
+  const message = await Message.create({
+    group: centralGroup._id,
+    sender: req.user._id,
+    content: `**${title}**\n\n${content}`,
+  });
+  await message.populate('sender', 'name avatar');
+
+  centralGroup.updatedAt = new Date();
+  await centralGroup.save();
+
+  // Send notification to all members
+  const recipientIds = centralGroup.members
+    .map((m) => m.toString())
+    .filter((id) => id !== req.user!._id.toString());
+
+  if (recipientIds.length > 0) {
+    await notificationService.sendBulk({
+      recipientIds,
+      type: 'announcement',
+      title,
+      message: content.substring(0, 200),
+      link: link || `/communication/groups/${centralGroup._id}`,
+    });
+  }
+
+  ApiResponse.created(res, message);
+}));
+
+// Get announcements (from central group)
+router.get('/announcements', authenticate(), asyncHandler(async (req, res) => {
+  const { page, limit } = parsePagination(req.query as any);
+  const centralGroup = await ChatGroup.findOne({ type: 'central', isDeleted: false });
+  if (!centralGroup) {
+    return ApiResponse.paginated(res, [], 0, page, limit);
+  }
+
+  const [messages, total] = await Promise.all([
+    Message.find({ group: centralGroup._id, isDeleted: false })
+      .populate('sender', 'name avatar')
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    Message.countDocuments({ group: centralGroup._id, isDeleted: false }),
+  ]);
+
+  ApiResponse.paginated(res, messages, total, page, limit);
 }));
 
 export default router;
