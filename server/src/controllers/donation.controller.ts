@@ -11,7 +11,8 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getById = asyncHandler(async (req: Request, res: Response) => {
-  const donation = await donationService.getById(req.params.id as string);
+  const requesterId = req.user ? (req.user._id as any).toString() : undefined;
+  const donation = await donationService.getById(req.params.id as string, requesterId);
   ApiResponse.success(res, donation);
 });
 
@@ -54,7 +55,8 @@ export const getPaymentMethods = asyncHandler(async (_req: Request, res: Respons
 
 /** Generate printable HTML receipt for a donation */
 export const getReceipt = asyncHandler(async (req: Request, res: Response) => {
-  const donation = await donationService.getById(req.params.id as string);
+  const requesterId = req.user ? (req.user._id as any).toString() : undefined;
+  const donation = await donationService.getById(req.params.id as string, requesterId);
   if (donation.paymentStatus !== 'completed') {
     throw ApiError.badRequest('Receipt only available for completed donations');
   }

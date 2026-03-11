@@ -261,17 +261,39 @@ router.post('/publish', authenticate(), authorize(UserRole.ADMIN), auditLog('rep
   ApiResponse.created(res, { _id: result.insertedId }, 'Report draft created');
 }));
 
-// Approve and publish a report (SuperAdmin)
-router.patch('/publish/:id/approve', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('report.approve', 'reports'), asyncHandler(async (req, res) => {
+// Approve and publish a report (Admin, SuperAdmin, or committee President/GS)
+router.patch('/publish/:id/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('report.approve', 'reports'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+
+  // Allow: SuperAdmin, Admin, or Moderator who is current President/GS
+  const isAdminLevel = [UserRole.SUPER_ADMIN, UserRole.ADMIN].includes(req.user.role as any);
+  if (!isAdminLevel) {
+    const db = mongoose.connection.db;
+    if (!db) throw ApiError.internal('Database not connected');
+    const qualifying = await db.collection('committees').findOne({
+      isCurrent: true,
+      isDeleted: { $ne: true },
+      members: {
+        $elemMatch: {
+          user: req.user._id,
+          position: { $in: ['president', 'general_secretary'] },
+          leftAt: null,
+        },
+      },
+    });
+    if (!qualifying) {
+      throw ApiError.forbidden('Only Admin, President, or General Secretary can approve reports');
+    }
+  }
+
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
   const result = await db.collection('published_reports').findOneAndUpdate(
-    { _id: new mongoose.Types.ObjectId(req.params.id as string) },
+    { _id: new mongoose.Types.ObjectId(req.params.id as string), status: 'draft' },
     { $set: { status: 'published', approvedBy: req.user._id, approvedAt: new Date(), publishedAt: new Date() } },
     { returnDocument: 'after' }
   );
-  if (!result) throw ApiError.notFound('Report not found');
+  if (!result) throw ApiError.notFound('Report not found or already published');
   ApiResponse.success(res, result, 'Report published');
 }));
 

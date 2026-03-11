@@ -16,6 +16,7 @@ router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body:
 router.post('/:id/cast', authenticate(), authorize(UserRole.MEMBER), validate({ body: castVoteSchema }), voteController.castVote);
 router.get('/:id/results', authenticate(), voteController.getResults);
 router.get('/:id/stats', authenticate(), authorize(UserRole.ADMIN), voteController.getStats);
+router.patch('/:id/close', authenticate(), authorize(UserRole.ADMIN), auditLog('vote.close', 'votes'), voteController.closeManually);
 router.patch('/:id/publish', authenticate(), authorize(UserRole.ADMIN), auditLog('vote.publish', 'votes'), voteController.publishResults);
 
 export default router;

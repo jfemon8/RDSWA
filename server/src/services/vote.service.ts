@@ -150,6 +150,18 @@ export class VoteService {
     broadcastVoteStatus(id, 'published');
     return vote;
   }
+
+  async closeManually(id: string): Promise<IVoteDocument> {
+    const vote = await Vote.findOne({ _id: id, isDeleted: false });
+    if (!vote) throw ApiError.notFound('Vote not found');
+    if (vote.status !== 'active') throw ApiError.badRequest('Only active votes can be closed');
+
+    vote.status = 'closed';
+    await vote.save();
+
+    broadcastVoteStatus(id, 'closed');
+    return vote;
+  }
 }
 
 export const voteService = new VoteService();

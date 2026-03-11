@@ -22,16 +22,37 @@ export class DonationService {
       Donation.countDocuments(filter),
     ]);
 
-    return { donations, total, page, limit };
+    // Respect donation privacy — hide donor info for private donations
+    const sanitized = donations.map((d) => {
+      const obj = d.toObject();
+      if (obj.visibility === 'private') {
+        obj.donor = undefined;
+        obj.donorName = undefined;
+        obj.donorEmail = undefined;
+        obj.donorPhone = undefined;
+      }
+      return obj;
+    });
+
+    return { donations: sanitized, total, page, limit };
   }
 
-  async getById(id: string): Promise<IDonationDocument> {
+  async getById(id: string, requesterId?: string): Promise<any> {
     const donation = await Donation.findOne({ _id: id, isDeleted: false })
       .populate('donor', 'name avatar email')
       .populate('campaign', 'title')
       .populate('paymentVerifiedBy', 'name');
     if (!donation) throw ApiError.notFound('Donation not found');
-    return donation;
+
+    const obj = donation.toObject();
+    // Hide donor info for private donations unless the requester is the donor
+    if (obj.visibility === 'private' && obj.donor?._id?.toString() !== requesterId) {
+      obj.donor = undefined;
+      obj.donorName = undefined;
+      obj.donorEmail = undefined;
+      obj.donorPhone = undefined;
+    }
+    return obj;
   }
 
   async create(data: any, donorId?: string): Promise<IDonationDocument> {

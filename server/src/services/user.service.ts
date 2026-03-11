@@ -89,6 +89,20 @@ export class UserService {
       }).catch(() => {});
     }
 
+    // Instant alumni detection — if member adds current job/business, tag immediately
+    if (
+      user.role === UserRole.MEMBER &&
+      user.membershipStatus === 'approved' &&
+      (data.jobHistory || data.businessInfo)
+    ) {
+      const hasCurrentJob = user.jobHistory?.some((j: any) => j.isCurrent);
+      const hasCurrentBusiness = user.businessInfo?.some((b: any) => b.isCurrent);
+      if (hasCurrentJob || hasCurrentBusiness) {
+        user.role = UserRole.ALUMNI;
+        await user.save();
+      }
+    }
+
     return user;
   }
 

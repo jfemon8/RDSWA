@@ -45,3 +45,8 @@ export const publishResults = asyncHandler(async (req: Request, res: Response) =
   const vote = await voteService.publishResults(req.params.id as string);
   ApiResponse.success(res, vote, 'Results published');
 });
+
+export const closeManually = asyncHandler(async (req: Request, res: Response) => {
+  const vote = await voteService.closeManually(req.params.id as string);
+  ApiResponse.success(res, vote, 'Vote closed');
+});

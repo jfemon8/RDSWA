@@ -4,21 +4,19 @@ import { MongoMemoryServer } from 'mongodb-memory-server-core';
 let mongod: MongoMemoryServer | null = null;
 
 export async function connectTestDB() {
-  let uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    // Local dev: use in-memory MongoDB
-    mongod = await MongoMemoryServer.create({
-      binary: {
-        version: '6.0.19',
-      },
-      instance: {
-        dbName: 'rdswa_test',
-      },
-    });
-    uri = mongod.getUri();
-    process.env.MONGODB_URI = uri;
-  }
+  // Always use MongoMemoryServer for tests
+  mongod = await MongoMemoryServer.create({
+    binary: {
+      version: '6.0.19',
+      systemBinary: process.env.MONGOMS_SYSTEM_BINARY,
+    },
+    instance: {
+      dbName: 'rdswa_test',
+      ip: '127.0.0.1',
+    },
+  });
+  const uri = mongod.getUri();
+  process.env.MONGODB_URI = uri;
 
   await mongoose.connect(uri);
 }
