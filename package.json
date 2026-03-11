@@ -15,7 +15,6 @@
     "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
     "build:client": "npm run build --workspace=client",
-    "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
