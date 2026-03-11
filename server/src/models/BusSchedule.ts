@@ -7,11 +7,18 @@ export interface IBusScheduleDocument extends Document {
   busCategory: 'ac' | 'non_ac' | 'sleeper' | 'economy';
   departureTime: string;
   arrivalTime?: string;
-  fare?: number;
   seatType?: string;
   daysOfOperation: string[];
   isSpecialSchedule: boolean;
   specialScheduleNote?: string;
+  seasonalVariation?: {
+    season: string;
+    startDate?: Date;
+    endDate?: Date;
+    adjustedDepartureTime?: string;
+    adjustedArrivalTime?: string;
+    note?: string;
+  };
   additionalInfo?: string;
   isActive: boolean;
   isDeleted: boolean;
@@ -27,11 +34,18 @@ const busScheduleSchema = new Schema<IBusScheduleDocument>(
     busCategory: { type: String, enum: ['ac', 'non_ac', 'sleeper', 'economy'], default: 'non_ac' },
     departureTime: { type: String, required: true },
     arrivalTime: String,
-    fare: Number,
     seatType: String,
     daysOfOperation: [{ type: String, enum: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] }],
     isSpecialSchedule: { type: Boolean, default: false },
     specialScheduleNote: String,
+    seasonalVariation: {
+      season: String,
+      startDate: Date,
+      endDate: Date,
+      adjustedDepartureTime: String,
+      adjustedArrivalTime: String,
+      note: String,
+    },
     additionalInfo: String,
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
@@ -42,5 +56,6 @@ const busScheduleSchema = new Schema<IBusScheduleDocument>(
 busScheduleSchema.index({ route: 1, isActive: 1 });
 busScheduleSchema.index({ departureTime: 1 });
 busScheduleSchema.index({ busCategory: 1 });
+busScheduleSchema.index({ isDeleted: 1, isActive: 1 });
 
 export const BusSchedule = mongoose.model<IBusScheduleDocument>('BusSchedule', busScheduleSchema);

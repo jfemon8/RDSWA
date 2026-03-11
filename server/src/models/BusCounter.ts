@@ -23,4 +23,7 @@ const busCounterSchema = new Schema<IBusCounterDocument>(
   { timestamps: true }
 );
 
+busCounterSchema.index({ operator: 1 });
+busCounterSchema.index({ isDeleted: 1 });
+
 export const BusCounter = mongoose.model<IBusCounterDocument>('BusCounter', busCounterSchema);

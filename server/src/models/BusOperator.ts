@@ -29,4 +29,8 @@ const busOperatorSchema = new Schema<IBusOperatorDocument>(
   { timestamps: true }
 );
 
+busOperatorSchema.index({ name: 1 });
+busOperatorSchema.index({ scheduleType: 1 });
+busOperatorSchema.index({ isDeleted: 1 });
+
 export const BusOperator = mongoose.model<IBusOperatorDocument>('BusOperator', busOperatorSchema);
