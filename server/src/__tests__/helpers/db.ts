@@ -4,11 +4,18 @@ import { MongoMemoryServer } from 'mongodb-memory-server-core';
 let mongod: MongoMemoryServer | null = null;
 
 export async function connectTestDB() {
-  // Always use MongoMemoryServer for tests
+  // If MONGODB_TEST_URI is set (e.g. CI with real MongoDB service), use it directly
+  const testUri = process.env.MONGODB_TEST_URI;
+  if (testUri) {
+    process.env.MONGODB_URI = testUri;
+    await mongoose.connect(testUri);
+    return;
+  }
+
+  // Otherwise use MongoMemoryServer for local development
   mongod = await MongoMemoryServer.create({
     binary: {
       version: '6.0.19',
-      systemBinary: process.env.MONGOMS_SYSTEM_BINARY,
     },
     instance: {
       dbName: 'rdswa_test',
@@ -22,8 +29,10 @@ export async function connectTestDB() {
 }
 
 export async function disconnectTestDB() {
-  await mongoose.connection.dropDatabase();
-  await mongoose.disconnect();
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.disconnect();
+  }
   if (mongod) await mongod.stop();
 }
 
