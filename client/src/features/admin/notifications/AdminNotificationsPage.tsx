@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import { Send, Loader2, Bell, Radio } from 'lucide-react';
 
 export default function AdminNotificationsPage() {
   const [type, setType] = useState<'broadcast' | 'targeted'>('targeted');
+  const toast = useToast();
   const [form, setForm] = useState({ title: '', message: '', link: '', targetRole: '', targetBatch: '' });
-  const [success, setSuccess] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const sendMutation = useMutation({
     mutationFn: async () => {
@@ -23,9 +25,10 @@ export default function AdminNotificationsPage() {
       return data;
     },
     onSuccess: (data) => {
-      setSuccess(data?.message || 'Notification sent!');
+      toast.success(data?.message || 'Notification sent!');
       setForm({ title: '', message: '', link: '', targetRole: '', targetBatch: '' });
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to send notification'); },
   });
 
   return (
@@ -50,31 +53,19 @@ export default function AdminNotificationsPage() {
           </button>
         </div>
 
-        <AnimatePresence>
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm"
-            >
-              {success}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <FadeIn direction="up" delay={0.1}>
-          <form onSubmit={(e) => { e.preventDefault(); setSuccess(''); sendMutation.mutate(); }} className="space-y-4">
+          <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Notification title is required'; if (!form.message.trim()) errs.message = 'Notification message is required'; if (Object.keys(errs).length) { setErrors(errs); return; } sendMutation.mutate(); }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Title</label>
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+              <input value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+                className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 ${errors.title ? 'border-red-500' : ''}`} required />
+              <FieldError message={errors.title} />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Message</label>
-              <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={4}
-                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+              <textarea value={form.message} onChange={(e) => { setForm({ ...form, message: e.target.value }); setErrors((prev) => { const { message, ...rest } = prev; return rest; }); }} rows={4}
+                className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 ${errors.message ? 'border-red-500' : ''}`} required />
+              <FieldError message={errors.message} />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Link (optional)</label>
@@ -102,10 +93,6 @@ export default function AdminNotificationsPage() {
                     placeholder="e.g. 5" className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
               </div>
-            )}
-
-            {sendMutation.isError && (
-              <p className="text-sm text-red-600">{(sendMutation.error as any)?.response?.data?.message || 'Failed to send'}</p>
             )}
 
             <button

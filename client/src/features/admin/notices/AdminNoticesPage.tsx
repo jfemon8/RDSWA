@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Trash2, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,11 +11,13 @@ import { formatDate } from '@/lib/date';
 
 export default function AdminNoticesPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', content: '', category: 'general', priority: 'normal', status: 'draft', isHighlighted: false,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.notices.all,
@@ -31,17 +35,21 @@ export default function AdminNoticesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notices'] });
       resetForm();
+      toast.success(editId ? 'Notice updated' : 'Notice created');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save notice'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/notices/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notices'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notices'] }); toast.success('Notice deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete notice'); },
   });
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/notices/${id}/archive`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notices'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notices'] }); toast.success('Notice archived'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to archive notice'); },
   });
 
   const resetForm = () => {
@@ -84,11 +92,17 @@ export default function AdminNoticesPage() {
           >
             <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
               <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Notice</h3>
-              <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
-                <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
-                <textarea placeholder="Content" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={5}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Notice title is required'; if (!form.content.trim()) errs.content = 'Notice content is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <input placeholder="Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.title} />
+                </div>
+                <div>
+                  <textarea placeholder="Content" value={form.content} onChange={(e) => { setForm({ ...form, content: e.target.value }); setErrors((prev) => { const { content, ...rest } = prev; return rest; }); }} rows={5}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.content ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.content} />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">

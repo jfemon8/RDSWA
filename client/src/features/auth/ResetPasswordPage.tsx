@@ -2,39 +2,50 @@ import { useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { Loader2, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const token = searchParams.get('token') || '';
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+
+    setErrors({});
+
+    if (!password) {
+      setErrors({ password: 'Password is required' });
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setErrors({ password: 'Password must be at least 8 characters' });
       return;
     }
+    if (password !== confirmPassword) {
+      setErrors({ confirmPassword: 'Passwords do not match' });
+      return;
+    }
+
     setLoading(true);
-    setError('');
     try {
       await api.post('/auth/reset-password', { token, password });
       setSuccess(true);
+      toast.success('Password reset successful', 'Redirecting to login...');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset password');
+      toast.error(err.response?.data?.message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }
@@ -142,20 +153,7 @@ export default function ResetPasswordPage() {
               </motion.p>
             </div>
 
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-4 p-3 bg-destructive/10 text-destructive rounded-md text-sm"
-                >
-                  {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -166,10 +164,8 @@ export default function ResetPasswordPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow"
+                    onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })); }}
+                    className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow ${errors.password ? 'border-red-500' : ''}`}
                   />
                   <button
                     type="button"
@@ -179,6 +175,7 @@ export default function ResetPasswordPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.password} />
               </motion.div>
 
               <motion.div
@@ -190,10 +187,10 @@ export default function ResetPasswordPage() {
                 <input
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                  onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: '' })); }}
+                  className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow ${errors.confirmPassword ? 'border-red-500' : ''}`}
                 />
+                <FieldError message={errors.confirmPassword} />
               </motion.div>
 
               <motion.button

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Loader2, UserCheck, UserX, Ban } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
@@ -28,22 +30,26 @@ export default function AdminUsersPage() {
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/approve`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User approved'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to approve user'); },
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/reject`, { reason: 'Rejected by admin' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User rejected'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to reject user'); },
   });
 
   const suspendMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/suspend`, { reason: 'Suspended by admin' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User suspended'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to suspend user'); },
   });
 
   const changeRoleMutation = useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) => api.patch(`/users/${id}/role`, { role }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('Role updated'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to change role'); },
   });
 
   const users = data?.data || [];

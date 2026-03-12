@@ -3,18 +3,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
 
 export default function AdminVotingPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [statsId, setStatsId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', description: '', startTime: '', endTime: '',
     eligibleVoters: 'all_members', options: ['', ''],
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.votes.all,
@@ -33,12 +37,15 @@ export default function AdminVotingPage() {
       queryClient.invalidateQueries({ queryKey: queryKeys.votes.all });
       setShowForm(false);
       setForm({ title: '', description: '', startTime: '', endTime: '', eligibleVoters: 'all_members', options: ['', ''] });
+      toast.success('Poll created successfully');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to create poll'); },
   });
 
   const publishMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/votes/${id}/publish`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }); toast.success('Results published'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to publish results'); },
   });
 
   const votes = data?.data || [];
@@ -66,21 +73,26 @@ export default function AdminVotingPage() {
             >
               <div className="border rounded-lg p-4 sm:p-6 bg-card mb-6">
                 <h3 className="font-semibold text-foreground mb-4">Create Poll</h3>
-                <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
-                  <input placeholder="Poll Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Poll title is required'; if (!form.startTime) errs.startTime = 'Start time is required'; if (!form.endTime) errs.endTime = 'End time is required'; if (form.options.filter(Boolean).length < 2) errs.options = 'At least 2 options are required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+                  <div>
+                    <input placeholder="Poll Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.title} />
+                  </div>
                   <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Start Time</label>
-                      <input type="datetime-local" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                      <input type="datetime-local" value={form.startTime} onChange={(e) => { setForm({ ...form, startTime: e.target.value }); setErrors((prev) => { const { startTime, ...rest } = prev; return rest; }); }}
+                        className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.startTime ? 'border-red-500' : ''}`} required />
+                      <FieldError message={errors.startTime} />
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">End Time</label>
-                      <input type="datetime-local" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                      <input type="datetime-local" value={form.endTime} onChange={(e) => { setForm({ ...form, endTime: e.target.value }); setErrors((prev) => { const { endTime, ...rest } = prev; return rest; }); }}
+                        className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.endTime ? 'border-red-500' : ''}`} required />
+                      <FieldError message={errors.endTime} />
                     </div>
                   </div>
                   <select value={form.eligibleVoters} onChange={(e) => setForm({ ...form, eligibleVoters: e.target.value })}
@@ -110,6 +122,7 @@ export default function AdminVotingPage() {
                     ))}
                     <button type="button" onClick={() => setForm({ ...form, options: [...form.options, ''] })}
                       className="text-sm text-primary hover:underline">+ Add option</button>
+                    <FieldError message={errors.options} />
                   </div>
                   <div className="flex gap-2">
                     <button

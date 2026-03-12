@@ -9,7 +9,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { FieldError } from '@/components/ui/FieldError';
 import { formatTime, formatDateCustom } from '@/lib/date';
+import { useToast } from '@/components/ui/Toast';
 
 export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
@@ -193,7 +195,9 @@ function ChatView({
 }) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [message, setMessage] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Real-time DMs
   useDMSocket(partner._id);
@@ -212,6 +216,9 @@ function ChatView({
       setMessage('');
       queryClient.invalidateQueries({ queryKey: ['dm', partner._id] });
       queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to send message');
     },
   });
 
@@ -278,17 +285,26 @@ function ChatView({
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 pt-3 border-t">
-        <textarea
-          placeholder="Type a message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          className="flex-1 px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        setErrors({});
+        if (!message.trim()) { setErrors({ message: 'Message cannot be empty' }); return; }
+        sendMutation.mutate();
+      }} noValidate className="pt-3 border-t space-y-1">
+        <div className="flex gap-2">
+        <div className="flex-1">
+          <textarea
+            placeholder="Type a message..."
+            value={message}
+            onChange={(e) => { setMessage(e.target.value); setErrors((prev) => { const { message, ...rest } = prev; return rest; }); }}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.message ? 'border-red-500' : ''}`}
+          />
+          <FieldError message={errors.message} />
+        </div>
         <button
-          onClick={() => { if (message.trim()) sendMutation.mutate(); }}
+          type="submit"
           disabled={!message.trim() || sendMutation.isPending}
           className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
         >
@@ -298,7 +314,8 @@ function ChatView({
             <Send className="h-4 w-4" />
           )}
         </button>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

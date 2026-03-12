@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 import { Loader2, UserPlus, UserMinus, Search, Shield } from 'lucide-react';
 
 export default function AdminModeratorsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showAssign, setShowAssign] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -40,12 +42,15 @@ export default function AdminModeratorsPage() {
       setSelectedUserId('');
       setReason('');
       setSearch('');
+      toast.success('Moderator assigned');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to assign moderator'); },
   });
 
   const removeMutation = useMutation({
     mutationFn: (userId: string) => api.delete(`/admin/moderators/${userId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'moderators'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'moderators'] }); toast.success('Moderator removed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove moderator'); },
   });
 
   const moderators = data?.data || [];

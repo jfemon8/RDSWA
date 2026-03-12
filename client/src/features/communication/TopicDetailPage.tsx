@@ -9,15 +9,21 @@ import {
 } from 'lucide-react';
 
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { FieldError } from '@/components/ui/FieldError';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 import { formatDate } from '@/lib/date';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
+import { useToast } from '@/components/ui/Toast';
 
 export default function TopicDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [replyContent, setReplyContent] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
 
@@ -35,6 +41,10 @@ export default function TopicDetailPage() {
     onSuccess: () => {
       setReplyContent('');
       queryClient.invalidateQueries({ queryKey: ['forum-topic', id] });
+      toast.success('Reply posted!');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to post reply');
     },
   });
 
@@ -107,7 +117,7 @@ export default function TopicDetailPage() {
                   <Lock className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => { if (confirm('Delete this topic?')) deleteMutation.mutate(); }}
+                  onClick={async () => { const ok = await confirm({ title: 'Delete Topic', message: 'Are you sure you want to delete this topic? This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(); }}
                   className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-accent"
                   title="Delete"
                 >
@@ -172,16 +182,25 @@ export default function TopicDetailPage() {
         </div>
       ) : (
         <FadeIn delay={0.1} direction="up">
-          <div className="flex gap-2">
-            <textarea
-              placeholder="Write a reply..."
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              rows={2}
-              className="flex-1 px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setErrors({});
+            if (!replyContent.trim()) { setErrors({ replyContent: 'Reply content is required' }); return; }
+            replyMutation.mutate();
+          }} noValidate className="space-y-1">
+            <div className="flex gap-2">
+            <div className="flex-1">
+              <textarea
+                placeholder="Write a reply..."
+                value={replyContent}
+                onChange={(e) => { setReplyContent(e.target.value); setErrors((prev) => { const { replyContent, ...rest } = prev; return rest; }); }}
+                rows={2}
+                className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.replyContent ? 'border-red-500' : ''}`}
+              />
+              <FieldError message={errors.replyContent} />
+            </div>
             <button
-              onClick={() => replyMutation.mutate()}
+              type="submit"
               disabled={!replyContent.trim() || replyMutation.isPending}
               className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
             >
@@ -191,7 +210,8 @@ export default function TopicDetailPage() {
                 <Send className="h-4 w-4" />
               )}
             </button>
-          </div>
+            </div>
+          </form>
         </FadeIn>
       )}
     </div>

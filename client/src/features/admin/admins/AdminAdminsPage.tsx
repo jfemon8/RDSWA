@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 import { Loader2, UserPlus, ArrowDown, Search, Crown } from 'lucide-react';
 
 export default function AdminAdminsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showPromote, setShowPromote] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -35,12 +37,15 @@ export default function AdminAdminsPage() {
       setShowPromote(false);
       setSelectedUserId('');
       setSearch('');
+      toast.success('User promoted to admin');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to promote user'); },
   });
 
   const demoteMutation = useMutation({
     mutationFn: (userId: string) => api.delete(`/admin/admins/${userId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'admins'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'admins'] }); toast.success('Admin demoted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to demote admin'); },
   });
 
   const admins = data?.data || [];

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.settings.all,
@@ -97,7 +99,8 @@ export default function AdminSettingsPage() {
 
   const saveMutation = useMutation({
     mutationFn: () => api.patch('/settings', form),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Settings saved successfully'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save settings'); },
   });
 
   if (isLoading) {
@@ -109,21 +112,7 @@ export default function AdminSettingsPage() {
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Site Settings</h1>
 
-        <AnimatePresence>
-          {saveMutation.isSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm"
-            >
-              Settings saved successfully!
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
+        <form noValidate onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
           {/* General */}
           <FadeIn direction="up" delay={0}>
             <section>

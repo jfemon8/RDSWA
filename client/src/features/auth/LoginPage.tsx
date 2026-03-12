@@ -1,24 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useAuthStore();
+  const toast = useToast();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage] = useState(location.state?.message || '');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const message = location.state?.message;
+    if (message) {
+      toast.success(message);
+      // Clear the state so it doesn't show again on re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+
+    setErrors({});
+
+    if (!form.email.trim()) {
+      setErrors({ email: 'Email is required' });
+      return;
+    }
+    if (!emailRegex.test(form.email.trim())) {
+      setErrors({ email: 'Please enter a valid email address' });
+      return;
+    }
+    if (!form.password) {
+      setErrors({ password: 'Password is required' });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -27,7 +55,7 @@ export default function LoginPage() {
       setUser(data.data.user);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      toast.error(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -54,38 +82,18 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-green-500/10 text-green-600 dark:text-green-400 text-sm p-3 rounded-lg mb-4"
-              >
-                {successMessage}
-              </motion.div>
-            )}
-
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg mb-4"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
                 <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
                 <input
                   id="email"
                   type="email"
-                  required
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                  onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors(prev => ({ ...prev, email: '' })); }}
+                  className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow ${errors.email ? 'border-red-500' : ''}`}
                   placeholder="you@example.com"
                 />
+                <FieldError message={errors.email} />
               </motion.div>
 
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
@@ -94,10 +102,9 @@ export default function LoginPage() {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    required
                     value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow"
+                    onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors(prev => ({ ...prev, password: '' })); }}
+                    className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow ${errors.password ? 'border-red-500' : ''}`}
                     placeholder="Enter your password"
                   />
                   <button
@@ -108,6 +115,7 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.password} />
               </motion.div>
 
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="flex items-center justify-between">

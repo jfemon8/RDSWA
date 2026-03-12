@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,10 +13,12 @@ const POSITIONS = Object.values(CommitteePosition);
 
 export default function AdminCommitteesPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', description: '', startDate: '', endDate: '' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.committees.all,
@@ -40,12 +44,15 @@ export default function AdminCommitteesPage() {
       setShowForm(false);
       setEditId(null);
       setForm({ name: '', description: '', startDate: '', endDate: '' });
+      toast.success(editId ? 'Committee updated' : 'Committee created');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save committee'); },
   });
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => api.post(`/committees/${id}/archive`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }); toast.success('Committee archived'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to archive committee'); },
   });
 
   const committees = data?.data || [];
@@ -84,16 +91,20 @@ export default function AdminCommitteesPage() {
           >
             <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
               <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Committee</h3>
-              <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
-                <input placeholder="Committee Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.name.trim()) errs.name = 'Committee name is required'; if (!form.startDate) errs.startDate = 'Start date is required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <input placeholder="Committee Name" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.name ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.name} />
+                </div>
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Start Date</label>
-                    <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                    <input type="date" value={form.startDate} onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors((prev) => { const { startDate, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.startDate ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.startDate} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">End Date (optional)</label>
@@ -196,6 +207,7 @@ export default function AdminCommitteesPage() {
 
 function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; members: any[] }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -218,12 +230,15 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
       setSearch('');
       setSelectedUserId('');
       setPosition(CommitteePosition.MEMBER);
+      toast.success('Member added');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to add member'); },
   });
 
   const removeMutation = useMutation({
     mutationFn: (userId: string) => api.delete(`/committees/${committeeId}/members/${userId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }); toast.success('Member removed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove member'); },
   });
 
   const searchResults = searchData?.data || [];

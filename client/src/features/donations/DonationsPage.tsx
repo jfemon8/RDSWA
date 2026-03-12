@@ -5,8 +5,10 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { FieldError } from '@/components/ui/FieldError';
 import SEO from '@/components/SEO';
 import { formatDate } from '@/lib/date';
+import { useToast } from '@/components/ui/Toast';
 
 interface PaymentMethod {
   provider: string;
@@ -117,6 +119,8 @@ export default function DonationsPage() {
 
 function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const { isAuthenticated } = useAuthStore();
+  const toast = useToast();
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
   const [form, setForm] = useState({
     amount: '',
@@ -172,7 +176,13 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       const { data } = await api.post('/donations', payload);
       return data;
     },
-    onSuccess,
+    onSuccess: () => {
+      toast.success('Donation submitted!', 'It will be reviewed by a moderator.');
+      onSuccess();
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Donation failed');
+    },
   });
 
   const copyNumber = (number: string) => {
@@ -246,20 +256,40 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
 
       {/* Step 2: Payment form */}
       <h4 className="text-sm font-medium mb-3 text-foreground">Step 2: Fill Payment Details</h4>
-      <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }} className="space-y-3">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        setErrors({});
+        const newErrors: Record<string, string> = {};
+        if (!isAuthenticated) {
+          if (!form.donorName.trim()) newErrors.donorName = 'Name is required';
+          if (!form.donorEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.donorEmail)) newErrors.donorEmail = 'Valid email is required';
+        }
+        if (!form.amount || Number(form.amount) <= 0) newErrors.amount = 'Amount must be greater than 0';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        mutation.mutate();
+      }} noValidate className="space-y-3">
         {!isAuthenticated && (
           <>
-            <input placeholder="Your Name" value={form.donorName} onChange={(e) => setForm({ ...form, donorName: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
-            <input placeholder="Email" type="email" value={form.donorEmail} onChange={(e) => setForm({ ...form, donorEmail: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+            <div>
+              <input placeholder="Your Name" value={form.donorName} onChange={(e) => { setForm({ ...form, donorName: e.target.value }); setErrors((prev) => { const { donorName, ...rest } = prev; return rest; }); }}
+                className={`w-full px-3 py-2 border rounded-md bg-background text-sm ${errors.donorName ? 'border-red-500' : ''}`} required />
+              <FieldError message={errors.donorName} />
+            </div>
+            <div>
+              <input placeholder="Email" type="email" value={form.donorEmail} onChange={(e) => { setForm({ ...form, donorEmail: e.target.value }); setErrors((prev) => { const { donorEmail, ...rest } = prev; return rest; }); }}
+                className={`w-full px-3 py-2 border rounded-md bg-background text-sm ${errors.donorEmail ? 'border-red-500' : ''}`} required />
+              <FieldError message={errors.donorEmail} />
+            </div>
             <input placeholder="Phone" value={form.donorPhone} onChange={(e) => setForm({ ...form, donorPhone: e.target.value })}
               className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
           </>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input placeholder="Amount (BDT)" type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            className="px-3 py-2 border rounded-md bg-background text-sm" required />
+          <div>
+            <input placeholder="Amount (BDT)" type="number" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setErrors((prev) => { const { amount, ...rest } = prev; return rest; }); }}
+              className={`w-full px-3 py-2 border rounded-md bg-background text-sm ${errors.amount ? 'border-red-500' : ''}`} required />
+            <FieldError message={errors.amount} />
+          </div>
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
             className="px-3 py-2 border rounded-md bg-background text-sm">
             <option value="one-time">One-time</option>
@@ -324,29 +354,6 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             Private (hide name)
           </label>
         </div>
-
-        <AnimatePresence>
-          {mutation.isError && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="text-sm text-red-600"
-            >
-              {(mutation.error as any)?.response?.data?.message || 'Donation failed'}
-            </motion.p>
-          )}
-          {mutation.isSuccess && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="text-sm text-green-600"
-            >
-              Donation submitted! It will be reviewed by a moderator.
-            </motion.p>
-          )}
-        </AnimatePresence>
 
         <div className="flex gap-2">
           <button

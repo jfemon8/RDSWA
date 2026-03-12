@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { FieldError } from '@/components/ui/FieldError';
 import { formatDate as formatDateUtil } from '@/lib/date';
+import { useToast } from '@/components/ui/Toast';
 
 const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
 
@@ -188,23 +190,43 @@ function CreateTopicForm({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('General');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const toast = useToast();
 
   const createMutation = useMutation({
     mutationFn: () => api.post('/communication/forum', { title, content, category }),
-    onSuccess: () => onCreated(),
+    onSuccess: () => {
+      toast.success('Topic created successfully!');
+      onCreated();
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to create topic');
+    },
   });
+
+  const handleSubmit = () => {
+    setErrors({});
+    const newErrors: Record<string, string> = {};
+    if (!title.trim()) newErrors.title = 'Title is required';
+    if (!content.trim()) newErrors.content = 'Content is required';
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+    createMutation.mutate();
+  };
 
   return (
     <div className="bg-card border rounded-lg p-5 mb-4">
       <h3 className="font-semibold mb-3">Create New Topic</h3>
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="Topic title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} noValidate className="space-y-3">
+        <div>
+          <input
+            type="text"
+            placeholder="Topic title"
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+            className={`w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.title ? 'border-red-500' : ''}`}
+          />
+          <FieldError message={errors.title} />
+        </div>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -214,29 +236,33 @@ function CreateTopicForm({
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
-        <textarea
-          placeholder="What's on your mind?"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={4}
-          className="w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+        <div>
+          <textarea
+            placeholder="What's on your mind?"
+            value={content}
+            onChange={(e) => { setContent(e.target.value); setErrors((prev) => { const { content, ...rest } = prev; return rest; }); }}
+            rows={4}
+            className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.content ? 'border-red-500' : ''}`}
+          />
+          <FieldError message={errors.content} />
+        </div>
         <div className="flex gap-2 justify-end">
           <button
+            type="button"
             onClick={onCancel}
             className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-md"
           >
             Cancel
           </button>
           <button
-            onClick={() => createMutation.mutate()}
-            disabled={!title.trim() || !content.trim() || createMutation.isPending}
+            type="submit"
+            disabled={createMutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
           >
             {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Post'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

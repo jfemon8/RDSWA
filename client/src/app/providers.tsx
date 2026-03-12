@@ -3,6 +3,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { ToastProvider } from '@/components/ui/Toast';
+import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,9 +41,13 @@ export default function Providers({ children }: ProvidersProps) {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <AuthInitializer>
-            {children}
-          </AuthInitializer>
+          <ToastProvider>
+            <ConfirmProvider>
+              <AuthInitializer>
+                {children}
+              </AuthInitializer>
+            </ConfirmProvider>
+          </ToastProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </HelmetProvider>

@@ -2,24 +2,41 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { Loader2, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const toast = useToast();
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setErrors({});
+
+    if (!email.trim()) {
+      setErrors({ email: 'Email is required' });
+      return;
+    }
+    if (!emailRegex.test(email.trim())) {
+      setErrors({ email: 'Please enter a valid email address' });
+      return;
+    }
+
     setLoading(true);
-    setError('');
     try {
       await api.post('/auth/forgot-password', { email });
       setSuccess(true);
+      toast.success('Reset link sent', 'Please check your email inbox');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Something went wrong');
+      toast.error(err.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -104,20 +121,7 @@ export default function ForgotPasswordPage() {
               </motion.p>
             </div>
 
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-4 p-3 bg-destructive/10 text-destructive rounded-md text-sm"
-                >
-                  {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -127,11 +131,11 @@ export default function ForgotPasswordPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                  onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
+                  className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow ${errors.email ? 'border-red-500' : ''}`}
                   placeholder="your@email.com"
                 />
+                <FieldError message={errors.email} />
               </motion.div>
 
               <motion.button

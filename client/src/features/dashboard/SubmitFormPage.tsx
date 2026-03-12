@@ -7,14 +7,17 @@ import { useAuthStore } from '@/stores/authStore';
 import { Loader2, Send, UserPlus, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { FieldError } from '@/components/ui/FieldError';
+import { useToast } from '@/components/ui/Toast';
 
 export default function SubmitFormPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, setUser } = useAuthStore();
+  const toast = useToast();
   const [type, setType] = useState('membership');
   const [reason, setReason] = useState('');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isMembershipForm = type === 'membership';
   const alreadyMember = user?.membershipStatus === 'approved';
@@ -37,9 +40,12 @@ export default function SubmitFormPage() {
         } catch {}
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      toast.success('Form submitted successfully!');
       navigate('/dashboard/forms');
     },
-    onError: (err: any) => setError(err.response?.data?.message || 'Submission failed'),
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Submission failed');
+    },
   });
 
   return (
@@ -71,22 +77,15 @@ export default function SubmitFormPage() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence mode="wait">
-          {error && (
-            <motion.div
-              key="form-error"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <form onSubmit={(e) => { e.preventDefault(); setError(''); mutation.mutate(); }} className="space-y-4">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          setErrors({});
+          if (!reason.trim()) {
+            setErrors({ reason: isMembershipForm ? 'Please explain why you want to join' : 'Please provide details' });
+            return;
+          }
+          mutation.mutate();
+        }} noValidate className="space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -128,12 +127,13 @@ export default function SubmitFormPage() {
                 <label className="block text-sm font-medium mb-1">
                   {isMembershipForm ? 'Why do you want to join RDSWA?' : 'Details / Reason'}
                 </label>
-                <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={5}
-                  className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                <textarea value={reason} onChange={(e) => { setReason(e.target.value); setErrors((prev) => { const { reason, ...rest } = prev; return rest; }); }} rows={5}
+                  className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 ${errors.reason ? 'border-red-500' : ''}`}
                   placeholder={isMembershipForm
                     ? 'Tell us about yourself — your district, department, why you want to join...'
                     : 'Provide details about your application...'}
                   required />
+                <FieldError message={errors.reason} />
               </motion.div>
 
               <motion.button

@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import { Plus, Loader2, Pencil, Trash2, Upload, X } from 'lucide-react';
 
 const DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
@@ -43,9 +45,11 @@ export default function AdminBusPage() {
 
 function OperatorsList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', contactNumber: '', email: '', description: '', scheduleType: 'both' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'operators'],
@@ -54,12 +58,14 @@ function OperatorsList() {
 
   const saveMutation = useMutation({
     mutationFn: () => editId ? api.patch(`/bus/operators/${editId}`, form) : api.post('/bus/operators', form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] }); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] }); resetForm(); toast.success(editId ? 'Operator updated' : 'Operator added'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save operator'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/bus/operators/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] }); toast.success('Operator deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete operator'); },
   });
 
   const resetForm = () => { setShowForm(false); setEditId(null); setForm({ name: '', contactNumber: '', email: '', description: '', scheduleType: 'both' }); };
@@ -85,9 +91,12 @@ function OperatorsList() {
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
-              <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
-                <input placeholder="Operator Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); if (!form.name.trim()) { setErrors({ name: 'Operator name is required' }); return; } saveMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <input placeholder="Operator Name *" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.name ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.name} />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input placeholder="Contact Number" value={form.contactNumber} onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
@@ -143,10 +152,12 @@ function OperatorsList() {
 
 function RoutesList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ operator: '', origin: '', destination: '', routeType: 'university', estimatedDuration: '', distanceKm: '' });
   const [stops, setStops] = useState<Array<{ name: string; order: number }>>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'routes'],
@@ -167,12 +178,14 @@ function RoutesList() {
       };
       return editId ? api.patch(`/bus/routes/${editId}`, payload) : api.post('/bus/routes', payload);
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'routes'] }); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'routes'] }); resetForm(); toast.success(editId ? 'Route updated' : 'Route added'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save route'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/bus/routes/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bus', 'routes'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'routes'] }); toast.success('Route deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete route'); },
   });
 
   const resetForm = () => {
@@ -214,17 +227,26 @@ function RoutesList() {
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
-              <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
-                <select value={form.operator} onChange={(e) => setForm({ ...form, operator: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required>
-                  <option value="">Select Operator *</option>
-                  {operators.map((o: any) => <option key={o._id} value={o._id}>{o.name}</option>)}
-                </select>
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.operator) errs.operator = 'Please select an operator'; if (!form.origin.trim()) errs.origin = 'Origin is required'; if (!form.destination.trim()) errs.destination = 'Destination is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <select value={form.operator} onChange={(e) => { setForm({ ...form, operator: e.target.value }); setErrors((prev) => { const { operator, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.operator ? 'border-red-500' : ''}`} required>
+                    <option value="">Select Operator *</option>
+                    {operators.map((o: any) => <option key={o._id} value={o._id}>{o.name}</option>)}
+                  </select>
+                  <FieldError message={errors.operator} />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input placeholder="Origin *" value={form.origin} onChange={(e) => setForm({ ...form, origin: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
-                  <input placeholder="Destination *" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                  <div>
+                    <input placeholder="Origin *" value={form.origin} onChange={(e) => { setForm({ ...form, origin: e.target.value }); setErrors((prev) => { const { origin, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.origin ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.origin} />
+                  </div>
+                  <div>
+                    <input placeholder="Destination *" value={form.destination} onChange={(e) => { setForm({ ...form, destination: e.target.value }); setErrors((prev) => { const { destination, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.destination ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.destination} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select value={form.routeType} onChange={(e) => setForm({ ...form, routeType: e.target.value })}
@@ -299,6 +321,7 @@ function RoutesList() {
 
 function SchedulesList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -307,6 +330,7 @@ function SchedulesList() {
     isSpecialSchedule: false, specialScheduleNote: '',
   });
   const [selectedDays, setSelectedDays] = useState<string[]>([...DAYS]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'schedules'],
@@ -323,12 +347,14 @@ function SchedulesList() {
       const payload = { ...form, daysOfOperation: selectedDays };
       return editId ? api.patch(`/bus/schedules/${editId}`, payload) : api.post('/bus/schedules', payload);
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'schedules'] }); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'schedules'] }); resetForm(); toast.success(editId ? 'Schedule updated' : 'Schedule added'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save schedule'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/bus/schedules/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bus', 'schedules'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'schedules'] }); toast.success('Schedule deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete schedule'); },
   });
 
   const resetForm = () => {
@@ -376,16 +402,19 @@ function SchedulesList() {
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
-              <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
-                <select value={form.route} onChange={(e) => setForm({ ...form, route: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required>
-                  <option value="">Select Route *</option>
-                  {routes.map((r: any) => (
-                    <option key={r._id} value={r._id}>
-                      {r.origin} → {r.destination} ({r.operator?.name || 'N/A'})
-                    </option>
-                  ))}
-                </select>
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.route) errs.route = 'Please select a route'; if (!form.departureTime.trim()) errs.departureTime = 'Departure time is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <select value={form.route} onChange={(e) => { setForm({ ...form, route: e.target.value }); setErrors((prev) => { const { route, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.route ? 'border-red-500' : ''}`} required>
+                    <option value="">Select Route *</option>
+                    {routes.map((r: any) => (
+                      <option key={r._id} value={r._id}>
+                        {r.origin} → {r.destination} ({r.operator?.name || 'N/A'})
+                      </option>
+                    ))}
+                  </select>
+                  <FieldError message={errors.route} />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <input placeholder="Bus Name" value={form.busName} onChange={(e) => setForm({ ...form, busName: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
@@ -400,8 +429,11 @@ function SchedulesList() {
                   </select>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input placeholder="Departure (e.g. 08:00 AM) *" value={form.departureTime} onChange={(e) => setForm({ ...form, departureTime: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                  <div>
+                    <input placeholder="Departure (e.g. 08:00 AM) *" value={form.departureTime} onChange={(e) => { setForm({ ...form, departureTime: e.target.value }); setErrors((prev) => { const { departureTime, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.departureTime ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.departureTime} />
+                  </div>
                   <input placeholder="Arrival (e.g. 02:00 PM)" value={form.arrivalTime} onChange={(e) => setForm({ ...form, arrivalTime: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   <input placeholder="Seat Type" value={form.seatType} onChange={(e) => setForm({ ...form, seatType: e.target.value })}
@@ -502,9 +534,11 @@ function SchedulesList() {
 
 function CountersList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ operator: '', name: '', location: '', phoneNumbers: '', bookingLink: '' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'counters'],
@@ -524,12 +558,14 @@ function CountersList() {
       };
       return editId ? api.patch(`/bus/counters/${editId}`, payload) : api.post('/bus/counters', payload);
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'counters'] }); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'counters'] }); resetForm(); toast.success(editId ? 'Counter updated' : 'Counter added'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save counter'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/bus/counters/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bus', 'counters'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'counters'] }); toast.success('Counter deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete counter'); },
   });
 
   const resetForm = () => { setShowForm(false); setEditId(null); setForm({ operator: '', name: '', location: '', phoneNumbers: '', bookingLink: '' }); };
@@ -562,15 +598,21 @@ function CountersList() {
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
-              <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
-                <select value={form.operator} onChange={(e) => setForm({ ...form, operator: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required>
-                  <option value="">Select Operator *</option>
-                  {operators.map((o: any) => <option key={o._id} value={o._id}>{o.name}</option>)}
-                </select>
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.operator) errs.operator = 'Please select an operator'; if (!form.name.trim()) errs.name = 'Counter name is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <select value={form.operator} onChange={(e) => { setForm({ ...form, operator: e.target.value }); setErrors((prev) => { const { operator, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.operator ? 'border-red-500' : ''}`} required>
+                    <option value="">Select Operator *</option>
+                    {operators.map((o: any) => <option key={o._id} value={o._id}>{o.name}</option>)}
+                  </select>
+                  <FieldError message={errors.operator} />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input placeholder="Counter Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                  <div>
+                    <input placeholder="Counter Name *" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.name ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.name} />
+                  </div>
                   <input placeholder="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
@@ -619,6 +661,7 @@ function CountersList() {
 // -- Bulk Import --
 
 function BulkImport() {
+  const toast = useToast();
   const [type, setType] = useState('schedules');
   const [jsonInput, setJsonInput] = useState('');
   const [result, setResult] = useState<any>(null);
@@ -635,8 +678,8 @@ function BulkImport() {
       const { data: res } = await api.post('/bus/import', { type, data });
       return res;
     },
-    onSuccess: (data) => setResult(data),
-    onError: (err: any) => setResult({ error: err.message }),
+    onSuccess: (data) => { setResult(data); toast.success('Import completed'); },
+    onError: (err: any) => { setResult({ error: err.message }); toast.error(err.message || 'Import failed'); },
   });
 
   return (

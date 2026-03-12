@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import {
   DollarSign, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
   Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
@@ -220,6 +222,7 @@ export default function AdminFinancePage() {
 
 function DonationsList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState('');
   const [actionTarget, setActionTarget] = useState<{ id: string; action: string } | null>(null);
@@ -235,12 +238,14 @@ function DonationsList() {
   const verifyMutation = useMutation({
     mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) =>
       api.patch(`/donations/${id}/verify`, { paymentStatus: status, revisionNote: note }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['donations'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       setActionTarget(null);
       setRevisionNote('');
+      toast.success(variables.status === 'completed' ? 'Donation verified' : variables.status === 'failed' ? 'Donation rejected' : 'Revision requested');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Verification failed'); },
   });
 
   const donations = data?.data || [];
@@ -391,8 +396,10 @@ function DonationsList() {
 
 function ExpensesList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['expenses'],
@@ -409,7 +416,9 @@ function ExpensesList() {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       setShowForm(false);
       setForm({ title: '', amount: '', category: 'other', description: '' });
+      toast.success('Expense added');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to add expense'); },
   });
 
   const expenses = data?.data || [];
@@ -433,12 +442,18 @@ function ExpensesList() {
             exit={{ opacity: 0, height: 0 }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
-            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
-              <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Expense title is required'; if (!form.amount || Number(form.amount) <= 0) errs.amount = 'Valid amount is required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+              <div>
+                <input placeholder="Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                <FieldError message={errors.title} />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                <div>
+                  <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setErrors((prev) => { const { amount, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.amount ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.amount} />
+                </div>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                   <option value="event">Event</option>
@@ -499,8 +514,10 @@ function ExpensesList() {
 
 function CampaignsList() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', targetAmount: '', startDate: '', endDate: '' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['donations', 'campaigns'],
@@ -515,7 +532,9 @@ function CampaignsList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['donations', 'campaigns'] });
       setShowForm(false);
+      toast.success('Campaign created');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to create campaign'); },
   });
 
   const campaigns = data?.data || [];
@@ -539,14 +558,20 @@ function CampaignsList() {
             exit={{ opacity: 0, height: 0 }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
-            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
-              <input placeholder="Campaign Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Campaign title is required'; if (!form.targetAmount || Number(form.targetAmount) <= 0) errs.targetAmount = 'Valid target amount is required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+              <div>
+                <input placeholder="Campaign Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                <FieldError message={errors.title} />
+              </div>
               <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
                 className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                <div>
+                  <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => { setForm({ ...form, targetAmount: e.target.value }); setErrors((prev) => { const { targetAmount, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.targetAmount ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.targetAmount} />
+                </div>
                 <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
                   className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}

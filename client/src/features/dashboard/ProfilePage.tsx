@@ -6,12 +6,16 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { FieldError } from '@/components/ui/FieldError';
 import { divisions, districts, upazilas, type Division } from '@/data/bdGeo';
+import { useToast } from '@/components/ui/Toast';
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'professional' | 'social'>('personal');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState({
     name: user?.name || '',
@@ -46,11 +50,20 @@ export default function ProfilePage() {
     onSuccess: (res) => {
       setUser(res.data);
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      toast.success('Profile updated successfully!');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to update profile');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    if (!form.name.trim()) {
+      setErrors({ name: 'Name is required' });
+      return;
+    }
     const payload: Record<string, any> = { ...form };
     if (payload.skills) {
       payload.skills = payload.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -97,40 +110,11 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
-        {updateMutation.isSuccess && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm"
-          >
-            Profile updated successfully!
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <AnimatePresence mode="wait">
-        {updateMutation.isError && (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm"
-          >
-            {(updateMutation.error as any)?.response?.data?.message || 'Failed to update profile'}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {activeTab === 'personal' && (
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
-              <InputField label="Full Name" value={form.name} onChange={(v) => set('name', v)} required />
+              <InputField label="Full Name" value={form.name} onChange={(v) => { set('name', v); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }} required error={errors.name} />
               <InputField label="Name (Bangla)" value={form.namebn} onChange={(v) => set('namebn', v)} />
               <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
               <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
@@ -297,14 +281,15 @@ export default function ProfilePage() {
   );
 }
 
-function InputField({ label, value, onChange, type = 'text', required, placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string;
+function InputField({ label, value, onChange, type = 'text', required, placeholder, error }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string; error?: string;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} placeholder={placeholder}
-        className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
+        className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${error ? 'border-red-500' : ''}`} />
+      <FieldError message={error} />
     </div>
   );
 }

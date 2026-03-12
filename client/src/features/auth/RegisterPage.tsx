@@ -4,24 +4,52 @@ import api from '@/lib/api';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+
+    setErrors({});
+
+    if (!form.name.trim()) {
+      setErrors({ name: 'Full name is required' });
+      return;
+    }
+    if (!form.email.trim()) {
+      setErrors({ email: 'Email is required' });
+      return;
+    }
+    if (!emailRegex.test(form.email.trim())) {
+      setErrors({ email: 'Please enter a valid email address' });
+      return;
+    }
+    if (!form.password) {
+      setErrors({ password: 'Password is required' });
+      return;
+    }
+    if (form.password.length < 8) {
+      setErrors({ password: 'Password must be at least 8 characters' });
+      return;
+    }
+
     setLoading(true);
 
     try {
       await api.post('/auth/register', form);
       navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account.' } });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      toast.error(err.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -53,17 +81,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg mb-4"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               {fields.map((field, i) => (
                 <motion.div
                   key={field.id}
@@ -75,12 +93,12 @@ export default function RegisterPage() {
                   <input
                     id={field.id}
                     type={field.type}
-                    required={field.required}
                     value={form[field.id as keyof typeof form]}
-                    onChange={(e) => setForm({ ...form, [field.id]: e.target.value })}
-                    className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                    onChange={(e) => { setForm({ ...form, [field.id]: e.target.value }); setErrors(prev => ({ ...prev, [field.id]: '' })); }}
+                    className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow ${errors[field.id] ? 'border-red-500' : ''}`}
                     placeholder={field.placeholder}
                   />
+                  <FieldError message={errors[field.id]} />
                 </motion.div>
               ))}
 
@@ -90,11 +108,9 @@ export default function RegisterPage() {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    required
-                    minLength={8}
                     value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow"
+                    onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors(prev => ({ ...prev, password: '' })); }}
+                    className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow ${errors.password ? 'border-red-500' : ''}`}
                     placeholder="Min 8 chars, 1 upper, 1 lower, 1 number"
                   />
                   <button
@@ -105,6 +121,7 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.password} />
               </motion.div>
 
               <motion.button

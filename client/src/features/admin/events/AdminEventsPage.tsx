@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
 import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle } from 'lucide-react';
@@ -10,6 +12,7 @@ import { FadeIn } from '@/components/reactbits';
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -19,6 +22,7 @@ export default function AdminEventsPage() {
     startDate: '', endDate: '', venue: '', isOnline: false,
     registrationRequired: false, maxParticipants: '', feedbackEnabled: false,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.events.list({ page: String(page) }),
@@ -39,17 +43,21 @@ export default function AdminEventsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       resetForm();
+      toast.success(editId ? 'Event updated' : 'Event created');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save event'); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/events/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['events'] }); toast.success('Event deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete event'); },
   });
 
   const qrMutation = useMutation({
     mutationFn: (id: string) => api.post(`/events/${id}/qr`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['events'] }); toast.success('QR code generated'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to generate QR code'); },
   });
 
   const resetForm = () => {
@@ -99,9 +107,12 @@ export default function AdminEventsPage() {
           >
             <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
               <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Event</h3>
-              <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
-                <input placeholder="Event Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Event title is required'; if (!form.startDate) errs.startDate = 'Start date is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+                <div>
+                  <input placeholder="Event Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                  <FieldError message={errors.title} />
+                </div>
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -125,8 +136,9 @@ export default function AdminEventsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Start Date</label>
-                    <input type="datetime-local" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                    <input type="datetime-local" value={form.startDate} onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors((prev) => { const { startDate, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.startDate ? 'border-red-500' : ''}`} required />
+                    <FieldError message={errors.startDate} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">End Date</label>
@@ -270,6 +282,7 @@ export default function AdminEventsPage() {
 /** Expanded panel for each event — shows QR, attendance list, photos management */
 function EventDetailPanel({ event }: { event: any }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoCaption, setPhotoCaption] = useState('');
   const [manualUserId, setManualUserId] = useState('');
@@ -291,7 +304,9 @@ function EventDetailPanel({ event }: { event: any }) {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setManualUserId('');
+      toast.success('User checked in');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Check-in failed'); },
   });
 
   const addPhotoMutation = useMutation({
@@ -300,12 +315,15 @@ function EventDetailPanel({ event }: { event: any }) {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
       setPhotoUrl('');
       setPhotoCaption('');
+      toast.success('Photo added');
     },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to add photo'); },
   });
 
   const removePhotoMutation = useMutation({
     mutationFn: (index: number) => api.delete(`/events/${event._id}/photos/${index}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Photo removed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove photo'); },
   });
 
   const photos = fullEvent.photos || [];
