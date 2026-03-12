@@ -7,7 +7,8 @@ let socket: Socket | null = null;
 export function getSocket(): Socket {
   if (!socket) {
     const token = localStorage.getItem('accessToken');
-    socket = io(window.location.origin, {
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+    socket = io(socketUrl, {
       path: '/socket.io',
       auth: token ? { token } : {},
       autoConnect: true,

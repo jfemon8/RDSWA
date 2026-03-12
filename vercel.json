@@ -6,7 +6,11 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/((?!assets/).*)",
+      "source": "/api/(.*)",
+      "destination": "https://rdswa.onrender.com/api/$1"
+    },
+    {
+      "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
   ],
