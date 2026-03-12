@@ -39,15 +39,13 @@ export default function ForumPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <BlurText text="Discussion Forum" className="text-2xl font-bold" delay={50} />
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <BlurText text="Discussion Forum" className="text-2xl sm:text-3xl font-bold" delay={50} />
+        <button
           onClick={() => setShowCreate(!showCreate)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <Plus className="h-4 w-4" /> New Topic
-        </motion.button>
+        </button>
       </div>
 
       {/* Create Topic Form */}
@@ -84,28 +82,24 @@ export default function ForumPage() {
             />
           </div>
           <div className="flex gap-1.5 flex-wrap">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <button
               onClick={() => setFilterCategory('')}
               className={`px-3 py-1.5 rounded-md text-xs ${
                 !filterCategory ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >
               All
-            </motion.button>
+            </button>
             {CATEGORIES.map((cat) => (
-              <motion.button
+              <button
                 key={cat}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
                 onClick={() => setFilterCategory(cat)}
                 className={`px-3 py-1.5 rounded-md text-xs ${
                   filterCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
                 }`}
               >
                 {cat}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -128,10 +122,8 @@ export default function ForumPage() {
           {filteredTopics.map((topic: any, i: number) => (
             <FadeIn key={topic._id} delay={i * 0.03} direction="up" distance={15}>
               <Link to={`/dashboard/forum/${topic._id}`}>
-                <motion.div
-                  whileHover={{ x: 4, backgroundColor: 'var(--color-accent)' }}
-                  transition={{ duration: 0.15 }}
-                  className="p-4 rounded-lg border bg-card flex items-center gap-4"
+                <div
+                  className="p-4 rounded-lg border bg-card hover:bg-accent flex items-center gap-4 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -158,7 +150,7 @@ export default function ForumPage() {
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                </motion.div>
+                </div>
               </Link>
             </FadeIn>
           ))}
@@ -169,17 +161,15 @@ export default function ForumPage() {
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-6">
           {Array.from({ length: totalPages }, (_, i) => (
-            <motion.button
+            <button
               key={i}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
               onClick={() => setPage(i + 1)}
               className={`w-8 h-8 rounded-md text-sm ${
                 page === i + 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >
               {i + 1}
-            </motion.button>
+            </button>
           ))}
         </div>
       )}
@@ -231,23 +221,19 @@ function CreateTopicForm({
           className="w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <div className="flex gap-2 justify-end">
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+          <button
             onClick={onCancel}
             className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-md"
           >
             Cancel
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+          </button>
+          <button
             onClick={() => createMutation.mutate()}
             disabled={!title.trim() || !content.trim() || createMutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
           >
             {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Post'}
-          </motion.button>
+          </button>
         </div>
       </div>
     </div>

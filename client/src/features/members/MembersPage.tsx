@@ -43,28 +43,26 @@ export default function MembersPage() {
   const showBecomeMember = isAuthenticated && user?.membershipStatus === 'none';
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
       <SEO title="Members" description="Browse the RDSWA member directory — students and alumni from Rangpur Division at University of Barishal." />
-      <div className="flex items-center justify-between mb-6">
-        <BlurText text="Members" className="text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+        <BlurText text="Members" className="text-2xl sm:text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
         {showBecomeMember && (
           <FadeIn delay={0.3}>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/dashboard/forms/new"
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
-              >
-                <UserPlus className="h-4 w-4" /> Become a Member
-              </Link>
-            </motion.div>
+            <Link
+              to="/dashboard/forms/new"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
+            >
+              <UserPlus className="h-4 w-4" /> Become a Member
+            </Link>
           </FadeIn>
         )}
       </div>
 
       {/* Filters */}
       <FadeIn delay={0.15} direction="up">
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
@@ -79,31 +77,31 @@ export default function MembersPage() {
             onChange={(e) => { setBatch(e.target.value); setPage(1); }}
             placeholder="Batch"
             type="number"
-            className="w-24 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-24 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <input
             value={session}
             onChange={(e) => { setSession(e.target.value); setPage(1); }}
             placeholder="Session"
-            className="w-28 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-28 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <input
             value={department}
             onChange={(e) => { setDepartment(e.target.value); setPage(1); }}
             placeholder="Department"
-            className="w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <input
             value={homeDistrict}
             onChange={(e) => { setHomeDistrict(e.target.value); setPage(1); }}
             placeholder="District"
-            className="w-32 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-32 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <input
             value={profession}
             onChange={(e) => { setProfession(e.target.value); setPage(1); }}
             placeholder="Profession"
-            className="w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
       </FadeIn>
@@ -127,10 +125,8 @@ export default function MembersPage() {
 
               return (
                 <FadeIn key={m._id} delay={i * 0.04} direction="up">
-                  <motion.div
+                  <div
                     className="border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors"
-                    whileHover={{ y: -4 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                   >
                     <div className="flex items-center gap-3">
                       {m.avatar ? (
@@ -185,7 +181,7 @@ export default function MembersPage() {
                         )}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 </FadeIn>
               );
             })}

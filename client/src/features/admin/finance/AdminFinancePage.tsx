@@ -81,35 +81,31 @@ export default function AdminFinancePage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Finance</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Finance</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
-            className="px-3 py-1.5 border rounded-md bg-background text-sm"
+            className="px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
           >
             <option value="">All Years</option>
             {yearOptions.map((y: number) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => exportCSV('donations')}
             className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
           >
             <Download className="h-3.5 w-3.5" /> Donations CSV
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          </button>
+          <button
             onClick={() => exportCSV('expenses')}
             className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
           >
             <Download className="h-3.5 w-3.5" /> Expenses CSV
-          </motion.button>
+          </button>
         </div>
       </div>
 
@@ -119,17 +115,15 @@ export default function AdminFinancePage() {
           const Icon = card.icon;
           return (
             <FadeIn key={card.label} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.2 }}
-                className="border rounded-lg p-5 bg-background"
+              <div
+                className="border rounded-lg p-4 sm:p-6 bg-card"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-muted-foreground">{card.label}</span>
                   <Icon className={`h-5 w-5 ${card.iconColor}`} />
                 </div>
                 <p className={`text-2xl font-bold ${card.valueColor}`}>{card.value}</p>
-              </motion.div>
+              </div>
             </FadeIn>
           );
         })}
@@ -138,8 +132,8 @@ export default function AdminFinancePage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <FadeIn delay={0.1} direction="up">
-          <div className="border rounded-lg p-4 bg-background">
-            <h3 className="text-sm font-medium mb-3">Monthly Donations</h3>
+          <div className="border rounded-lg p-4 bg-card">
+            <h3 className="text-sm font-medium text-foreground mb-3">Monthly Donations</h3>
             {monthlyChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={monthlyChartData}>
@@ -157,8 +151,8 @@ export default function AdminFinancePage() {
         </FadeIn>
 
         <FadeIn delay={0.15} direction="up">
-          <div className="border rounded-lg p-4 bg-background">
-            <h3 className="text-sm font-medium mb-3">Donations by Type</h3>
+          <div className="border rounded-lg p-4 bg-card">
+            <h3 className="text-sm font-medium text-foreground mb-3">Donations by Type</h3>
             {typeChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
@@ -178,8 +172,8 @@ export default function AdminFinancePage() {
         </FadeIn>
 
         <FadeIn delay={0.2} direction="up">
-          <div className="border rounded-lg p-4 bg-background">
-            <h3 className="text-sm font-medium mb-3">Expenses by Category</h3>
+          <div className="border rounded-lg p-4 bg-card">
+            <h3 className="text-sm font-medium text-foreground mb-3">Expenses by Category</h3>
             {expenseCategoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
@@ -200,19 +194,17 @@ export default function AdminFinancePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b">
+      <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b">
         {(['donations', 'expenses', 'campaigns'] as const).map((t) => (
-          <motion.button
+          <button
             key={t}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 capitalize ${
               tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t}
-          </motion.button>
+          </button>
         ))}
       </div>
 
@@ -256,15 +248,15 @@ function DonationsList() {
 
   return (
     <div className="overflow-x-auto border rounded-lg">
-      <table className="w-full text-sm">
-        <thead><tr className="bg-muted/50 border-b">
-          <th className="text-left p-3 font-medium">Donor</th>
-          <th className="text-left p-3 font-medium">Amount</th>
-          <th className="text-left p-3 font-medium">Method</th>
-          <th className="text-left p-3 font-medium">TxID / Sender</th>
-          <th className="text-left p-3 font-medium">Status</th>
-          <th className="text-left p-3 font-medium">Date</th>
-          <th className="text-left p-3 font-medium">Actions</th>
+      <table className="w-full min-w-[600px] text-sm">
+        <thead><tr className="bg-muted border-b">
+          <th className="text-left p-3 font-medium text-foreground">Donor</th>
+          <th className="text-left p-3 font-medium text-foreground">Amount</th>
+          <th className="text-left p-3 font-medium text-foreground">Method</th>
+          <th className="text-left p-3 font-medium text-foreground">TxID / Sender</th>
+          <th className="text-left p-3 font-medium text-foreground">Status</th>
+          <th className="text-left p-3 font-medium text-foreground">Date</th>
+          <th className="text-left p-3 font-medium text-foreground">Actions</th>
         </tr></thead>
         <tbody>
           {donations.map((d: any) => {
@@ -277,21 +269,21 @@ function DonationsList() {
                 className="border-t hover:bg-accent/30 align-top"
               >
                 <td className="p-3">
-                  <p>{d.donor?.name || d.donorName || 'Anonymous'}</p>
+                  <p className="text-foreground">{d.donor?.name || d.donorName || 'Anonymous'}</p>
                   <p className="text-xs text-muted-foreground">{d.donor?.email || d.donorEmail || ''}</p>
                 </td>
-                <td className="p-3 font-medium">৳{d.amount?.toLocaleString()}</td>
-                <td className="p-3 capitalize text-xs">{d.paymentMethod}</td>
-                <td className="p-3 text-xs">
+                <td className="p-3 font-medium text-foreground">৳{d.amount?.toLocaleString()}</td>
+                <td className="p-3 capitalize text-xs text-muted-foreground">{d.paymentMethod}</td>
+                <td className="p-3 text-xs text-muted-foreground">
                   {d.transactionId && <p>TxID: {d.transactionId}</p>}
                   {d.senderNumber && <p>Sender: {d.senderNumber}</p>}
                 </td>
                 <td className="p-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${
-                    d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700'
-                    : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700'
-                    : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700'
-                    : 'bg-yellow-100 text-yellow-700'
+                    d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                   }`}>{d.paymentStatus}</span>
                 </td>
                 <td className="p-3 text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleDateString()}</td>
@@ -299,43 +291,35 @@ function DonationsList() {
                   <div className="flex items-center gap-1">
                     {(d.paymentStatus === 'pending' || d.paymentStatus === 'revision') && (
                       <>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        <button
                           onClick={() => verifyMutation.mutate({ id: d._id, status: 'completed' })}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                          className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded"
                           title="Accept"
                         >
                           <CheckCircle className="h-4 w-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        </button>
+                        <button
                           onClick={() => verifyMutation.mutate({ id: d._id, status: 'failed' })}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
                           title="Reject"
                         >
                           <XCircle className="h-4 w-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        </button>
+                        <button
                           onClick={() => setActionTarget(isActionOpen ? null : { id: d._id, action: 'revision' })}
-                          className="p-1.5 text-orange-600 hover:bg-orange-50 rounded"
+                          className="p-1.5 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded"
                           title="Request Revision"
                         >
                           <RotateCcw className="h-4 w-4" />
-                        </motion.button>
+                        </button>
                       </>
                     )}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    <button
                       onClick={() => setExpandedId(isExpanded ? null : d._id)}
                       className="p-1.5 text-muted-foreground hover:bg-accent rounded"
                     >
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </motion.button>
+                    </button>
                   </div>
 
                   {/* Revision note form */}
@@ -352,19 +336,17 @@ function DonationsList() {
                           value={revisionNote}
                           onChange={(e) => setRevisionNote(e.target.value)}
                           rows={2}
-                          className="w-full px-2 py-1.5 border rounded text-xs bg-background"
+                          className="w-full px-2 py-1.5 border rounded text-xs bg-card text-foreground"
                         />
                         <div className="flex gap-1 mt-1">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                          <button
                             onClick={() => verifyMutation.mutate({ id: d._id, status: 'revision', note: revisionNote })}
                             disabled={verifyMutation.isPending}
                             className="px-2 py-1 bg-orange-600 text-white rounded text-xs disabled:opacity-50"
                           >
                             <MessageSquare className="h-3 w-3 inline mr-1" />
                             Send Revision
-                          </motion.button>
+                          </button>
                           <button
                             onClick={() => { setActionTarget(null); setRevisionNote(''); }}
                             className="px-2 py-1 border rounded text-xs"
@@ -434,14 +416,12 @@ function ExpensesList() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <Plus className="h-4 w-4" /> Add Expense
-        </motion.button>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -450,16 +430,16 @@ function ExpensesList() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="border rounded-lg p-5 bg-background mb-4"
+            className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
             <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
               <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
-              <div className="grid grid-cols-2 gap-3">
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-background text-sm" required />
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-background text-sm">
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                   <option value="event">Event</option>
                   <option value="office">Office</option>
                   <option value="transport">Transport</option>
@@ -469,17 +449,15 @@ function ExpensesList() {
                 </select>
               </div>
               <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
               <div className="flex gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   type="submit"
                   disabled={createMutation.isPending}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
                 >
                   Add
-                </motion.button>
+                </button>
                 <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
               </div>
             </form>
@@ -491,26 +469,24 @@ function ExpensesList() {
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : (
         <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full text-sm">
-            <thead><tr className="bg-muted/50 border-b">
-              <th className="text-left p-3 font-medium">Title</th>
-              <th className="text-left p-3 font-medium">Amount</th>
-              <th className="text-left p-3 font-medium">Category</th>
-              <th className="text-left p-3 font-medium">Date</th>
+          <table className="w-full min-w-[600px] text-sm">
+            <thead><tr className="bg-muted border-b">
+              <th className="text-left p-3 font-medium text-foreground">Title</th>
+              <th className="text-left p-3 font-medium text-foreground">Amount</th>
+              <th className="text-left p-3 font-medium text-foreground">Category</th>
+              <th className="text-left p-3 font-medium text-foreground">Date</th>
             </tr></thead>
             <tbody>
               {expenses.map((e: any) => (
-                <motion.tr
+                <tr
                   key={e._id}
-                  whileHover={{ y: -2 }}
-                  transition={{ duration: 0.15 }}
-                  className="border-t"
+                  className="border-t hover:bg-accent/30"
                 >
-                  <td className="p-3">{e.title}</td>
+                  <td className="p-3 text-foreground">{e.title}</td>
                   <td className="p-3 font-medium text-red-600">৳{e.amount?.toLocaleString()}</td>
-                  <td className="p-3 capitalize text-xs">{e.category}</td>
+                  <td className="p-3 capitalize text-xs text-muted-foreground">{e.category}</td>
                   <td className="p-3 text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleDateString()}</td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -546,14 +522,12 @@ function CampaignsList() {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <Plus className="h-4 w-4" /> New Campaign
-        </motion.button>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -562,31 +536,29 @@ function CampaignsList() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="border rounded-lg p-5 bg-background mb-4"
+            className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
             <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
               <input placeholder="Campaign Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
               <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-              <div className="grid grid-cols-3 gap-3">
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-background text-sm" required />
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                 <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-background text-sm" />
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-background text-sm" />
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
               </div>
               <div className="flex gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   type="submit"
                   disabled={createMutation.isPending}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
                 >
                   Create
-                </motion.button>
+                </button>
                 <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
               </div>
             </form>
@@ -600,22 +572,20 @@ function CampaignsList() {
         <div className="space-y-3">
           {campaigns.map((c: any, i: number) => (
             <FadeIn key={c._id} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.15 }}
-                className="border rounded-lg p-4 bg-background"
+              <div
+                className="border rounded-lg p-4 sm:p-6 bg-card"
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium">{c.title}</h3>
+                    <h3 className="font-medium text-foreground">{c.title}</h3>
                     <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
                   </div>
-                  <p className="font-semibold">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</p>
+                  <p className="font-semibold text-foreground">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</p>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />
                 </div>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

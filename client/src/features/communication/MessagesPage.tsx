@@ -79,15 +79,13 @@ function ConversationList({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <BlurText text="Messages" className="text-2xl font-bold" delay={50} />
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <BlurText text="Messages" className="text-2xl sm:text-3xl font-bold" delay={50} />
+        <button
           onClick={() => setShowNewChat(!showNewChat)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <Send className="h-4 w-4" /> New Chat
-        </motion.button>
+        </button>
       </div>
 
       {/* New chat search */}
@@ -115,19 +113,18 @@ function ConversationList({
               {searchResults && searchResults.length > 0 && (
                 <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                   {searchResults.map((u: any) => (
-                    <motion.button
+                    <button
                       key={u._id}
-                      whileHover={{ backgroundColor: 'var(--color-accent)' }}
                       onClick={() => {
                         onSelect({ _id: u._id, name: u.name, avatar: u.avatar });
                         setShowNewChat(false);
                         setSearch('');
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left hover:bg-accent transition-colors"
                     >
                       <Avatar src={u.avatar} name={u.name} />
                       <span className="text-sm">{u.name}</span>
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               )}
@@ -152,11 +149,9 @@ function ConversationList({
         <div className="space-y-1">
           {conversations.map((conv: any, i: number) => (
             <FadeIn key={conv.user?._id || i} delay={i * 0.03} direction="up" distance={12}>
-              <motion.button
-                whileHover={{ x: 4, backgroundColor: 'var(--color-accent)' }}
-                transition={{ duration: 0.15 }}
+              <button
                 onClick={() => conv.user && onSelect(conv.user)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card text-left"
+                className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card text-left hover:bg-accent transition-colors"
               >
                 <Avatar src={conv.user?.avatar} name={conv.user?.name} />
                 <div className="flex-1 min-w-0">
@@ -179,7 +174,7 @@ function ConversationList({
                     {conv.unreadCount}
                   </motion.span>
                 )}
-              </motion.button>
+              </button>
             </FadeIn>
           ))}
         </div>
@@ -232,13 +227,12 @@ function ChatView({
     <div className="flex flex-col h-[calc(100vh-10rem)]">
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b">
-        <motion.button
-          whileHover={{ x: -2 }}
+        <button
           onClick={onBack}
           className="p-2 rounded-md hover:bg-accent"
         >
           <ArrowLeft className="h-4 w-4" />
-        </motion.button>
+        </button>
         <Avatar src={partner.avatar} name={partner.name} />
         <span className="font-medium">{partner.name}</span>
       </div>
@@ -292,9 +286,7 @@ function ChatView({
           rows={1}
           className="flex-1 px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => { if (message.trim()) sendMutation.mutate(); }}
           disabled={!message.trim() || sendMutation.isPending}
           className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
@@ -304,7 +296,7 @@ function ChatView({
           ) : (
             <Send className="h-4 w-4" />
           )}
-        </motion.button>
+        </button>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
         <FadeIn direction="up" duration={0.5} blur>
           <div className="w-full max-w-md text-center">
             <motion.div
@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
               <CheckCircle className="h-6 w-6 text-green-600" />
             </motion.div>
             <motion.h1
-              className="text-2xl font-bold mb-2"
+              className="text-2xl sm:text-3xl font-bold mb-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -70,14 +70,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
+    <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
-          <motion.div
-            className="bg-card border rounded-2xl p-8 shadow-lg"
-            whileHover={{ boxShadow: '0 20px 60px -15px rgba(0,0,0,0.1)' }}
-            transition={{ duration: 0.3 }}
-          >
+          <div className="bg-card border rounded-2xl p-8 shadow-lg">
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -89,11 +85,11 @@ export default function ForgotPasswordPage() {
             </motion.div>
 
             <div className="mb-6">
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                 <GradientText
                   colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
                   animationSpeed={3}
-                  className="text-2xl font-bold"
+                  className="text-2xl sm:text-3xl font-bold"
                 >
                   Forgot Password
                 </GradientText>
@@ -114,7 +110,7 @@ export default function ForgotPasswordPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm"
+                  className="mb-4 p-3 bg-destructive/10 text-destructive rounded-md text-sm"
                 >
                   {error}
                 </motion.div>
@@ -142,8 +138,6 @@ export default function ForgotPasswordPage() {
                 type="submit"
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-lg font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 shadow-md shadow-primary/20"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -152,7 +146,7 @@ export default function ForgotPasswordPage() {
                 Send Reset Link
               </motion.button>
             </form>
-          </motion.div>
+          </div>
         </div>
       </FadeIn>
     </div>

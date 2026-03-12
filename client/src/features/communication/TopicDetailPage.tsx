@@ -7,7 +7,7 @@ import {
   ArrowLeft, Pin, Lock, Send, Loader2, Trash2,
   User as UserIcon, Clock,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 
@@ -66,13 +66,12 @@ export default function TopicDetailPage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Back button */}
-      <motion.button
-        whileHover={{ x: -2 }}
+      <button
         onClick={() => navigate('/dashboard/forum')}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Forum
-      </motion.button>
+      </button>
 
       {/* Topic */}
       <FadeIn direction="up" distance={20}>
@@ -92,33 +91,27 @@ export default function TopicDetailPage() {
             {/* Mod actions */}
             {isMod && (
               <div className="flex gap-1 shrink-0">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   onClick={() => pinMutation.mutate(!topic.isPinned)}
                   className={`p-2 rounded-md ${topic.isPinned ? 'text-amber-500' : 'text-muted-foreground'} hover:bg-accent`}
                   title={topic.isPinned ? 'Unpin' : 'Pin'}
                 >
                   <Pin className="h-4 w-4" />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                </button>
+                <button
                   onClick={() => lockMutation.mutate(!topic.isLocked)}
                   className={`p-2 rounded-md ${topic.isLocked ? 'text-red-500' : 'text-muted-foreground'} hover:bg-accent`}
                   title={topic.isLocked ? 'Unlock' : 'Lock'}
                 >
                   <Lock className="h-4 w-4" />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                </button>
+                <button
                   onClick={() => { if (confirm('Delete this topic?')) deleteMutation.mutate(); }}
                   className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-accent"
                   title="Delete"
                 >
                   <Trash2 className="h-4 w-4" />
-                </motion.button>
+                </button>
               </div>
             )}
           </div>
@@ -145,9 +138,7 @@ export default function TopicDetailPage() {
         </h3>
         {replies.map((reply: any, i: number) => (
           <FadeIn key={reply._id} delay={i * 0.03} direction="up" distance={12}>
-            <motion.div
-              whileHover={{ x: 2 }}
-              transition={{ duration: 0.15 }}
+            <div
               className="bg-card border rounded-lg p-4"
             >
               <div className="flex items-start gap-3">
@@ -168,7 +159,7 @@ export default function TopicDetailPage() {
                   <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </FadeIn>
         ))}
       </div>
@@ -188,9 +179,7 @@ export default function TopicDetailPage() {
               rows={2}
               className="flex-1 px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => replyMutation.mutate()}
               disabled={!replyContent.trim() || replyMutation.isPending}
               className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
@@ -200,7 +189,7 @@ export default function TopicDetailPage() {
               ) : (
                 <Send className="h-4 w-4" />
               )}
-            </motion.button>
+            </button>
           </div>
         </FadeIn>
       )}

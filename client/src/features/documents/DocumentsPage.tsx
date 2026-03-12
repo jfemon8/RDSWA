@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import api from '@/lib/api';
 import { FileText, Download, Loader2, Search } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -35,10 +34,10 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
       <BlurText
         text="Documents"
-        className="text-3xl md:text-4xl font-bold mb-6"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -51,19 +50,17 @@ export default function DocumentsPage() {
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..."
               className="w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {categories.map((c) => (
-              <motion.button
+              <button
                 key={c}
                 onClick={() => setCategory(c)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 className={`px-3 py-2 text-sm rounded-md border capitalize ${
                   category === c ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
                 }`}
               >
                 {c || 'All'}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -82,16 +79,14 @@ export default function DocumentsPage() {
         <div className="space-y-3">
           {documents.map((doc: any, index: number) => (
             <FadeIn key={doc._id} delay={0.05 * index} direction="up">
-              <motion.div
-                whileHover={{ y: -4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="border rounded-lg p-4 bg-background flex items-center gap-4"
+              <div
+                className="border rounded-lg p-4 bg-card flex items-center gap-4"
               >
                 {getFileIcon(doc.fileType)}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium truncate">{doc.title}</h3>
+                  <h3 className="font-medium truncate text-foreground">{doc.title}</h3>
                   {doc.description && <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{doc.description}</p>}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                     <span className="capitalize">{doc.category}</span>
                     {doc.fileType && <span className="uppercase">{doc.fileType}</span>}
                     {doc.fileSize && <span>{formatSize(doc.fileSize)}</span>}
@@ -103,7 +98,7 @@ export default function DocumentsPage() {
                   className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md" title="Download">
                   <Download className="h-5 w-5" />
                 </a>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

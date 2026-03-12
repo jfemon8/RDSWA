@@ -20,7 +20,7 @@ export default function CommitteePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-4 space-y-8">
+      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 space-y-8">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="border rounded-xl bg-card overflow-hidden">
             <div className="p-6 border-b bg-muted/30 space-y-2">
@@ -45,11 +45,11 @@ export default function CommitteePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
+    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
       <SEO title="Committee" description="Meet the RDSWA committee members and leadership team." />
       <BlurText
         text="Committees"
-        className="text-3xl md:text-4xl font-bold mb-8 justify-center md:justify-start"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 justify-center md:justify-start"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -98,7 +98,6 @@ export default function CommitteePage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 * i }}
-                        whileHover={{ scale: 1.02, y: -2 }}
                       >
                         <MemberCard member={m} />
                       </motion.div>

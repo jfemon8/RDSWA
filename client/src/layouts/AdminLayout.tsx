@@ -96,24 +96,20 @@ export default function AdminLayout() {
               const Icon = link.icon;
               const isActive = location.pathname === link.href;
               return (
-                <motion.div
-                  key={link.href}
-                  whileHover={{ backgroundColor: isActive ? undefined : 'var(--color-accent)', borderRadius: '0.375rem' }}
-                  transition={{ duration: 0.2 }}
-                >
+                <div key={link.href}>
                   <Link
                     to={link.href}
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                       isActive
                         ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
                     {link.label}
                   </Link>
-                </motion.div>
+                </div>
               );
             })}
             <div className="pt-4 border-t mt-4">

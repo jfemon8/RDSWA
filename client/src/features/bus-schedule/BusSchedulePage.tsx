@@ -91,29 +91,25 @@ export default function BusSchedulePage() {
   const hasActiveFilters = filterCategory || filterOperator;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
       <SEO title="Bus Schedule" description="Find university and intercity bus schedules, routes, and booking counters." />
-      <BlurText text="Bus Schedules" className="text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
+      <BlurText text="Bus Schedules" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
       {/* Route type toggle */}
       <FadeIn delay={0.1} direction="up">
-        <div className="flex gap-2 mb-6">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <button
             onClick={() => setRouteType('university')}
             className={`px-4 py-2 text-sm rounded-md border ${routeType === 'university' ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'}`}
           >
             University Bus
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          </button>
+          <button
             onClick={() => setRouteType('intercity')}
             className={`px-4 py-2 text-sm rounded-md border ${routeType === 'intercity' ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'}`}
           >
             Way to Home (Inter-city)
-          </motion.button>
+          </button>
         </div>
       </FadeIn>
 
@@ -125,14 +121,12 @@ export default function BusSchedulePage() {
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by route, destination, or bus name..."
               className="w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" />
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-3 py-2 border rounded-md text-sm ${hasActiveFilters ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
           >
             <Filter className="h-4 w-4" /> Filters
-          </motion.button>
+          </button>
         </div>
       </FadeIn>
 
@@ -171,8 +165,6 @@ export default function BusSchedulePage() {
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => { setFilterCategory(''); setFilterOperator(''); }}
                   className="self-end px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border rounded-md hover:bg-accent"
                 >
@@ -192,14 +184,14 @@ export default function BusSchedulePage() {
           {filteredRoutes.length > 0 && (
             <FadeIn delay={0.1} direction="up">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Routes</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <h2 className="text-lg font-semibold mb-4 text-foreground">Routes</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {filteredRoutes.map((r: any, i: number) => (
                     <FadeIn key={r._id} delay={0.1 + i * 0.06} direction="up">
-                      <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="border rounded-lg p-4 bg-background">
+                      <div className="border rounded-lg p-4 bg-card">
                         <div className="flex items-center gap-2 mb-2">
                           <MapPin className="h-4 w-4 text-primary" />
-                          <span className="font-medium">{r.origin} &rarr; {r.destination}</span>
+                          <span className="font-medium text-foreground">{r.origin} &rarr; {r.destination}</span>
                         </div>
                         {r.operator?.name && (
                           <p className="text-sm text-muted-foreground">Operator: {r.operator.name}</p>
@@ -209,7 +201,7 @@ export default function BusSchedulePage() {
                         {r.stops?.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">Stops: {r.stops.map((s: any) => s.name).join(' → ')}</p>
                         )}
-                      </motion.div>
+                      </div>
                     </FadeIn>
                   ))}
                 </div>
@@ -221,7 +213,7 @@ export default function BusSchedulePage() {
           {filteredSchedules.length > 0 && (
             <FadeIn delay={0.2} direction="up">
               <div>
-                <h2 className="text-lg font-semibold mb-4">
+                <h2 className="text-lg font-semibold mb-4 text-foreground">
                   Schedules
                   {(search || hasActiveFilters) && (
                     <span className="text-sm font-normal text-muted-foreground ml-2">
@@ -230,34 +222,34 @@ export default function BusSchedulePage() {
                   )}
                 </h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border">
+                  <table className="w-full text-sm border min-w-[600px]">
                     <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left p-3 font-medium">Bus</th>
-                        <th className="text-left p-3 font-medium">Route</th>
-                        <th className="text-left p-3 font-medium">Departure</th>
-                        <th className="text-left p-3 font-medium">Arrival</th>
-                        <th className="text-left p-3 font-medium">Category</th>
-                        <th className="text-left p-3 font-medium">Days</th>
+                      <tr className="bg-muted">
+                        <th className="text-left p-3 font-medium text-foreground">Bus</th>
+                        <th className="text-left p-3 font-medium text-foreground">Route</th>
+                        <th className="text-left p-3 font-medium text-foreground">Departure</th>
+                        <th className="text-left p-3 font-medium text-foreground">Arrival</th>
+                        <th className="text-left p-3 font-medium text-foreground">Category</th>
+                        <th className="text-left p-3 font-medium text-foreground">Days</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredSchedules.map((s: any) => (
                         <tr key={s._id} className="border-t hover:bg-accent/50">
                           <td className="p-3">
-                            <p className="font-medium">{s.busName || 'N/A'}</p>
+                            <p className="font-medium text-foreground">{s.busName || 'N/A'}</p>
                             {s.busNumber && <p className="text-xs text-muted-foreground">{s.busNumber}</p>}
                             {s.route?.operator?.name && <p className="text-xs text-muted-foreground">{s.route.operator.name}</p>}
                           </td>
-                          <td className="p-3 text-xs">
+                          <td className="p-3 text-xs text-foreground">
                             {s.route?.origin} → {s.route?.destination}
                           </td>
                           <td className="p-3">
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {s.departureTime}</span>
+                            <span className="flex items-center gap-1 text-foreground"><Clock className="h-3 w-3" /> {s.departureTime}</span>
                           </td>
-                          <td className="p-3">{s.arrivalTime || '-'}</td>
-                          <td className="p-3 capitalize">{s.busCategory?.replace('_', ' ') || '-'}</td>
-                          <td className="p-3 text-xs capitalize">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
+                          <td className="p-3 text-foreground">{s.arrivalTime || '-'}</td>
+                          <td className="p-3 capitalize text-foreground">{s.busCategory?.replace('_', ' ') || '-'}</td>
+                          <td className="p-3 text-xs capitalize text-muted-foreground">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -271,12 +263,12 @@ export default function BusSchedulePage() {
           {counters.length > 0 && (
             <FadeIn delay={0.25} direction="up">
               <div>
-                <h2 className="text-lg font-semibold mb-4">Booking Counters</h2>
+                <h2 className="text-lg font-semibold mb-4 text-foreground">Booking Counters</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {counters.map((c: any, i: number) => (
                     <FadeIn key={c._id} delay={0.1 + i * 0.06} direction="up">
-                      <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="border rounded-lg p-4 bg-background">
-                        <p className="font-medium mb-1">{c.name}</p>
+                      <div className="border rounded-lg p-4 bg-card">
+                        <p className="font-medium mb-1 text-foreground">{c.name}</p>
                         {c.operator?.name && (
                           <p className="text-xs text-muted-foreground mb-1">{c.operator.name}</p>
                         )}
@@ -300,7 +292,7 @@ export default function BusSchedulePage() {
                             <ExternalLink className="h-3 w-3" /> Book Online
                           </a>
                         )}
-                      </motion.div>
+                      </div>
                     </FadeIn>
                   ))}
                 </div>

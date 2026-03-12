@@ -65,7 +65,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <BlurText text="Notification Settings" className="text-2xl font-bold" delay={50} />
+        <BlurText text="Notification Settings" className="text-2xl sm:text-3xl font-bold" delay={50} />
       </div>
 
       <div className="space-y-4">
@@ -114,10 +114,8 @@ export default function NotificationSettingsPage() {
             </p>
             <div className="flex gap-2">
               {(['none', 'daily', 'weekly'] as const).map((freq) => (
-                <motion.button
+                <button
                   key={freq}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
                   onClick={() => setDigest(freq)}
                   className={`px-4 py-2 rounded-md text-sm capitalize transition-colors ${
                     prefs.digestFrequency === freq
@@ -126,7 +124,7 @@ export default function NotificationSettingsPage() {
                   }`}
                 >
                   {freq}
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
@@ -200,8 +198,7 @@ function ToggleRow({
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
-      <motion.button
-        whileTap={{ scale: 0.9 }}
+      <button
         onClick={onChange}
         className={`relative w-11 h-6 rounded-full transition-colors ${
           checked ? 'bg-primary' : 'bg-muted-foreground/30'
@@ -214,7 +211,7 @@ function ToggleRow({
             checked ? 'left-[22px]' : 'left-0.5'
           }`}
         />
-      </motion.button>
+      </button>
     </div>
   );
 }

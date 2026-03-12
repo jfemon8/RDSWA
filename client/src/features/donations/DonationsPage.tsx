@@ -28,25 +28,23 @@ export default function DonationsPage() {
   const campaigns = campaignsData?.data || [];
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
       <SEO title="Donations" description="Support RDSWA through donations — view active campaigns and contribute to student welfare." />
       <div className="flex items-center justify-between mb-6">
         <BlurText
           text="Donations"
-          className="text-3xl md:text-4xl font-bold"
+          className="text-2xl sm:text-3xl md:text-4xl font-bold"
           delay={80}
           animateBy="words"
           direction="bottom"
         />
         <FadeIn delay={0.3} direction="right">
-          <motion.button
+          <button
             onClick={() => setShowForm(!showForm)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-sm"
           >
             <Heart className="h-4 w-4" /> Make a Donation
-          </motion.button>
+          </button>
         </FadeIn>
       </div>
 
@@ -73,22 +71,20 @@ export default function DonationsPage() {
       {campaigns.length > 0 && (
         <FadeIn delay={0.2} direction="up">
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Active Campaigns</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="text-xl font-semibold mb-4 text-foreground">Active Campaigns</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {campaigns.filter((c: any) => c.status === 'active').map((c: any, index: number) => (
                 <FadeIn key={c._id} delay={0.1 * index} direction="up">
-                  <motion.div
-                    whileHover={{ y: -4 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className="border rounded-lg p-5 bg-background"
+                  <div
+                    className="border rounded-lg p-5 bg-card"
                   >
                     {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
-                    <h3 className="font-semibold mb-2">{c.title}</h3>
+                    <h3 className="font-semibold mb-2 text-foreground">{c.title}</h3>
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Raised</span>
-                        <span className="font-medium">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</span>
+                        <span className="font-medium text-foreground">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
@@ -102,7 +98,7 @@ export default function DonationsPage() {
                         Ends {new Date(c.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
                       </p>
                     )}
-                  </motion.div>
+                  </div>
                 </FadeIn>
               ))}
             </div>
@@ -185,12 +181,12 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   };
 
   return (
-    <div className="border rounded-lg p-6 bg-background mb-6">
-      <h3 className="font-semibold mb-4">Make a Donation</h3>
+    <div className="border rounded-lg p-6 bg-card mb-6">
+      <h3 className="font-semibold mb-4 text-foreground">Make a Donation</h3>
 
       {/* Step 1: Payment instructions */}
-      <div className="mb-5 p-4 rounded-lg bg-muted/50 border border-dashed">
-        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+      <div className="mb-5 p-4 rounded-lg bg-muted border border-dashed">
+        <h4 className="text-sm font-medium mb-3 flex items-center gap-2 text-foreground">
           <Smartphone className="h-4 w-4" />
           Step 1: Send Money to
         </h4>
@@ -211,17 +207,15 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 className={`flex items-center justify-between p-2.5 rounded-md border text-sm ${
                   m.provider.toLowerCase() === form.paymentMethod.toLowerCase()
                     ? 'border-primary bg-primary/5'
-                    : 'border-border'
+                    : 'border'
                 }`}
               >
                 <div>
-                  <span className="font-medium capitalize">{m.provider}</span>
+                  <span className="font-medium capitalize text-foreground">{m.provider}</span>
                   <span className="text-muted-foreground ml-1 text-xs">({m.type})</span>
-                  <p className="font-mono text-sm">{m.number}</p>
+                  <p className="font-mono text-sm text-foreground">{m.number}</p>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   type="button"
                   onClick={() => copyNumber(m.number)}
                   className="p-1.5 rounded hover:bg-accent"
@@ -232,7 +226,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
-                </motion.button>
+                </button>
               </motion.div>
             ))}
           </div>
@@ -250,7 +244,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       </div>
 
       {/* Step 2: Payment form */}
-      <h4 className="text-sm font-medium mb-3">Step 2: Fill Payment Details</h4>
+      <h4 className="text-sm font-medium mb-3 text-foreground">Step 2: Fill Payment Details</h4>
       <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }} className="space-y-3">
         {!isAuthenticated && (
           <>
@@ -262,7 +256,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
               className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
           </>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input placeholder="Amount (BDT)" type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
             className="px-3 py-2 border rounded-md bg-background text-sm" required />
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
@@ -273,7 +267,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             <option value="construction-fund">Construction Fund</option>
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
             className="px-3 py-2 border rounded-md bg-background text-sm">
             <option value="bkash">bKash</option>
@@ -289,7 +283,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
           className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
 
         {/* Recurring toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -354,15 +348,13 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
         </AnimatePresence>
 
         <div className="flex gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             type="submit"
             disabled={mutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
           >
             {mutation.isPending ? 'Submitting...' : 'Submit Donation'}
-          </motion.button>
+          </button>
           <button type="button" onClick={onClose} className="px-4 py-2 border rounded-md text-sm hover:bg-accent">Cancel</button>
         </div>
       </form>
@@ -383,7 +375,7 @@ function RecentDonations() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+      <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
         <TrendingUp className="h-5 w-5" /> Recent Donations
       </h2>
       {isLoading ? (
@@ -394,13 +386,11 @@ function RecentDonations() {
         <div className="space-y-2">
           {donations.map((d: any, index: number) => (
             <FadeIn key={d._id} delay={0.05 * index} direction="up">
-              <motion.div
-                whileHover={{ y: -4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="flex items-center justify-between p-3 border rounded-lg text-sm"
+              <div
+                className="flex items-center justify-between p-3 border rounded-lg text-sm bg-card"
               >
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-foreground">
                     {d.visibility === 'private' ? 'Anonymous' : (d.donor?.name || d.donorName || 'Unknown')}
                   </p>
                   <p className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</p>
@@ -411,7 +401,7 @@ function RecentDonations() {
                     {new Date(d.createdAt).toLocaleDateString('en-US', { dateStyle: 'short' })}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

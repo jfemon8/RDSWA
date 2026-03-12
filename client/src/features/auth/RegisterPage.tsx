@@ -37,13 +37,9 @@ export default function RegisterPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
-          <motion.div
-            className="bg-card border rounded-2xl p-8 shadow-lg"
-            whileHover={{ boxShadow: '0 20px 60px -15px rgba(0,0,0,0.1)' }}
-            transition={{ duration: 0.3 }}
-          >
+          <div className="bg-card border rounded-2xl p-8 shadow-lg">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">Create account</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">Create account</h1>
               <p className="text-muted-foreground">
                 Join the{' '}
                 <GradientText
@@ -115,8 +111,6 @@ export default function RegisterPage() {
                 type="submit"
                 disabled={loading}
                 className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 shadow-md shadow-primary/20"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
@@ -134,7 +128,7 @@ export default function RegisterPage() {
               Already have an account?{' '}
               <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
             </motion.p>
-          </motion.div>
+          </div>
         </div>
       </FadeIn>
     </div>

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react';
-import { motion } from 'motion/react';
+
 import { FadeIn } from '@/components/reactbits';
 
 export default function NotificationsPage() {
@@ -35,17 +35,15 @@ export default function NotificationsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Notifications</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Notifications</h1>
         {unreadCount > 0 && (
-          <motion.button
+          <button
             onClick={() => markAllReadMutation.mutate()}
             disabled={markAllReadMutation.isPending}
             className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
           >
             <CheckCheck className="h-4 w-4" /> Mark All Read
-          </motion.button>
+          </button>
         )}
       </div>
 
@@ -62,9 +60,7 @@ export default function NotificationsPage() {
         <div className="space-y-2">
           {notifications.map((n: any, i: number) => (
             <FadeIn key={n._id} delay={i * 0.03} direction="up" distance={15}>
-              <motion.div
-                whileHover={{ scale: 1.01, x: 4 }}
-                transition={{ duration: 0.15 }}
+              <div
                 className={`p-4 rounded-lg border flex items-start justify-between gap-4 ${
                   n.isRead ? 'bg-background' : 'bg-primary/5 border-primary/20'
                 }`}
@@ -87,7 +83,7 @@ export default function NotificationsPage() {
                     <Check className="h-4 w-4" />
                   </button>
                 )}
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

@@ -31,27 +31,23 @@ export default function AdminNotificationsPage() {
   return (
     <FadeIn direction="up">
       <div>
-        <h1 className="text-2xl font-bold mb-6">Send Notifications</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Send Notifications</h1>
 
-        <div className="flex gap-4 mb-6">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6">
+          <button
             onClick={() => setType('targeted')}
             className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md border ${
               type === 'targeted' ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
             }`}>
             <Bell className="h-4 w-4" /> Targeted
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          </button>
+          <button
             onClick={() => setType('broadcast')}
             className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md border ${
               type === 'broadcast' ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
             }`}>
             <Radio className="h-4 w-4" /> Broadcast (All)
-          </motion.button>
+          </button>
         </div>
 
         <AnimatePresence>
@@ -71,27 +67,27 @@ export default function AdminNotificationsPage() {
         <FadeIn direction="up" delay={0.1}>
           <form onSubmit={(e) => { e.preventDefault(); setSuccess(''); sendMutation.mutate(); }} className="max-w-xl space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Title</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Title</label>
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" required />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Message</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Message</label>
               <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={4}
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" required />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Link (optional)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Link (optional)</label>
               <input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="/events/..."
-                className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
             </div>
 
             {type === 'targeted' && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Target Role</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Target Role</label>
                   <select value={form.targetRole} onChange={(e) => setForm({ ...form, targetRole: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm">
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="">All roles</option>
                     <option value="user">User</option>
                     <option value="member">Member</option>
@@ -101,9 +97,9 @@ export default function AdminNotificationsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Target Batch</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Target Batch</label>
                   <input type="number" value={form.targetBatch} onChange={(e) => setForm({ ...form, targetBatch: e.target.value })}
-                    placeholder="e.g. 5" className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    placeholder="e.g. 5" className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
               </div>
             )}
@@ -112,15 +108,13 @@ export default function AdminNotificationsPage() {
               <p className="text-sm text-red-600">{(sendMutation.error as any)?.response?.data?.message || 'Failed to send'}</p>
             )}
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               type="submit"
               disabled={sendMutation.isPending}
               className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50">
               {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Send Notification
-            </motion.button>
+            </button>
           </form>
         </FadeIn>
       </div>

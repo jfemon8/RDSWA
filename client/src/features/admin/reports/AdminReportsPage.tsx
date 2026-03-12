@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import api from '@/lib/api';
 import { Loader2, Users, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
@@ -22,23 +21,21 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Reports & Analytics</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-foreground">Reports & Analytics</h1>
 
-      <div className="flex gap-2 border-b">
+      <div className="flex flex-col sm:flex-row gap-2 border-b">
         {tabs.map((t) => {
           const Icon = t.icon;
           return (
-            <motion.button
+            <button
               key={t.key}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 ${
                 tab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon className="h-4 w-4" /> {t.label}
-            </motion.button>
+            </button>
           );
         })}
       </div>
@@ -69,8 +66,8 @@ function MembersReport() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* By Role */}
         <FadeIn direction="up" delay={0.1}>
-          <div className="border rounded-lg p-5 bg-background">
-            <h3 className="font-semibold mb-4">Members by Role</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Members by Role</h3>
             {byRole.length > 0 ? (
               <div className="flex items-center gap-4">
                 <ResponsiveContainer width="55%" height={220}>
@@ -86,7 +83,7 @@ function MembersReport() {
                     <div key={r._id} className="flex items-center gap-2 text-sm">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="capitalize text-muted-foreground">{r._id?.replace('_', ' ')}</span>
-                      <span className="ml-auto font-medium">{r.count}</span>
+                      <span className="ml-auto font-medium text-foreground">{r.count}</span>
                     </div>
                   ))}
                 </div>
@@ -97,8 +94,8 @@ function MembersReport() {
 
         {/* By Batch */}
         <FadeIn direction="up" delay={0.2}>
-          <div className="border rounded-lg p-5 bg-background">
-            <h3 className="font-semibold mb-4">Members by Batch</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Members by Batch</h3>
             {byBatch.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={byBatch.map((b: any) => ({ batch: b._id, count: b.count }))}>
@@ -114,8 +111,8 @@ function MembersReport() {
 
         {/* By Department */}
         <FadeIn direction="up" delay={0.3}>
-          <div className="border rounded-lg p-5 bg-background">
-            <h3 className="font-semibold mb-4">Members by Department</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Members by Department</h3>
             {byDepartment.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={byDepartment.slice(0, 10).map((d: any) => ({ dept: d._id, count: d.count }))} layout="vertical">
@@ -131,8 +128,8 @@ function MembersReport() {
 
         {/* By District */}
         <FadeIn direction="up" delay={0.4}>
-          <div className="border rounded-lg p-5 bg-background">
-            <h3 className="font-semibold mb-4">Members by District</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Members by District</h3>
             {byDistrict.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={byDistrict.slice(0, 10).map((d: any) => ({ district: d._id, count: d.count }))} layout="vertical">
@@ -175,22 +172,22 @@ function FinanceReport() {
     <div className="space-y-6">
       {/* Year Filter + Summary */}
       <FadeIn direction="up" delay={0.1}>
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
           <select value={year} onChange={(e) => setYear(e.target.value)}
-            className="px-3 py-2 border rounded-md text-sm bg-background">
+            className="px-3 py-2 border rounded-md text-sm bg-card text-foreground">
             <option value="">All Years</option>
             {years.map((y: string) => <option key={y} value={y}>{y}</option>)}
           </select>
-          <div className="flex gap-4">
-            <div className="border rounded-lg px-4 py-3 bg-background">
+          <div className="flex flex-wrap gap-4">
+            <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground">Total Donations</span>
               <p className="text-lg font-bold text-green-600">৳<CountUp to={d.totalDonations || 0} separator="," duration={1.5} /></p>
             </div>
-            <div className="border rounded-lg px-4 py-3 bg-background">
+            <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground">Total Expenses</span>
               <p className="text-lg font-bold text-red-600">৳<CountUp to={d.totalExpenses || 0} separator="," duration={1.5} /></p>
             </div>
-            <div className="border rounded-lg px-4 py-3 bg-background">
+            <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground">Balance</span>
               <p className={`text-lg font-bold ${(d.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ৳<CountUp to={Math.abs(d.balance || 0)} separator="," duration={1.5} />
@@ -203,8 +200,8 @@ function FinanceReport() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trend */}
         <FadeIn direction="up" delay={0.2}>
-          <div className="border rounded-lg p-5 bg-background">
-            <h3 className="font-semibold mb-4">Monthly Donation Trend</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Monthly Donation Trend</h3>
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={monthlyData}>
@@ -221,8 +218,8 @@ function FinanceReport() {
 
         {/* By Type */}
         <FadeIn direction="up" delay={0.3}>
-          <div className="border rounded-lg p-5 bg-background">
-            <h3 className="font-semibold mb-4">Donations by Type</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Donations by Type</h3>
             {(d.donationsByType || []).length > 0 ? (
               <div className="flex items-center gap-4">
                 <ResponsiveContainer width="55%" height={250}>
@@ -238,7 +235,7 @@ function FinanceReport() {
                     <div key={t._id} className="flex items-center gap-2 text-sm">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="capitalize text-muted-foreground">{t._id?.replace('_', ' ')}</span>
-                      <span className="ml-auto font-medium">৳{t.total?.toLocaleString()}</span>
+                      <span className="ml-auto font-medium text-foreground">৳{t.total?.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -249,8 +246,8 @@ function FinanceReport() {
 
         {/* Expenses by Category */}
         <FadeIn direction="up" delay={0.4}>
-          <div className="border rounded-lg p-5 bg-background lg:col-span-2">
-            <h3 className="font-semibold mb-4">Expenses by Category</h3>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card lg:col-span-2">
+            <h3 className="font-semibold text-foreground mb-4">Expenses by Category</h3>
             {(d.expensesByCategory || []).length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={(d.expensesByCategory || []).map((c: any) => ({ category: c._id, amount: c.total }))}>
@@ -287,22 +284,22 @@ function EventsReport() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s: any, i: number) => (
           <FadeIn key={s._id} direction="up" delay={i * 0.06}>
-            <motion.div whileHover={{ y: -2 }} className="border rounded-lg p-4 bg-background">
+            <div className="border rounded-lg p-4 bg-card">
               <p className="text-sm text-muted-foreground capitalize mb-1">{s._id?.replace('_', ' ')}</p>
-              <p className="text-2xl font-bold"><CountUp to={s.count} duration={1.5} /></p>
+              <p className="text-2xl font-bold text-foreground"><CountUp to={s.count} duration={1.5} /></p>
               <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
                 <span>Avg attendance: {Math.round(s.avgAttendance || 0)}</span>
                 <span>Registrations: {s.totalRegistered}</span>
               </div>
-            </motion.div>
+            </div>
           </FadeIn>
         ))}
       </div>
 
       {/* Events Chart */}
       <FadeIn direction="up" delay={0.3}>
-        <div className="border rounded-lg p-5 bg-background">
-          <h3 className="font-semibold mb-4">Event Participation by Type</h3>
+        <div className="border rounded-lg p-4 sm:p-6 bg-card">
+          <h3 className="font-semibold text-foreground mb-4">Event Participation by Type</h3>
           {stats.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.map((s: any) => ({
@@ -347,8 +344,8 @@ function DonationsReport() {
   return (
     <div className="space-y-6">
       <FadeIn direction="up" delay={0.1}>
-        <div className="border rounded-lg p-5 bg-background">
-          <h3 className="font-semibold mb-4">Donation Trends (Amount)</h3>
+        <div className="border rounded-lg p-4 sm:p-6 bg-card">
+          <h3 className="font-semibold text-foreground mb-4">Donation Trends (Amount)</h3>
           {trends.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={trends}>
@@ -364,8 +361,8 @@ function DonationsReport() {
       </FadeIn>
 
       <FadeIn direction="up" delay={0.2}>
-        <div className="border rounded-lg p-5 bg-background">
-          <h3 className="font-semibold mb-4">Donation Count Trend</h3>
+        <div className="border rounded-lg p-4 sm:p-6 bg-card">
+          <h3 className="font-semibold text-foreground mb-4">Donation Count Trend</h3>
           {trends.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={trends}>

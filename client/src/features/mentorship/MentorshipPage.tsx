@@ -90,8 +90,6 @@ export default function MentorshipPage() {
             className={`relative px-4 py-2 text-sm font-medium transition-colors ${
               tab === t.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             {t.label}
             {tab === t.key && (
@@ -131,8 +129,7 @@ export default function MentorshipPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {mentors.map((mentor: any, i: number) => (
                 <FadeIn key={mentor._id} delay={i * 0.05} direction="up">
-                  <motion.div
-                    whileHover={{ y: -2 }}
+                  <div
                     className="rounded-xl border bg-card p-5"
                   >
                     <div className="flex items-start gap-4">
@@ -175,13 +172,13 @@ export default function MentorshipPage() {
                                 className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                               />
                               <div className="flex gap-2">
-                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                <button
                                   disabled={requestMutation.isPending}
                                   onClick={() => requestMutation.mutate({ mentorId: mentor._id, area: requestArea })}
                                   className="px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-md disabled:opacity-50 flex items-center gap-1.5">
                                   {requestMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                                   Send Request
-                                </motion.button>
+                                </button>
                                 <button onClick={() => { setRequestingId(null); setRequestArea(''); }}
                                   className="px-4 py-1.5 text-sm border rounded-md hover:bg-muted">
                                   Cancel
@@ -189,19 +186,17 @@ export default function MentorshipPage() {
                               </div>
                             </motion.div>
                           ) : (
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.97 }}
+                            <button
                               onClick={() => setRequestingId(mentor._id)}
                               className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                             >
                               <UserPlus className="h-4 w-4" /> Request Mentorship
-                            </motion.button>
+                            </button>
                           )}
                         </AnimatePresence>
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 </FadeIn>
               ))}
             </div>
@@ -234,7 +229,7 @@ export default function MentorshipPage() {
 
                 return (
                   <FadeIn key={m._id} delay={i * 0.05} direction="up">
-                    <motion.div whileHover={{ y: -2 }} className="rounded-xl border bg-card p-5">
+                    <div className="rounded-xl border bg-card p-5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
@@ -258,16 +253,16 @@ export default function MentorshipPage() {
                       <div className="flex gap-2 mt-3 pt-3 border-t">
                         {m.status === 'pending' && isMentor && (
                           <>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            <button
                               onClick={() => actionMutation.mutate({ id: m._id, action: 'accept' })}
                               className="flex items-center gap-1 px-3 py-1 text-sm bg-green-600 text-white rounded-md">
                               <CheckCircle className="h-3.5 w-3.5" /> Accept
-                            </motion.button>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            </button>
+                            <button
                               onClick={() => actionMutation.mutate({ id: m._id, action: 'cancel' })}
                               className="flex items-center gap-1 px-3 py-1 text-sm border text-red-600 rounded-md">
                               <XCircle className="h-3.5 w-3.5" /> Decline
-                            </motion.button>
+                            </button>
                           </>
                         )}
                         {m.status === 'pending' && !isMentor && (
@@ -276,21 +271,21 @@ export default function MentorshipPage() {
                           </span>
                         )}
                         {m.status === 'active' && (
-                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          <button
                             onClick={() => actionMutation.mutate({ id: m._id, action: 'complete' })}
                             className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-600 text-white rounded-md">
                             <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
-                          </motion.button>
+                          </button>
                         )}
                         {(m.status === 'pending' || m.status === 'active') && (
-                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          <button
                             onClick={() => actionMutation.mutate({ id: m._id, action: 'cancel' })}
                             className="flex items-center gap-1 px-3 py-1 text-sm border rounded-md text-muted-foreground hover:text-foreground">
                             Cancel
-                          </motion.button>
+                          </button>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
                   </FadeIn>
                 );
               })}

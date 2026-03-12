@@ -61,17 +61,15 @@ export default function AdminNoticesPage() {
   const notices = data?.data || [];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Notices</h1>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Notices</h1>
+        <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> New Notice
-        </motion.button>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -83,16 +81,16 @@ export default function AdminNoticesPage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="border rounded-lg p-5 bg-background mb-6">
-              <h3 className="font-semibold mb-4">{editId ? 'Edit' : 'Create'} Notice</h3>
+            <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
+              <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Notice</h3>
               <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
                 <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                 <textarea placeholder="Content" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={5}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
-                <div className="grid grid-cols-3 gap-3">
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-sm">
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="general">General</option>
                     <option value="academic">Academic</option>
                     <option value="event">Event</option>
@@ -101,32 +99,30 @@ export default function AdminNoticesPage() {
                     <option value="other">Other</option>
                   </select>
                   <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-sm">
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="normal">Normal</option>
                     <option value="important">Important</option>
                     <option value="urgent">Urgent</option>
                   </select>
                   <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-sm">
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                   </select>
                 </div>
-                <label className="flex items-center gap-2 text-sm">
+                <label className="flex items-center gap-2 text-sm text-foreground">
                   <input type="checkbox" checked={form.isHighlighted} onChange={(e) => setForm({ ...form, isHighlighted: e.target.checked })} />
                   Highlight on homepage
                 </label>
                 <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     type="submit"
                     disabled={saveMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
                   >
                     {saveMutation.isPending ? 'Saving...' : editId ? 'Update' : 'Create'}
-                  </motion.button>
-                  <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-md text-sm hover:bg-accent">Cancel</button>
+                  </button>
+                  <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
               </form>
             </div>
@@ -140,14 +136,12 @@ export default function AdminNoticesPage() {
         <div className="space-y-2">
           {notices.map((n: any, i: number) => (
             <FadeIn key={n._id} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.15 }}
-                className="border rounded-lg p-4 bg-background flex items-center justify-between"
+              <div
+                className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
               >
                 <div>
-                  <h3 className="font-medium">{n.title}</h3>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <h3 className="font-medium text-foreground">{n.title}</h3>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                     <span className="capitalize">{n.category}</span>
                     <span className="capitalize">{n.status}</span>
                     <span className="capitalize">{n.priority}</span>
@@ -155,34 +149,28 @@ export default function AdminNoticesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => startEdit(n)}
                     className="p-2 hover:bg-accent rounded"
                   >
-                    <Pencil className="h-4 w-4" />
-                  </motion.button>
+                    <Pencil className="h-4 w-4 text-foreground" />
+                  </button>
                   {n.status === 'published' && (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => archiveMutation.mutate(n._id)}
                       className="p-2 hover:bg-accent rounded"
                     >
-                      <Archive className="h-4 w-4" />
-                    </motion.button>
+                      <Archive className="h-4 w-4 text-foreground" />
+                    </button>
                   )}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => deleteMutation.mutate(n._id)}
                     className="p-2 hover:bg-destructive/10 text-destructive rounded"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </motion.button>
+                  </button>
                 </div>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

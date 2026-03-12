@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6">
         Welcome, {user?.name}
       </h1>
 
@@ -105,14 +105,14 @@ export default function DashboardPage() {
                   </div>
 
                   {(user.membershipStatus === 'none' || user.membershipStatus === 'rejected') && (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="mt-3">
+                    <div className="mt-3">
                       <Link
                         to="/dashboard/forms/new"
                         className="inline-flex items-center gap-2 px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                       >
                         {user.membershipStatus === 'rejected' ? 'Re-apply' : 'Apply Now'}
                       </Link>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -187,11 +187,7 @@ function StatusCard({ icon, label, value, color }: { icon: React.ReactNode; labe
 
 function QuickAction({ to, label, description, icon }: { to: string; label: string; description: string; icon?: React.ReactNode }) {
   return (
-    <motion.div
-      whileHover={{ y: -4, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
-      transition={{ duration: 0.2 }}
-      className="rounded-lg"
-    >
+    <div className="rounded-lg">
       <Link to={to} className="block p-4 border rounded-lg hover:bg-accent transition-colors h-full">
         <div className="flex items-center gap-2">
           {icon}
@@ -199,6 +195,6 @@ function QuickAction({ to, label, description, icon }: { to: string; label: stri
         </div>
         <p className="text-sm text-muted-foreground mt-1">{description}</p>
       </Link>
-    </motion.div>
+    </div>
   );
 }

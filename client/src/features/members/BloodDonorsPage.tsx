@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Heart, Loader2, Phone, MapPin } from 'lucide-react';
@@ -28,7 +27,7 @@ export default function BloodDonorsPage() {
   const donors = data?.data || [];
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
       <div className="flex items-center gap-3 mb-6">
         <FadeIn delay={0} direction="left">
           <Heart className="h-8 w-8 text-red-500" />
@@ -36,7 +35,7 @@ export default function BloodDonorsPage() {
         <div>
           <BlurText
             text="Blood Donors"
-            className="text-3xl md:text-4xl font-bold mb-0"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-0"
             delay={80}
             animateBy="words"
             direction="bottom"
@@ -49,7 +48,7 @@ export default function BloodDonorsPage() {
 
       {/* Filters */}
       <FadeIn delay={0.2} direction="up">
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6">
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Blood Group</label>
             <select value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)}
@@ -81,10 +80,8 @@ export default function BloodDonorsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {donors.map((d: any, index: number) => (
             <FadeIn key={d._id} delay={0.05 * index} direction="up">
-              <motion.div
-                whileHover={{ y: -4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="border rounded-lg p-4 bg-background"
+              <div
+                className="border rounded-lg p-4 bg-card"
               >
                 <div className="flex items-center gap-3 mb-3">
                   {d.avatar ? (
@@ -115,7 +112,7 @@ export default function BloodDonorsPage() {
                     <p className="text-xs">Last donated: {new Date(d.lastDonationDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}</p>
                   )}
                 </div>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

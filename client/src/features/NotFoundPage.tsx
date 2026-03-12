@@ -21,7 +21,7 @@ export default function NotFoundPage() {
           </GradientText>
         </motion.div>
         <motion.h2
-          className="text-2xl font-semibold mb-2"
+          className="text-2xl sm:text-3xl font-semibold mb-2 text-foreground"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -40,8 +40,6 @@ export default function NotFoundPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
           <Link to="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 text-sm font-semibold shadow-lg shadow-primary/20">

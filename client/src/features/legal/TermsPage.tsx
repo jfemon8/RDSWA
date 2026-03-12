@@ -20,11 +20,11 @@ export default function TermsPage() {
   const sections: Array<{ title: string; content: string }> = data?.data?.termsConditions || [];
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
+    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
       <SEO title="Terms & Conditions" description="Terms and conditions for using the RDSWA platform." />
       <BlurText
         text="Terms & Conditions"
-        className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -50,8 +50,7 @@ export default function TermsPage() {
         <div className="space-y-6">
           {sections.map((section, i) => (
             <FadeIn key={i} delay={i * 0.06} direction="up">
-              <motion.div
-                whileHover={{ y: -2 }}
+              <div
                 className="rounded-xl border bg-card p-6"
               >
                 <div className="flex items-start gap-4">
@@ -64,11 +63,11 @@ export default function TermsPage() {
                     <Scale className="h-5 w-5" />
                   </motion.div>
                   <div>
-                    <h3 className="font-semibold text-lg mb-2">{section.title}</h3>
+                    <h3 className="font-semibold text-lg mb-2 text-foreground">{section.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

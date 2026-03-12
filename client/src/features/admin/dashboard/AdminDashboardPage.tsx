@@ -88,8 +88,8 @@ export default function AdminDashboardPage() {
   const recentLogs = logsData?.data || [];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+    <div className="space-y-6 p-4 sm:p-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -97,10 +97,8 @@ export default function AdminDashboardPage() {
           const Icon = card.icon;
           return (
             <FadeIn key={card.label} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.2 }}
-                className="border rounded-lg p-5 bg-background"
+              <div
+                className="border rounded-lg p-4 sm:p-5 bg-card"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-muted-foreground">{card.label}</span>
@@ -108,14 +106,14 @@ export default function AdminDashboardPage() {
                     <Icon className={`h-5 w-5 ${card.color}`} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-foreground">
                   {card.isCurrency ? (
                     <>৳<CountUp to={card.value} separator="," duration={1.5} /></>
                   ) : (
                     <CountUp to={card.value} separator="," duration={1.5} />
                   )}
                 </p>
-              </motion.div>
+              </div>
             </FadeIn>
           );
         })}
@@ -125,10 +123,10 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donation Trend Chart */}
         <FadeIn direction="up" delay={0.4}>
-          <div className="border rounded-lg p-5 bg-background">
+          <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <h3 className="font-semibold">Donation Trend</h3>
+              <h3 className="font-semibold text-foreground">Donation Trend</h3>
             </div>
             {donationMonthly.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -147,13 +145,13 @@ export default function AdminDashboardPage() {
 
         {/* Members by Role Pie */}
         <FadeIn direction="up" delay={0.5}>
-          <div className="border rounded-lg p-5 bg-background">
+          <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold">Members by Role</h3>
+              <h3 className="font-semibold text-foreground">Members by Role</h3>
             </div>
             {memberByRole.length > 0 ? (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <ResponsiveContainer width="60%" height={250}>
                   <PieChart>
                     <Pie data={memberByRole} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
@@ -169,7 +167,7 @@ export default function AdminDashboardPage() {
                     <div key={r.name} className="flex items-center gap-2 text-sm">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="capitalize text-muted-foreground">{r.name}</span>
-                      <span className="ml-auto font-medium">{r.value}</span>
+                      <span className="ml-auto font-medium text-foreground">{r.value}</span>
                     </div>
                   ))}
                 </div>
@@ -185,21 +183,19 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pending Approvals */}
         <FadeIn direction="up" delay={0.6}>
-          <div className="border rounded-lg p-5 bg-background">
+          <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-yellow-600" />
-                <h3 className="font-semibold">Pending Approvals</h3>
+                <h3 className="font-semibold text-foreground">Pending Approvals</h3>
               </div>
               {(stats?.pendingMembers || 0) > 5 && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => navigate('/admin/users')}
                   className="text-xs text-primary hover:underline"
                 >
                   View all ({stats.pendingMembers})
-                </motion.button>
+                </button>
               )}
             </div>
             <AnimatePresence mode="popLayout">
@@ -226,12 +222,12 @@ export default function AdminDashboardPage() {
                         {user.avatar ? (
                           <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-foreground">
                             {user.name?.[0]?.toUpperCase() || '?'}
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-medium">{user.name}</p>
+                          <p className="text-sm font-medium text-foreground">{user.name}</p>
                           <p className="text-xs text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
@@ -250,20 +246,18 @@ export default function AdminDashboardPage() {
 
         {/* Recent Activity */}
         <FadeIn direction="up" delay={0.7}>
-          <div className="border rounded-lg p-5 bg-background">
+          <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold">Recent Activity</h3>
+                <h3 className="font-semibold text-foreground">Recent Activity</h3>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={() => navigate('/admin/logs')}
                 className="text-xs text-primary hover:underline"
               >
                 View all
-              </motion.button>
+              </button>
             </div>
             {recentLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">No recent activity</div>
@@ -284,7 +278,7 @@ export default function AdminDashboardPage() {
                     }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">
-                        <span className="font-medium">{log.actor?.name || 'System'}</span>
+                        <span className="font-medium text-foreground">{log.actor?.name || 'System'}</span>
                         <span className="text-muted-foreground"> · </span>
                         <span className="text-muted-foreground font-mono text-xs">{log.action}</span>
                       </p>

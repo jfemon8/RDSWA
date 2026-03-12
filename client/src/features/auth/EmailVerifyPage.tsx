@@ -33,7 +33,7 @@ export default function EmailVerifyPage() {
   }, [token]);
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
+    <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
       <div className="text-center max-w-md">
         <AnimatePresence mode="wait">
           {status === 'loading' && (
@@ -46,11 +46,11 @@ export default function EmailVerifyPage() {
             >
               <FadeIn direction="up" duration={0.5} blur>
                 <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                <h1 className="text-2xl font-bold mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                   <GradientText
                     colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
                     animationSpeed={3}
-                    className="text-2xl font-bold"
+                    className="text-2xl sm:text-3xl font-bold"
                   >
                     Verifying Email...
                   </GradientText>
@@ -78,7 +78,7 @@ export default function EmailVerifyPage() {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </motion.div>
                 <motion.h1
-                  className="text-2xl font-bold mb-2"
+                  className="text-2xl sm:text-3xl font-bold mb-2"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
@@ -99,13 +99,11 @@ export default function EmailVerifyPage() {
                   transition={{ delay: 0.4 }}
                 >
                   <Link to="/login">
-                    <motion.span
+                    <span
                       className="inline-flex px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-sm font-semibold shadow-md shadow-primary/20"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       Go to Login
-                    </motion.span>
+                    </span>
                   </Link>
                 </motion.div>
               </FadeIn>
@@ -130,7 +128,7 @@ export default function EmailVerifyPage() {
                   <XCircle className="h-6 w-6 text-red-600" />
                 </motion.div>
                 <motion.h1
-                  className="text-2xl font-bold mb-2"
+                  className="text-2xl sm:text-3xl font-bold mb-2"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}

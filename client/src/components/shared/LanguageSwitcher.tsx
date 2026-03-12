@@ -25,9 +25,7 @@ export default function LanguageSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+      <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
         aria-label="Change language"
@@ -35,7 +33,7 @@ export default function LanguageSwitcher() {
       >
         <Languages className="h-4 w-4" />
         <span className="hidden sm:inline">{currentLang.flag}</span>
-      </motion.button>
+      </button>
 
       <AnimatePresence>
         {open && (
@@ -48,21 +46,20 @@ export default function LanguageSwitcher() {
             role="menu"
           >
             {languages.map((lang) => (
-              <motion.button
+              <button
                 key={lang.code}
-                whileHover={{ backgroundColor: 'hsl(var(--accent))' }}
                 onClick={() => {
                   i18n.changeLanguage(lang.code);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-accent transition-colors ${
                   i18n.language === lang.code ? 'text-primary font-semibold' : ''
                 }`}
                 role="menuitem"
               >
                 <span className="text-xs font-bold w-6">{lang.flag}</span>
                 {lang.label}
-              </motion.button>
+              </button>
             ))}
           </motion.div>
         )}

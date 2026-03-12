@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { Loader2, Shield, Clock } from 'lucide-react';
@@ -13,29 +12,25 @@ export default function AdminLogsPage() {
   return (
     <FadeIn direction="up">
       <div>
-        <h1 className="text-2xl font-bold mb-6">Logs & Security</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Logs & Security</h1>
 
-        <div className="flex gap-2 mb-6 border-b">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b">
+          <button
             onClick={() => setTab('audit')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 ${
               tab === 'audit' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <Shield className="h-4 w-4" /> Audit Logs
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          </button>
+          <button
             onClick={() => setTab('login')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 ${
               tab === 'login' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <Clock className="h-4 w-4" /> Login History
-          </motion.button>
+          </button>
         </div>
 
         {tab === 'audit' && <AuditLogsTab />}
@@ -68,7 +63,7 @@ function AuditLogsTab() {
         <div className="flex gap-3 mb-6">
           <input value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}
             placeholder="Filter by action..."
-            className="px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-64" />
+            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full sm:w-64" />
         </div>
       </FadeIn>
 
@@ -83,34 +78,32 @@ function AuditLogsTab() {
         <>
           <FadeIn direction="up" delay={0.1}>
             <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
-                  <tr className="bg-muted/50 border-b">
-                    <th className="text-left p-3 font-medium">Action</th>
-                    <th className="text-left p-3 font-medium">Actor</th>
-                    <th className="text-left p-3 font-medium">Resource</th>
-                    <th className="text-left p-3 font-medium">IP</th>
-                    <th className="text-left p-3 font-medium">Date</th>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">Action</th>
+                    <th className="text-left p-3 font-medium text-foreground">Actor</th>
+                    <th className="text-left p-3 font-medium text-foreground">Resource</th>
+                    <th className="text-left p-3 font-medium text-foreground">IP</th>
+                    <th className="text-left p-3 font-medium text-foreground">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.map((log: any) => (
-                    <motion.tr
+                    <tr
                       key={log._id}
-                      whileHover={{ backgroundColor: 'var(--accent)' }}
-                      transition={{ duration: 0.2 }}
-                      className="border-t"
+                      className="border-t hover:bg-accent/30"
                     >
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded bg-muted text-xs font-mono">{log.action}</span>
                       </td>
-                      <td className="p-3">{log.actor?.name || log.actor?.email || 'System'}</td>
+                      <td className="p-3 text-foreground">{log.actor?.name || log.actor?.email || 'System'}</td>
                       <td className="p-3 text-muted-foreground text-xs">{log.resource}</td>
                       <td className="p-3 text-muted-foreground text-xs font-mono">{log.ip || '-'}</td>
                       <td className="p-3 text-muted-foreground text-xs">
                         {new Date(log.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -155,7 +148,7 @@ function LoginHistoryTab() {
         <div className="flex gap-3 mb-6">
           <input value={userFilter} onChange={(e) => { setUserFilter(e.target.value); setPage(1); }}
             placeholder="Filter by user ID..."
-            className="px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-64" />
+            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full sm:w-64" />
         </div>
       </FadeIn>
 
@@ -170,27 +163,25 @@ function LoginHistoryTab() {
         <>
           <FadeIn direction="up" delay={0.1}>
             <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
-                  <tr className="bg-muted/50 border-b">
-                    <th className="text-left p-3 font-medium">User</th>
-                    <th className="text-left p-3 font-medium">IP Address</th>
-                    <th className="text-left p-3 font-medium">User Agent</th>
-                    <th className="text-left p-3 font-medium">Status</th>
-                    <th className="text-left p-3 font-medium">Date</th>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">User</th>
+                    <th className="text-left p-3 font-medium text-foreground">IP Address</th>
+                    <th className="text-left p-3 font-medium text-foreground">User Agent</th>
+                    <th className="text-left p-3 font-medium text-foreground">Status</th>
+                    <th className="text-left p-3 font-medium text-foreground">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.map((h: any) => (
-                    <motion.tr
+                    <tr
                       key={h._id}
-                      whileHover={{ backgroundColor: 'var(--accent)' }}
-                      transition={{ duration: 0.2 }}
-                      className="border-t"
+                      className="border-t hover:bg-accent/30"
                     >
                       <td className="p-3">
                         <div>
-                          <p className="font-medium text-sm">{h.user?.name || 'Unknown'}</p>
+                          <p className="font-medium text-sm text-foreground">{h.user?.name || 'Unknown'}</p>
                           <p className="text-xs text-muted-foreground">{h.user?.email || ''}</p>
                         </div>
                       </td>
@@ -208,7 +199,7 @@ function LoginHistoryTab() {
                       <td className="p-3 text-muted-foreground text-xs">
                         {new Date(h.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>

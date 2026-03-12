@@ -74,7 +74,7 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6">Edit Profile</h1>
 
       <div className="flex gap-2 mb-6 border-b relative">
         {tabs.map((tab) => (
@@ -84,8 +84,6 @@ export default function ProfilePage() {
             className={`relative px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             {tab.label}
             {activeTab === tab.key && (
@@ -190,7 +188,7 @@ export default function ProfilePage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="grid grid-cols-2 gap-3 p-3 border rounded-md relative"
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-md relative"
                       >
                         <InputField label="Company" value={job.company || ''} onChange={(v) => {
                           const updated = [...form.jobHistory]; updated[i] = { ...updated[i], company: v }; set('jobHistory', updated);
@@ -207,19 +205,19 @@ export default function ProfilePage() {
                         <CheckboxField label="Currently working here" checked={job.isCurrent || false} onChange={(v) => {
                           const updated = [...form.jobHistory]; updated[i] = { ...updated[i], isCurrent: v }; set('jobHistory', updated);
                         }} />
-                        <motion.button type="button" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                        <button type="button"
                           className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                           onClick={() => set('jobHistory', form.jobHistory.filter((_: any, j: number) => j !== i))}>
                           <Trash2 className="h-4 w-4" />
-                        </motion.button>
+                        </button>
                       </motion.div>
                     ))}
                   </AnimatePresence>
-                  <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  <button type="button"
                     className="flex items-center gap-1 text-sm text-primary hover:underline"
                     onClick={() => set('jobHistory', [...form.jobHistory, { company: '', position: '', startDate: '', endDate: '', isCurrent: false }])}>
                     <Plus className="h-4 w-4" /> Add Job
-                  </motion.button>
+                  </button>
                 </div>
               </fieldset>
 
@@ -234,7 +232,7 @@ export default function ProfilePage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="grid grid-cols-2 gap-3 p-3 border rounded-md relative"
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-md relative"
                       >
                         <InputField label="Business Name" value={biz.businessName || ''} onChange={(v) => {
                           const updated = [...form.businessInfo]; updated[i] = { ...updated[i], businessName: v }; set('businessInfo', updated);
@@ -248,19 +246,19 @@ export default function ProfilePage() {
                         <CheckboxField label="Currently active" checked={biz.isCurrent || false} onChange={(v) => {
                           const updated = [...form.businessInfo]; updated[i] = { ...updated[i], isCurrent: v }; set('businessInfo', updated);
                         }} />
-                        <motion.button type="button" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                        <button type="button"
                           className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                           onClick={() => set('businessInfo', form.businessInfo.filter((_: any, j: number) => j !== i))}>
                           <Trash2 className="h-4 w-4" />
-                        </motion.button>
+                        </button>
                       </motion.div>
                     ))}
                   </AnimatePresence>
-                  <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  <button type="button"
                     className="flex items-center gap-1 text-sm text-primary hover:underline"
                     onClick={() => set('businessInfo', [...form.businessInfo, { businessName: '', type: '', startDate: '', isCurrent: false }])}>
                     <Plus className="h-4 w-4" /> Add Business
-                  </motion.button>
+                  </button>
                 </div>
               </fieldset>
             </div>
@@ -277,16 +275,14 @@ export default function ProfilePage() {
           </FadeIn>
         )}
 
-        <motion.button
+        <button
           type="submit"
           disabled={updateMutation.isPending}
           className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
         >
           {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save Changes
-        </motion.button>
+        </button>
       </form>
     </div>
   );

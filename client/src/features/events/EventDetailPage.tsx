@@ -56,13 +56,13 @@ export default function EventDetailPage() {
   const photos = event.photos || [];
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
       <SEO title={event.title} description={event.description?.slice(0, 160)} image={event.coverImage} />
       {event.coverImage && (
         <motion.img
           src={event.coverImage}
           alt=""
-          className="w-full h-64 object-cover rounded-lg mb-6"
+          className="w-full h-48 sm:h-64 object-cover rounded-lg mb-6"
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
@@ -70,14 +70,14 @@ export default function EventDetailPage() {
       )}
 
       <FadeIn delay={0.1} direction="up">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <h1 className="text-3xl font-bold">{event.title}</h1>
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">{event.title}</h1>
           <StatusBadge status={event.status} />
         </div>
       </FadeIn>
 
       <FadeIn delay={0.15} direction="up">
-        <div className="flex flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             {new Date(event.startDate).toLocaleDateString('en-US', { dateStyle: 'long' })}
@@ -105,16 +105,14 @@ export default function EventDetailPage() {
       {/* Registration */}
       {canRegister && (
         <FadeIn delay={0.2} direction="up">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => registerMutation.mutate()}
             disabled={registerMutation.isPending}
             className="mb-6 flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
           >
             {registerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
             Register for Event
-          </motion.button>
+          </button>
         </FadeIn>
       )}
 
@@ -205,14 +203,13 @@ export default function EventDetailPage() {
       {photos.length > 0 && (
         <FadeIn delay={0.4} direction="up">
           <div className="mb-8">
-            <motion.button
+            <button
               onClick={() => setShowPhotos(!showPhotos)}
               className="flex items-center gap-2 mb-3 text-sm font-semibold hover:text-primary transition-colors"
-              whileHover={{ x: 2 }}
             >
               <Image className="h-5 w-5" />
               Event Photos ({photos.length})
-            </motion.button>
+            </button>
             <AnimatePresence>
               {showPhotos && (
                 <motion.div
@@ -222,7 +219,7 @@ export default function EventDetailPage() {
                   transition={{ duration: 0.3 }}
                   className="overflow-hidden"
                 >
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {photos.map((photo: any, i: number) => (
                       <motion.div
                         key={i}
@@ -232,12 +229,10 @@ export default function EventDetailPage() {
                         className="relative group cursor-pointer"
                         onClick={() => setSelectedPhoto(selectedPhoto === i ? null : i)}
                       >
-                        <motion.img
+                        <img
                           src={photo.url}
                           alt={photo.caption || ''}
                           className="w-full h-36 object-cover rounded-lg"
-                          whileHover={{ scale: 1.03 }}
-                          transition={{ duration: 0.2 }}
                         />
                         {photo.caption && (
                           <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1.5 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
@@ -262,32 +257,28 @@ export default function EventDetailPage() {
       {/* Feedback form */}
       {event.feedbackEnabled && event.status === 'completed' && isAuthenticated && !hasSubmittedFeedback && (
         <FadeIn delay={0.45} direction="up">
-          <div className="border rounded-lg p-6 bg-background mb-8">
+          <div className="border rounded-lg p-6 bg-card mb-8">
             <h3 className="font-semibold mb-4">Submit Feedback</h3>
             <div className="flex gap-1 mb-4">
               {[1, 2, 3, 4, 5].map((n) => (
-                <motion.button
+                <button
                   key={n}
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.9 }}
                   onClick={() => setRating(n)}
                   className="p-1"
                 >
                   <Star className={`h-6 w-6 ${n <= rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`} />
-                </motion.button>
+                </button>
               ))}
             </div>
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Share your thoughts..."
               className="w-full px-3 py-2 border rounded-md bg-background mb-3 focus:outline-none focus:ring-2 focus:ring-primary/50" />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => feedbackMutation.mutate()}
               disabled={!rating || feedbackMutation.isPending}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
             >
               {feedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
-            </motion.button>
+            </button>
           </div>
         </FadeIn>
       )}
@@ -305,7 +296,7 @@ export default function EventDetailPage() {
       {/* Feedbacks list */}
       {event.feedbacks && event.feedbacks.length > 0 && (
         <FadeIn delay={0.5} direction="up">
-          <div className="border rounded-lg p-6 bg-background">
+          <div className="border rounded-lg p-6 bg-card">
             <h3 className="font-semibold mb-4">Feedback ({event.feedbacks.length})</h3>
             <div className="space-y-3">
               {event.feedbacks.slice(0, 5).map((fb: any, i: number) => (
@@ -341,7 +332,7 @@ function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     upcoming: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     ongoing: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    completed: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+    completed: 'bg-muted text-muted-foreground',
     cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     draft: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   };

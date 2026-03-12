@@ -27,7 +27,7 @@ export default function NoticeDetailPage() {
   if (!notice) return <p className="text-center py-12 text-muted-foreground">Notice not found</p>;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
       <SEO title={notice.title} description={notice.content?.replace(/<[^>]*>/g, '').slice(0, 160)} />
       <FadeIn delay={0.05} direction="left">
         <Link to="/notices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
@@ -62,7 +62,7 @@ export default function NoticeDetailPage() {
       </FadeIn>
 
       <FadeIn delay={0.15} direction="up">
-        <h1 className="text-3xl font-bold mb-2">{notice.title}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">{notice.title}</h1>
         {notice.titleBn && <h2 className="text-xl text-muted-foreground mb-4">{notice.titleBn}</h2>}
       </FadeIn>
 

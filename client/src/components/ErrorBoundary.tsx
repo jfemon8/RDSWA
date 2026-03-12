@@ -83,22 +83,18 @@ export default class ErrorBoundary extends Component<Props, State> {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={this.handleReset}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
               >
                 <RefreshCw className="h-4 w-4" /> Try Again
-              </motion.button>
-              <motion.a
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              </button>
+              <a
                 href="/"
                 className="inline-flex items-center gap-2 px-5 py-2.5 border rounded-lg text-sm font-medium hover:bg-accent"
               >
                 <Home className="h-4 w-4" /> Go Home
-              </motion.a>
+              </a>
             </motion.div>
           </div>
         </div>

@@ -136,12 +136,10 @@ export default function Navbar() {
         <div className="flex items-center space-x-2">
           <LanguageSwitcher />
 
-          <motion.button
+          <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-accent transition-colors"
             aria-label="Toggle theme"
-            whileTap={{ scale: 0.9, rotate: 180 }}
-            transition={{ duration: 0.3 }}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -154,17 +152,15 @@ export default function Navbar() {
                 {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </motion.div>
             </AnimatePresence>
-          </motion.button>
+          </button>
 
           {isAuthenticated ? (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/dashboard"
-                className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-              >
-                {user?.name || 'Dashboard'}
-              </Link>
-            </motion.div>
+            <Link
+              to="/dashboard"
+              className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              {user?.name || 'Dashboard'}
+            </Link>
           ) : (
             <div className="hidden md:flex items-center space-x-2">
               <Link
@@ -173,23 +169,20 @@ export default function Navbar() {
               >
                 Login
               </Link>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  to="/register"
-                  className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-                >
-                  Register
-                </Link>
-              </motion.div>
+              <Link
+                to="/register"
+                className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                Register
+              </Link>
             </div>
           )}
 
-          <motion.button
+          <button
             className="lg:hidden p-2 rounded-lg hover:bg-accent"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
-            whileTap={{ scale: 0.9 }}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -202,7 +195,7 @@ export default function Navbar() {
                 {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </motion.div>
             </AnimatePresence>
-          </motion.button>
+          </button>
         </div>
       </div>
 

@@ -95,14 +95,12 @@ export default function JobBoardPage() {
           </select>
 
           {user && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setShowForm(!showForm)}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
             >
               <Plus className="h-4 w-4" /> Post Job
-            </motion.button>
+            </button>
           )}
         </div>
       </FadeIn>
@@ -141,18 +139,18 @@ export default function JobBoardPage() {
               <input placeholder="Requirements (comma separated)" value={newJob.requirements} onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
               <div className="flex gap-3">
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                <button
                   disabled={createMutation.isPending || !newJob.title || !newJob.company || !newJob.description}
                   onClick={() => createMutation.mutate(newJob)}
                   className="px-6 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50 flex items-center gap-2">
                   {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Post Job
-                </motion.button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                </button>
+                <button
                   onClick={() => setShowForm(false)}
                   className="px-6 py-2 border rounded-md hover:bg-muted">
                   Cancel
-                </motion.button>
+                </button>
               </div>
             </div>
           </motion.div>
@@ -174,8 +172,7 @@ export default function JobBoardPage() {
         <div className="space-y-4">
           {jobs.map((job: any, i: number) => (
             <FadeIn key={job._id} delay={i * 0.05} direction="up">
-              <motion.div
-                whileHover={{ y: -2 }}
+              <div
                 className="rounded-xl border bg-card p-6"
               >
                 <div className="flex items-start justify-between">
@@ -203,26 +200,22 @@ export default function JobBoardPage() {
                   </div>
                   <div className="flex items-center gap-2 ml-4 shrink-0">
                     {job.applicationLink && (
-                      <motion.a
+                      <a
                         href={job.applicationLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
                         className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
                       >
                         <ExternalLink className="h-4 w-4" />
-                      </motion.a>
+                      </a>
                     )}
                     {user && (user._id === job.postedBy?._id || ['admin', 'super_admin'].includes(user.role)) && (
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
                         onClick={() => deleteMutation.mutate(job._id)}
                         className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </motion.button>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -231,7 +224,7 @@ export default function JobBoardPage() {
                     Posted by {job.postedBy.name}
                   </p>
                 )}
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

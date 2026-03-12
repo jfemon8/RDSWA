@@ -45,7 +45,7 @@ export default function SubmitFormPage() {
   return (
     <FadeIn direction="up" blur duration={0.5}>
       <div className="max-w-xl">
-        <h1 className="text-2xl font-bold mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">
           {isMembershipForm ? 'Membership Application' : 'Submit Form'}
         </h1>
 
@@ -143,8 +143,6 @@ export default function SubmitFormPage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4 }}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
               >
                 {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {isMembershipForm ? 'Submit Application' : 'Submit'}

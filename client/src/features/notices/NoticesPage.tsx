@@ -34,11 +34,11 @@ export default function NoticesPage() {
   const categories = ['', 'general', 'academic', 'event', 'urgent', 'financial', 'other'];
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
+    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
       <SEO title="Notices" description="Stay updated with the latest RDSWA notices, announcements, and important updates." />
       <BlurText
         text="Notices"
-        className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -62,26 +62,24 @@ export default function NoticesPage() {
       <FadeIn delay={0.2}>
         <div className="flex items-center gap-2 mb-8 flex-wrap">
           {categories.map((c) => (
-            <motion.button key={c} onClick={() => { setCategory(c); setPage(1); }}
+            <button key={c} onClick={() => { setCategory(c); setPage(1); }}
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors capitalize ${
                 category === c ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
               }`}
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             >
               {c || 'All'}
-            </motion.button>
+            </button>
           ))}
           <div className="ml-auto">
-            <motion.button
+            <button
               onClick={() => { setShowArchived(!showArchived); setPage(1); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 showArchived ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' : 'hover:bg-accent'
               }`}
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             >
               <Archive className="h-3.5 w-3.5" />
               Archived
-            </motion.button>
+            </button>
           </div>
         </div>
       </FadeIn>
@@ -119,11 +117,10 @@ export default function NoticesPage() {
             {notices.map((n: any, i: number) => (
               <FadeIn key={n._id} delay={i * 0.04} direction="left">
                 <Link to={`/notices/${n._id}`}>
-                  <motion.div
+                  <div
                     className={`p-4 border rounded-xl bg-card hover:border-primary/30 transition-colors ${
                       n.priority === 'urgent' ? 'border-red-300 dark:border-red-800' : ''
                     } ${n.isArchived ? 'opacity-70' : ''}`}
-                    whileHover={{ x: 4, transition: { type: 'spring', stiffness: 300 } }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -147,7 +144,7 @@ export default function NoticesPage() {
                         </span>
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 </Link>
               </FadeIn>
             ))}
@@ -156,13 +153,11 @@ export default function NoticesPage() {
           {pagination && pagination.totalPages > 1 && (
             <FadeIn>
               <div className="flex justify-center gap-2 mt-8">
-                <motion.button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent"
-                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Prev</motion.button>
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
                 <span className="px-4 py-2 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-                <motion.button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent"
-                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Next</motion.button>
+                <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
+                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent">Next</button>
               </div>
             </FadeIn>
           )}

@@ -66,9 +66,7 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+      <button
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-md hover:bg-accent transition-colors"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
@@ -89,7 +87,7 @@ export default function NotificationBell() {
             </motion.span>
           )}
         </AnimatePresence>
-      </motion.button>
+      </button>
 
       <AnimatePresence>
         {open && (

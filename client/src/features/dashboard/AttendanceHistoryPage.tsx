@@ -20,7 +20,7 @@ export default function AttendanceHistoryPage() {
     <div className="max-w-3xl">
       <BlurText
         text="My Attendance History"
-        className="text-2xl font-bold mb-6"
+        className="text-2xl sm:text-3xl font-bold mb-6"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -43,9 +43,8 @@ export default function AttendanceHistoryPage() {
           {records.map((r: any, i: number) => (
             <FadeIn key={r._id} delay={i * 0.05} direction="up">
               <Link to={`/events/${r._id}`}>
-                <motion.div
+                <div
                   className="border rounded-lg p-4 bg-card hover:border-primary/30 transition-colors"
-                  whileHover={{ y: -2, transition: { duration: 0.15 } }}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -79,7 +78,7 @@ export default function AttendanceHistoryPage() {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </Link>
             </FadeIn>
           ))}

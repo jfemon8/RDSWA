@@ -33,7 +33,7 @@ export default function GalleryPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-8 px-4">
+      <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
         <div className="h-10 w-32 mb-6" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
@@ -43,9 +43,9 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
       <SEO title="Gallery" description="Browse RDSWA photo albums — events, gatherings, and memorable moments." />
-      <BlurText text="Gallery" className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
+      <BlurText text="Gallery" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
       {selectedAlbum && albumDetail ? (
         <div>
@@ -53,7 +53,7 @@ export default function GalleryPage() {
             className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
             ← Back to Albums
           </button>
-          <h2 className="text-xl font-semibold mb-4">{albumDetail.title}</h2>
+          <h2 className="text-xl font-semibold mb-4 text-foreground">{albumDetail.title}</h2>
           {albumDetail.description && <p className="text-muted-foreground mb-4">{albumDetail.description}</p>}
 
           {albumDetail.photos?.length > 0 ? (
@@ -80,12 +80,11 @@ export default function GalleryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {albums.map((a: any, i: number) => (
                 <FadeIn key={a._id} delay={i * 0.08} direction="up">
-                  <motion.div onClick={() => setSelectedAlbum(a._id)}
-                    className="border rounded-xl overflow-hidden bg-card cursor-pointer hover:border-primary/30 transition-colors"
-                    whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}>
+                  <div onClick={() => setSelectedAlbum(a._id)}
+                    className="border rounded-xl overflow-hidden bg-card cursor-pointer hover:border-primary/30 transition-colors">
                     {a.coverPhoto ? (
                       <div className="overflow-hidden">
-                        <motion.img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }} />
+                        <img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" />
                       </div>
                     ) : (
                       <div className="w-full h-40 bg-muted flex items-center justify-center">
@@ -93,10 +92,10 @@ export default function GalleryPage() {
                       </div>
                     )}
                     <div className="p-3">
-                      <h3 className="font-medium">{a.title}</h3>
+                      <h3 className="font-medium text-foreground">{a.title}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{a.photoCount || 0} photos</p>
                     </div>
-                  </motion.div>
+                  </div>
                 </FadeIn>
               ))}
             </div>
@@ -114,7 +113,7 @@ export default function GalleryPage() {
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
             onClick={() => setLightbox(null)}
           >
-            <button className="absolute top-4 right-4 text-white hover:text-gray-300" onClick={() => setLightbox(null)}>
+            <button className="absolute top-4 right-4 text-white hover:text-white/70" onClick={() => setLightbox(null)}>
               <X className="h-6 w-6" />
             </button>
             <motion.img

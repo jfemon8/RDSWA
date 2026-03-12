@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import NotificationBell from '@/components/shared/NotificationBell';
 
@@ -73,42 +73,35 @@ export default function DashboardLayout() {
               const Icon = link.icon;
               const isActive = location.pathname === link.href;
               return (
-                <motion.div
-                  key={link.href}
-                  whileHover={{ backgroundColor: isActive ? undefined : 'var(--color-accent)', borderRadius: '0.375rem' }}
-                  transition={{ duration: 0.2 }}
-                >
+                <div key={link.href}>
                   <Link
                     to={link.href}
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                       isActive
                         ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
                     {link.label}
                   </Link>
-                </motion.div>
+                </div>
               );
             })}
 
             {/* Admin panel link for moderator+ */}
             {user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR) && (
-              <motion.div
-                whileHover={{ backgroundColor: 'var(--color-accent)', borderRadius: '0.375rem' }}
-                transition={{ duration: 0.2 }}
-              >
+              <div>
                 <Link
                   to="/admin"
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 >
                   <Shield className="h-4 w-4" />
                   Admin Panel
                 </Link>
-              </motion.div>
+              </div>
             )}
 
             <div className="pt-4 border-t mt-4">

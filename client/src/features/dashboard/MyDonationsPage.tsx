@@ -54,25 +54,23 @@ export default function MyDonationsPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <FadeIn delay={0} direction="up">
-          <motion.button
-            whileHover={{ y: -2 }}
+          <button
             onClick={() => setFilter('all')}
             className={`border rounded-lg p-3 text-left w-full transition-colors ${filter === 'all' ? 'border-primary bg-primary/5' : ''}`}
           >
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-xl font-bold">{donations.length}</p>
-          </motion.button>
+          </button>
         </FadeIn>
         {Object.entries(statusConfig).map(([key, cfg], i) => (
           <FadeIn key={key} delay={(i + 1) * 0.05} direction="up">
-            <motion.button
-              whileHover={{ y: -2 }}
+            <button
               onClick={() => setFilter(key)}
               className={`border rounded-lg p-3 text-left w-full transition-colors ${filter === key ? 'border-primary bg-primary/5' : ''}`}
             >
               <p className="text-xs text-muted-foreground">{cfg.label}</p>
               <p className={`text-xl font-bold ${cfg.color}`}>{statusCounts[key] || 0}</p>
-            </motion.button>
+            </button>
           </FadeIn>
         ))}
       </div>
@@ -104,8 +102,7 @@ export default function MyDonationsPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.03 }}
                 >
-                  <motion.div
-                    whileHover={{ y: -2 }}
+                  <div
                     className="border rounded-lg p-4 bg-background"
                   >
                     <div className="flex items-start justify-between">
@@ -136,16 +133,14 @@ export default function MyDonationsPage() {
                       </div>
 
                       {d.paymentStatus === 'completed' && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={() => downloadReceipt(d._id)}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs border rounded-md hover:bg-accent"
                           title="Download Receipt"
                         >
                           <Download className="h-3.5 w-3.5" />
                           Receipt
-                        </motion.button>
+                        </button>
                       )}
                     </div>
 
@@ -170,7 +165,7 @@ export default function MyDonationsPage() {
                         Next payment: {new Date(d.nextPaymentDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
                       </p>
                     )}
-                  </motion.div>
+                  </div>
                 </motion.div>
               );
             })}

@@ -130,13 +130,13 @@ export default function CheckInScannerPage() {
   }, [stream]);
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
       <FadeIn direction="up">
         <Link to={`/events/${id}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Event
         </Link>
 
-        <h1 className="text-2xl font-bold mb-2">Check-In Scanner</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Check-In Scanner</h1>
         {event && <p className="text-muted-foreground mb-6">{event.title}</p>}
       </FadeIn>
 
@@ -167,9 +167,7 @@ export default function CheckInScannerPage() {
               <Camera className="h-5 w-5 text-primary" />
               <h3 className="font-semibold text-sm">QR Scanner</h3>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={scanning ? stopCamera : startCamera}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs ${
                 scanning
@@ -186,7 +184,7 @@ export default function CheckInScannerPage() {
                   <Camera className="h-3.5 w-3.5" /> Start Scanning
                 </>
               )}
-            </motion.button>
+            </button>
           </div>
 
           <div className="relative aspect-video bg-black">
@@ -223,7 +221,7 @@ export default function CheckInScannerPage() {
           <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <UserCheck className="h-4 w-4 text-primary" /> Manual Check-in
           </h3>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               placeholder="Enter User ID"
               value={manualId}
@@ -233,9 +231,7 @@ export default function CheckInScannerPage() {
                 if (e.key === 'Enter' && manualId) checkinMutation.mutate(manualId);
               }}
             />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => {
                 if (manualId) {
                   checkinMutation.mutate(manualId);
@@ -243,11 +239,11 @@ export default function CheckInScannerPage() {
                 }
               }}
               disabled={!manualId || checkinMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
             >
               {checkinMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
               Check In
-            </motion.button>
+            </button>
           </div>
         </div>
       </FadeIn>

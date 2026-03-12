@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { GraduationCap, MapPin, Phone, BookOpen } from 'lucide-react';
@@ -17,10 +16,10 @@ export default function UniversityPage() {
   const uni = data?.data?.universityInfo;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
       <BlurText
         text="University of Barishal"
-        className="text-3xl md:text-4xl font-bold mb-2"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -34,7 +33,7 @@ export default function UniversityPage() {
         <section className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             <GraduationCap className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Overview</h2>
+            <h2 className="text-xl font-semibold text-foreground">Overview</h2>
           </div>
           {uni?.overview ? (
             <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: uni.overview }} />
@@ -54,7 +53,7 @@ export default function UniversityPage() {
           <section className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <BookOpen className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">History</h2>
+              <h2 className="text-xl font-semibold text-foreground">History</h2>
             </div>
             <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: uni.history }} />
           </section>
@@ -64,11 +63,11 @@ export default function UniversityPage() {
       {/* Campus Info */}
       <FadeIn delay={0.3} direction="up">
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">Campus Information</h2>
+          <h2 className="text-xl font-semibold mb-3 text-foreground">Campus Information</h2>
           {uni?.campusInfo ? (
             <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: uni.campusInfo }} />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InfoCard title="Location" value="Barishal Sadar, Barishal, Bangladesh" icon={<MapPin className="h-4 w-4" />} />
               <InfoCard title="Type" value="Public University" icon={<GraduationCap className="h-4 w-4" />} />
               <InfoCard title="Faculties" value="6 Faculties, 30+ Departments" icon={<BookOpen className="h-4 w-4" />} />
@@ -82,7 +81,7 @@ export default function UniversityPage() {
       {uni?.admissionInfo && (
         <FadeIn delay={0.4} direction="up">
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3">Admission Information</h2>
+            <h2 className="text-xl font-semibold mb-3 text-foreground">Admission Information</h2>
             <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: uni.admissionInfo }} />
           </section>
         </FadeIn>
@@ -92,7 +91,7 @@ export default function UniversityPage() {
       {uni?.location?.lat && uni?.location?.lng && (
         <FadeIn delay={0.5} direction="up">
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3">Location</h2>
+            <h2 className="text-xl font-semibold mb-3 text-foreground">Location</h2>
             <div className="border rounded-lg overflow-hidden">
               <iframe
                 title="University Location"
@@ -112,16 +111,14 @@ export default function UniversityPage() {
 
 function InfoCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className="border rounded-lg p-4 bg-background"
+    <div
+      className="border rounded-lg p-4 bg-card"
     >
       <div className="flex items-center gap-2 text-primary mb-1">
         {icon}
         <span className="text-sm font-medium">{title}</span>
       </div>
       <p className="text-sm text-muted-foreground">{value}</p>
-    </motion.div>
+    </div>
   );
 }

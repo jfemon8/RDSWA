@@ -4,7 +4,6 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapPin, Vote, FileText, AlertTriangle } from 'lucide-react';
 import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, ShinyText } from '@/components/reactbits';
-import { motion } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import SEO from '@/components/SEO';
 
@@ -79,7 +78,7 @@ export default function HomePage() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[80px]" />
         </div>
 
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 sm:px-6 text-center">
           <FadeIn direction="down" delay={0.1}>
             <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-8">
               <span className="relative flex h-2 w-2">
@@ -136,22 +135,18 @@ export default function HomePage() {
 
           <FadeIn delay={1.0} scale>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <Link
-                  to="/register"
-                  className="inline-flex items-center bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
-                >
-                  {hp?.ctaButtonText || 'Get Started'} <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <Link
-                  to="/about"
-                  className="inline-flex items-center border border-border px-8 py-3.5 rounded-xl font-semibold hover:bg-accent transition-all"
-                >
-                  Learn More
-                </Link>
-              </motion.div>
+              <Link
+                to="/register"
+                className="inline-flex items-center bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
+              >
+                {hp?.ctaButtonText || 'Get Started'} <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+              <Link
+                to="/about"
+                className="inline-flex items-center border border-border px-8 py-3.5 rounded-xl font-semibold hover:bg-accent transition-all"
+              >
+                Learn More
+              </Link>
             </div>
           </FadeIn>
         </div>
@@ -159,7 +154,7 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="py-16 border-y bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { label: 'Active Members', value: stats?.totalMembers || 0, suffix: '+', icon: Users },
@@ -185,10 +180,10 @@ export default function HomePage() {
       {/* Latest Notices Section */}
       {notices.length > 0 && (
         <section className="py-20">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6">
             <FadeIn>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold">Latest Notices</h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-2">
+                <h2 className="text-2xl sm:text-3xl font-bold">Latest Notices</h2>
                 <Link to="/notices" className="text-sm text-primary hover:underline flex items-center gap-1">
                   View All <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -198,11 +193,10 @@ export default function HomePage() {
               {notices.map((n: any, i: number) => (
                 <FadeIn key={n._id} delay={i * 0.06} direction="left">
                   <Link to={`/notices/${n._id}`}>
-                    <motion.div
+                    <div
                       className={`p-4 border rounded-xl bg-card hover:border-primary/30 transition-colors ${
                         n.priority === 'urgent' ? 'border-red-300 dark:border-red-800' : ''
                       }`}
-                      whileHover={{ x: 4, transition: { type: 'spring', stiffness: 300 } }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
@@ -225,7 +219,7 @@ export default function HomePage() {
                           </span>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
                   </Link>
                 </FadeIn>
               ))}
@@ -237,26 +231,25 @@ export default function HomePage() {
       {/* Upcoming Events Section */}
       {events.length > 0 && (
         <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6">
             <FadeIn>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold">Upcoming Events</h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-2">
+                <h2 className="text-2xl sm:text-3xl font-bold">Upcoming Events</h2>
                 <Link to="/events" className="text-sm text-primary hover:underline flex items-center gap-1">
                   View All <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </FadeIn>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {events.map((e: any, i: number) => (
                 <FadeIn key={e._id} delay={i * 0.08} direction="up">
                   <Link to={`/events/${e._id}`}>
-                    <motion.div
+                    <div
                       className="group bg-card border rounded-xl overflow-hidden hover:border-primary/30 transition-colors"
-                      whileHover={{ y: -4, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
                     >
                       {e.coverImage && (
                         <div className="overflow-hidden">
-                          <motion.img src={e.coverImage} alt="" className="w-full h-40 object-cover" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }} />
+                          <img src={e.coverImage} alt="" className="w-full h-40 object-cover" />
                         </div>
                       )}
                       <div className="p-5">
@@ -274,7 +267,7 @@ export default function HomePage() {
                           )}
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </Link>
                 </FadeIn>
               ))}
@@ -286,9 +279,9 @@ export default function HomePage() {
       {/* Features Section */}
       {features.length > 0 && (
         <section className="py-20">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6">
             <FadeIn>
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">{hp?.featuresHeading || 'What We Offer'}</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4">{hp?.featuresHeading || 'What We Offer'}</h2>
             </FadeIn>
             <FadeIn delay={0.15}>
               <p className="text-muted-foreground text-center max-w-xl mx-auto mb-14">
@@ -296,20 +289,20 @@ export default function HomePage() {
               </p>
             </FadeIn>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, i) => {
                 const Icon = featureIconMap[feature.title] || Heart;
                 const color = featureColorMap[feature.title] || 'rgba(59, 130, 246, 0.15)';
                 return (
                   <FadeIn key={i} delay={i * 0.1} direction="up" scale>
                     <SpotlightCard className="bg-card border-border p-6 h-full" spotlightColor={color}>
-                      <motion.div whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                      <div>
                         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                           <Icon className="h-6 w-6 text-primary" />
                         </div>
                         <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
                         <p className="text-sm text-muted-foreground">{feature.description}</p>
-                      </motion.div>
+                      </div>
                     </SpotlightCard>
                   </FadeIn>
                 );
@@ -322,20 +315,19 @@ export default function HomePage() {
       {/* Services Grid */}
       {services.length > 0 && (
         <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6">
             <FadeIn>
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-14">{hp?.servicesHeading || 'Everything You Need'}</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-14">{hp?.servicesHeading || 'Everything You Need'}</h2>
             </FadeIn>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {services.map((service, i) => {
                 const Icon = serviceIconMap[service.title] || Heart;
                 return (
                   <FadeIn key={i} delay={i * 0.08} direction="up">
                     <Link to={service.link}>
-                      <motion.div
+                      <div
                         className="group bg-card border rounded-xl p-6 hover:border-primary/50 transition-colors"
-                        whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -346,7 +338,7 @@ export default function HomePage() {
                             <p className="text-sm text-muted-foreground">{service.description}</p>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     </Link>
                   </FadeIn>
                 );
@@ -362,14 +354,14 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-primary/15 rounded-full blur-[100px]" />
         </div>
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 sm:px-6 text-center">
           <FadeIn scale blur>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-6">
               Ready to{' '}
               <GradientText
                 colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
                 animationSpeed={3}
-                className="text-3xl md:text-5xl font-bold"
+                className="text-2xl sm:text-3xl md:text-5xl font-bold"
               >
                 {hp?.ctaTitle || 'Join Us'}
               </GradientText>
@@ -378,14 +370,12 @@ export default function HomePage() {
             <p className="text-lg text-muted-foreground max-w-lg mx-auto mb-10">
               {hp?.introText || 'Become a part of the largest Rangpur Division student community at University of Barishal.'}
             </p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                to="/register"
-                className="inline-flex items-center bg-primary text-primary-foreground px-10 py-4 rounded-xl font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
-              >
-                {hp?.ctaButtonText || 'Get Started'} <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </motion.div>
+            <Link
+              to="/register"
+              className="inline-flex items-center bg-primary text-primary-foreground px-10 py-4 rounded-xl font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
+            >
+              {hp?.ctaButtonText || 'Get Started'} <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </FadeIn>
         </div>
       </section>

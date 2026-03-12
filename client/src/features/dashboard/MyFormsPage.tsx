@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Link } from 'react-router-dom';
 import { FileText, Loader2, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+
 import { FadeIn } from '@/components/reactbits';
 
 const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
@@ -30,15 +30,13 @@ export default function MyFormsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">My Submissions</h1>
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-          <Link
-            to="/dashboard/forms/new"
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" /> New Submission
-          </Link>
-        </motion.div>
+        <h1 className="text-2xl sm:text-3xl font-bold">My Submissions</h1>
+        <Link
+          to="/dashboard/forms/new"
+          className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> New Submission
+        </Link>
       </div>
 
       {forms.length === 0 ? (
@@ -56,9 +54,7 @@ export default function MyFormsPage() {
             const StatusIcon = status.icon;
             return (
               <FadeIn key={f._id} delay={i * 0.06} direction="up" distance={15}>
-                <motion.div
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  transition={{ duration: 0.15 }}
+                <div
                   className="p-4 border rounded-lg bg-background"
                 >
                   <div className="flex items-center justify-between">
@@ -76,7 +72,7 @@ export default function MyFormsPage() {
                   {f.reviewComment && (
                     <p className="text-sm mt-2 p-2 bg-muted rounded">{f.reviewComment}</p>
                   )}
-                </motion.div>
+                </div>
               </FadeIn>
             );
           })}

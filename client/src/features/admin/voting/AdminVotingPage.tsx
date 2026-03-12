@@ -46,14 +46,12 @@ export default function AdminVotingPage() {
     <FadeIn direction="up">
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Voting & Polls</h1>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Voting & Polls</h1>
+          <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
             <Plus className="h-4 w-4" /> New Poll
-          </motion.button>
+          </button>
         </div>
 
         <AnimatePresence>
@@ -65,27 +63,27 @@ export default function AdminVotingPage() {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="border rounded-lg p-5 bg-background mb-6">
-                <h3 className="font-semibold mb-4">Create Poll</h3>
+              <div className="border rounded-lg p-4 sm:p-6 bg-card mb-6">
+                <h3 className="font-semibold text-foreground mb-4">Create Poll</h3>
                 <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
                   <input placeholder="Poll Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                   <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-                  <div className="grid grid-cols-2 gap-3">
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Start Time</label>
                       <input type="datetime-local" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">End Time</label>
                       <input type="datetime-local" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                     </div>
                   </div>
                   <select value={form.eligibleVoters} onChange={(e) => setForm({ ...form, eligibleVoters: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm">
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="all_members">All Members</option>
                     <option value="batch_specific">Batch Specific</option>
                     <option value="role_specific">Role Specific</option>
@@ -100,7 +98,7 @@ export default function AdminVotingPage() {
                             newOpts[i] = e.target.value;
                             setForm({ ...form, options: newOpts });
                           }}
-                          className="flex-1 px-3 py-2 border rounded-md bg-background text-sm" required />
+                          className="flex-1 px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                         {form.options.length > 2 && (
                           <button type="button" onClick={() => setForm({ ...form, options: form.options.filter((_, j) => j !== i) })}
                             className="p-2 text-destructive hover:bg-destructive/10 rounded">
@@ -113,22 +111,18 @@ export default function AdminVotingPage() {
                       className="text-sm text-primary hover:underline">+ Add option</button>
                   </div>
                   <div className="flex gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       type="submit"
                       disabled={createMutation.isPending}
                       className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">
                       Create
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    </button>
+                    <button
                       type="button"
                       onClick={() => setShowForm(false)}
                       className="px-4 py-2 border rounded-md text-sm">
                       Cancel
-                    </motion.button>
+                    </button>
                   </div>
                 </form>
               </div>
@@ -145,17 +139,17 @@ export default function AdminVotingPage() {
                 <motion.div
                   layout
                   transition={{ duration: 0.2 }}
-                  className="border rounded-lg bg-background overflow-hidden"
+                  className="border rounded-lg bg-card overflow-hidden"
                 >
-                  <div className="flex items-center justify-between p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 gap-2">
                     <div>
-                      <h3 className="font-medium">{v.title}</h3>
-                      <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                      <h3 className="font-medium text-foreground">{v.title}</h3>
+                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
                         <span className={`capitalize px-1.5 py-0.5 rounded ${
-                          v.status === 'active' ? 'bg-green-100 text-green-700'
-                          : v.status === 'published' ? 'bg-blue-100 text-blue-700'
-                          : v.status === 'closed' ? 'bg-gray-100 text-gray-700'
-                          : 'bg-yellow-100 text-yellow-700'
+                          v.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : v.status === 'published' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          : v.status === 'closed' ? 'bg-muted text-muted-foreground'
+                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                         }`}>{v.status}</span>
                         <span>{v.totalVotes || 0} votes</span>
                         <span>Ends {new Date(v.endTime).toLocaleDateString()}</span>
@@ -163,23 +157,19 @@ export default function AdminVotingPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {v.status === 'closed' && !v.isResultPublic && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={() => publishMutation.mutate(v._id)}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md">
                           <Eye className="h-3 w-3" /> Publish
-                        </motion.button>
+                        </button>
                       )}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <button
                         onClick={() => setStatsId(statsId === v._id ? null : v._id)}
                         className="flex items-center gap-1 px-3 py-1.5 text-xs border rounded-md hover:bg-accent"
                       >
                         <BarChart3 className="h-3 w-3" /> Stats
                         {statsId === v._id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      </motion.button>
+                      </button>
                     </div>
                   </div>
 
@@ -223,23 +213,23 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
   if (!stats) return null;
 
   return (
-    <div className="border-t p-4 space-y-4 bg-muted/20">
+    <div className="border-t p-4 sm:p-6 space-y-4 bg-muted/20">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <FadeIn delay={0} direction="up">
-          <div className="border rounded-lg p-3 bg-background text-center">
+          <div className="border rounded-lg p-3 bg-card text-center">
             <p className="text-xs text-muted-foreground">Total Voters</p>
-            <p className="text-xl font-bold">{stats.totalVoters}</p>
+            <p className="text-xl font-bold text-foreground">{stats.totalVoters}</p>
           </div>
         </FadeIn>
         <FadeIn delay={0.05} direction="up">
-          <div className="border rounded-lg p-3 bg-background text-center">
+          <div className="border rounded-lg p-3 bg-card text-center">
             <p className="text-xs text-muted-foreground">Total Votes</p>
             <p className="text-xl font-bold text-primary">{stats.totalVotes}</p>
           </div>
         </FadeIn>
         <FadeIn delay={0.1} direction="up">
-          <div className="border rounded-lg p-3 bg-background text-center">
+          <div className="border rounded-lg p-3 bg-card text-center">
             <p className="text-xs text-muted-foreground">Skipped</p>
             <p className="text-xl font-bold text-orange-500">{stats.skippedCount}</p>
           </div>
@@ -250,12 +240,12 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
         {/* By Batch */}
         {stats.byBatch?.length > 0 && (
           <FadeIn delay={0.15} direction="up">
-            <div className="border rounded-lg p-3 bg-background">
+            <div className="border rounded-lg p-3 bg-card">
               <h4 className="text-xs font-medium text-muted-foreground mb-2">By Batch</h4>
               <div className="space-y-1.5">
                 {stats.byBatch.map((b: any) => (
                   <div key={b.batch} className="flex items-center justify-between text-sm">
-                    <span>Batch {b.batch}</span>
+                    <span className="text-foreground">Batch {b.batch}</span>
                     <div className="flex items-center gap-2">
                       <div className="w-24 bg-muted rounded-full h-1.5">
                         <motion.div
@@ -277,12 +267,12 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
         {/* By Role */}
         {stats.byRole?.length > 0 && (
           <FadeIn delay={0.2} direction="up">
-            <div className="border rounded-lg p-3 bg-background">
+            <div className="border rounded-lg p-3 bg-card">
               <h4 className="text-xs font-medium text-muted-foreground mb-2">By Role</h4>
               <div className="space-y-1.5">
                 {stats.byRole.map((r: any) => (
                   <div key={r.role} className="flex items-center justify-between text-sm">
-                    <span className="capitalize">{r.role.replace('_', ' ')}</span>
+                    <span className="capitalize text-foreground">{r.role.replace('_', ' ')}</span>
                     <div className="flex items-center gap-2">
                       <div className="w-24 bg-muted rounded-full h-1.5">
                         <motion.div
@@ -304,7 +294,7 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
 
       {/* Voter List */}
       <FadeIn delay={0.25} direction="up">
-        <div className="border rounded-lg p-3 bg-background">
+        <div className="border rounded-lg p-3 bg-card">
           <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
             <Users className="h-3 w-3" /> Voters ({stats.voters?.length || 0})
           </h4>
@@ -319,7 +309,7 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
                   className="flex items-center justify-between text-xs py-1 border-b border-border/50 last:border-0"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{v.name}</span>
+                    <span className="font-medium text-foreground">{v.name}</span>
                     {v.batch && <span className="text-muted-foreground">Batch {v.batch}</span>}
                     <span className="capitalize text-muted-foreground">{v.role?.replace('_', ' ')}</span>
                   </div>

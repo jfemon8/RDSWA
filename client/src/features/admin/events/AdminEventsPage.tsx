@@ -75,17 +75,15 @@ export default function AdminEventsPage() {
   const pagination = data?.pagination;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Events</h1>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Events</h1>
+        <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> New Event
-        </motion.button>
+        </button>
       </div>
 
       {/* Create/Edit Form */}
@@ -98,16 +96,16 @@ export default function AdminEventsPage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="border rounded-lg p-5 bg-background mb-6">
-              <h3 className="font-semibold mb-4">{editId ? 'Edit' : 'Create'} Event</h3>
+            <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
+              <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Event</h3>
               <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-3">
                 <input placeholder="Event Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-                <div className="grid grid-cols-2 gap-3">
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-sm">
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="event">Event</option>
                     <option value="meeting">Meeting</option>
                     <option value="workshop">Workshop</option>
@@ -115,7 +113,7 @@ export default function AdminEventsPage() {
                     <option value="social">Social</option>
                   </select>
                   <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-sm">
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
                     <option value="draft">Draft</option>
                     <option value="upcoming">Upcoming</option>
                     <option value="ongoing">Ongoing</option>
@@ -123,30 +121,30 @@ export default function AdminEventsPage() {
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Start Date</label>
                     <input type="datetime-local" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">End Date</label>
                     <input type="datetime-local" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   </div>
                 </div>
                 <input placeholder="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 text-sm">
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                  <label className="flex items-center gap-2 text-sm text-foreground">
                     <input type="checkbox" checked={form.registrationRequired} onChange={(e) => setForm({ ...form, registrationRequired: e.target.checked })} />
                     Registration Required
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm text-foreground">
                     <input type="checkbox" checked={form.feedbackEnabled} onChange={(e) => setForm({ ...form, feedbackEnabled: e.target.checked })} />
                     Enable Feedback
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm text-foreground">
                     <input type="checkbox" checked={form.isOnline} onChange={(e) => setForm({ ...form, isOnline: e.target.checked })} />
                     Online Event
                   </label>
@@ -154,19 +152,17 @@ export default function AdminEventsPage() {
                 {form.registrationRequired && (
                   <input type="number" placeholder="Max Participants (optional)" value={form.maxParticipants}
                     onChange={(e) => setForm({ ...form, maxParticipants: e.target.value })}
-                    className="w-48 px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full sm:w-48 px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 )}
                 <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     type="submit"
                     disabled={saveMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
                   >
                     {saveMutation.isPending ? 'Saving...' : editId ? 'Update' : 'Create'}
-                  </motion.button>
-                  <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-md text-sm hover:bg-accent">Cancel</button>
+                  </button>
+                  <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
               </form>
             </div>
@@ -183,15 +179,13 @@ export default function AdminEventsPage() {
         <div className="space-y-2">
           {events.map((e: any, i: number) => (
             <FadeIn key={e._id} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.15 }}
-                className="border rounded-lg bg-background"
+              <div
+                className="border rounded-lg bg-card"
               >
-                <div className="p-4 flex items-center justify-between">
+                <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium">{e.title}</h3>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <h3 className="font-medium text-foreground">{e.title}</h3>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="capitalize">{e.type}</span>
                       <span className="capitalize">{e.status}</span>
                       <span>{new Date(e.startDate).toLocaleDateString()}</span>
@@ -202,50 +196,40 @@ export default function AdminEventsPage() {
                   </div>
                   <div className="flex gap-1 items-center">
                     <Link to={`/admin/events/${e._id}/checkin`}>
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <div
                         className="p-2 hover:bg-accent rounded"
                         title="Check-in Scanner"
                       >
-                        <ScanLine className="h-4 w-4" />
-                      </motion.div>
+                        <ScanLine className="h-4 w-4 text-foreground" />
+                      </div>
                     </Link>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => qrMutation.mutate(e._id)}
                       disabled={qrMutation.isPending}
                       className="p-2 hover:bg-accent rounded"
                       title="Generate QR Code"
                     >
-                      <QrCode className="h-4 w-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      <QrCode className="h-4 w-4 text-foreground" />
+                    </button>
+                    <button
                       onClick={() => setExpandedId(expandedId === e._id ? null : e._id)}
                       className="p-2 hover:bg-accent rounded"
                       title="Details"
                     >
-                      {expandedId === e._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      {expandedId === e._id ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
+                    </button>
+                    <button
                       onClick={() => startEdit(e)}
                       className="p-2 hover:bg-accent rounded"
                     >
-                      <Pencil className="h-4 w-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      <Pencil className="h-4 w-4 text-foreground" />
+                    </button>
+                    <button
                       onClick={() => deleteMutation.mutate(e._id)}
                       className="p-2 hover:bg-destructive/10 text-destructive rounded"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
 
@@ -263,7 +247,7 @@ export default function AdminEventsPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>
@@ -272,10 +256,10 @@ export default function AdminEventsPage() {
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-            className="px-3 py-1 border rounded text-sm disabled:opacity-50">Prev</button>
+            className="px-3 py-1 border rounded text-sm disabled:opacity-50 text-foreground">Prev</button>
           <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
           <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-            className="px-3 py-1 border rounded text-sm disabled:opacity-50">Next</button>
+            className="px-3 py-1 border rounded text-sm disabled:opacity-50 text-foreground">Next</button>
         </div>
       )}
     </div>
@@ -331,7 +315,7 @@ function EventDetailPanel({ event }: { event: any }) {
       {/* QR Code Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
-          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
             <QrCode className="h-4 w-4 text-primary" /> QR Code
           </h4>
           {fullEvent.qrCode ? (
@@ -350,28 +334,26 @@ function EventDetailPanel({ event }: { event: any }) {
 
         {/* Attendance Section */}
         <div className="md:col-span-2">
-          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
             <Users className="h-4 w-4 text-primary" /> Attendance ({attendance.length})
           </h4>
 
           {/* Manual check-in */}
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
             <input
               placeholder="User ID for manual check-in"
               value={manualUserId}
               onChange={(e) => setManualUserId(e.target.value)}
-              className="flex-1 px-3 py-1.5 border rounded-md bg-background text-sm"
+              className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
             />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => manualUserId && checkinMutation.mutate(manualUserId)}
               disabled={!manualUserId || checkinMutation.isPending}
               className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
             >
               <UserCheck className="h-3.5 w-3.5" />
               {checkinMutation.isPending ? '...' : 'Check In'}
-            </motion.button>
+            </button>
           </div>
 
           {attendance.length > 0 ? (
@@ -382,9 +364,9 @@ function EventDetailPanel({ event }: { event: any }) {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center justify-between py-1.5 px-2 bg-muted/50 rounded text-xs"
+                  className="flex items-center justify-between py-1.5 px-2 bg-muted rounded text-xs"
                 >
-                  <span>{a.user?.name || a.user || 'Unknown'}</span>
+                  <span className="text-foreground">{a.user?.name || a.user || 'Unknown'}</span>
                   <span className="text-muted-foreground">
                     {a.checkedInVia} • {new Date(a.checkedInAt).toLocaleTimeString()}
                   </span>
@@ -399,37 +381,35 @@ function EventDetailPanel({ event }: { event: any }) {
 
       {/* Photos Management */}
       <div>
-        <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+        <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
           <Image className="h-4 w-4 text-primary" /> Photos ({photos.length})
         </h4>
 
         {/* Add photo form */}
-        <div className="flex gap-2 mb-3">
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <input
             placeholder="Photo URL"
             value={photoUrl}
             onChange={(e) => setPhotoUrl(e.target.value)}
-            className="flex-1 px-3 py-1.5 border rounded-md bg-background text-sm"
+            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
           />
           <input
             placeholder="Caption (optional)"
             value={photoCaption}
             onChange={(e) => setPhotoCaption(e.target.value)}
-            className="flex-1 px-3 py-1.5 border rounded-md bg-background text-sm"
+            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
           />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => photoUrl && addPhotoMutation.mutate()}
             disabled={!photoUrl || addPhotoMutation.isPending}
             className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
           >
             {addPhotoMutation.isPending ? '...' : 'Add'}
-          </motion.button>
+          </button>
         </div>
 
         {photos.length > 0 && (
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {photos.map((photo: any, i: number) => (
               <motion.div
                 key={i}
@@ -439,14 +419,12 @@ function EventDetailPanel({ event }: { event: any }) {
                 className="relative group"
               >
                 <img src={photo.url} alt={photo.caption || ''} className="w-full h-24 object-cover rounded" />
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   onClick={() => removePhotoMutation.mutate(i)}
                   className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3" />
-                </motion.button>
+                </button>
                 {photo.caption && (
                   <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{photo.caption}</p>
                 )}
@@ -459,18 +437,18 @@ function EventDetailPanel({ event }: { event: any }) {
       {/* Feedback Review */}
       {fullEvent.feedbackEnabled && (
         <div>
-          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
             <MessageCircle className="h-4 w-4 text-primary" /> Feedback ({(fullEvent.feedback || []).length})
           </h4>
 
           {/* Stats Summary */}
           {(fullEvent.feedback || []).length > 0 && (
-            <div className="flex gap-4 mb-3">
+            <div className="flex flex-col sm:flex-row gap-4 mb-3">
               <div className="border rounded-lg px-3 py-2 bg-muted/30">
                 <span className="text-xs text-muted-foreground">Avg Rating</span>
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                  <span className="font-bold">
+                  <span className="font-bold text-foreground">
                     {((fullEvent.feedback || []).reduce((sum: number, f: any) => sum + (f.rating || 0), 0) / (fullEvent.feedback || []).length).toFixed(1)}
                   </span>
                   <span className="text-xs text-muted-foreground">/ 5</span>
@@ -478,7 +456,7 @@ function EventDetailPanel({ event }: { event: any }) {
               </div>
               <div className="border rounded-lg px-3 py-2 bg-muted/30">
                 <span className="text-xs text-muted-foreground">Responses</span>
-                <p className="font-bold">{(fullEvent.feedback || []).length}</p>
+                <p className="font-bold text-foreground">{(fullEvent.feedback || []).length}</p>
               </div>
               {/* Rating distribution */}
               <div className="border rounded-lg px-3 py-2 bg-muted/30 flex-1">
@@ -513,7 +491,7 @@ function EventDetailPanel({ event }: { event: any }) {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{fb.user?.name || 'Anonymous'}</span>
+                      <span className="text-sm font-medium text-foreground">{fb.user?.name || 'Anonymous'}</span>
                       <div className="flex gap-0.5">
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Star key={s} className={`h-3 w-3 ${s <= (fb.rating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />

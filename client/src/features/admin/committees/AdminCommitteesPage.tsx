@@ -62,17 +62,15 @@ export default function AdminCommitteesPage() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Committees</h1>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Committees</h1>
+        <button
           onClick={() => { setShowForm(true); setEditId(null); setForm({ name: '', description: '', startDate: '', endDate: '' }); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> New Committee
-        </motion.button>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -84,37 +82,35 @@ export default function AdminCommitteesPage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="border rounded-lg p-5 bg-background mb-6">
-              <h3 className="font-semibold mb-4">{editId ? 'Edit' : 'Create'} Committee</h3>
+            <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
+              <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Committee</h3>
               <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
                 <input placeholder="Committee Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-                <div className="grid grid-cols-2 gap-3">
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Start Date</label>
                     <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">End Date (optional)</label>
                     <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     type="submit"
                     disabled={createMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
                   >
                     {createMutation.isPending ? 'Saving...' : editId ? 'Update' : 'Create'}
-                  </motion.button>
+                  </button>
                   <button type="button" onClick={() => { setShowForm(false); setEditId(null); }}
-                    className="px-4 py-2 border rounded-md text-sm hover:bg-accent">Cancel</button>
+                    className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
               </form>
             </div>
@@ -128,15 +124,13 @@ export default function AdminCommitteesPage() {
         <div className="space-y-3">
           {committees.map((c: any, i: number) => (
             <FadeIn key={c._id} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -2 }}
-                transition={{ duration: 0.15 }}
-                className="border rounded-lg bg-background"
+              <div
+                className="border rounded-lg bg-card"
               >
-                <div className="p-4 flex items-center justify-between">
+                <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{c.name}</h3>
+                      <h3 className="font-semibold text-foreground">{c.name}</h3>
                       {c.isCurrent && (
                         <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
                           Current
@@ -150,34 +144,28 @@ export default function AdminCommitteesPage() {
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => setExpandedId(expandedId === c._id ? null : c._id)}
                       className="p-2 hover:bg-accent rounded"
                       title="Manage Members"
                     >
-                      {expandedId === c._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      {expandedId === c._id ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
+                    </button>
+                    <button
                       onClick={() => startEdit(c)}
                       className="p-2 hover:bg-accent rounded"
                       title="Edit"
                     >
-                      <Pencil className="h-4 w-4" />
-                    </motion.button>
+                      <Pencil className="h-4 w-4 text-foreground" />
+                    </button>
                     {c.isCurrent && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <button
                         onClick={() => archiveMutation.mutate(c._id)}
                         className="p-2 hover:bg-accent rounded"
                         title="Archive"
                       >
-                        <Archive className="h-4 w-4" />
-                      </motion.button>
+                        <Archive className="h-4 w-4 text-foreground" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -197,7 +185,7 @@ export default function AdminCommitteesPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>
@@ -243,15 +231,13 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Members ({members.length})</h4>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <h4 className="text-sm font-semibold text-foreground">Members ({members.length})</h4>
+        <button
           onClick={() => setShowAdd(!showAdd)}
           className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md"
         >
           <UserPlus className="h-3 w-3" /> Add Member
-        </motion.button>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -270,11 +256,11 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search user..."
-                  className="w-full pl-8 pr-3 py-1.5 border rounded-md bg-background text-sm"
+                  className="w-full pl-8 pr-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
                 />
               </div>
               {search.length >= 2 && searchResults.length > 0 && (
-                <div className="border rounded-md max-h-32 overflow-y-auto bg-background">
+                <div className="border rounded-md max-h-32 overflow-y-auto bg-card">
                   {searchResults.map((u: any) => (
                     <button
                       key={u._id}
@@ -283,7 +269,7 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
                         selectedUserId === u._id ? 'bg-primary/10' : ''
                       }`}
                     >
-                      {u.name} <span className="text-muted-foreground">({u.email})</span>
+                      <span className="text-foreground">{u.name}</span> <span className="text-muted-foreground">({u.email})</span>
                     </button>
                   ))}
                 </div>
@@ -291,23 +277,21 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
               <select
                 value={position}
                 onChange={(e) => setPosition(e.target.value as CommitteePosition)}
-                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm capitalize"
+                className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm capitalize"
               >
                 {POSITIONS.map((p) => (
                   <option key={p} value={p} className="capitalize">{p.replace('_', ' ')}</option>
                 ))}
               </select>
               <div className="flex gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => addMutation.mutate()}
                   disabled={!selectedUserId || addMutation.isPending}
                   className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs disabled:opacity-50"
                 >
                   {addMutation.isPending ? 'Adding...' : 'Add'}
-                </motion.button>
-                <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 border rounded-md text-xs hover:bg-accent">Cancel</button>
+                </button>
+                <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 border rounded-md text-xs hover:bg-accent text-foreground">Cancel</button>
               </div>
             </div>
           </motion.div>
@@ -330,25 +314,23 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
                 {m.user?.avatar ? (
                   <img src={m.user.avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-foreground">
                     {m.user?.name?.[0]?.toUpperCase() || '?'}
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-medium">{m.user?.name || 'Unknown'}</p>
+                  <p className="text-sm font-medium text-foreground">{m.user?.name || 'Unknown'}</p>
                   <p className="text-xs text-muted-foreground capitalize">{m.position?.replace('_', ' ')}</p>
                 </div>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={() => removeMutation.mutate(m.user?._id)}
                 disabled={removeMutation.isPending}
                 className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"
                 title="Remove"
               >
                 <UserMinus className="h-3.5 w-3.5" />
-              </motion.button>
+              </button>
             </motion.div>
           ))}
         </div>

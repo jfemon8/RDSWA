@@ -79,11 +79,11 @@ export default function EventsPage() {
   const nextMonth = () => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4">
+    <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6">
       <SEO title="Events" description="Browse upcoming and past RDSWA events, workshops, seminars, and social gatherings." />
       <BlurText
         text="Events"
-        className="text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"
         delay={80}
         animateBy="words"
         direction="bottom"
@@ -103,22 +103,18 @@ export default function EventsPage() {
             />
           </div>
           <div className="flex gap-1 border rounded-lg p-1">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
             >
               <LayoutGrid className="h-4 w-4" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            </button>
+            <button
               onClick={() => setViewMode('calendar')}
               className={`p-2 rounded ${viewMode === 'calendar' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
             >
               <CalendarDays className="h-4 w-4" />
-            </motion.button>
+            </button>
           </div>
         </div>
       </FadeIn>
@@ -128,17 +124,15 @@ export default function EventsPage() {
         <div className="flex gap-2 mb-6 flex-wrap">
           {/* Status filters */}
           {STATUSES.map((s) => (
-            <motion.button
+            <button
               key={`s-${s}`}
               onClick={() => { setStatus(s); setPage(1); }}
               className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                 status === s ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
               }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
               {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
-            </motion.button>
+            </button>
           ))}
           <span className="border-l mx-1" />
           {/* Type filter */}
@@ -181,18 +175,15 @@ export default function EventsPage() {
                   {events.map((e: any, i: number) => (
                     <FadeIn key={e._id} delay={i * 0.05} direction="up">
                       <Link to={`/events/${e._id}`}>
-                        <motion.div
+                        <div
                           className="border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"
-                          whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
                         >
                           {e.coverImage && (
                             <div className="overflow-hidden">
-                              <motion.img
+                              <img
                                 src={e.coverImage}
                                 alt=""
                                 className="w-full h-40 object-cover"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ duration: 0.3 }}
                               />
                             </div>
                           )}
@@ -215,7 +206,7 @@ export default function EventsPage() {
                               )}
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       </Link>
                     </FadeIn>
                   ))}
@@ -224,13 +215,11 @@ export default function EventsPage() {
                 {pagination && pagination.totalPages > 1 && (
                   <FadeIn>
                     <div className="flex justify-center gap-2 mt-8">
-                      <motion.button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                        className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent"
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Prev</motion.button>
+                      <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                        className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
                       <span className="px-4 py-2 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-                      <motion.button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                        className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent"
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Next</motion.button>
+                      <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
+                        className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent">Next</button>
                     </div>
                   </FadeIn>
                 )}
@@ -249,15 +238,15 @@ export default function EventsPage() {
             <div className="border rounded-xl bg-card overflow-hidden">
               {/* Calendar header */}
               <div className="flex items-center justify-between p-4 border-b">
-                <motion.button onClick={prevMonth} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="p-1 hover:bg-accent rounded">
+                <button onClick={prevMonth} className="p-1 hover:bg-accent rounded">
                   <ChevronLeft className="h-5 w-5" />
-                </motion.button>
+                </button>
                 <h3 className="font-semibold">
                   {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </h3>
-                <motion.button onClick={nextMonth} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="p-1 hover:bg-accent rounded">
+                <button onClick={nextMonth} className="p-1 hover:bg-accent rounded">
                   <ChevronRight className="h-5 w-5" />
-                </motion.button>
+                </button>
               </div>
 
               {/* Day headers */}
@@ -292,16 +281,15 @@ export default function EventsPage() {
                           <div className="space-y-0.5 mt-0.5">
                             {day.events.slice(0, 2).map((e: any) => (
                               <Link key={e._id} to={`/events/${e._id}`}>
-                                <motion.div
-                                  whileHover={{ scale: 1.02 }}
+                                <div
                                   className={`text-[10px] md:text-xs px-1 py-0.5 rounded truncate cursor-pointer ${
                                     e.status === 'upcoming' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                     e.status === 'ongoing' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                    'bg-muted text-muted-foreground'
                                   }`}
                                 >
                                   {e.title}
-                                </motion.div>
+                                </div>
                               </Link>
                             ))}
                             {day.events.length > 2 && (
@@ -326,7 +314,7 @@ function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     upcoming: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     ongoing: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    completed: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+    completed: 'bg-muted text-muted-foreground',
     cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   };
   return (

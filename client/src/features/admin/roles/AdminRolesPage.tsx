@@ -4,7 +4,7 @@ import { Shield, Check, X } from 'lucide-react';
 import { UserRole, ROLE_HIERARCHY, PERMISSIONS, Module, Action } from '@rdswa/shared';
 
 const ROLE_COLORS: Record<string, string> = {
-  guest: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  guest: 'bg-muted text-muted-foreground',
   user: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   member: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   alumni: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
@@ -33,15 +33,15 @@ const displayRoles = ROLE_HIERARCHY.filter(r => r !== UserRole.GUEST);
 
 export default function AdminRolesPage() {
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Role Management</h1>
+    <div className="space-y-8 p-4 sm:p-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-foreground">Role Management</h1>
 
       {/* Role Hierarchy */}
       <FadeIn direction="up" delay={0.1}>
-        <div className="border rounded-lg p-5 bg-background">
+        <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <div className="flex items-center gap-2 mb-4">
             <Shield className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-lg">Role Hierarchy</h2>
+            <h2 className="font-semibold text-lg text-foreground">Role Hierarchy</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-6">
             Roles are ordered by privilege level. Higher roles inherit all permissions of lower roles.
@@ -69,8 +69,8 @@ export default function AdminRolesPage() {
 
       {/* Role Details */}
       <FadeIn direction="up" delay={0.2}>
-        <div className="border rounded-lg p-5 bg-background">
-          <h2 className="font-semibold text-lg mb-4">Role Details</h2>
+        <div className="border rounded-lg p-4 sm:p-5 bg-card">
+          <h2 className="font-semibold text-lg mb-4 text-foreground">Role Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {ROLE_HIERARCHY.map((role, i) => (
               <motion.div
@@ -78,7 +78,6 @@ export default function AdminRolesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.05 }}
-                whileHover={{ y: -2 }}
                 className="border rounded-lg p-4"
               >
                 <div className={`inline-block px-2.5 py-1 rounded text-xs font-semibold capitalize mb-2 ${ROLE_COLORS[role]}`}>
@@ -96,15 +95,15 @@ export default function AdminRolesPage() {
 
       {/* Permission Matrix */}
       <FadeIn direction="up" delay={0.3}>
-        <div className="border rounded-lg p-5 bg-background">
-          <h2 className="font-semibold text-lg mb-4">Permission Matrix</h2>
+        <div className="border rounded-lg p-4 sm:p-5 bg-card">
+          <h2 className="font-semibold text-lg mb-4 text-foreground">Permission Matrix</h2>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-[600px]">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 z-10 min-w-[140px]">Module : Action</th>
+                <tr className="border-b bg-muted">
+                  <th className="text-left p-2 font-medium text-foreground sticky left-0 bg-muted z-10 min-w-[140px]">Module : Action</th>
                   {displayRoles.map((role) => (
-                    <th key={role} className="p-2 font-medium text-center capitalize whitespace-nowrap">
+                    <th key={role} className="p-2 font-medium text-center capitalize whitespace-nowrap text-foreground">
                       {role.replace('_', ' ')}
                     </th>
                   ))}
@@ -119,8 +118,8 @@ export default function AdminRolesPage() {
                     const allowedRoles = PERMISSIONS[key] || [];
                     return (
                       <tr key={key} className={`border-b ${ai === 0 ? 'border-t-2 border-t-muted' : ''}`}>
-                        <td className="p-2 sticky left-0 bg-background z-10">
-                          <span className="font-medium">{mod}</span>
+                        <td className="p-2 sticky left-0 bg-card z-10">
+                          <span className="font-medium text-foreground">{mod}</span>
                           <span className="text-muted-foreground"> : {action}</span>
                         </td>
                         {displayRoles.map((role) => (

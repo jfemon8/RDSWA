@@ -107,7 +107,7 @@ export default function AdminSettingsPage() {
   return (
     <FadeIn direction="up">
       <div>
-        <h1 className="text-2xl font-bold mb-6">Site Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Site Settings</h1>
 
         <AnimatePresence>
           {saveMutation.isSuccess && (
@@ -127,7 +127,7 @@ export default function AdminSettingsPage() {
           {/* General */}
           <FadeIn direction="up" delay={0}>
             <section>
-              <h2 className="text-lg font-semibold mb-3">General</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">General</h2>
               <div className="space-y-3">
                 <Field label="Site Name" value={form.siteName} onChange={(v) => setForm({ ...form, siteName: v })} />
                 <Field label="Contact Email" value={form.contactEmail} onChange={(v) => setForm({ ...form, contactEmail: v })} />
@@ -140,32 +140,32 @@ export default function AdminSettingsPage() {
           {/* Content */}
           <FadeIn direction="up" delay={0.1}>
             <section>
-              <h2 className="text-lg font-semibold mb-3">Content</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Content</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">About Content</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">About Content</label>
                   <textarea value={form.aboutContent} onChange={(e) => setForm({ ...form, aboutContent: e.target.value })} rows={4}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Mission</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Mission</label>
                   <textarea value={form.missionContent} onChange={(e) => setForm({ ...form, missionContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Vision</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Vision</label>
                   <textarea value={form.visionContent} onChange={(e) => setForm({ ...form, visionContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Objectives</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Objectives</label>
                   <textarea value={form.objectivesContent} onChange={(e) => setForm({ ...form, objectivesContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">History</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">History</label>
                   <textarea value={form.historyContent} onChange={(e) => setForm({ ...form, historyContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
               </div>
             </section>
@@ -174,7 +174,7 @@ export default function AdminSettingsPage() {
           {/* Homepage Content */}
           <FadeIn direction="up" delay={0.15}>
             <section>
-              <h2 className="text-lg font-semibold mb-3">Homepage Content</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Homepage Content</h2>
               <div className="space-y-3">
                 <Field label="Founded Year" value={String(form.foundedYear)}
                   onChange={(v) => setForm({ ...form, foundedYear: parseInt(v) || 2021 })} />
@@ -193,9 +193,9 @@ export default function AdminSettingsPage() {
                 <Field label="Hero Image URL" value={form.homePageContent.heroImage}
                   onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroImage: v } })} />
                 <div>
-                  <label className="block text-sm font-medium mb-1">Intro / CTA Text</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Intro / CTA Text</label>
                   <textarea value={form.homePageContent.introText} onChange={(e) => setForm({ ...form, homePageContent: { ...form.homePageContent, introText: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <Field label="CTA Title (gradient text)" value={form.homePageContent.ctaTitle}
                   onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, ctaTitle: v } })} />
@@ -211,12 +211,12 @@ export default function AdminSettingsPage() {
                 {/* Features */}
                 <div className="pt-2">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium">Features (What We Offer)</label>
-                    <motion.button type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    <label className="text-sm font-medium text-foreground">Features (What We Offer)</label>
+                    <button type="button"
                       onClick={() => setForm({ ...form, homePageContent: { ...form.homePageContent, features: [...form.homePageContent.features, { title: '', description: '' }] } })}
                       className="flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
                       <Plus className="h-3 w-3" /> Add
-                    </motion.button>
+                    </button>
                   </div>
                   {form.homePageContent.features.map((f, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
@@ -226,10 +226,10 @@ export default function AdminSettingsPage() {
                       </button>
                       <input value={f.title} placeholder="Title"
                         onChange={(e) => { const features = [...form.homePageContent.features]; features[i] = { ...features[i], title: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, features } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                       <textarea value={f.description} placeholder="Description" rows={2}
                         onChange={(e) => { const features = [...form.homePageContent.features]; features[i] = { ...features[i], description: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, features } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                     </motion.div>
                   ))}
                 </div>
@@ -237,12 +237,12 @@ export default function AdminSettingsPage() {
                 {/* Services */}
                 <div className="pt-2">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium">Services (Everything You Need)</label>
-                    <motion.button type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    <label className="text-sm font-medium text-foreground">Services (Everything You Need)</label>
+                    <button type="button"
                       onClick={() => setForm({ ...form, homePageContent: { ...form.homePageContent, services: [...form.homePageContent.services, { title: '', description: '', link: '' }] } })}
                       className="flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
                       <Plus className="h-3 w-3" /> Add
-                    </motion.button>
+                    </button>
                   </div>
                   {form.homePageContent.services.map((s, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
@@ -252,13 +252,13 @@ export default function AdminSettingsPage() {
                       </button>
                       <input value={s.title} placeholder="Title"
                         onChange={(e) => { const services = [...form.homePageContent.services]; services[i] = { ...services[i], title: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                       <textarea value={s.description} placeholder="Description" rows={2}
                         onChange={(e) => { const services = [...form.homePageContent.services]; services[i] = { ...services[i], description: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                       <input value={s.link} placeholder="Link (e.g. /blood-donors)"
                         onChange={(e) => { const services = [...form.homePageContent.services]; services[i] = { ...services[i], link: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                     </motion.div>
                   ))}
                 </div>
@@ -269,27 +269,27 @@ export default function AdminSettingsPage() {
           {/* University Info */}
           <FadeIn direction="up" delay={0.18}>
             <section>
-              <h2 className="text-lg font-semibold mb-3">University Information</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">University Information</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Overview</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Overview</label>
                   <textarea value={form.universityInfo.overview} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, overview: e.target.value } })} rows={4}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">History</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">History</label>
                   <textarea value={form.universityInfo.history} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, history: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Campus Info</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Campus Info</label>
                   <textarea value={form.universityInfo.campusInfo} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, campusInfo: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Admission Info</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Admission Info</label>
                   <textarea value={form.universityInfo.admissionInfo} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, admissionInfo: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <Field label="Contact Info" value={form.universityInfo.contactInfo}
                   onChange={(v) => setForm({ ...form, universityInfo: { ...form.universityInfo, contactInfo: v } })} />
@@ -301,12 +301,12 @@ export default function AdminSettingsPage() {
           <FadeIn direction="up" delay={0.22}>
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">FAQ Items</h2>
-                <motion.button type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                <h2 className="text-lg font-semibold text-foreground">FAQ Items</h2>
+                <button type="button"
                   onClick={() => setForm({ ...form, faq: [...form.faq, { question: '', answer: '' }] })}
                   className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
                   <Plus className="h-3 w-3" /> Add FAQ
-                </motion.button>
+                </button>
               </div>
               <div className="space-y-3">
                 {form.faq.map((item, i) => (
@@ -317,10 +317,10 @@ export default function AdminSettingsPage() {
                     </button>
                     <input value={item.question} placeholder="Question"
                       onChange={(e) => { const faq = [...form.faq]; faq[i] = { ...faq[i], question: e.target.value }; setForm({ ...form, faq }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                     <textarea value={item.answer} placeholder="Answer" rows={2}
                       onChange={(e) => { const faq = [...form.faq]; faq[i] = { ...faq[i], answer: e.target.value }; setForm({ ...form, faq }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   </motion.div>
                 ))}
                 {form.faq.length === 0 && <p className="text-sm text-muted-foreground">No FAQ items. Click "Add FAQ" to create one.</p>}
@@ -332,12 +332,12 @@ export default function AdminSettingsPage() {
           <FadeIn direction="up" delay={0.26}>
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">Privacy Policy Sections</h2>
-                <motion.button type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                <h2 className="text-lg font-semibold text-foreground">Privacy Policy Sections</h2>
+                <button type="button"
                   onClick={() => setForm({ ...form, privacyPolicy: [...form.privacyPolicy, { title: '', content: '' }] })}
                   className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
                   <Plus className="h-3 w-3" /> Add Section
-                </motion.button>
+                </button>
               </div>
               <div className="space-y-3">
                 {form.privacyPolicy.map((item, i) => (
@@ -348,10 +348,10 @@ export default function AdminSettingsPage() {
                     </button>
                     <input value={item.title} placeholder="Section Title"
                       onChange={(e) => { const pp = [...form.privacyPolicy]; pp[i] = { ...pp[i], title: e.target.value }; setForm({ ...form, privacyPolicy: pp }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                     <textarea value={item.content} placeholder="Section Content" rows={3}
                       onChange={(e) => { const pp = [...form.privacyPolicy]; pp[i] = { ...pp[i], content: e.target.value }; setForm({ ...form, privacyPolicy: pp }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   </motion.div>
                 ))}
                 {form.privacyPolicy.length === 0 && <p className="text-sm text-muted-foreground">No sections. Click "Add Section" to create one.</p>}
@@ -363,12 +363,12 @@ export default function AdminSettingsPage() {
           <FadeIn direction="up" delay={0.3}>
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">Terms & Conditions Sections</h2>
-                <motion.button type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                <h2 className="text-lg font-semibold text-foreground">Terms & Conditions Sections</h2>
+                <button type="button"
                   onClick={() => setForm({ ...form, termsConditions: [...form.termsConditions, { title: '', content: '' }] })}
                   className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
                   <Plus className="h-3 w-3" /> Add Section
-                </motion.button>
+                </button>
               </div>
               <div className="space-y-3">
                 {form.termsConditions.map((item, i) => (
@@ -379,10 +379,10 @@ export default function AdminSettingsPage() {
                     </button>
                     <input value={item.title} placeholder="Section Title"
                       onChange={(e) => { const tc = [...form.termsConditions]; tc[i] = { ...tc[i], title: e.target.value }; setForm({ ...form, termsConditions: tc }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                     <textarea value={item.content} placeholder="Section Content" rows={3}
                       onChange={(e) => { const tc = [...form.termsConditions]; tc[i] = { ...tc[i], content: e.target.value }; setForm({ ...form, termsConditions: tc }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   </motion.div>
                 ))}
                 {form.termsConditions.length === 0 && <p className="text-sm text-muted-foreground">No sections. Click "Add Section" to create one.</p>}
@@ -393,7 +393,7 @@ export default function AdminSettingsPage() {
           {/* Social Links */}
           <FadeIn direction="up" delay={0.38}>
             <section>
-              <h2 className="text-lg font-semibold mb-3">Social Links</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Social Links</h2>
               <div className="space-y-3">
                 <Field label="Facebook" value={form.socialLinks.facebook}
                   onChange={(v) => setForm({ ...form, socialLinks: { ...form.socialLinks, facebook: v } })} />
@@ -408,10 +408,10 @@ export default function AdminSettingsPage() {
           {/* Payment Gateway */}
           <FadeIn direction="up" delay={0.45}>
             <section>
-              <h2 className="text-lg font-semibold mb-3">Payment Gateway</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">Payment Gateway</h2>
               {(['bkash', 'nagad', 'rocket'] as const).map((method) => (
                 <div key={method} className="flex items-center gap-3 mb-3">
-                  <label className="flex items-center gap-2 text-sm w-20 capitalize">
+                  <label className="flex items-center gap-2 text-sm w-20 capitalize text-foreground">
                     <input type="checkbox" checked={form.paymentGateway[method]?.isActive || false}
                       onChange={(e) => setForm({
                         ...form,
@@ -424,21 +424,19 @@ export default function AdminSettingsPage() {
                       ...form,
                       paymentGateway: { ...form.paymentGateway, [method]: { ...form.paymentGateway[method], number: e.target.value } },
                     })}
-                    className="flex-1 px-3 py-2 border rounded-md bg-background text-sm" />
+                    className="flex-1 px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
               ))}
             </section>
           </FadeIn>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             type="submit"
             disabled={saveMutation.isPending}
             className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50">
             {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Settings
-          </motion.button>
+          </button>
         </form>
       </div>
     </FadeIn>
@@ -448,9 +446,9 @@ export default function AdminSettingsPage() {
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
+      <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
       <input value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
     </div>
   );
 }

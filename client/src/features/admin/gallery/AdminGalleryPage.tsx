@@ -35,17 +35,15 @@ export default function AdminGalleryPage() {
   const albums = data?.data || [];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Gallery</h1>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gallery</h1>
+        <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> New Album
-        </motion.button>
+        </button>
       </div>
 
       <AnimatePresence>
@@ -57,23 +55,21 @@ export default function AdminGalleryPage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="border rounded-lg p-5 bg-background mb-6">
+            <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
               <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-3">
                 <input placeholder="Album Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" required />
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" required />
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     type="submit"
                     disabled={createMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
                   >
                     Create
-                  </motion.button>
-                  <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm hover:bg-accent">Cancel</button>
+                  </button>
+                  <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
               </form>
             </div>
@@ -92,10 +88,8 @@ export default function AdminGalleryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {albums.map((a: any, i: number) => (
             <FadeIn key={a._id} direction="up" delay={i * 0.06}>
-              <motion.div
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-                className="border rounded-lg overflow-hidden bg-background"
+              <div
+                className="border rounded-lg overflow-hidden bg-card"
               >
                 {a.coverPhoto ? (
                   <img src={a.coverPhoto} alt="" className="w-full h-32 object-cover" />
@@ -106,19 +100,17 @@ export default function AdminGalleryPage() {
                 )}
                 <div className="p-3 flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-sm">{a.title}</h3>
+                    <h3 className="font-medium text-sm text-foreground">{a.title}</h3>
                     <p className="text-xs text-muted-foreground">{a.photoCount || 0} photos</p>
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => deleteMutation.mutate(a._id)}
                     className="p-1.5 hover:bg-destructive/10 text-destructive rounded"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </motion.button>
+                  </button>
                 </div>
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

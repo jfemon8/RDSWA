@@ -47,17 +47,15 @@ export default function AdminAdminsPage() {
   const searchResults = searchData?.data || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Admin Management</h1>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Management</h1>
+        <button
           onClick={() => setShowPromote(!showPromote)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <UserPlus className="h-4 w-4" /> Promote to Admin
-        </motion.button>
+        </button>
       </div>
 
       <FadeIn direction="up" delay={0.05}>
@@ -78,8 +76,8 @@ export default function AdminAdminsPage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="border rounded-lg p-5 bg-background">
-              <h3 className="font-semibold mb-4">Promote User to Admin</h3>
+            <div className="border rounded-lg p-4 sm:p-5 bg-card">
+              <h3 className="font-semibold mb-4 text-foreground">Promote User to Admin</h3>
               <div className="space-y-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -87,46 +85,43 @@ export default function AdminAdminsPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search user by name or email..."
-                    className="w-full pl-9 pr-3 py-2 border rounded-md bg-background text-sm"
+                    className="w-full pl-9 pr-3 py-2 border rounded-md bg-card text-foreground text-sm"
                   />
                 </div>
                 {search.length >= 2 && searchResults.length > 0 && (
                   <div className="border rounded-md max-h-48 overflow-y-auto">
                     {searchResults.map((u: any) => (
-                      <motion.button
+                      <button
                         key={u._id}
-                        whileHover={{ backgroundColor: 'var(--accent)' }}
                         onClick={() => { setSelectedUserId(u._id); setSearch(u.name); }}
-                        className={`w-full text-left px-3 py-2 text-sm border-b last:border-b-0 flex items-center gap-3 ${
+                        className={`w-full text-left px-3 py-2 text-sm border-b last:border-b-0 flex items-center gap-3 hover:bg-accent ${
                           selectedUserId === u._id ? 'bg-primary/10' : ''
                         }`}
                       >
                         {u.avatar ? (
                           <img src={u.avatar} alt="" className="w-6 h-6 rounded-full" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px]">
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] text-foreground">
                             {u.name?.[0]?.toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <p className="font-medium">{u.name}</p>
+                          <p className="font-medium text-foreground">{u.name}</p>
                           <p className="text-xs text-muted-foreground">{u.email} · {u.role}</p>
                         </div>
-                      </motion.button>
+                      </button>
                     ))}
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => promoteMutation.mutate()}
                     disabled={!selectedUserId || promoteMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
                   >
                     {promoteMutation.isPending ? 'Promoting...' : 'Promote'}
-                  </motion.button>
-                  <button onClick={() => setShowPromote(false)} className="px-4 py-2 border rounded-md text-sm hover:bg-accent">Cancel</button>
+                  </button>
+                  <button onClick={() => setShowPromote(false)} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
               </div>
             </div>
@@ -146,21 +141,19 @@ export default function AdminAdminsPage() {
         <div className="space-y-3">
           {admins.map((admin: any, i: number) => (
             <FadeIn key={admin._id} direction="up" delay={i * 0.05}>
-              <motion.div
-                whileHover={{ y: -1 }}
-                transition={{ duration: 0.15 }}
-                className="border rounded-lg p-4 bg-background flex items-center justify-between"
+              <div
+                className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3">
                   {admin.avatar ? (
                     <img src={admin.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground">
                       {admin.name?.[0]?.toUpperCase() || '?'}
                     </div>
                   )}
                   <div>
-                    <p className="font-medium">{admin.name}</p>
+                    <p className="font-medium text-foreground">{admin.name}</p>
                     <p className="text-sm text-muted-foreground">{admin.email}</p>
                   </div>
                   <span className={`ml-2 px-2 py-0.5 text-xs rounded-full font-medium ${
@@ -172,18 +165,16 @@ export default function AdminAdminsPage() {
                   </span>
                 </div>
                 {admin.role !== 'super_admin' && (
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={() => demoteMutation.mutate(admin._id)}
                     disabled={demoteMutation.isPending}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30"
                     title="Demote admin"
                   >
                     <ArrowDown className="h-3 w-3" /> Demote
-                  </motion.button>
+                  </button>
                 )}
-              </motion.div>
+              </div>
             </FadeIn>
           ))}
         </div>

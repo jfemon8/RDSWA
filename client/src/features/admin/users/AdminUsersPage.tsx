@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Loader2, UserCheck, UserX, Ban } from 'lucide-react';
-import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
 export default function AdminUsersPage() {
@@ -51,18 +50,18 @@ export default function AdminUsersPage() {
   const pagination = data?.pagination;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">User Management</h1>
+    <div className="p-4 sm:p-6">
+      <h1 className="text-xl sm:text-2xl font-bold mb-6 text-foreground">User Management</h1>
 
       <FadeIn direction="up" delay={0}>
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 mb-6">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search users..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+              placeholder="Search users..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
           </div>
           <select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-background text-sm">
+            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
             <option value="">All Roles</option>
             <option value="user">User</option>
             <option value="member">Member</option>
@@ -71,7 +70,7 @@ export default function AdminUsersPage() {
             <option value="admin">Admin</option>
           </select>
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-background text-sm">
+            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
             <option value="">All Status</option>
             <option value="none">No Application</option>
             <option value="pending">Pending</option>
@@ -88,22 +87,20 @@ export default function AdminUsersPage() {
         <>
           <FadeIn direction="up" delay={0.1}>
             <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[600px]">
                 <thead>
-                  <tr className="bg-muted/50 border-b">
-                    <th className="text-left p-3 font-medium">User</th>
-                    <th className="text-left p-3 font-medium">Role</th>
-                    <th className="text-left p-3 font-medium">Membership</th>
-                    <th className="text-left p-3 font-medium">Batch</th>
-                    <th className="text-left p-3 font-medium">Actions</th>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">User</th>
+                    <th className="text-left p-3 font-medium text-foreground">Role</th>
+                    <th className="text-left p-3 font-medium text-foreground">Membership</th>
+                    <th className="text-left p-3 font-medium text-foreground">Batch</th>
+                    <th className="text-left p-3 font-medium text-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((u: any) => (
-                    <motion.tr
+                    <tr
                       key={u._id}
-                      whileHover={{ y: -2 }}
-                      transition={{ duration: 0.15 }}
                       className="border-t hover:bg-accent/30"
                     >
                       <td className="p-3">
@@ -116,14 +113,14 @@ export default function AdminUsersPage() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium">{u.name}</p>
+                            <p className="font-medium text-foreground">{u.name}</p>
                             <p className="text-xs text-muted-foreground">{u.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-3">
                         <select value={u.role} onChange={(e) => changeRoleMutation.mutate({ id: u._id, role: e.target.value })}
-                          className="px-2 py-1 border rounded text-xs bg-background">
+                          className="px-2 py-1 border rounded text-xs bg-card text-foreground">
                           <option value="user">User</option>
                           <option value="member">Member</option>
                           <option value="alumni">Alumni</option>
@@ -136,7 +133,7 @@ export default function AdminUsersPage() {
                           u.membershipStatus === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                             : u.membershipStatus === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                             : u.membershipStatus === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                            : u.membershipStatus === 'suspended' ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                            : u.membershipStatus === 'suspended' ? 'bg-muted text-muted-foreground'
                             : 'bg-muted text-muted-foreground'
                         }`}>
                           {u.membershipStatus}
@@ -147,40 +144,34 @@ export default function AdminUsersPage() {
                         <div className="flex gap-1">
                           {u.membershipStatus === 'pending' && (
                             <>
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                              <button
                                 onClick={() => approveMutation.mutate(u._id)}
                                 title="Approve"
                                 className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                               >
                                 <UserCheck className="h-4 w-4" />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                              </button>
+                              <button
                                 onClick={() => rejectMutation.mutate(u._id)}
                                 title="Reject"
                                 className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                               >
                                 <UserX className="h-4 w-4" />
-                              </motion.button>
+                              </button>
                             </>
                           )}
                           {u.membershipStatus !== 'suspended' && u.role !== 'super_admin' && (
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
+                            <button
                               onClick={() => suspendMutation.mutate(u._id)}
                               title="Suspend"
                               className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
                             >
                               <Ban className="h-4 w-4" />
-                            </motion.button>
+                            </button>
                           )}
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -190,10 +181,10 @@ export default function AdminUsersPage() {
           {pagination && pagination.totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-4">
               <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent text-foreground">Prev</button>
               <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
               <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Next</button>
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent text-foreground">Next</button>
             </div>
           )}
         </>

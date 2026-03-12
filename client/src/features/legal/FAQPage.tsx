@@ -13,23 +13,21 @@ function FAQItem({ faq, index }: { faq: { question: string; answer: string }; in
 
   return (
     <FadeIn delay={index * 0.05} direction="up">
-      <motion.div
-        whileHover={{ y: -1 }}
+      <div
         className="rounded-xl border bg-card overflow-hidden"
       >
-        <motion.button
+        <button
           onClick={() => setOpen(!open)}
           className="w-full flex items-center justify-between p-5 text-left"
-          whileTap={{ scale: 0.99 }}
         >
-          <span className="font-medium pr-4">{faq.question}</span>
+          <span className="font-medium pr-4 text-foreground">{faq.question}</span>
           <motion.div
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
           >
             <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
           </motion.div>
-        </motion.button>
+        </button>
         <AnimatePresence>
           {open && (
             <motion.div
@@ -44,7 +42,7 @@ function FAQItem({ faq, index }: { faq: { question: string; answer: string }; in
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     </FadeIn>
   );
 }
@@ -62,11 +60,11 @@ export default function FAQPage() {
   const faqs: Array<{ question: string; answer: string }> = data?.data?.faq || [];
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
+    <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6">
       <SEO title="FAQ" description="Frequently asked questions about RDSWA membership and the platform." />
       <BlurText
         text="Frequently Asked Questions"
-        className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
         delay={80}
         animateBy="words"
         direction="bottom"

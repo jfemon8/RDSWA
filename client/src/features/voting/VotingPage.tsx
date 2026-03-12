@@ -27,9 +27,9 @@ export default function VotingPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
       <SEO title="Voting" description="Participate in RDSWA polls and elections — cast your vote on active polls." />
-      <BlurText text="Voting & Polls" className="text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
+      <BlurText text="Voting & Polls" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
       {votes.length === 0 ? (
         <FadeIn delay={0.2} direction="up">
@@ -43,7 +43,7 @@ export default function VotingPage() {
           {active.length > 0 && (
             <FadeIn delay={0.1} direction="up">
               <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
                   <Clock className="h-5 w-5 text-blue-500" /> Active Polls
                   <span className="relative flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
@@ -65,8 +65,8 @@ export default function VotingPage() {
           {closed.length > 0 && (
             <FadeIn delay={0.2} direction="up">
               <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-gray-500" /> Past Polls
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+                  <BarChart3 className="h-5 w-5 text-muted-foreground" /> Past Polls
                 </h2>
                 <div className="space-y-4">
                   {closed.map((v: any, i: number) => (
@@ -184,10 +184,10 @@ function VoteCard({ vote }: { vote: any }) {
   const displayTotal = totalVotes || 1;
 
   return (
-    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="border rounded-lg p-5 bg-background">
+    <div className="border rounded-lg p-5 bg-card">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold mb-1">{vote.title}</h3>
+          <h3 className="font-semibold mb-1 text-foreground">{vote.title}</h3>
           {vote.description && <p className="text-sm text-muted-foreground mb-3">{vote.description}</p>}
         </div>
         {isActive && liveOptions && (
@@ -230,7 +230,7 @@ function VoteCard({ vote }: { vote: any }) {
               {showResults || hasVoted ? (
                 <div className="relative">
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span>{o.text}</span>
+                    <span className="text-foreground">{o.text}</span>
                     <motion.span
                       key={voteCount}
                       initial={{ scale: 1.2, color: '#2563eb' }}
@@ -268,8 +268,6 @@ function VoteCard({ vote }: { vote: any }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             onClick={() => castMutation.mutate()}
             disabled={!selected || castMutation.isPending}
             className="mt-3 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
@@ -285,6 +283,6 @@ function VoteCard({ vote }: { vote: any }) {
           <CheckCircle className="h-4 w-4" /> You have voted
         </p>
       )}
-    </motion.div>
+    </div>
   );
 }
