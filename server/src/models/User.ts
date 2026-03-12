@@ -132,6 +132,7 @@ export interface IUserDocument extends Document {
 
 const addressSchema = new Schema(
   {
+    division: String,
     district: String,
     upazila: String,
     details: String,

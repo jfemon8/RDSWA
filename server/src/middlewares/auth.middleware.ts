@@ -34,6 +34,7 @@ export function authenticate(optional = false) {
       try {
         payload = verifyAccessToken(token);
       } catch {
+        if (optional) return next();
         throw ApiError.unauthorized('Invalid or expired access token');
       }
 

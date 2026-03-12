@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { divisions, districts, upazilas, type Division } from '@/data/bdGeo';
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
@@ -20,9 +21,8 @@ export default function ProfilePage() {
     gender: user?.gender || '',
     bloodGroup: user?.bloodGroup || '',
     isBloodDonor: user?.isBloodDonor || false,
-    homeDistrict: user?.homeDistrict || '',
-    presentAddress: user?.presentAddress || { district: '', upazila: '', details: '' },
-    permanentAddress: user?.permanentAddress || { district: '', upazila: '', details: '' },
+    presentAddress: (user as any)?.presentAddress || { division: '', district: '', upazila: '', details: '' },
+    permanentAddress: (user as any)?.permanentAddress || { division: '', district: '', upazila: '', details: '' },
     studentId: user?.studentId || '',
     batch: user?.batch || '',
     session: user?.session || '',
@@ -134,26 +134,35 @@ export default function ProfilePage() {
               <InputField label="Name (Bangla)" value={form.namebn} onChange={(v) => set('namebn', v)} />
               <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
               <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
-              <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={['male', 'female', 'other']} />
-              <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
+              <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }, { label: 'Other', value: 'other' }]} />
+              <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} />
               <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
-              <InputField label="Home District" value={form.homeDistrict} onChange={(v) => set('homeDistrict', v)} />
-              <fieldset className="border rounded-md p-4">
-                <legend className="text-sm font-medium px-2">Present Address</legend>
-                <div className="space-y-3">
-                  <InputField label="District" value={form.presentAddress.district} onChange={(v) => setNested('presentAddress', 'district', v)} />
-                  <InputField label="Upazila" value={form.presentAddress.upazila} onChange={(v) => setNested('presentAddress', 'upazila', v)} />
-                  <InputField label="Details" value={form.presentAddress.details} onChange={(v) => setNested('presentAddress', 'details', v)} />
-                </div>
-              </fieldset>
-              <fieldset className="border rounded-md p-4">
-                <legend className="text-sm font-medium px-2">Permanent Address</legend>
-                <div className="space-y-3">
-                  <InputField label="District" value={form.permanentAddress.district} onChange={(v) => setNested('permanentAddress', 'district', v)} />
-                  <InputField label="Upazila" value={form.permanentAddress.upazila} onChange={(v) => setNested('permanentAddress', 'upazila', v)} />
-                  <InputField label="Details" value={form.permanentAddress.details} onChange={(v) => setNested('permanentAddress', 'details', v)} />
-                </div>
-              </fieldset>
+              <AddressFieldset
+                legend="Present Address"
+                address={form.presentAddress}
+                onChange={(field, value) => {
+                  if (field === 'division') {
+                    setForm(prev => ({ ...prev, presentAddress: { ...prev.presentAddress, division: value, district: '', upazila: '' } }));
+                  } else if (field === 'district') {
+                    setForm(prev => ({ ...prev, presentAddress: { ...prev.presentAddress, district: value, upazila: '' } }));
+                  } else {
+                    setNested('presentAddress', field, value);
+                  }
+                }}
+              />
+              <AddressFieldset
+                legend="Permanent Address"
+                address={form.permanentAddress}
+                onChange={(field, value) => {
+                  if (field === 'division') {
+                    setForm(prev => ({ ...prev, permanentAddress: { ...prev.permanentAddress, division: value, district: '', upazila: '' } }));
+                  } else if (field === 'district') {
+                    setForm(prev => ({ ...prev, permanentAddress: { ...prev.permanentAddress, district: value, upazila: '' } }));
+                  } else {
+                    setNested('permanentAddress', field, value);
+                  }
+                }}
+              />
             </div>
           </FadeIn>
         )}
@@ -301,7 +310,7 @@ function InputField({ label, value, onChange, type = 'text', required, placehold
 }
 
 function SelectField({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[];
+  label: string; value: string; onChange: (v: string) => void; options: { label: string; value: string }[];
 }) {
   return (
     <div>
@@ -309,9 +318,51 @@ function SelectField({ label, value, onChange, options }: {
       <select value={value} onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50">
         <option value="">Select...</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
+  );
+}
+
+function AddressFieldset({ legend, address, onChange }: {
+  legend: string;
+  address: { division?: string; district?: string; upazila?: string; details?: string };
+  onChange: (field: string, value: string) => void;
+}) {
+  const div = (address.division || '') as Division;
+  const districtList = div && districts[div] ? districts[div] : [];
+  const upazilaList = address.district && upazilas[address.district] ? upazilas[address.district] : [];
+
+  const selectClass = 'w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50';
+
+  return (
+    <fieldset className="border rounded-md p-4">
+      <legend className="text-sm font-medium px-2">{legend}</legend>
+      <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Division</label>
+          <select value={address.division || ''} onChange={(e) => onChange('division', e.target.value)} className={selectClass}>
+            <option value="">Select Division...</option>
+            {divisions.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">District</label>
+          <select value={address.district || ''} onChange={(e) => onChange('district', e.target.value)} disabled={!div} className={selectClass}>
+            <option value="">Select District...</option>
+            {districtList.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Upazila</label>
+          <select value={address.upazila || ''} onChange={(e) => onChange('upazila', e.target.value)} disabled={!address.district} className={selectClass}>
+            <option value="">Select Upazila...</option>
+            {upazilaList.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </div>
+        <InputField label="Full Address" value={address.details || ''} onChange={(v) => onChange('details', v)} placeholder="House, Road, Area..." />
+      </div>
+    </fieldset>
   );
 }
 
