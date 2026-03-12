@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -61,8 +62,8 @@ export default function AdminEventsPage() {
     setEditId(e._id);
     setForm({
       title: e.title || '', description: e.description || '', type: e.type || 'event', status: e.status || 'draft',
-      startDate: e.startDate ? new Date(e.startDate).toISOString().slice(0, 16) : '',
-      endDate: e.endDate ? new Date(e.endDate).toISOString().slice(0, 16) : '',
+      startDate: e.startDate ? toDateTimeLocal(e.startDate) : '',
+      endDate: e.endDate ? toDateTimeLocal(e.endDate) : '',
       venue: e.venue || '', isOnline: e.isOnline || false,
       registrationRequired: e.registrationRequired || false,
       maxParticipants: e.maxParticipants ? String(e.maxParticipants) : '',
@@ -188,7 +189,7 @@ export default function AdminEventsPage() {
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="capitalize">{e.type}</span>
                       <span className="capitalize">{e.status}</span>
-                      <span>{new Date(e.startDate).toLocaleDateString()}</span>
+                      <span>{formatDate(e.startDate)}</span>
                       {e.registeredUsers && <span>{e.registeredUsers.length} registered</span>}
                       {e.attendance && <span>{e.attendance.length} attended</span>}
                       {e.qrCode && <span className="text-green-600">QR ✓</span>}
@@ -368,7 +369,7 @@ function EventDetailPanel({ event }: { event: any }) {
                 >
                   <span className="text-foreground">{a.user?.name || a.user || 'Unknown'}</span>
                   <span className="text-muted-foreground">
-                    {a.checkedInVia} • {new Date(a.checkedInAt).toLocaleTimeString()}
+                    {a.checkedInVia} • {formatTime(a.checkedInAt)}
                   </span>
                 </motion.div>
               ))}
@@ -499,7 +500,7 @@ function EventDetailPanel({ event }: { event: any }) {
                       </div>
                     </div>
                     <span className="text-[10px] text-muted-foreground">
-                      {fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : ''}
+                      {fb.createdAt ? formatDate(fb.createdAt) : ''}
                     </span>
                   </div>
                   {fb.comment && <p className="text-sm text-muted-foreground">{fb.comment}</p>}

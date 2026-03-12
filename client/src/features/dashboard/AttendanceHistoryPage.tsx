@@ -4,6 +4,7 @@ import { Calendar, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate, formatTime } from '@/lib/date';
 
 export default function AttendanceHistoryPage() {
   const { data, isLoading } = useQuery({
@@ -17,7 +18,7 @@ export default function AttendanceHistoryPage() {
   const records = data?.data || [];
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto">
       <BlurText
         text="My Attendance History"
         className="text-2xl sm:text-3xl font-bold mb-6"
@@ -52,7 +53,7 @@ export default function AttendanceHistoryPage() {
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(r.startDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                          {formatDate(r.startDate)}
                         </div>
                         {r.venue && (
                           <div className="flex items-center gap-1">
@@ -74,7 +75,7 @@ export default function AttendanceHistoryPage() {
                         <span className="text-xs font-medium">Attended</span>
                       </motion.div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        via {r.checkedInVia} • {new Date(r.checkedInAt).toLocaleTimeString()}
+                        via {r.checkedInVia} • {formatTime(r.checkedInAt)}
                       </p>
                     </div>
                   </div>

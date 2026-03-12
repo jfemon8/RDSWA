@@ -44,7 +44,7 @@ export default function SubmitFormPage() {
 
   return (
     <FadeIn direction="up" blur duration={0.5}>
-      <div className="max-w-xl">
+      <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-6">
           {isMembershipForm ? 'Membership Application' : 'Submit Form'}
         </h1>

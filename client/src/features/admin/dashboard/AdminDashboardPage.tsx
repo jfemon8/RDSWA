@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { formatDateCustom } from '@/lib/date';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -307,5 +308,5 @@ function formatRelativeTime(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateCustom(dateStr, { month: 'short', day: 'numeric' });
 }

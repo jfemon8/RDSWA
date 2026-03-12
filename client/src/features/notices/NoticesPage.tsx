@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { FileText, AlertTriangle, Search, Archive } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
@@ -34,7 +35,7 @@ export default function NoticesPage() {
   const categories = ['', 'general', 'academic', 'event', 'urgent', 'financial', 'other'];
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
+    <div className="mx-auto py-12 px-4 sm:px-6">
       <SEO title="Notices" description="Stay updated with the latest RDSWA notices, announcements, and important updates." />
       <BlurText
         text="Notices"
@@ -132,7 +133,7 @@ export default function NoticesPage() {
                         <p className="text-sm text-muted-foreground line-clamp-2">{n.content?.replace(/<[^>]*>/g, '')}</p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                           <span className="capitalize">{n.category}</span>
-                          <span>{new Date(n.publishedAt || n.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
+                          <span>{formatDate(n.publishedAt || n.createdAt)}</span>
                         </div>
                       </div>
                       {n.priority !== 'normal' && (

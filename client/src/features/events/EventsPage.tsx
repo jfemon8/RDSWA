@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
+import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -56,8 +57,7 @@ export default function EventsPage() {
 
   // Build calendar grid
   const calendarDays = useMemo(() => {
-    const year = calendarMonth.getFullYear();
-    const month = calendarMonth.getMonth();
+    const { year, month } = getDhakaDateParts(calendarMonth);
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const days: { date: number; events: any[] }[] = [];
@@ -67,8 +67,8 @@ export default function EventsPage() {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dayEvents = calendarEvents.filter((e: any) => {
-        const eDate = new Date(e.startDate);
-        return eDate.getFullYear() === year && eDate.getMonth() === month && eDate.getDate() === d;
+        const parts = getDhakaDateParts(new Date(e.startDate));
+        return parts.year === year && parts.month === month && parts.day === d;
       });
       days.push({ date: d, events: dayEvents });
     }
@@ -79,7 +79,7 @@ export default function EventsPage() {
   const nextMonth = () => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6">
+    <div className="mx-auto py-12 px-4 sm:px-6">
       <SEO title="Events" description="Browse upcoming and past RDSWA events, workshops, seminars, and social gatherings." />
       <BlurText
         text="Events"
@@ -196,7 +196,7 @@ export default function EventsPage() {
                             <div className="space-y-1 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3.5 w-3.5" />
-                                {new Date(e.startDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                                {formatDate(e.startDate)}
                               </div>
                               {e.venue && (
                                 <div className="flex items-center gap-1">
@@ -242,7 +242,7 @@ export default function EventsPage() {
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <h3 className="font-semibold">
-                  {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  {formatDateCustom(calendarMonth, { month: 'long', year: 'numeric' })}
                 </h3>
                 <button onClick={nextMonth} className="p-1 hover:bg-accent rounded">
                   <ChevronRight className="h-5 w-5" />
@@ -259,10 +259,12 @@ export default function EventsPage() {
               {/* Calendar cells */}
               <div className="grid grid-cols-7">
                 {calendarDays.map((day, i) => {
+                  const todayParts = getDhakaDateParts(new Date());
+                  const calParts = getDhakaDateParts(calendarMonth);
                   const isToday = day.date > 0 &&
-                    new Date().getDate() === day.date &&
-                    new Date().getMonth() === calendarMonth.getMonth() &&
-                    new Date().getFullYear() === calendarMonth.getFullYear();
+                    todayParts.day === day.date &&
+                    todayParts.month === calParts.month &&
+                    todayParts.year === calParts.year;
 
                   return (
                     <div

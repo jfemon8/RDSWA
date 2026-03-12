@@ -33,7 +33,7 @@ export default function GalleryPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
+      <div className="mx-auto py-8 px-4 sm:px-6">
         <div className="h-10 w-32 mb-6" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
@@ -43,7 +43,7 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <SEO title="Gallery" description="Browse RDSWA photo albums — events, gatherings, and memorable moments." />
       <BlurText text="Gallery" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 

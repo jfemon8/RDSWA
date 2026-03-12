@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { Scale } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
+import { formatDateCustom } from '@/lib/date';
 
 export default function TermsPage() {
   const { data, isLoading } = useQuery({
@@ -20,7 +21,7 @@ export default function TermsPage() {
   const sections: Array<{ title: string; content: string }> = data?.data?.termsConditions || [];
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
+    <div className="mx-auto py-12 px-4 sm:px-6">
       <SEO title="Terms & Conditions" description="Terms and conditions for using the RDSWA platform." />
       <BlurText
         text="Terms & Conditions"
@@ -75,7 +76,7 @@ export default function TermsPage() {
 
       <FadeIn delay={0.5}>
         <p className="text-xs text-muted-foreground text-center mt-10">
-          Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          Last updated: {formatDateCustom(new Date(), { month: 'long', year: 'numeric' })}
         </p>
       </FadeIn>
     </div>

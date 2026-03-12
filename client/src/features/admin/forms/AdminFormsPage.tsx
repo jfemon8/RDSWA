@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { Loader2, CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { formatDate } from '@/lib/date';
 
 export default function AdminFormsPage() {
   const queryClient = useQueryClient();
@@ -70,7 +71,7 @@ export default function AdminFormsPage() {
                       <div className="flex-1">
                         <p className="font-medium text-foreground capitalize">{f.type?.replace('_', ' ')} Form</p>
                         <p className="text-sm text-muted-foreground">
-                          By {f.submittedBy?.name || 'Unknown'} · {new Date(f.createdAt).toLocaleDateString()}
+                          By {f.submittedBy?.name || 'Unknown'} · {formatDate(f.createdAt)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -176,7 +177,7 @@ export default function AdminFormsPage() {
                           )}
                           {f.reviewedBy && (
                             <p className="text-xs text-muted-foreground mt-2">
-                              Reviewed by {f.reviewedBy?.name || 'admin'} on {f.reviewedAt ? new Date(f.reviewedAt).toLocaleDateString() : 'N/A'}
+                              Reviewed by {f.reviewedBy?.name || 'admin'} on {f.reviewedAt ? formatDate(f.reviewedAt) : 'N/A'}
                             </p>
                           )}
                         </div>

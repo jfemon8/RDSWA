@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Trash2, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 
 export default function AdminNoticesPage() {
   const queryClient = useQueryClient();
@@ -145,7 +146,7 @@ export default function AdminNoticesPage() {
                     <span className="capitalize">{n.category}</span>
                     <span className="capitalize">{n.status}</span>
                     <span className="capitalize">{n.priority}</span>
-                    <span>{new Date(n.createdAt).toLocaleDateString()}</span>
+                    <span>{formatDate(n.createdAt)}</span>
                   </div>
                 </div>
                 <div className="flex gap-1">

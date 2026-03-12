@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { Loader2, Shield, Clock } from 'lucide-react';
+import { formatDateTime } from '@/lib/date';
 
 type Tab = 'audit' | 'login';
 
@@ -101,7 +102,7 @@ function AuditLogsTab() {
                       <td className="p-3 text-muted-foreground text-xs">{log.resource}</td>
                       <td className="p-3 text-muted-foreground text-xs font-mono">{log.ip || '-'}</td>
                       <td className="p-3 text-muted-foreground text-xs">
-                        {new Date(log.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                        {formatDateTime(log.createdAt)}
                       </td>
                     </tr>
                   ))}
@@ -197,7 +198,7 @@ function LoginHistoryTab() {
                         </span>
                       </td>
                       <td className="p-3 text-muted-foreground text-xs">
-                        {new Date(h.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                        {formatDateTime(h.createdAt)}
                       </td>
                     </tr>
                   ))}

@@ -17,7 +17,7 @@ export default function AboutPage() {
   const settings = data?.data;
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
+    <div className="mx-auto py-12 px-4 sm:px-6">
       <SEO title="About Us" description="Learn about RDSWA — our mission, vision, objectives, and history at University of Barishal." />
       <BlurText
         text="About RDSWA"

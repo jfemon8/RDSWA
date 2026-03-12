@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { ArrowLeft, Loader2, Paperclip } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 
 export default function NoticeDetailPage() {
@@ -27,7 +28,7 @@ export default function NoticeDetailPage() {
   if (!notice) return <p className="text-center py-12 text-muted-foreground">Notice not found</p>;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <SEO title={notice.title} description={notice.content?.replace(/<[^>]*>/g, '').slice(0, 160)} />
       <FadeIn delay={0.05} direction="left">
         <Link to="/notices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
@@ -68,7 +69,7 @@ export default function NoticeDetailPage() {
 
       <FadeIn delay={0.2} direction="up">
         <p className="text-sm text-muted-foreground mb-6">
-          Published {new Date(notice.publishedAt || notice.createdAt).toLocaleDateString('en-US', { dateStyle: 'long' })}
+          Published {formatDate(notice.publishedAt || notice.createdAt, 'long')}
           {notice.createdBy?.name && ` by ${notice.createdBy.name}`}
         </p>
       </FadeIn>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
+import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Users, FileText, Loader2 } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -28,7 +29,7 @@ export default function MeetingRecordsPage() {
   const pagination = data?.pagination;
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6">
+    <div className="mx-auto py-12 px-4 sm:px-6">
       <BlurText
         text="Meeting Records"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"
@@ -85,9 +86,9 @@ export default function MeetingRecordsPage() {
                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(m.startDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                            {formatDate(m.startDate)}
                             {' '}
-                            {new Date(m.startDate).toLocaleTimeString('en-US', { timeStyle: 'short' })}
+                            {formatTime(m.startDate)}
                           </div>
                           {m.venue && (
                             <div className="flex items-center gap-1">

@@ -9,12 +9,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatTime, formatDateCustom } from '@/lib/date';
 
 export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto">
       <AnimatePresence mode="wait">
         {selectedUser ? (
           <motion.div
@@ -267,7 +268,7 @@ function ChatView({
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                   <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {new Date(msg.createdAt).toLocaleTimeString('en-US', { timeStyle: 'short' })}
+                    {formatTime(msg.createdAt)}
                   </p>
                 </div>
               </motion.div>
@@ -324,5 +325,5 @@ function formatTimeAgo(dateStr?: string): string {
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateCustom(dateStr, { month: 'short', day: 'numeric' });
 }

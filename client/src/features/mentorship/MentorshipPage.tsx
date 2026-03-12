@@ -66,7 +66,7 @@ export default function MentorshipPage() {
   ] as const;
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4">
+    <div className="mx-auto py-12 px-4">
       <BlurText
         text="Mentorship"
         className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
@@ -106,7 +106,7 @@ export default function MentorshipPage() {
       {/* Find Mentors Tab */}
       {tab === 'mentors' && (
         <FadeIn direction="up" duration={0.4}>
-          <div className="relative mb-6 max-w-md">
+          <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"

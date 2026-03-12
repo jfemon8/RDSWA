@@ -43,7 +43,7 @@ export default function MembersPage() {
   const showBecomeMember = isAuthenticated && user?.membershipStatus === 'none';
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <SEO title="Members" description="Browse the RDSWA member directory — students and alumni from Rangpur Division at University of Barishal." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <BlurText text="Members" className="text-2xl sm:text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />

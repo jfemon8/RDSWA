@@ -4,6 +4,7 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Heart, Loader2, Phone, MapPin } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -27,7 +28,7 @@ export default function BloodDonorsPage() {
   const donors = data?.data || [];
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <div className="flex items-center gap-3 mb-6">
         <FadeIn delay={0} direction="left">
           <Heart className="h-8 w-8 text-red-500" />
@@ -109,7 +110,7 @@ export default function BloodDonorsPage() {
                     </p>
                   )}
                   {d.lastDonationDate && (
-                    <p className="text-xs">Last donated: {new Date(d.lastDonationDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}</p>
+                    <p className="text-xs">Last donated: {formatDate(d.lastDonationDate)}</p>
                   )}
                 </div>
               </div>

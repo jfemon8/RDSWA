@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import api from '@/lib/api';
+import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { Calendar, MapPin, Users, Loader2, UserPlus, Star, QrCode, CheckCircle2, Image, Clock, Bell } from 'lucide-react';
@@ -56,7 +57,7 @@ export default function EventDetailPage() {
   const photos = event.photos || [];
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <SEO title={event.title} description={event.description?.slice(0, 160)} image={event.coverImage} />
       {event.coverImage && (
         <motion.img
@@ -80,8 +81,8 @@ export default function EventDetailPage() {
         <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            {new Date(event.startDate).toLocaleDateString('en-US', { dateStyle: 'long' })}
-            {event.endDate && ` - ${new Date(event.endDate).toLocaleDateString('en-US', { dateStyle: 'long' })}`}
+            {formatDate(event.startDate, 'long')}
+            {event.endDate && ` - ${formatDate(event.endDate, 'long')}`}
           </div>
           {event.venue && (
             <div className="flex items-center gap-1">
@@ -124,7 +125,7 @@ export default function EventDetailPage() {
               You are registered for this event
               {myAttendance && (
                 <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-800/30 rounded text-xs">
-                  Checked in via {myAttendance.checkedInVia} at {new Date(myAttendance.checkedInAt).toLocaleTimeString()}
+                  Checked in via {myAttendance.checkedInVia} at {formatTime(myAttendance.checkedInAt)}
                 </span>
               )}
             </div>
@@ -314,7 +315,7 @@ export default function EventDetailPage() {
                       ))}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {fb.user?.name || 'Anonymous'} • {new Date(fb.submittedAt).toLocaleDateString()}
+                      {fb.user?.name || 'Anonymous'} • {formatDate(fb.submittedAt)}
                     </span>
                   </div>
                   {fb.comment && <p className="text-sm">{fb.comment}</p>}

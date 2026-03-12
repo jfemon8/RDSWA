@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { FileText, Download, Loader2, Search } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -34,7 +35,7 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <BlurText
         text="Documents"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6"
@@ -91,7 +92,7 @@ export default function DocumentsPage() {
                     {doc.fileType && <span className="uppercase">{doc.fileType}</span>}
                     {doc.fileSize && <span>{formatSize(doc.fileSize)}</span>}
                     {doc.downloadCount > 0 && <span>{doc.downloadCount} downloads</span>}
-                    <span>{new Date(doc.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
+                    <span>{formatDate(doc.createdAt)}</span>
                   </div>
                 </div>
                 <a href={doc.fileUrl} target="_blank" rel="noreferrer"

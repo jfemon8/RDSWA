@@ -27,7 +27,7 @@ export default function VotingPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <SEO title="Voting" description="Participate in RDSWA polls and elections — cast your vote on active polls." />
       <BlurText text="Voting & Polls" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 

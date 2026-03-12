@@ -126,7 +126,7 @@ export default function ProfilePage() {
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {activeTab === 'personal' && (
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">

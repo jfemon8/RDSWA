@@ -7,6 +7,7 @@ import {
   Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -286,7 +287,7 @@ function DonationsList() {
                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                   }`}>{d.paymentStatus}</span>
                 </td>
-                <td className="p-3 text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-xs text-muted-foreground">{formatDate(d.createdAt)}</td>
                 <td className="p-3">
                   <div className="flex items-center gap-1">
                     {(d.paymentStatus === 'pending' || d.paymentStatus === 'revision') && (
@@ -485,7 +486,7 @@ function ExpensesList() {
                   <td className="p-3 text-foreground">{e.title}</td>
                   <td className="p-3 font-medium text-red-600">৳{e.amount?.toLocaleString()}</td>
                   <td className="p-3 capitalize text-xs text-muted-foreground">{e.category}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleDateString()}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{formatDate(e.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

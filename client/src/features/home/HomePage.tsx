@@ -6,6 +6,7 @@ import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapP
 import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, ShinyText } from '@/components/reactbits';
 import type { LucideIcon } from 'lucide-react';
 import SEO from '@/components/SEO';
+import { formatDate } from '@/lib/date';
 
 const featureIconMap: Record<string, LucideIcon> = {
   Community: Users, Events: Calendar, Notices: Bell, Welfare: Heart,
@@ -207,7 +208,7 @@ export default function HomePage() {
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             <span className="capitalize">{n.category}</span>
-                            <span>{new Date(n.publishedAt || n.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
+                            <span>{formatDate(n.publishedAt || n.createdAt)}</span>
                           </div>
                         </div>
                         {n.priority !== 'normal' && (
@@ -257,7 +258,7 @@ export default function HomePage() {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5" />
-                            {new Date(e.startDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                            {formatDate(e.startDate)}
                           </span>
                           {e.location && (
                             <span className="flex items-center gap-1.5">

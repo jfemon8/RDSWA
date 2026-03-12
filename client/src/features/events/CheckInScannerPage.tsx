@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Camera, CameraOff, CheckCircle2, XCircle, Loader2, ArrowLeft, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -130,7 +131,7 @@ export default function CheckInScannerPage() {
   }, [stream]);
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <FadeIn direction="up">
         <Link to={`/events/${id}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Event
@@ -267,7 +268,7 @@ export default function CheckInScannerPage() {
                     <span>{a.user?.name || a.user || 'User'}</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {a.checkedInVia} • {new Date(a.checkedInAt).toLocaleTimeString()}
+                    {a.checkedInVia} • {formatTime(a.checkedInAt)}
                   </span>
                 </motion.div>
               ))}

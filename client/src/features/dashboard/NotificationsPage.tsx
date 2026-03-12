@@ -3,6 +3,7 @@ import api from '@/lib/api';
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
+import { formatDate, formatTime } from '@/lib/date';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -69,9 +70,9 @@ export default function NotificationsPage() {
                   <p className="font-medium text-sm">{n.title}</p>
                   <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(n.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                    {formatDate(n.createdAt)}
                     {' '}
-                    {new Date(n.createdAt).toLocaleTimeString('en-US', { timeStyle: 'short' })}
+                    {formatTime(n.createdAt)}
                   </p>
                 </div>
                 {!n.isRead && (

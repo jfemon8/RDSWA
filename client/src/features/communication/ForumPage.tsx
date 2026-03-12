@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate as formatDateUtil } from '@/lib/date';
 
 const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
 
@@ -37,7 +38,7 @@ export default function ForumPage() {
     : topics;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto">
       <div className="flex items-center justify-between mb-6">
         <BlurText text="Discussion Forum" className="text-2xl sm:text-3xl font-bold" delay={50} />
         <button
@@ -250,5 +251,5 @@ function formatDate(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString('en-US', { dateStyle: 'medium' });
+  return formatDateUtil(d);
 }

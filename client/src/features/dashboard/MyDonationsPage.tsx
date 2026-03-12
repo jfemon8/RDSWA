@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { Loader2, Receipt, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 import { useState } from 'react';
 
 const statusConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
@@ -42,7 +43,7 @@ export default function MyDonationsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto">
       <BlurText
         text="My Donations"
         className="text-2xl md:text-3xl font-bold mb-6"
@@ -128,7 +129,7 @@ export default function MyDonationsPage() {
                           {d.receiptNumber && <span>Receipt: {d.receiptNumber}</span>}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(d.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                          {formatDate(d.createdAt)}
                         </p>
                       </div>
 
@@ -162,7 +163,7 @@ export default function MyDonationsPage() {
                     {/* Recurring info */}
                     {d.isRecurring && d.nextPaymentDate && (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Next payment: {new Date(d.nextPaymentDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                        Next payment: {formatDate(d.nextPaymentDate)}
                       </p>
                     )}
                   </div>

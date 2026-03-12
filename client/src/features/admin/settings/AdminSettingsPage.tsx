@@ -123,7 +123,7 @@ export default function AdminSettingsPage() {
           )}
         </AnimatePresence>
 
-        <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="max-w-2xl space-y-6">
+        <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
           {/* General */}
           <FadeIn direction="up" delay={0}>
             <section>

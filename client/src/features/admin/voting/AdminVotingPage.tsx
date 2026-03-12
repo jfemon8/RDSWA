@@ -5,6 +5,7 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { formatDate, formatDateTime } from '@/lib/date';
 
 export default function AdminVotingPage() {
   const queryClient = useQueryClient();
@@ -152,7 +153,7 @@ export default function AdminVotingPage() {
                           : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                         }`}>{v.status}</span>
                         <span>{v.totalVotes || 0} votes</span>
-                        <span>Ends {new Date(v.endTime).toLocaleDateString()}</span>
+                        <span>Ends {formatDate(v.endTime)}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -316,7 +317,7 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
                   <div className="flex items-center gap-2">
                     {v.skipped && <span className="text-orange-500 text-xs">Skipped</span>}
                     <span className="text-muted-foreground">
-                      {new Date(v.votedAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                      {formatDateTime(v.votedAt)}
                     </span>
                   </div>
                 </motion.div>

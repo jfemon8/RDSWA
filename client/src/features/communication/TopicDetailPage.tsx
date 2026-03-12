@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 
 export default function TopicDetailPage() {
@@ -64,7 +65,7 @@ export default function TopicDetailPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mx-auto">
       {/* Back button */}
       <button
         onClick={() => navigate('/dashboard/forum')}
@@ -125,7 +126,7 @@ export default function TopicDetailPage() {
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {new Date(topic.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+              {formatDate(topic.createdAt)}
             </span>
           </div>
         </div>
@@ -206,5 +207,5 @@ function formatTimeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { dateStyle: 'medium' });
+  return formatDate(dateStr);
 }

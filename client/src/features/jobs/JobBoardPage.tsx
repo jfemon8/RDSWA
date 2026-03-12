@@ -7,6 +7,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { formatDate } from '@/lib/date';
 
 const JOB_TYPES = ['full-time', 'part-time', 'internship', 'remote', 'contract'] as const;
 
@@ -55,7 +56,7 @@ export default function JobBoardPage() {
   const jobs = data?.data || [];
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4">
+    <div className="mx-auto py-12 px-4">
       <BlurText
         text="Job Board"
         className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
@@ -187,7 +188,7 @@ export default function JobBoardPage() {
                       <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {job.company}</span>
                       {job.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>}
                       {job.salary && <span className="flex items-center gap-1">BDT {job.salary}</span>}
-                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {new Date(job.createdAt).toLocaleDateString()}</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {formatDate(job.createdAt)}</span>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
                     {job.requirements?.length > 0 && (

@@ -65,7 +65,7 @@ export default function AdminNotificationsPage() {
         </AnimatePresence>
 
         <FadeIn direction="up" delay={0.1}>
-          <form onSubmit={(e) => { e.preventDefault(); setSuccess(''); sendMutation.mutate(); }} className="max-w-xl space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); setSuccess(''); sendMutation.mutate(); }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Title</label>
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}

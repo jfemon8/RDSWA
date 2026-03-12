@@ -641,7 +641,7 @@ function BulkImport() {
 
   return (
     <FadeIn direction="up">
-      <div className="max-w-2xl">
+      <div>
         <h2 className="text-lg font-semibold text-foreground mb-4">Bulk Import</h2>
         <p className="text-sm text-muted-foreground mb-4">
           Paste a JSON array of records to import. Each object should match the expected fields for the selected type.

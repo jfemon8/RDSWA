@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import SEO from '@/components/SEO';
+import { formatDate } from '@/lib/date';
 
 interface PaymentMethod {
   provider: string;
@@ -28,7 +29,7 @@ export default function DonationsPage() {
   const campaigns = campaignsData?.data || [];
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <SEO title="Donations" description="Support RDSWA through donations — view active campaigns and contribute to student welfare." />
       <div className="flex items-center justify-between mb-6">
         <BlurText
@@ -95,7 +96,7 @@ export default function DonationsPage() {
                     </div>
                     {c.endDate && (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Ends {new Date(c.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                        Ends {formatDate(c.endDate)}
                       </p>
                     )}
                   </div>
@@ -398,7 +399,7 @@ function RecentDonations() {
                 <div className="text-right">
                   <p className="font-semibold text-green-600">৳{d.amount?.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(d.createdAt).toLocaleDateString('en-US', { dateStyle: 'short' })}
+                    {formatDate(d.createdAt, 'short')}
                   </p>
                 </div>
               </div>

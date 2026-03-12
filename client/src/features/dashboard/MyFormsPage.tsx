@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { FileText, Loader2, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
+import { formatDate } from '@/lib/date';
 
 const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-600', label: 'Pending' },
@@ -61,7 +62,7 @@ export default function MyFormsPage() {
                     <div>
                       <p className="font-medium capitalize">{f.type.replace('_', ' ')} Form</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Submitted {new Date(f.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                        Submitted {formatDate(f.createdAt)}
                       </p>
                     </div>
                     <div className={`flex items-center gap-1 text-sm font-medium ${status.color}`}>

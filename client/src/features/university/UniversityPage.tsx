@@ -16,7 +16,7 @@ export default function UniversityPage() {
   const uni = data?.data?.universityInfo;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <BlurText
         text="University of Barishal"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"
