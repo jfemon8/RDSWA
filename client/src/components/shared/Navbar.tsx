@@ -1,11 +1,11 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { Menu, X, Sun, Moon, ChevronDown } from 'lucide-react';
+import { Menu, X, Sun, Moon, ChevronDown, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
-import LanguageSwitcher from '@/components/shared/LanguageSwitcher';
+import api from '@/lib/api';
 
 const publicLinks = [
   { label: 'Home', href: '/' },
@@ -30,13 +30,17 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated, user } = useAuthStore();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated, user, logout } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -134,8 +138,6 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center space-x-2">
-          <LanguageSwitcher />
-
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-accent transition-colors"
@@ -155,12 +157,61 @@ export default function Navbar() {
           </button>
 
           {isAuthenticated ? (
-            <Link
-              to="/dashboard"
-              className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              {user?.name || 'Dashboard'}
-            </Link>
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover border-2 border-primary/30" />
+                ) : (
+                  <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                    {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
+              </button>
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-xl shadow-xl py-1 z-50"
+                  >
+                    <div className="px-4 py-2 border-b">
+                      <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        setUserMenuOpen(false);
+                        try { await api.post('/auth/logout'); } catch {}
+                        logout();
+                        navigate('/');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" /> Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ) : (
             <div className="hidden md:flex items-center space-x-2">
               <Link
