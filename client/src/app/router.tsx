@@ -4,6 +4,7 @@ import PublicLayout from '@/layouts/PublicLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import AdminLayout from '@/layouts/AdminLayout';
 import RouteGuard from '@/components/guards/RouteGuard';
+import GuestGuard from '@/components/guards/GuestGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import AdminRoleGuard from '@/components/guards/AdminRoleGuard';
 import { UserRole } from '@rdswa/shared';
@@ -87,10 +88,13 @@ export default function AppRouter() {
         {/* Public routes */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          {/* Auth routes — redirect to dashboard if already logged in */}
+          <Route element={<GuestGuard />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Route>
           <Route path="/verify-email" element={<EmailVerify />} />
           <Route path="/about" element={<About />} />
           <Route path="/university" element={<University />} />

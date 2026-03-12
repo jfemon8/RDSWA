@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import { Eye, EyeOff } from 'lucide-react';
@@ -8,10 +8,12 @@ import { FadeIn, GradientText } from '@/components/reactbits';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useAuthStore();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage] = useState(location.state?.message || '');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,6 +55,16 @@ export default function LoginPage() {
                 </GradientText>
               </p>
             </div>
+
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-green-500/10 text-green-600 dark:text-green-400 text-sm p-3 rounded-lg mb-4"
+              >
+                {successMessage}
+              </motion.div>
+            )}
 
             {error && (
               <motion.div
