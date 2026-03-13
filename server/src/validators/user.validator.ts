@@ -4,11 +4,11 @@ export const updateProfileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   nameBn: z.string().optional(),
   phone: z.string().optional(),
-  dateOfBirth: z.string().datetime().optional(),
+  dateOfBirth: z.string().optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
   bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
   isBloodDonor: z.boolean().optional(),
-  lastDonationDate: z.string().datetime().optional(),
+  lastDonationDate: z.string().optional(),
   nid: z.string().optional(),
   presentAddress: z.object({
     district: z.string().optional(),

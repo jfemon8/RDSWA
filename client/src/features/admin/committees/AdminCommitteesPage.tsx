@@ -223,7 +223,7 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
   });
 
   const addMutation = useMutation({
-    mutationFn: () => api.post(`/committees/${committeeId}/members`, { userId: selectedUserId, position }),
+    mutationFn: () => api.post(`/committees/${committeeId}/members`, { user: selectedUserId, position }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.committees.all });
       setShowAdd(false);

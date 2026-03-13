@@ -71,6 +71,11 @@ export default function ProfilePage() {
       payload.skills = [];
     }
     if (payload.batch) payload.batch = Number(payload.batch);
+    else delete payload.batch;
+    // Strip empty strings to avoid validation errors on optional fields
+    for (const key of Object.keys(payload)) {
+      if (payload[key] === '' || payload[key] === null) delete payload[key];
+    }
     updateMutation.mutate(payload);
   };
 

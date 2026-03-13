@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createDonationSchema = z.object({
   donorName: z.string().optional(),
-  donorEmail: z.string().email().optional(),
+  donorEmail: z.string().email().optional().or(z.literal('')),
   donorPhone: z.string().optional(),
   amount: z.number().positive('Amount must be positive'),
   type: z.enum(['one-time', 'monthly', 'event-based', 'construction-fund', 'membership']).optional(),
@@ -25,7 +25,7 @@ export const createCampaignSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   targetAmount: z.number().positive(),
-  startDate: z.string().min(1),
+  startDate: z.string().optional(),
   endDate: z.string().optional(),
 });
 

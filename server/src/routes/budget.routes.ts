@@ -62,7 +62,8 @@ router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('bu
     throw ApiError.badRequest('Cannot edit approved/executed budget');
   }
 
-  Object.assign(budget, req.body);
+  const { _id, __v, createdBy, createdAt, updatedAt, ...updateData } = req.body;
+  Object.assign(budget, updateData);
   if (req.body.items) {
     budget.totalAmount = req.body.items.reduce((sum: number, item: any) => sum + (item.estimatedAmount || 0), 0);
   }

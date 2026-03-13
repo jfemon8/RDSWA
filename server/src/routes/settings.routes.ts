@@ -67,11 +67,35 @@ router.get('/public-stats', asyncHandler(async (_req, res) => {
 // Update site settings (SuperAdmin)
 router.patch('/', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+
+  // Recursively strip _id and __v from any object/array
+  function sanitize(obj: any): any {
+    if (Array.isArray(obj)) return obj.map(sanitize);
+    if (obj && typeof obj === 'object' && !(obj instanceof Date)) {
+      const clean: any = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (k === '_id' || k === '__v') continue;
+        clean[k] = sanitize(v);
+      }
+      return clean;
+    }
+    return obj;
+  }
+
+  const body = sanitize(req.body);
+  body.updatedBy = req.user._id;
+
   let settings = await SiteSettings.findOne();
-  if (!settings) settings = new SiteSettings();
-  Object.assign(settings, req.body);
-  settings.updatedBy = req.user._id as any;
-  await settings.save();
+  if (!settings) {
+    settings = await SiteSettings.create(body);
+  } else {
+    // Use set() + save({ validateBeforeSave: false }) for reliable partial updates
+    for (const [key, value] of Object.entries(body)) {
+      settings.set(key, value);
+    }
+    await settings.save({ validateBeforeSave: false });
+  }
+
   ApiResponse.success(res, settings, 'Settings updated');
 }));
 
@@ -93,9 +117,17 @@ router.patch('/about', authenticate(), authorize(UserRole.ADMIN), auditLog('sett
 // Update payment config (Admin+)
 router.patch('/payment', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_payment', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+  // Strip _id from each provider subdocument
+  const gateway = req.body.paymentGateway || {};
+  const cleanGateway: Record<string, any> = {};
+  for (const [provider, config] of Object.entries(gateway)) {
+    if (provider === '_id') continue;
+    const { _id, ...rest } = config as any;
+    cleanGateway[provider] = rest;
+  }
   const settings = await SiteSettings.findOneAndUpdate(
     {},
-    { $set: { paymentGateway: req.body.paymentGateway, updatedBy: req.user._id } },
+    { $set: { paymentGateway: cleanGateway, updatedBy: req.user._id } },
     { new: true, upsert: true }
   );
   ApiResponse.success(res, settings, 'Payment settings updated');

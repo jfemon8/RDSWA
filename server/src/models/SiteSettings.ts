@@ -104,7 +104,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       featuresHeading: { type: String, default: 'What We Offer' },
       featuresSubheading: { type: String, default: 'A comprehensive platform for Rangpur Division students to connect, grow, and support each other.' },
       features: {
-        type: [{ title: { type: String, required: true }, description: { type: String, required: true } }],
+        type: [{ title: String, description: String }],
         default: [
           { title: 'Community', description: 'Connect with students from your district and build lasting relationships.' },
           { title: 'Events', description: 'Participate in cultural events, workshops, and social gatherings.' },
@@ -114,7 +114,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       },
       servicesHeading: { type: String, default: 'Everything You Need' },
       services: {
-        type: [{ title: { type: String, required: true }, description: { type: String, required: true }, link: { type: String, required: true } }],
+        type: [{ title: String, description: String, link: String }],
         default: [
           { title: 'Blood Donors', description: 'Find blood donors from your community in emergencies.', link: '/blood-donors' },
           { title: 'Voting & Polls', description: 'Participate in democratic decisions and committee elections.', link: '/voting' },
@@ -128,7 +128,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       ctaButtonText: { type: String, default: 'Get Started' },
     },
     faq: {
-      type: [{ question: { type: String, required: true }, answer: { type: String, required: true } }],
+      type: [{ question: String, answer: String }],
       default: [
         { question: 'Who can become a member of RDSWA?', answer: 'Any student from Rangpur Division currently studying at the University of Barishal can apply for membership. Alumni who were previously members can retain alumni status.' },
         { question: 'How do I register on the platform?', answer: 'Click the "Register" button on the homepage, fill in your details including student ID and department, and verify your email address. Your membership will be reviewed and approved by the administration.' },
@@ -141,7 +141,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       ],
     },
     privacyPolicy: {
-      type: [{ title: { type: String, required: true }, content: { type: String, required: true } }],
+      type: [{ title: String, content: String }],
       default: [
         { title: 'Information We Collect', content: 'We collect personal information you provide during registration, including your name, email, student ID, phone number, blood group, and department. We also collect usage data such as login history and activity logs for security purposes.' },
         { title: 'How We Use Your Information', content: 'Your information is used to manage membership, facilitate communication, organize events, enable voting, and maintain the blood donor directory. We do not sell or share your data with third parties for commercial purposes.' },
@@ -152,7 +152,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       ],
     },
     termsConditions: {
-      type: [{ title: { type: String, required: true }, content: { type: String, required: true } }],
+      type: [{ title: String, content: String }],
       default: [
         { title: 'Acceptance of Terms', content: 'By registering and using the RDSWA platform, you agree to these terms and conditions. If you do not agree, please refrain from using the platform.' },
         { title: 'Membership', content: 'Membership is open to students from Rangpur Division studying at the University of Barishal. Members must provide accurate information during registration. Membership approval is subject to verification by the administration.' },

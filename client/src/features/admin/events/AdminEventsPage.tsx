@@ -107,14 +107,17 @@ export default function AdminEventsPage() {
           >
             <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
               <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Event</h3>
-              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Event title is required'; if (!form.startDate) errs.startDate = 'Start date is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Event title is required'; if (!form.description.trim()) errs.description = 'Description is required'; if (!form.startDate) errs.startDate = 'Start date is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
                 <div>
                   <input placeholder="Event Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                     className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
                   <FieldError message={errors.title} />
                 </div>
-                <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <div>
+                  <textarea placeholder="Description" value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); setErrors((prev) => { const { description, ...rest } = prev; return rest; }); }} rows={3}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.description ? 'border-red-500' : ''}`} />
+                  <FieldError message={errors.description} />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
