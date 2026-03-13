@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'professional' | 'social'>('personal');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,6 +53,7 @@ export default function ProfilePage() {
       setUser(res.data);
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
       toast.success('Profile updated successfully!');
+      navigate('/dashboard/profile');
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || 'Failed to update profile');
@@ -92,7 +95,12 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6">Edit Profile</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <Link to="/dashboard/profile" className="p-2 hover:bg-accent rounded-md transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl sm:text-3xl font-bold">Edit Profile</h1>
+      </div>
 
       <div className="flex gap-2 mb-6 border-b relative">
         {tabs.map((tab) => (

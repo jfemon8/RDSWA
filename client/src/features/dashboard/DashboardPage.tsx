@@ -138,7 +138,7 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <QuickAction to="/dashboard/profile" label="Edit Profile" description="Update your personal information" />
+        <QuickAction to="/dashboard/profile" label="View Profile" description="View and manage your personal information" />
         <QuickAction to="/dashboard/notifications" label="View Notifications" description="Check recent notifications" />
         <QuickAction to="/events" label="Browse Events" description="See upcoming events" />
         <QuickAction to="/notices" label="Read Notices" description="Latest announcements" />

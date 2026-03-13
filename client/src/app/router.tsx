@@ -41,7 +41,8 @@ const NotFound = lazy(() => import('@/features/NotFoundPage'));
 
 // Dashboard pages
 const Dashboard = lazy(() => import('@/features/dashboard/DashboardPage'));
-const Profile = lazy(() => import('@/features/dashboard/ProfilePage'));
+const ProfileView = lazy(() => import('@/features/dashboard/ProfileViewPage'));
+const ProfileEdit = lazy(() => import('@/features/dashboard/ProfilePage'));
 const Notifications = lazy(() => import('@/features/dashboard/NotificationsPage'));
 const NotificationSettings = lazy(() => import('@/features/dashboard/NotificationSettingsPage'));
 const MyForms = lazy(() => import('@/features/dashboard/MyFormsPage'));
@@ -120,7 +121,8 @@ export default function AppRouter() {
         <Route element={<RouteGuard />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/profile" element={<Profile />} />
+            <Route path="/dashboard/profile" element={<ProfileView />} />
+            <Route path="/dashboard/profile/edit" element={<ProfileEdit />} />
             <Route path="/dashboard/notifications" element={<Notifications />} />
             <Route path="/dashboard/forms" element={<MyForms />} />
             <Route path="/dashboard/forms/new" element={<SubmitForm />} />
