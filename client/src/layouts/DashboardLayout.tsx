@@ -6,7 +6,8 @@ import {
   MessageSquare, MessagesSquare, Settings,
 } from 'lucide-react';
 import { useState } from 'react';
-import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
+import { UserRole } from '@rdswa/shared';
+import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import { AnimatePresence, motion } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import NotificationBell from '@/components/shared/NotificationBell';
@@ -55,8 +56,8 @@ export default function DashboardLayout() {
         <div className="flex items-center gap-3">
           <NotificationBell />
           <span className="text-sm text-muted-foreground hidden sm:block">{user?.name}</span>
-          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full capitalize">
-            {user?.role?.replace('_', ' ')}
+          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+            {user?.role ? getPrimaryRoleLabel(user.role) : 'User'}
           </span>
         </div>
       </header>
@@ -91,7 +92,7 @@ export default function DashboardLayout() {
             })}
 
             {/* Admin panel link for moderator+ */}
-            {user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR) && (
+            {user && hasMinRole(user.role, UserRole.MODERATOR) && (
               <div>
                 <Link
                   to="/admin"

@@ -10,6 +10,8 @@ import { ListItemSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import SEO from '@/components/SEO';
 import { districts } from '@/data/bdGeo';
+import { getRoleConfig, getPrimaryRoleLabel } from '@/lib/roles';
+import { UserRole } from '@rdswa/shared';
 
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -147,13 +149,26 @@ export default function MembersPage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="font-medium truncate">{m.name}</p>
+                          {m.role && m.role !== UserRole.MEMBER && m.role !== UserRole.USER && (() => {
+                            const rc = getRoleConfig(m.role);
+                            return (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 + i * 0.04 }}
+                                className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${rc.bg} ${rc.text}`}
+                              >
+                                {rc.label}
+                              </motion.span>
+                            );
+                          })()}
                           {isAlumni && (
                             <motion.span
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 + i * 0.04 }}
+                              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.25 + i * 0.04 }}
                               className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full shrink-0"
                             >
                               <GraduationCap className="h-3 w-3" /> Alumni

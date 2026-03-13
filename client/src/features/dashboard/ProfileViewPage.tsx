@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
 
 function getOrdinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -69,19 +70,30 @@ export default function ProfileViewPage() {
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-bold">{u.name}</h2>
               {u.nameBn && <p className="text-muted-foreground">{u.nameBn}</p>}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full capitalize">
-                  {u.role?.replace('_', ' ')}
-                </span>
-                {u.membershipStatus === 'approved' && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
-                    Member
-                  </span>
-                )}
-                {u.isAlumni && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
+                {getEffectiveRoles(u.role).map((r: string, i: number) => {
+                  const rc = getRoleConfig(r);
+                  return (
+                    <motion.span
+                      key={r}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 20, delay: i * 0.04 }}
+                      className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${rc.bg} ${rc.text}`}
+                    >
+                      {rc.label}
+                    </motion.span>
+                  );
+                })}
+                {u.isAlumni && !getEffectiveRoles(u.role).includes('alumni') && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full"
+                  >
                     <GraduationCap className="h-3 w-3" /> Alumni
-                  </span>
+                  </motion.span>
                 )}
               </div>
             </div>

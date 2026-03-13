@@ -9,7 +9,8 @@ import {
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
-import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import { UserRole } from '@rdswa/shared';
+import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 
 interface AdminLink {
@@ -38,10 +39,6 @@ const adminLinks: AdminLink[] = [
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },
 ];
-
-function hasMinRole(userRole: string, minRole: UserRole): boolean {
-  return ROLE_HIERARCHY.indexOf(userRole as UserRole) >= ROLE_HIERARCHY.indexOf(minRole);
-}
 
 export default function AdminLayout() {
   const { user, logout } = useAuthStore();
@@ -79,8 +76,8 @@ export default function AdminLayout() {
           <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ChevronLeft className="h-4 w-4" /> Dashboard
           </Link>
-          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full capitalize">
-            {user?.role?.replace('_', ' ')}
+          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+            {user?.role ? getPrimaryRoleLabel(user.role) : 'User'}
           </span>
         </div>
       </header>
