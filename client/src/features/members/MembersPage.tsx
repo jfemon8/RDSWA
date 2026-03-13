@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -9,6 +9,7 @@ import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import SEO from '@/components/SEO';
+import { districts } from '@/data/bdGeo';
 
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -39,6 +40,11 @@ export default function MembersPage() {
 
   const members = data?.data || [];
   const pagination = data?.pagination;
+
+  const allDistricts = useMemo(() => {
+    const all = Object.values(districts).flat();
+    return [...new Set(all)].sort((a, b) => a.localeCompare(b));
+  }, []);
 
   const showBecomeMember = isAuthenticated && user?.membershipStatus === 'none';
 
@@ -91,12 +97,16 @@ export default function MembersPage() {
             placeholder="Department"
             className="w-full sm:w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          <input
+          <select
             value={homeDistrict}
             onChange={(e) => { setHomeDistrict(e.target.value); setPage(1); }}
-            placeholder="District"
-            className="w-full sm:w-32 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+            className="w-full sm:w-40 px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="">All Districts</option>
+            {allDistricts.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
           <input
             value={profession}
             onChange={(e) => { setProfession(e.target.value); setPage(1); }}

@@ -344,9 +344,9 @@ function AddressFieldset({ legend, address, onChange }: {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Upazila</label>
+          <label className="block text-sm font-medium mb-1">Area</label>
           <select value={address.upazila || ''} onChange={(e) => onChange('upazila', e.target.value)} disabled={!address.district} className={selectClass}>
-            <option value="">Select Upazila...</option>
+            <option value="">Select Area...</option>
             {upazilaList.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>

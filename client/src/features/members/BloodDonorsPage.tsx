@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Heart, Loader2, Phone, MapPin } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import { districts } from '@/data/bdGeo';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function BloodDonorsPage() {
   const [bloodGroup, setBloodGroup] = useState('');
   const [district, setDistrict] = useState('');
+
+  const allDistricts = useMemo(() => {
+    const all = Object.values(districts).flat();
+    return [...new Set(all)].sort((a, b) => a.localeCompare(b));
+  }, []);
 
   const filters: Record<string, string> = {};
   if (bloodGroup) filters.bloodGroup = bloodGroup;
@@ -62,8 +68,13 @@ export default function BloodDonorsPage() {
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">District</label>
-            <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g. Rangpur"
-              className="px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+            <select value={district} onChange={(e) => setDistrict(e.target.value)}
+              className="px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+              <option value="">All Districts</option>
+              {allDistricts.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
           </div>
         </div>
       </FadeIn>
