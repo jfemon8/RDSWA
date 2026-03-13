@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -427,6 +427,135 @@ export default function AdminSettingsPage() {
             Save Settings
           </button>
         </form>
+
+        {/* Academic Config — separate section with its own save */}
+        <div className="mt-10 pt-8 border-t">
+          <AcademicConfigSection />
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+function AcademicConfigSection() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const { data: acData, isLoading } = useQuery({
+    queryKey: ['settings', 'academic-config'],
+    queryFn: async () => {
+      const { data } = await api.get('/settings/academic-config');
+      return data.data as { batches: string[]; sessions: string[]; faculties: Array<{ name: string; departments: string[] }> };
+    },
+  });
+
+  const [batches, setBatches] = useState('');
+  const [sessions, setSessions] = useState('');
+  const [faculties, setFaculties] = useState<Array<{ name: string; departments: string[] }>>([]);
+
+  useEffect(() => {
+    if (acData) {
+      setBatches(acData.batches?.join(', ') || '');
+      setSessions(acData.sessions?.join(', ') || '');
+      setFaculties(acData.faculties || []);
+    }
+  }, [acData]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => api.patch('/settings/academic-config', {
+      batches: batches.split(',').map((b) => b.trim()).filter(Boolean),
+      sessions: sessions.split(',').map((s) => s.trim()).filter(Boolean),
+      faculties,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'academic-config'] });
+      toast.success('Academic config saved');
+    },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save'); },
+  });
+
+  if (isLoading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+
+  return (
+    <FadeIn direction="up" delay={0.1}>
+      <div className="flex items-center gap-2 mb-4">
+        <GraduationCap className="h-5 w-5 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">Academic Config</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Manage the dropdown values for University Batch, Session, Faculty, and Department used in user profiles.
+      </p>
+
+      <div className="space-y-5">
+        {/* Batches */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">University Batches (comma-separated)</label>
+          <input value={batches} onChange={(e) => setBatches(e.target.value)} placeholder="1st, 2nd, 3rd, ..."
+            className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+          <p className="text-xs text-muted-foreground mt-1">e.g. 1st, 2nd, 3rd, 4th, ...</p>
+        </div>
+
+        {/* Sessions */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">Sessions (comma-separated)</label>
+          <input value={sessions} onChange={(e) => setSessions(e.target.value)} placeholder="2010-11, 2011-12, ..."
+            className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+          <p className="text-xs text-muted-foreground mt-1">e.g. 2010-11, 2011-12, 2012-13, ...</p>
+        </div>
+
+        {/* Faculties & Departments */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-foreground">Faculties & Departments</label>
+            <button type="button"
+              onClick={() => setFaculties([...faculties, { name: '', departments: [] }])}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
+              <Plus className="h-3 w-3" /> Add Faculty
+            </button>
+          </div>
+          <AnimatePresence>
+            {faculties.map((fac, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                className="border rounded-lg p-4 space-y-3 relative mb-3"
+              >
+                <button type="button" onClick={() => setFaculties(faculties.filter((_, idx) => idx !== i))}
+                  className="absolute top-3 right-3 text-muted-foreground hover:text-red-500 transition-colors">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Faculty Name</label>
+                  <input value={fac.name} placeholder="e.g. Faculty of Science"
+                    onChange={(e) => { const f = [...faculties]; f[i] = { ...f[i], name: e.target.value }; setFaculties(f); }}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Departments (comma-separated)</label>
+                  <textarea value={fac.departments.join(', ')} placeholder="Mathematics, Physics, Chemistry, ..." rows={2}
+                    onChange={(e) => {
+                      const f = [...faculties];
+                      f[i] = { ...f[i], departments: e.target.value.split(',').map((d) => d.trim()).filter(Boolean) };
+                      setFaculties(f);
+                    }}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {faculties.length === 0 && <p className="text-sm text-muted-foreground">No faculties. Click "Add Faculty" to create one.</p>}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50">
+          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save Academic Config
+        </button>
       </div>
     </FadeIn>
   );

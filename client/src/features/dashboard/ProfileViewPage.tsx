@@ -4,6 +4,12 @@ import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Bri
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 
+function getOrdinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
+
 export default function ProfileViewPage() {
   const { user } = useAuthStore();
 
@@ -62,7 +68,7 @@ export default function ProfileViewPage() {
             )}
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-bold">{u.name}</h2>
-              {u.namebn && <p className="text-muted-foreground">{u.namebn}</p>}
+              {u.nameBn && <p className="text-muted-foreground">{u.nameBn}</p>}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full capitalize">
                   {u.role?.replace('_', ' ')}
@@ -100,11 +106,12 @@ export default function ProfileViewPage() {
         {/* Academic Info */}
         <FadeIn delay={0.2} direction="up">
           <Section title="Academic Information" icon={<GraduationCap className="h-4 w-4" />}>
-            <InfoRow label="Student ID" value={u.studentId} />
-            <InfoRow label="Batch" value={u.batch} />
+            <InfoRow label="Student ID / Roll Number" value={u.studentId} />
+            <InfoRow label="Registration Number" value={u.registrationNumber} />
+            <InfoRow label="University Batch" value={u.batch ? `${u.batch}${getOrdinal(u.batch)}` : null} />
             <InfoRow label="Session" value={u.session} />
-            <InfoRow label="Department" value={u.department} />
             <InfoRow label="Faculty" value={u.faculty} />
+            <InfoRow label="Department" value={u.department} />
           </Section>
         </FadeIn>
 

@@ -19,8 +19,8 @@ export interface IUserDocument extends Document {
   isBloodDonor: boolean;
   lastDonationDate?: Date;
   nid?: string;
-  presentAddress?: { district?: string; upazila?: string; details?: string };
-  permanentAddress?: { district?: string; upazila?: string; details?: string };
+  presentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
+  permanentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
   homeDistrict?: string;
 
   // Profile — Academic

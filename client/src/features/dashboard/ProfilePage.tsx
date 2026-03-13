@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Save, Loader2, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { divisions, districts, upazilas, type Division } from '@/data/bdGeo';
 import { useToast } from '@/components/ui/Toast';
+
+interface AcademicConfig {
+  batches: string[];
+  sessions: string[];
+  faculties: Array<{ name: string; departments: string[] }>;
+}
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
@@ -19,18 +25,30 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'professional' | 'social'>('personal');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const { data: academicData } = useQuery({
+    queryKey: ['settings', 'academic-config'],
+    queryFn: async () => {
+      const { data } = await api.get('/settings/academic-config');
+      return data.data as AcademicConfig;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const ac = academicData || { batches: [], sessions: [], faculties: [] };
+
   const [form, setForm] = useState({
     name: user?.name || '',
-    namebn: user?.namebn || '',
+    nameBn: user?.nameBn || '',
     phone: user?.phone || '',
     dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
     gender: user?.gender || '',
     bloodGroup: user?.bloodGroup || '',
     isBloodDonor: user?.isBloodDonor || false,
-    presentAddress: (user as any)?.presentAddress || { division: '', district: '', upazila: '', details: '' },
-    permanentAddress: (user as any)?.permanentAddress || { division: '', district: '', upazila: '', details: '' },
+    presentAddress: user?.presentAddress || { division: '', district: '', upazila: '', details: '' },
+    permanentAddress: user?.permanentAddress || { division: '', district: '', upazila: '', details: '' },
     studentId: user?.studentId || '',
-    batch: user?.batch || '',
+    registrationNumber: (user as any)?.registrationNumber || '',
+    batch: user?.batch ? String(user.batch) : '',
     session: user?.session || '',
     department: user?.department || '',
     faculty: user?.faculty || '',
@@ -38,10 +56,15 @@ export default function ProfilePage() {
     linkedin: user?.linkedin || '',
     website: user?.website || '',
     skills: user?.skills?.join(', ') || '',
-    profession: (user as any)?.profession || '',
-    earningSource: (user as any)?.earningSource || '',
-    jobHistory: (user as any)?.jobHistory || [],
-    businessInfo: (user as any)?.businessInfo || [],
+    profession: user?.profession || '',
+    earningSource: user?.earningSource || '',
+    jobHistory: user?.jobHistory || [],
+    businessInfo: user?.businessInfo || [],
+    profileVisibility: user?.profileVisibility || {
+      phone: false, email: false, dateOfBirth: true, nid: false,
+      presentAddress: false, permanentAddress: false, bloodGroup: true,
+      studentId: true, registrationNumber: false, facebook: true, linkedin: true,
+    },
   });
 
   const updateMutation = useMutation({
@@ -75,7 +98,6 @@ export default function ProfilePage() {
     }
     if (payload.batch) payload.batch = Number(payload.batch);
     else delete payload.batch;
-    // Strip empty strings to avoid validation errors on optional fields
     for (const key of Object.keys(payload)) {
       if (payload[key] === '' || payload[key] === null) delete payload[key];
     }
@@ -85,6 +107,12 @@ export default function ProfilePage() {
   const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
   const setNested = (parent: string, field: string, value: string) =>
     setForm((prev) => ({ ...prev, [parent]: { ...(prev as any)[parent], [field]: value } }));
+  const setVisibility = (field: string, value: boolean) =>
+    setForm((prev) => ({ ...prev, profileVisibility: { ...prev.profileVisibility, [field]: value } }));
+
+  // Get departments for selected faculty
+  const selectedFacultyObj = ac.faculties.find((f) => f.name === form.faculty);
+  const departmentOptions = selectedFacultyObj?.departments || [];
 
   const tabs = [
     { key: 'personal', label: 'Personal' },
@@ -102,12 +130,13 @@ export default function ProfilePage() {
         <h1 className="text-2xl sm:text-3xl font-bold">Edit Profile</h1>
       </div>
 
-      <div className="flex gap-2 mb-6 border-b relative">
+      <div className="flex gap-2 mb-6 border-b relative overflow-x-auto">
         {tabs.map((tab) => (
           <motion.button
             key={tab.key}
+            type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+            className={`relative px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === tab.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -128,11 +157,17 @@ export default function ProfilePage() {
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
               <InputField label="Full Name" value={form.name} onChange={(v) => { set('name', v); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }} required error={errors.name} />
-              <InputField label="Name (Bangla)" value={form.namebn} onChange={(v) => set('namebn', v)} />
-              <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
-              <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
+              <InputField label="Name (Bangla)" value={form.nameBn} onChange={(v) => set('nameBn', v)} placeholder="বাংলায় নাম" />
+              <VisibilityField label="Phone" isPublic={form.profileVisibility.phone ?? false} onToggle={(v) => setVisibility('phone', v)}>
+                <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
+              </VisibilityField>
+              <VisibilityField label="Date of Birth" isPublic={form.profileVisibility.dateOfBirth ?? true} onToggle={(v) => setVisibility('dateOfBirth', v)}>
+                <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
+              </VisibilityField>
               <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }, { label: 'Other', value: 'other' }]} />
-              <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} />
+              <VisibilityField label="Blood Group" isPublic={form.profileVisibility.bloodGroup ?? true} onToggle={(v) => setVisibility('bloodGroup', v)}>
+                <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} />
+              </VisibilityField>
               <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
               <AddressFieldset
                 legend="Present Address"
@@ -167,11 +202,37 @@ export default function ProfilePage() {
         {activeTab === 'academic' && (
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
-              <InputField label="Student ID" value={form.studentId} onChange={(v) => set('studentId', v)} />
-              <InputField label="Batch" type="number" value={String(form.batch)} onChange={(v) => set('batch', v)} />
-              <InputField label="Session" value={form.session} onChange={(v) => set('session', v)} placeholder="e.g. 2019-20" />
-              <InputField label="Department" value={form.department} onChange={(v) => set('department', v)} />
-              <InputField label="Faculty" value={form.faculty} onChange={(v) => set('faculty', v)} />
+              <VisibilityField label="Student ID/Roll" isPublic={form.profileVisibility.studentId ?? true} onToggle={(v) => setVisibility('studentId', v)}>
+                <InputField label="Student ID / Roll Number" value={form.studentId} onChange={(v) => set('studentId', v)} />
+              </VisibilityField>
+              <VisibilityField label="Registration Number" isPublic={form.profileVisibility.registrationNumber ?? false} onToggle={(v) => setVisibility('registrationNumber', v)}>
+                <InputField label="Registration Number" value={form.registrationNumber} onChange={(v) => set('registrationNumber', v)} />
+              </VisibilityField>
+              <SelectField
+                label="University Batch"
+                value={form.batch}
+                onChange={(v) => set('batch', v)}
+                options={ac.batches.map((b) => ({ label: b, value: String(ac.batches.indexOf(b) + 1) }))}
+              />
+              <SelectField
+                label="Session"
+                value={form.session}
+                onChange={(v) => set('session', v)}
+                options={ac.sessions.map((s) => ({ label: s, value: s }))}
+              />
+              <SelectField
+                label="Faculty"
+                value={form.faculty}
+                onChange={(v) => { set('faculty', v); set('department', ''); }}
+                options={ac.faculties.map((f) => ({ label: f.name, value: f.name }))}
+              />
+              <SelectField
+                label="Department"
+                value={form.department}
+                onChange={(v) => set('department', v)}
+                options={departmentOptions.map((d) => ({ label: d, value: d }))}
+                disabled={!form.faculty}
+              />
             </div>
           </FadeIn>
         )}
@@ -274,8 +335,12 @@ export default function ProfilePage() {
         {activeTab === 'social' && (
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
-              <InputField label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="https://facebook.com/..." />
-              <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => set('linkedin', v)} placeholder="https://linkedin.com/in/..." />
+              <VisibilityField label="Facebook" isPublic={form.profileVisibility.facebook ?? true} onToggle={(v) => setVisibility('facebook', v)}>
+                <InputField label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="https://facebook.com/..." />
+              </VisibilityField>
+              <VisibilityField label="LinkedIn" isPublic={form.profileVisibility.linkedin ?? true} onToggle={(v) => setVisibility('linkedin', v)}>
+                <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => set('linkedin', v)} placeholder="https://linkedin.com/in/..." />
+              </VisibilityField>
               <InputField label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="https://..." />
             </div>
           </FadeIn>
@@ -307,17 +372,38 @@ function InputField({ label, value, onChange, type = 'text', required, placehold
   );
 }
 
-function SelectField({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: { label: string; value: string }[];
+function SelectField({ label, value, onChange, options, disabled }: {
+  label: string; value: string; onChange: (v: string) => void; options: { label: string; value: string }[]; disabled?: boolean;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50">
+      <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
+        className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50">
         <option value="">Select...</option>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
+    </div>
+  );
+}
+
+function VisibilityField({ label, isPublic, onToggle, children }: {
+  label: string; isPublic: boolean; onToggle: (v: boolean) => void; children: React.ReactNode;
+}) {
+  return (
+    <div className="relative">
+      {children}
+      <button
+        type="button"
+        onClick={() => onToggle(!isPublic)}
+        className={`absolute top-0 right-0 flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors ${
+          isPublic ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-muted-foreground hover:bg-accent'
+        }`}
+        title={isPublic ? `${label} is visible to others` : `${label} is hidden from others`}
+      >
+        {isPublic ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        <span className="hidden sm:inline">{isPublic ? 'Public' : 'Private'}</span>
+      </button>
     </div>
   );
 }

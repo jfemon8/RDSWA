@@ -4,7 +4,7 @@ import { UserRole } from '@rdswa/shared';
 export interface AuthUser {
   _id: string;
   name: string;
-  namebn?: string;
+  nameBn?: string;
   email: string;
   phone?: string;
   role: UserRole;
@@ -13,10 +13,12 @@ export interface AuthUser {
   gender?: string;
   bloodGroup?: string;
   isBloodDonor?: boolean;
+  lastDonationDate?: string;
   homeDistrict?: string;
-  presentAddress?: { district: string; upazila: string; details: string };
-  permanentAddress?: { district: string; upazila: string; details: string };
+  presentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
+  permanentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
   studentId?: string;
+  registrationNumber?: string;
   batch?: number;
   session?: string;
   department?: string;
@@ -32,6 +34,20 @@ export interface AuthUser {
   isEmailVerified: boolean;
   membershipStatus: string;
   isModerator?: boolean;
+  isAlumni?: boolean;
+  profileVisibility?: {
+    phone?: boolean;
+    email?: boolean;
+    dateOfBirth?: boolean;
+    nid?: boolean;
+    presentAddress?: boolean;
+    permanentAddress?: boolean;
+    bloodGroup?: boolean;
+    studentId?: boolean;
+    registrationNumber?: boolean;
+    facebook?: boolean;
+    linkedin?: boolean;
+  };
 }
 
 interface AuthState {

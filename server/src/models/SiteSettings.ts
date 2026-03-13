@@ -55,6 +55,11 @@ export interface ISiteSettingsDocument extends Document {
     nagad?: { number: string; type: string; isActive: boolean };
     rocket?: { number: string; type: string; isActive: boolean };
   };
+  academicConfig: {
+    batches: string[];
+    sessions: string[];
+    faculties: Array<{ name: string; departments: string[] }>;
+  };
   membershipCriteria?: Record<string, unknown>;
   votingRules?: Record<string, unknown>;
   updatedBy?: mongoose.Types.ObjectId;
@@ -166,6 +171,37 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       bkash: { number: String, type: String, isActive: { type: Boolean, default: false } },
       nagad: { number: String, type: String, isActive: { type: Boolean, default: false } },
       rocket: { number: String, type: String, isActive: { type: Boolean, default: false } },
+    },
+    academicConfig: {
+      batches: {
+        type: [String],
+        default: [
+          '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th',
+          '11th', '12th', '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th',
+        ],
+      },
+      sessions: {
+        type: [String],
+        default: [
+          '2010-11', '2011-12', '2012-13', '2013-14', '2014-15',
+          '2015-16', '2016-17', '2017-18', '2018-19', '2019-20',
+          '2020-21', '2021-22', '2022-23', '2023-24', '2024-25',
+          '2025-26', '2026-27', '2027-28', '2028-29', '2029-30', '2030-31',
+        ],
+      },
+      faculties: {
+        type: [{ name: String, departments: [String] }],
+        default: [
+          { name: 'Faculty of Science', departments: ['Mathematics', 'Physics', 'Chemistry', 'Statistics', 'Soil Science'] },
+          { name: 'Faculty of Arts & Humanities', departments: ['Bangla', 'English', 'History & Civilization', 'Philosophy', 'Islamic Studies'] },
+          { name: 'Faculty of Social Science', departments: ['Economics', 'Political Science', 'Sociology', 'Public Administration'] },
+          { name: 'Faculty of Business Studies', departments: ['Accounting & Information Systems', 'Finance & Banking', 'Marketing', 'Management Studies'] },
+          { name: 'Faculty of Law', departments: ['Law & Justice'] },
+          { name: 'Faculty of Life & Earth Science', departments: ['Geography & Environment', 'Geology & Mining', 'Botany', 'Zoology'] },
+          { name: 'Faculty of Engineering', departments: ['Computer Science & Engineering'] },
+          { name: 'Faculty of Biological Science', departments: ['Biochemistry & Molecular Biology'] },
+        ],
+      },
     },
     membershipCriteria: Schema.Types.Mixed,
     votingRules: Schema.Types.Mixed,

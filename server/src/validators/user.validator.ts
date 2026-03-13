@@ -11,11 +11,13 @@ export const updateProfileSchema = z.object({
   lastDonationDate: z.string().optional(),
   nid: z.string().optional(),
   presentAddress: z.object({
+    division: z.string().optional(),
     district: z.string().optional(),
     upazila: z.string().optional(),
     details: z.string().optional(),
   }).optional(),
   permanentAddress: z.object({
+    division: z.string().optional(),
     district: z.string().optional(),
     upazila: z.string().optional(),
     details: z.string().optional(),

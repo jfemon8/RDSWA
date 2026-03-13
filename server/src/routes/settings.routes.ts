@@ -39,6 +39,7 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       universityInfo: settings.universityInfo,
       foundedYear: settings.foundedYear,
       homePageContent: settings.homePageContent,
+      academicConfig: settings.academicConfig,
       faq: settings.faq,
       privacyPolicy: settings.privacyPolicy,
       termsConditions: settings.termsConditions,
@@ -97,6 +98,31 @@ router.patch('/', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('set
   }
 
   ApiResponse.success(res, settings, 'Settings updated');
+}));
+
+// Get academic config (public — needed for registration/profile dropdowns)
+router.get('/academic-config', cacheResponse(600), asyncHandler(async (_req, res) => {
+  let settings = await SiteSettings.findOne();
+  if (!settings) settings = await SiteSettings.create({});
+  ApiResponse.success(res, settings.academicConfig);
+}));
+
+// Update academic config (Admin+)
+router.patch('/academic-config', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_academic', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { batches, sessions, faculties } = req.body;
+  const update: any = { updatedBy: req.user._id };
+  if (batches !== undefined) update['academicConfig.batches'] = batches;
+  if (sessions !== undefined) update['academicConfig.sessions'] = sessions;
+  if (faculties !== undefined) {
+    // Strip _id from faculty subdocuments
+    update['academicConfig.faculties'] = (faculties as any[]).map(({ _id, departments, ...rest }: any) => ({
+      ...rest,
+      departments: departments || [],
+    }));
+  }
+  const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+  ApiResponse.success(res, settings.academicConfig, 'Academic config updated');
 }));
 
 // Update about content (Admin+)
