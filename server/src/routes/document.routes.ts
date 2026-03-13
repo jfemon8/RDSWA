@@ -63,7 +63,7 @@ router.post('/', authenticate(), authorize(UserRole.MODERATOR), auditLog('docume
 }));
 
 // Update
-router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('document.update', 'documents'), asyncHandler(async (req, res) => {
+router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('document.update', 'documents'), asyncHandler(async (req, res) => {
   const doc = await DocumentModel.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { $set: req.body },
@@ -74,7 +74,7 @@ router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('docume
 }));
 
 // Delete
-router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('document.delete', 'documents'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('document.delete', 'documents'), asyncHandler(async (req, res) => {
   const doc = await DocumentModel.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { isDeleted: true },

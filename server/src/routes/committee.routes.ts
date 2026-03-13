@@ -19,11 +19,11 @@ router.get('/', cacheResponse(600), committeeController.getAll);
 router.get('/current', cacheResponse(600), committeeController.getCurrent);
 router.get('/:id', committeeController.getById);
 
-// Admin+
-router.post('/', authenticate(), authorize(UserRole.ADMIN), validate({ body: createCommitteeSchema }), auditLog('committee.create', 'committees'), committeeController.create);
-router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body: updateCommitteeSchema }), auditLog('committee.update', 'committees'), committeeController.update);
-router.post('/:id/archive', authenticate(), authorize(UserRole.ADMIN), auditLog('committee.archive', 'committees'), committeeController.archive);
-router.post('/:id/members', authenticate(), authorize(UserRole.ADMIN), validate({ body: addCommitteeMemberSchema }), auditLog('committee.add_member', 'committees'), committeeController.addMember);
-router.delete('/:id/members/:userId', authenticate(), authorize(UserRole.ADMIN), auditLog('committee.remove_member', 'committees'), committeeController.removeMember);
+// Moderator+
+router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createCommitteeSchema }), auditLog('committee.create', 'committees'), committeeController.create);
+router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateCommitteeSchema }), auditLog('committee.update', 'committees'), committeeController.update);
+router.post('/:id/archive', authenticate(), authorize(UserRole.MODERATOR), auditLog('committee.archive', 'committees'), committeeController.archive);
+router.post('/:id/members', authenticate(), authorize(UserRole.MODERATOR), validate({ body: addCommitteeMemberSchema }), auditLog('committee.add_member', 'committees'), committeeController.addMember);
+router.delete('/:id/members/:userId', authenticate(), authorize(UserRole.MODERATOR), auditLog('committee.remove_member', 'committees'), committeeController.removeMember);
 
 export default router;
