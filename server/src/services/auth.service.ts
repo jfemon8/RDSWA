@@ -38,7 +38,8 @@ export class AuthService {
 
     // Determine initial role
     let role = UserRole.USER;
-    if (SUPER_ADMIN_EMAILS.includes(input.email)) {
+    const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(input.email);
+    if (isSuperAdmin) {
       role = UserRole.SUPER_ADMIN;
     }
 
@@ -50,6 +51,11 @@ export class AuthService {
       role,
       emailVerificationToken,
       emailVerificationExpiry,
+      ...(isSuperAdmin && {
+        membershipStatus: 'approved',
+        isModerator: true,
+        isEmailVerified: true,
+      }),
     });
 
     // Send verification email
@@ -88,9 +94,12 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    // SuperAdmin check
-    if (SUPER_ADMIN_EMAILS.includes(user.email) && user.role !== UserRole.SUPER_ADMIN) {
+    // SuperAdmin check — ensure role + flags are always correct
+    if (SUPER_ADMIN_EMAILS.includes(user.email)) {
       user.role = UserRole.SUPER_ADMIN;
+      user.membershipStatus = 'approved' as any;
+      user.isModerator = true;
+      user.isEmailVerified = true;
     }
 
     const tokens = this.generateTokens(user);

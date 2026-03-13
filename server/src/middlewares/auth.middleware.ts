@@ -43,10 +43,14 @@ export function authenticate(optional = false) {
         throw ApiError.unauthorized('User not found or deactivated');
       }
 
-      // SuperAdmin auto-detection at every authenticated request
-      if (SUPER_ADMIN_EMAILS.includes(user.email) && user.role !== UserRole.SUPER_ADMIN) {
-        user.role = UserRole.SUPER_ADMIN;
-        await user.save();
+      // SuperAdmin auto-detection — ensure role + flags are always correct
+      if (SUPER_ADMIN_EMAILS.includes(user.email)) {
+        let needsSave = false;
+        if (user.role !== UserRole.SUPER_ADMIN) { user.role = UserRole.SUPER_ADMIN; needsSave = true; }
+        if (user.membershipStatus !== 'approved') { user.membershipStatus = 'approved' as any; needsSave = true; }
+        if (!user.isModerator) { user.isModerator = true; needsSave = true; }
+        if (!user.isEmailVerified) { user.isEmailVerified = true; needsSave = true; }
+        if (needsSave) await user.save();
       }
 
       req.user = user;
