@@ -11,6 +11,7 @@ import { SUPER_ADMIN_EMAILS } from '../config/constants';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { sendEmail } from '../config/mail';
 import { env } from '../config/env';
+import { ensureCentralGroup } from '../jobs/groupInitializer';
 
 interface RegisterInput {
   name: string;
@@ -57,6 +58,14 @@ export class AuthService {
         isEmailVerified: true,
       }),
     });
+
+    // Auto-add to central "RDSWA, BU" group
+    ensureCentralGroup().then(() => {
+      ChatGroup.findOneAndUpdate(
+        { type: 'central', isDeleted: false },
+        { $addToSet: { members: user._id } }
+      ).exec().catch(() => {});
+    }).catch(() => {});
 
     // Send verification email
     const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${emailVerificationToken}`;

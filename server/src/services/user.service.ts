@@ -72,6 +72,10 @@ export class UserService {
   }
 
   async updateProfile(userId: string, data: Partial<IUserDocument>): Promise<IUserDocument> {
+    // Fetch old department before updating (for group membership management)
+    const oldUser = data.department ? await User.findById(userId).select('department').lean() : null;
+    const oldDepartment = oldUser?.department;
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: data },
@@ -79,11 +83,22 @@ export class UserService {
     );
     if (!user) throw ApiError.notFound('User not found');
 
-    // Auto-create department group + add user if department was set
-    if (data.department && user.membershipStatus === 'approved') {
-      ensureDepartmentGroup(data.department as string).then(() => {
+    // Auto-create department group + add user if department was set/changed
+    if (data.department) {
+      const newDept = data.department as string;
+
+      // Remove from old department group if department changed
+      if (oldDepartment && oldDepartment !== newDept) {
         ChatGroup.findOneAndUpdate(
-          { type: 'department', department: data.department, isDeleted: false },
+          { type: 'department', department: oldDepartment, isDeleted: false },
+          { $pull: { members: user._id } }
+        ).exec().catch(() => {});
+      }
+
+      // Add to new department group
+      ensureDepartmentGroup(newDept).then(() => {
+        ChatGroup.findOneAndUpdate(
+          { type: 'department', department: newDept, isDeleted: false },
           { $addToSet: { members: user._id } }
         ).exec().catch(() => {});
       }).catch(() => {});

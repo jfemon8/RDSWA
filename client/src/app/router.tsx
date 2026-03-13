@@ -21,6 +21,7 @@ const University = lazy(() => import('@/features/university/UniversityPage'));
 const Committee = lazy(() => import('@/features/committee/CommitteePage'));
 const Members = lazy(() => import('@/features/members/MembersPage'));
 const BloodDonors = lazy(() => import('@/features/members/BloodDonorsPage'));
+const UserProfile = lazy(() => import('@/features/members/UserProfilePage'));
 const Events = lazy(() => import('@/features/events/EventsPage'));
 const EventDetail = lazy(() => import('@/features/events/EventDetailPage'));
 const CheckInScanner = lazy(() => import('@/features/events/CheckInScannerPage'));
@@ -101,6 +102,7 @@ export default function AppRouter() {
           <Route path="/university" element={<University />} />
           <Route path="/committee" element={<Committee />} />
           <Route path="/members" element={<Members />} />
+          <Route path="/members/:id" element={<UserProfile />} />
           <Route path="/blood-donors" element={<BloodDonors />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />

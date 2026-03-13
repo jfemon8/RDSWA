@@ -26,7 +26,7 @@ export async function initializeGroups(): Promise<void> {
       const allIds = [...new Set([...memberIds.map(String), ...adminIds.map(String)])];
 
       centralGroup = await ChatGroup.create({
-        name: 'RDSWA Central',
+        name: 'RDSWA, BU',
         description: 'Central group for all RDSWA members',
         type: 'central',
         members: allIds,
@@ -75,6 +75,29 @@ export async function initializeGroups(): Promise<void> {
   } catch (err) {
     console.error('Group initializer error:', err);
   }
+}
+
+/**
+ * Ensure the central "RDSWA, BU" group exists. Creates it if missing.
+ * Returns the group so the caller can add members.
+ */
+export async function ensureCentralGroup(): Promise<void> {
+  const existing = await ChatGroup.findOne({ type: 'central', isDeleted: false });
+  if (existing) return;
+
+  const adminUsers = await User.find({
+    isDeleted: false, isActive: true,
+    role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+  }).select('_id').lean();
+  const adminIds = adminUsers.map((u) => u._id);
+
+  await ChatGroup.create({
+    name: 'RDSWA, BU',
+    description: 'Central group for all RDSWA members',
+    type: 'central',
+    members: adminIds,
+    admins: adminIds,
+  });
 }
 
 /**

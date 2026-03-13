@@ -10,7 +10,7 @@ import { ListItemSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import SEO from '@/components/SEO';
 import { districts } from '@/data/bdGeo';
-import { getRoleConfig, getPrimaryRoleLabel } from '@/lib/roles';
+import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 
 export default function MembersPage() {
@@ -137,8 +137,9 @@ export default function MembersPage() {
 
               return (
                 <FadeIn key={m._id} delay={i * 0.04} direction="up">
-                  <div
-                    className="border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors"
+                  <Link
+                    to={`/members/${m._id}`}
+                    className="block border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {m.avatar ? (
@@ -206,7 +207,7 @@ export default function MembersPage() {
                         )}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 </FadeIn>
               );
             })}
