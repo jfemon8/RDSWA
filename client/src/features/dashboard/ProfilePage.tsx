@@ -79,6 +79,7 @@ export default function ProfilePage() {
       navigate('/dashboard/profile');
     },
     onError: (err: any) => {
+      console.error('[ProfilePage] Update error response:', JSON.stringify(err?.response?.data, null, 2));
       toast.error(err?.response?.data?.message || 'Failed to update profile');
     },
   });
@@ -108,7 +109,11 @@ export default function ProfilePage() {
         if (allEmpty) delete payload[key];
       }
     }
-    updateMutation.mutate(payload);
+    // DEBUG: Log payload and send
+    console.log('[ProfilePage] Submitting payload:', JSON.stringify(payload, null, 2));
+    // TEMP: Test with minimal payload to isolate 400 error
+    // updateMutation.mutate(payload);
+    updateMutation.mutate({ name: form.name.trim() });
   };
 
   const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
