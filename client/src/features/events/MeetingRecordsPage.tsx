@@ -29,7 +29,7 @@ export default function MeetingRecordsPage() {
   const pagination = data?.pagination;
 
   return (
-    <div className="mx-auto py-12 px-4 sm:px-6">
+    <div className="container mx-auto py-12">
       <BlurText
         text="Meeting Records"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"

@@ -21,7 +21,7 @@ export default function TermsPage() {
   const sections: Array<{ title: string; content: string }> = data?.data?.termsConditions || [];
 
   return (
-    <div className="mx-auto py-12 px-4 sm:px-6">
+    <div className="container mx-auto py-12">
       <SEO title="Terms & Conditions" description="Terms and conditions for using the RDSWA platform." />
       <BlurText
         text="Terms & Conditions"

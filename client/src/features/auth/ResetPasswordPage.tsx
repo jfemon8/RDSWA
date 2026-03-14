@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
+      <div className="container mx-auto min-h-[60vh] flex items-center justify-center">
         <FadeIn direction="up" duration={0.5} blur>
           <div className="text-center">
             <motion.div
@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
+      <div className="container mx-auto min-h-[60vh] flex items-center justify-center">
         <FadeIn direction="up" duration={0.5} blur>
           <div className="text-center">
             <motion.div
@@ -129,7 +129,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
+    <div className="container mx-auto min-h-[60vh] flex items-center justify-center">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
           <div className="bg-card border rounded-2xl p-8 shadow-lg">

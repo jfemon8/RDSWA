@@ -18,7 +18,7 @@ export default function AttendanceHistoryPage() {
   const records = data?.data || [];
 
   return (
-    <div className="mx-auto">
+    <div className="container mx-auto">
       <BlurText
         text="My Attendance History"
         className="text-2xl sm:text-3xl font-bold mb-6"

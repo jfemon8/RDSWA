@@ -122,7 +122,7 @@ export default function ProfilePage() {
   ] as const;
 
   return (
-    <div>
+    <div className="container mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Link to="/dashboard/profile" className="p-2 hover:bg-accent rounded-md transition-colors">
           <ArrowLeft className="h-5 w-5" />

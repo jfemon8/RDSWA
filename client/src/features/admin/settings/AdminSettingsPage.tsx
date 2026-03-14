@@ -109,7 +109,7 @@ export default function AdminSettingsPage() {
 
   return (
     <FadeIn direction="up">
-      <div>
+      <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Site Settings</h1>
 
         <form noValidate onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">

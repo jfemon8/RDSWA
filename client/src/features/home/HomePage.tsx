@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapPin, Vote, FileText, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapPin, Vote, FileText, AlertTriangle, Image, Bus } from 'lucide-react';
 import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, ShinyText } from '@/components/reactbits';
 import type { LucideIcon } from 'lucide-react';
 import SEO from '@/components/SEO';
@@ -12,8 +12,8 @@ const featureIconMap: Record<string, LucideIcon> = {
   Community: Users, Events: Calendar, Notices: Bell, Welfare: Heart,
 };
 const serviceIconMap: Record<string, LucideIcon> = {
-  'Blood Donors': Droplets, 'Voting & Polls': Vote, 'Bus Schedule': MapPin,
-  'Alumni Network': GraduationCap, 'Photo Gallery': Calendar, Donations: Heart,
+  'Blood Donors': Droplets, 'Voting & Polls': Vote, 'Bus Schedule': Bus,
+  'Alumni Network': GraduationCap, 'Photo Gallery': Image, Donations: Heart,
 };
 const featureColorMap: Record<string, string> = {
   Community: 'rgba(59, 130, 246, 0.15)', Events: 'rgba(139, 92, 246, 0.15)',
@@ -79,7 +79,7 @@ export default function HomePage() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[80px]" />
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 text-center">
+        <div className="container mx-auto text-center">
           <FadeIn direction="down" delay={0.1}>
             <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-8">
               <span className="relative flex h-2 w-2">
@@ -155,7 +155,7 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="py-16 border-y bg-muted/30">
-        <div className="container mx-auto px-4 sm:px-6">
+        <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { label: 'Active Members', value: stats?.totalMembers || 0, suffix: '+', icon: Users },
@@ -181,7 +181,7 @@ export default function HomePage() {
       {/* Latest Notices Section */}
       {notices.length > 0 && (
         <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
+          <div className="container mx-auto">
             <FadeIn>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-2">
                 <h2 className="text-2xl sm:text-3xl font-bold">Latest Notices</h2>
@@ -232,7 +232,7 @@ export default function HomePage() {
       {/* Upcoming Events Section */}
       {events.length > 0 && (
         <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4 sm:px-6">
+          <div className="container mx-auto">
             <FadeIn>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-2">
                 <h2 className="text-2xl sm:text-3xl font-bold">Upcoming Events</h2>
@@ -280,7 +280,7 @@ export default function HomePage() {
       {/* Features Section */}
       {features.length > 0 && (
         <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
+          <div className="container mx-auto">
             <FadeIn>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4">{hp?.featuresHeading || 'What We Offer'}</h2>
             </FadeIn>
@@ -316,7 +316,7 @@ export default function HomePage() {
       {/* Services Grid */}
       {services.length > 0 && (
         <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4 sm:px-6">
+          <div className="container mx-auto">
             <FadeIn>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-14">{hp?.servicesHeading || 'Everything You Need'}</h2>
             </FadeIn>
@@ -355,7 +355,7 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-primary/15 rounded-full blur-[100px]" />
         </div>
-        <div className="container mx-auto px-4 sm:px-6 text-center">
+        <div className="container mx-auto text-center">
           <FadeIn scale blur>
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-6">
               Ready to{' '}

@@ -35,7 +35,7 @@ export default function NoticesPage() {
   const categories = ['', 'general', 'academic', 'event', 'urgent', 'financial', 'other'];
 
   return (
-    <div className="mx-auto py-12 px-4 sm:px-6">
+    <div className="container mx-auto py-12">
       <SEO title="Notices" description="Stay updated with the latest RDSWA notices, announcements, and important updates." />
       <BlurText
         text="Notices"

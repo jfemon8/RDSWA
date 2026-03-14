@@ -5,7 +5,7 @@ import {
   Home, User, Bell, FileText, LogOut, Menu, X, Shield,
   MessageSquare, MessagesSquare, Settings,
 } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { UserRole } from '@rdswa/shared';
 import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import { AnimatePresence, motion } from 'motion/react';
@@ -141,7 +141,13 @@ export default function DashboardLayout() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
             >
-              <Outlet />
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </div>
+              }>
+                <Outlet />
+              </Suspense>
             </motion.div>
           </AnimatePresence>
         </main>

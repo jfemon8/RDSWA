@@ -33,7 +33,7 @@ export default function GalleryPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto py-8 px-4 sm:px-6">
+      <div className="container mx-auto py-8">
         <div className="h-10 w-32 mb-6" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
@@ -43,7 +43,7 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
       <SEO title="Gallery" description="Browse RDSWA photo albums — events, gatherings, and memorable moments." />
       <BlurText text="Gallery" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
@@ -83,9 +83,7 @@ export default function GalleryPage() {
                   <div onClick={() => setSelectedAlbum(a._id)}
                     className="border rounded-xl overflow-hidden bg-card cursor-pointer hover:border-primary/30 transition-colors">
                     {a.coverPhoto ? (
-                      <div className="overflow-hidden">
-                        <img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" />
-                      </div>
+                      <img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" />
                     ) : (
                       <div className="w-full h-40 bg-muted flex items-center justify-center">
                         <Image className="h-8 w-8 text-muted-foreground/30" />

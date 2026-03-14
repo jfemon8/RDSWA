@@ -39,7 +39,7 @@ export default function AdminFormsPage() {
 
   return (
     <FadeIn direction="up">
-      <div>
+      <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Form Submissions</h1>
 
         <div className="flex flex-col sm:flex-row gap-2 mb-6">

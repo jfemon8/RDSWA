@@ -31,7 +31,7 @@ export default function DonationsPage() {
   const campaigns = campaignsData?.data || [];
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
       <SEO title="Donations" description="Support RDSWA through donations — view active campaigns and contribute to student welfare." />
       <div className="flex items-center justify-between mb-6">
         <BlurText

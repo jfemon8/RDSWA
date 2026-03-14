@@ -56,7 +56,7 @@ export default function AdminUsersPage() {
   const pagination = data?.pagination;
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="container mx-auto py-4 sm:py-6">
       <h1 className="text-xl sm:text-2xl font-bold mb-6 text-foreground">User Management</h1>
 
       <FadeIn direction="up" delay={0}>

@@ -62,7 +62,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
+    <div className="container mx-auto min-h-[80vh] flex items-center justify-center">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
           <div

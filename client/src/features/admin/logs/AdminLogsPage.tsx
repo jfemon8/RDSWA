@@ -12,7 +12,7 @@ export default function AdminLogsPage() {
 
   return (
     <FadeIn direction="up">
-      <div>
+      <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Logs & Security</h1>
 
         <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b">

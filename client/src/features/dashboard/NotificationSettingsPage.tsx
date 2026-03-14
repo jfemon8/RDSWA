@@ -63,7 +63,7 @@ export default function NotificationSettingsPage() {
   }
 
   return (
-    <div className="mx-auto">
+    <div className="container mx-auto">
       <div className="mb-6">
         <BlurText text="Notification Settings" className="text-2xl sm:text-3xl font-bold" delay={50} />
       </div>

@@ -4,6 +4,7 @@ import api from '@/lib/api';
 import { FileText, Download, Loader2, Search } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import SEO from '@/components/SEO';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -35,7 +36,8 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
+      <SEO title="Documents" description="Access RDSWA documents — policies, resolutions, reports, and forms." />
       <BlurText
         text="Documents"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6"

@@ -29,7 +29,7 @@ export default function MyFormsPage() {
   }
 
   return (
-    <div>
+    <div className="container mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">My Submissions</h1>
         <Link

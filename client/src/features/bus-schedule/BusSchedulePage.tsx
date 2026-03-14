@@ -91,7 +91,7 @@ export default function BusSchedulePage() {
   const hasActiveFilters = filterCategory || filterOperator;
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
       <SEO title="Bus Schedule" description="Find university and intercity bus schedules, routes, and booking counters." />
       <BlurText text="Bus Schedules" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 

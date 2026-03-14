@@ -61,7 +61,7 @@ export default function Navbar() {
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <GradientText
             colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
@@ -260,7 +260,7 @@ export default function Navbar() {
             transition={{ duration: 0.2 }}
             className="lg:hidden border-t bg-background overflow-hidden"
           >
-            <nav aria-label="Mobile navigation" className="container mx-auto px-4 py-4 space-y-1">
+            <nav aria-label="Mobile navigation" className="container mx-auto py-4 space-y-1">
               {[...publicLinks, ...moreLinks].map((link, i) => (
                 <motion.div
                   key={link.href}

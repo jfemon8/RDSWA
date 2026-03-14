@@ -62,7 +62,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
+    <div className="container mx-auto min-h-[80vh] flex items-center justify-center py-8">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
           <div className="bg-card border rounded-2xl p-8 shadow-lg">

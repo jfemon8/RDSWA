@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, FileText, Calendar, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen } from 'lucide-react';
+import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -43,13 +43,13 @@ export default function DashboardPage() {
       color: 'text-blue-600',
     },
     {
-      icon: <FileText className="h-5 w-5" />,
+      icon: <Shield className="h-5 w-5" />,
       label: 'Role',
       value: user?.role?.replace('_', ' ') || 'User',
       color: 'text-purple-600',
     },
     {
-      icon: <Calendar className="h-5 w-5" />,
+      icon: <Mail className="h-5 w-5" />,
       label: 'Email',
       value: user?.isEmailVerified ? 'Verified' : 'Not Verified',
       color: user?.isEmailVerified ? 'text-green-600' : 'text-red-600',
@@ -57,7 +57,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div>
+    <div className="container mx-auto">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6">
         Welcome, {user?.name}
       </h1>

@@ -3,6 +3,7 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { GraduationCap, MapPin, Phone, BookOpen } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import SEO from '@/components/SEO';
 
 export default function UniversityPage() {
   const { data } = useQuery({
@@ -16,7 +17,8 @@ export default function UniversityPage() {
   const uni = data?.data?.universityInfo;
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
+      <SEO title="University" description="Learn about University of Barishal — overview, history, campus info, and admissions." />
       <BlurText
         text="University of Barishal"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"

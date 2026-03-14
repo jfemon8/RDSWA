@@ -75,7 +75,7 @@ export default function TopicDetailPage() {
   }
 
   return (
-    <div className="mx-auto">
+    <div className="container mx-auto">
       {/* Back button */}
       <button
         onClick={() => navigate('/dashboard/forum')}

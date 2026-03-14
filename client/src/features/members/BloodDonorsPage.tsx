@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Heart, Loader2, Phone, MapPin } from 'lucide-react';
+import { Droplets, Loader2, Phone, MapPin } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { districts } from '@/data/bdGeo';
+import SEO from '@/components/SEO';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -34,10 +35,11 @@ export default function BloodDonorsPage() {
   const donors = data?.data || [];
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
+      <SEO title="Blood Donors" description="Find blood donors from the RDSWA community — search by blood group and district." />
       <div className="flex items-center gap-3 mb-6">
         <FadeIn delay={0} direction="left">
-          <Heart className="h-8 w-8 text-red-500" />
+          <Droplets className="h-8 w-8 text-red-500" />
         </FadeIn>
         <div>
           <BlurText
@@ -84,7 +86,7 @@ export default function BloodDonorsPage() {
       ) : donors.length === 0 ? (
         <FadeIn delay={0.1} direction="up">
           <div className="text-center py-12">
-            <Heart className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <Droplets className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
             <p className="text-muted-foreground">No donors found with the selected criteria</p>
           </div>
         </FadeIn>

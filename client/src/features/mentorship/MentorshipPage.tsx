@@ -66,7 +66,7 @@ export default function MentorshipPage() {
   ] as const;
 
   return (
-    <div className="mx-auto py-12 px-4">
+    <div className="container mx-auto py-12">
       <BlurText
         text="Mentorship"
         className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"

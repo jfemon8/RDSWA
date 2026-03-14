@@ -52,7 +52,7 @@ export default function AdminVotingPage() {
 
   return (
     <FadeIn direction="up">
-      <div>
+      <div className="container mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Voting & Polls</h1>
           <button

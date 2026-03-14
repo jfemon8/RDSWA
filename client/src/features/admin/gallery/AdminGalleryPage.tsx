@@ -42,7 +42,7 @@ export default function AdminGalleryPage() {
   const albums = data?.data || [];
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="container mx-auto py-4 sm:py-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gallery</h1>
         <button

@@ -40,7 +40,7 @@ export default function ForumPage() {
     : topics;
 
   return (
-    <div className="mx-auto">
+    <div className="container mx-auto">
       <div className="flex items-center justify-between mb-6">
         <BlurText text="Discussion Forum" className="text-2xl sm:text-3xl font-bold" delay={50} />
         <button

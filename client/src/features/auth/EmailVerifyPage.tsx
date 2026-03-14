@@ -33,7 +33,7 @@ export default function EmailVerifyPage() {
   }, [token]);
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4 sm:px-6">
+    <div className="container mx-auto min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-md">
         <AnimatePresence mode="wait">
           {status === 'loading' && (

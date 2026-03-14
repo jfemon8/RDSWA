@@ -6,7 +6,7 @@ import {
   DollarSign, Vote, Bus, Bell, Settings, ScrollText, Shield,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound,
 } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import { UserRole } from '@rdswa/shared';
@@ -144,7 +144,13 @@ export default function AdminLayout() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
             >
-              <Outlet />
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </div>
+              }>
+                <Outlet />
+              </Suspense>
             </motion.div>
           </AnimatePresence>
         </main>

@@ -89,7 +89,7 @@ export default function AdminDashboardPage() {
   const recentLogs = logsData?.data || [];
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="container mx-auto space-y-6 py-4 sm:py-6">
       <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
 
       {/* Stats Cards */}

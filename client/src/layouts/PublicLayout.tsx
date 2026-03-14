@@ -1,7 +1,16 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { Suspense } from 'react';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { motion, AnimatePresence } from 'motion/react';
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
 
 export default function PublicLayout() {
   const location = useLocation();
@@ -24,7 +33,9 @@ export default function PublicLayout() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>

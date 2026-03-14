@@ -31,7 +31,7 @@ export default function ProfileViewPage() {
   };
 
   return (
-    <div>
+    <div className="container mx-auto">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <BlurText text="My Profile" className="text-2xl sm:text-3xl font-bold" delay={80} animateBy="words" direction="bottom" />
         <FadeIn delay={0.3}>

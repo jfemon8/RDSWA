@@ -5,7 +5,7 @@ import { GradientText } from '@/components/reactbits';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
+    <div className="container mx-auto min-h-[60vh] flex items-center justify-center">
       <div className="text-center">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}

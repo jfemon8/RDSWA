@@ -57,7 +57,7 @@ export default function EventDetailPage() {
   const photos = event.photos || [];
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
       <SEO title={event.title} description={event.description?.slice(0, 160)} image={event.coverImage} />
       {event.coverImage && (
         <motion.img

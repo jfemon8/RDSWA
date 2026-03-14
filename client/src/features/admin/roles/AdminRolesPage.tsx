@@ -33,7 +33,7 @@ const displayRoles = ROLE_HIERARCHY.filter(r => r !== UserRole.GUEST);
 
 export default function AdminRolesPage() {
   return (
-    <div className="space-y-8 p-4 sm:p-6">
+    <div className="container mx-auto space-y-8 py-4 sm:py-6">
       <h1 className="text-xl sm:text-2xl font-bold text-foreground">Role Management</h1>
 
       {/* Role Hierarchy */}

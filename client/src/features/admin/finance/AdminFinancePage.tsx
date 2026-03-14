@@ -83,7 +83,7 @@ export default function AdminFinancePage() {
   };
 
   return (
-    <div>
+    <div className="container mx-auto">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Finance</h1>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">

@@ -20,7 +20,7 @@ export default function AdminReportsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto space-y-6">
       <h1 className="text-xl sm:text-2xl font-bold text-foreground">Reports & Analytics</h1>
 
       <div className="flex flex-col sm:flex-row gap-2 border-b">

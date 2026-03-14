@@ -131,7 +131,7 @@ export default function CheckInScannerPage() {
   }, [stream]);
 
   return (
-    <div className="mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8">
       <FadeIn direction="up">
         <Link to={`/events/${id}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Event

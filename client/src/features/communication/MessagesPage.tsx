@@ -17,7 +17,7 @@ export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
 
   return (
-    <div className="mx-auto">
+    <div className="container mx-auto">
       <AnimatePresence mode="wait">
         {selectedUser ? (
           <motion.div

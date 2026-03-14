@@ -14,14 +14,15 @@ export function useAuth() {
       const { data } = await api.get('/users/me');
       return data.data;
     },
-    enabled: hasToken && !isAuthenticated,
+    enabled: hasToken,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
     if (!hasToken) {
-      setLoading(false);
+      if (isAuthenticated) logout();
+      else setLoading(false);
       return;
     }
 
@@ -30,7 +31,10 @@ export function useAuth() {
     } else if (isError) {
       logout();
     }
-  }, [data, isError, hasToken, setUser, setLoading, logout]);
+  }, [data, isError, hasToken, setUser, setLoading, logout, isAuthenticated]);
 
-  return { user, isAuthenticated, isLoading: isLoading && (queryLoading || hasToken), logout };
+  // Only block rendering on initial auth check, not background refetches
+  const initialLoading = isLoading && !user && hasToken && queryLoading;
+
+  return { user, isAuthenticated, isLoading: initialLoading, logout };
 }

@@ -1,5 +1,5 @@
-import { motion, useInView } from 'motion/react';
-import { useRef, ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { ReactNode } from 'react';
 
 interface FadeInProps {
   children: ReactNode;
@@ -24,9 +24,6 @@ export default function FadeIn({
   blur = false,
   scale = false
 }: FadeInProps) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once, margin: '-20px' });
-
   const directionMap = {
     up: { y: distance },
     down: { y: -distance },
@@ -42,21 +39,19 @@ export default function FadeIn({
     ...(scale ? { scale: 0.95 } : {})
   };
 
-  const animate = isInView
-    ? {
-        opacity: 1,
-        x: 0,
-        y: 0,
-        ...(blur ? { filter: 'blur(0px)' } : {}),
-        ...(scale ? { scale: 1 } : {})
-      }
-    : initial;
+  const whileInView = {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    ...(blur ? { filter: 'blur(0px)' } : {}),
+    ...(scale ? { scale: 1 } : {})
+  };
 
   return (
     <motion.div
-      ref={ref}
       initial={initial}
-      animate={animate}
+      whileInView={whileInView}
+      viewport={{ once, margin: '-20px' }}
       transition={{ duration, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
       style={{ overflow: 'visible' }}

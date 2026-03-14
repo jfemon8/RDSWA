@@ -43,7 +43,7 @@ export default function MyDonationsPage() {
   };
 
   return (
-    <div className="mx-auto">
+    <div className="container mx-auto">
       <BlurText
         text="My Donations"
         className="text-2xl md:text-3xl font-bold mb-6"
