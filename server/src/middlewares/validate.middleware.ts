@@ -32,6 +32,8 @@ export function validate(schemas: ValidationSchemas) {
           if (!fieldErrors[path]) fieldErrors[path] = [];
           fieldErrors[path].push(issue.message);
         }
+        console.error('[Validate] Zod errors:', JSON.stringify(error.issues, null, 2));
+        console.error('[Validate] Request body:', JSON.stringify(req.body, null, 2));
         next(ApiError.badRequest('Validation failed', fieldErrors));
       } else {
         next(error);

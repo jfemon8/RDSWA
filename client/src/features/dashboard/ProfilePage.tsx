@@ -98,8 +98,15 @@ export default function ProfilePage() {
     }
     if (payload.batch) payload.batch = Number(payload.batch);
     else delete payload.batch;
+    // Strip empty strings and null values; also clean address objects with all-empty fields
     for (const key of Object.keys(payload)) {
-      if (payload[key] === '' || payload[key] === null) delete payload[key];
+      if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
+        delete payload[key];
+      } else if (typeof payload[key] === 'object' && !Array.isArray(payload[key]) && key !== 'profileVisibility') {
+        const obj = payload[key];
+        const allEmpty = Object.values(obj).every((v) => v === '' || v === null || v === undefined);
+        if (allEmpty) delete payload[key];
+      }
     }
     updateMutation.mutate(payload);
   };

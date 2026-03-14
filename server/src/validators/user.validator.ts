@@ -1,62 +1,67 @@
 import { z } from 'zod';
 
+/** Transform empty strings to undefined so optional enum/string fields don't fail validation */
+const emptyToUndefined = (val: string | undefined) => (val === '' ? undefined : val);
+const optionalString = z.string().optional().transform(emptyToUndefined);
+const optionalUrl = z.union([z.string().url(), z.literal('')]).optional().transform(emptyToUndefined);
+
 export const updateProfileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  nameBn: z.string().optional(),
-  phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
+  nameBn: optionalString,
+  phone: optionalString,
+  dateOfBirth: optionalString,
+  gender: z.enum(['male', 'female', 'other']).or(z.literal('')).optional().transform(emptyToUndefined),
+  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).or(z.literal('')).optional().transform(emptyToUndefined),
   isBloodDonor: z.boolean().optional(),
-  lastDonationDate: z.string().optional(),
-  nid: z.string().optional(),
+  lastDonationDate: optionalString,
+  nid: optionalString,
   presentAddress: z.object({
-    division: z.string().optional(),
-    district: z.string().optional(),
-    upazila: z.string().optional(),
-    details: z.string().optional(),
+    division: optionalString,
+    district: optionalString,
+    upazila: optionalString,
+    details: optionalString,
   }).optional(),
   permanentAddress: z.object({
-    division: z.string().optional(),
-    district: z.string().optional(),
-    upazila: z.string().optional(),
-    details: z.string().optional(),
+    division: optionalString,
+    district: optionalString,
+    upazila: optionalString,
+    details: optionalString,
   }).optional(),
-  homeDistrict: z.string().optional(),
+  homeDistrict: optionalString,
 
   // Academic
-  studentId: z.string().optional(),
-  registrationNumber: z.string().optional(),
+  studentId: optionalString,
+  registrationNumber: optionalString,
   batch: z.number().int().positive().optional(),
-  session: z.string().optional(),
-  department: z.string().optional(),
-  university: z.string().optional(),
-  faculty: z.string().optional(),
+  session: optionalString,
+  department: optionalString,
+  university: optionalString,
+  faculty: optionalString,
   admissionYear: z.number().int().optional(),
   expectedGraduation: z.number().int().optional(),
 
   // Professional
-  profession: z.string().max(200).optional(),
+  profession: z.string().max(200).optional().transform(emptyToUndefined),
   jobHistory: z.array(z.object({
-    company: z.string(),
-    position: z.string(),
-    startDate: z.string(),
-    endDate: z.string().optional(),
-    isCurrent: z.boolean(),
+    company: z.string().default(''),
+    position: z.string().default(''),
+    startDate: optionalString,
+    endDate: optionalString,
+    isCurrent: z.boolean().default(false),
   })).optional(),
   businessInfo: z.array(z.object({
-    businessName: z.string(),
-    type: z.string(),
-    startDate: z.string(),
-    isCurrent: z.boolean(),
+    businessName: z.string().default(''),
+    type: z.string().default(''),
+    startDate: optionalString,
+    isCurrent: z.boolean().default(false),
   })).optional(),
-  earningSource: z.string().optional(),
+  earningSource: optionalString,
   skills: z.array(z.string()).optional(),
 
   // Social
-  facebook: z.string().url().optional().or(z.literal('')),
-  linkedin: z.string().url().optional().or(z.literal('')),
-  website: z.string().url().optional().or(z.literal('')),
+  facebook: optionalUrl,
+  linkedin: optionalUrl,
+  website: optionalUrl,
 
   // Profile visibility
   profileVisibility: z.object({

@@ -5,6 +5,7 @@ import { env } from '../config/env';
 
 export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ApiError) {
+    console.error('[ErrorHandler] ApiError:', err.statusCode, err.message, JSON.stringify(err.errors));
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
@@ -16,6 +17,7 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
+    console.error('[ErrorHandler] Mongoose ValidationError:', err.message);
     res.status(400).json({
       success: false,
       message: 'Validation error',

@@ -71,7 +71,10 @@ export class UserService {
     return applyVisibilityFilter(user, viewerRole);
   }
 
-  async updateProfile(userId: string, data: Partial<IUserDocument>): Promise<IUserDocument> {
+  async updateProfile(userId: string, rawData: Partial<IUserDocument>): Promise<IUserDocument> {
+    // Strip undefined values (from Zod transforms) so Mongoose doesn't set fields to null
+    const data = JSON.parse(JSON.stringify(rawData));
+
     // Fetch old department before updating (for group membership management)
     const oldUser = data.department ? await User.findById(userId).select('department').lean() : null;
     const oldDepartment = oldUser?.department;

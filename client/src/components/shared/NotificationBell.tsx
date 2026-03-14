@@ -4,17 +4,19 @@ import { Link } from 'react-router-dom';
 import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
 import { useNotificationSocket } from '@/hooks/useSocket';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   // Real-time notifications
   useNotificationSocket();
 
-  // Unread count
+  // Unread count — only fetch when authenticated
   const { data: countData } = useQuery({
     queryKey: ['unread-count'],
     queryFn: async () => {
@@ -22,6 +24,7 @@ export default function NotificationBell() {
       return data.data;
     },
     refetchInterval: 60_000,
+    enabled: !!user,
   });
 
   // Recent notifications (only when dropdown open)
