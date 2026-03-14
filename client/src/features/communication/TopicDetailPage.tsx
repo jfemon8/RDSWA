@@ -10,6 +10,7 @@ import {
 
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { formatDate } from '@/lib/date';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
@@ -44,7 +45,12 @@ export default function TopicDetailPage() {
       toast.success('Reply posted!');
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to post reply');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        toast.error(Object.values(fieldErrors)[0]);
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to post reply');
+      }
     },
   });
 

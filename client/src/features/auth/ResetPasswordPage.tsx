@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -45,7 +46,12 @@ export default function ResetPasswordPage() {
       toast.success('Password reset successful', 'Redirecting to login...');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to reset password');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to reset password');
+      }
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -36,7 +37,12 @@ export default function ForgotPasswordPage() {
       setSuccess(true);
       toast.success('Reset link sent', 'Please check your email inbox');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Something went wrong');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err.response?.data?.message || 'Something went wrong');
+      }
     } finally {
       setLoading(false);
     }

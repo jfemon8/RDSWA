@@ -8,6 +8,7 @@ import { Loader2, Send, UserPlus, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { useToast } from '@/components/ui/Toast';
 
 export default function SubmitFormPage() {
@@ -44,7 +45,12 @@ export default function SubmitFormPage() {
       navigate('/dashboard/forms');
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Submission failed');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err.response?.data?.message || 'Submission failed');
+      }
     },
   });
 

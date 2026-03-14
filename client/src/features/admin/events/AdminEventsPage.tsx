@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle } from 'lucide-react';
@@ -45,7 +46,7 @@ export default function AdminEventsPage() {
       resetForm();
       toast.success(editId ? 'Event updated' : 'Event created');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save event'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save event'); } },
   });
 
   const deleteMutation = useMutation({

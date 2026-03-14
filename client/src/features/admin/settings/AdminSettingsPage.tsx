@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
 
@@ -100,7 +101,7 @@ export default function AdminSettingsPage() {
   const saveMutation = useMutation({
     mutationFn: () => api.patch('/settings', form),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Settings saved successfully'); },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save settings'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { toast.error(Object.values(fe)[0]); } else { toast.error(err.response?.data?.message || 'Failed to save settings'); } },
   });
 
   if (isLoading) {
@@ -471,7 +472,7 @@ function AcademicConfigSection() {
       queryClient.invalidateQueries({ queryKey: ['settings', 'academic-config'] });
       toast.success('Academic config saved');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { toast.error(Object.values(fe)[0]); } else { toast.error(err.response?.data?.message || 'Failed to save'); } },
   });
 
   if (isLoading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;

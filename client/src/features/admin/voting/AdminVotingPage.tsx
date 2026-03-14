@@ -5,6 +5,7 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
@@ -39,7 +40,7 @@ export default function AdminVotingPage() {
       setForm({ title: '', description: '', startTime: '', endTime: '', eligibleVoters: 'all_members', options: ['', ''] });
       toast.success('Poll created successfully');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to create poll'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create poll'); } },
   });
 
   const publishMutation = useMutation({

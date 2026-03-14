@@ -10,6 +10,7 @@ import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { divisions, districts, upazilas, type Division } from '@/data/bdGeo';
 import { useToast } from '@/components/ui/Toast';
+import { extractFieldErrors } from '@/lib/formErrors';
 
 interface AcademicConfig {
   batches: string[];
@@ -79,8 +80,21 @@ export default function ProfilePage() {
       navigate('/dashboard/profile');
     },
     onError: (err: any) => {
-      console.error('[ProfilePage] Update error response:', JSON.stringify(err?.response?.data, null, 2));
-      toast.error(err?.response?.data?.message || 'Failed to update profile');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+        // Auto-switch to the tab containing the first error field
+        const firstKey = Object.keys(fieldErrors)[0];
+        const personalFields = ['name', 'nameBn', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'presentAddress', 'permanentAddress'];
+        const academicFields = ['studentId', 'registrationNumber', 'batch', 'session', 'faculty', 'department'];
+        const professionalFields = ['profession', 'earningSource', 'skills'];
+        if (personalFields.some((f) => firstKey.startsWith(f))) setActiveTab('personal');
+        else if (academicFields.includes(firstKey)) setActiveTab('academic');
+        else if (professionalFields.includes(firstKey)) setActiveTab('professional');
+        else setActiveTab('social');
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to update profile');
+      }
     },
   });
 
@@ -109,11 +123,7 @@ export default function ProfilePage() {
         if (allEmpty) delete payload[key];
       }
     }
-    // DEBUG: Log payload and send
-    console.log('[ProfilePage] Submitting payload:', JSON.stringify(payload, null, 2));
-    // TEMP: Test with minimal payload to isolate 400 error
-    // updateMutation.mutate(payload);
-    updateMutation.mutate({ name: form.name.trim() });
+    updateMutation.mutate(payload);
   };
 
   const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
@@ -169,16 +179,16 @@ export default function ProfilePage() {
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
               <InputField label="Full Name" value={form.name} onChange={(v) => { set('name', v); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }} required error={errors.name} />
-              <InputField label="Name (Bangla)" value={form.nameBn} onChange={(v) => set('nameBn', v)} placeholder="বাংলায় নাম" />
+              <InputField label="Name (Bangla)" value={form.nameBn} onChange={(v) => { set('nameBn', v); setErrors((prev) => { const { nameBn, ...rest } = prev; return rest; }); }} placeholder="বাংলায় নাম" error={errors.nameBn} />
               <VisibilityField label="Phone" isPublic={form.profileVisibility.phone ?? false} onToggle={(v) => setVisibility('phone', v)}>
-                <InputField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
+                <InputField label="Phone" value={form.phone} onChange={(v) => { set('phone', v); setErrors((prev) => { const { phone, ...rest } = prev; return rest; }); }} error={errors.phone} />
               </VisibilityField>
               <VisibilityField label="Date of Birth" isPublic={form.profileVisibility.dateOfBirth ?? true} onToggle={(v) => setVisibility('dateOfBirth', v)}>
-                <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
+                <InputField label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(v) => { set('dateOfBirth', v); setErrors((prev) => { const { dateOfBirth, ...rest } = prev; return rest; }); }} error={errors.dateOfBirth} />
               </VisibilityField>
-              <SelectField label="Gender" value={form.gender} onChange={(v) => set('gender', v)} options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }, { label: 'Other', value: 'other' }]} />
+              <SelectField label="Gender" value={form.gender} onChange={(v) => { set('gender', v); setErrors((prev) => { const { gender, ...rest } = prev; return rest; }); }} options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }, { label: 'Other', value: 'other' }]} error={errors.gender} />
               <VisibilityField label="Blood Group" isPublic={form.profileVisibility.bloodGroup ?? true} onToggle={(v) => setVisibility('bloodGroup', v)}>
-                <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => set('bloodGroup', v)} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} />
+                <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => { set('bloodGroup', v); setErrors((prev) => { const { bloodGroup, ...rest } = prev; return rest; }); }} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} error={errors.bloodGroup} />
               </VisibilityField>
               <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
               <AddressFieldset
@@ -215,10 +225,10 @@ export default function ProfilePage() {
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
               <VisibilityField label="Student ID/Roll" isPublic={form.profileVisibility.studentId ?? true} onToggle={(v) => setVisibility('studentId', v)}>
-                <InputField label="Student ID / Roll Number" value={form.studentId} onChange={(v) => set('studentId', v)} />
+                <InputField label="Student ID / Roll Number" value={form.studentId} onChange={(v) => { set('studentId', v); setErrors((prev) => { const { studentId, ...rest } = prev; return rest; }); }} error={errors.studentId} />
               </VisibilityField>
               <VisibilityField label="Registration Number" isPublic={form.profileVisibility.registrationNumber ?? false} onToggle={(v) => setVisibility('registrationNumber', v)}>
-                <InputField label="Registration Number" value={form.registrationNumber} onChange={(v) => set('registrationNumber', v)} />
+                <InputField label="Registration Number" value={form.registrationNumber} onChange={(v) => { set('registrationNumber', v); setErrors((prev) => { const { registrationNumber, ...rest } = prev; return rest; }); }} error={errors.registrationNumber} />
               </VisibilityField>
               <SelectField
                 label="University Batch"
@@ -252,9 +262,9 @@ export default function ProfilePage() {
         {activeTab === 'professional' && (
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-6">
-              <InputField label="Profession" value={form.profession} onChange={(v) => set('profession', v)} placeholder="e.g. Software Engineer, Teacher" />
-              <InputField label="Earning Source" value={form.earningSource} onChange={(v) => set('earningSource', v)} placeholder="e.g. Job, Freelancing, Business" />
-              <InputField label="Skills (comma separated)" value={form.skills} onChange={(v) => set('skills', v)} placeholder="e.g. JavaScript, React, Node.js" />
+              <InputField label="Profession" value={form.profession} onChange={(v) => { set('profession', v); setErrors((prev) => { const { profession, ...rest } = prev; return rest; }); }} placeholder="e.g. Software Engineer, Teacher" error={errors.profession} />
+              <InputField label="Earning Source" value={form.earningSource} onChange={(v) => { set('earningSource', v); setErrors((prev) => { const { earningSource, ...rest } = prev; return rest; }); }} placeholder="e.g. Job, Freelancing, Business" error={errors.earningSource} />
+              <InputField label="Skills (comma separated)" value={form.skills} onChange={(v) => { set('skills', v); setErrors((prev) => { const { skills, ...rest } = prev; return rest; }); }} placeholder="e.g. JavaScript, React, Node.js" error={errors.skills} />
 
               {/* Job History */}
               <fieldset className="border rounded-md p-4">
@@ -348,12 +358,12 @@ export default function ProfilePage() {
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
               <VisibilityField label="Facebook" isPublic={form.profileVisibility.facebook ?? true} onToggle={(v) => setVisibility('facebook', v)}>
-                <InputField label="Facebook" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="https://facebook.com/..." />
+                <InputField label="Facebook" value={form.facebook} onChange={(v) => { set('facebook', v); setErrors((prev) => { const { facebook, ...rest } = prev; return rest; }); }} placeholder="https://facebook.com/..." error={errors.facebook} />
               </VisibilityField>
               <VisibilityField label="LinkedIn" isPublic={form.profileVisibility.linkedin ?? true} onToggle={(v) => setVisibility('linkedin', v)}>
-                <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => set('linkedin', v)} placeholder="https://linkedin.com/in/..." />
+                <InputField label="LinkedIn" value={form.linkedin} onChange={(v) => { set('linkedin', v); setErrors((prev) => { const { linkedin, ...rest } = prev; return rest; }); }} placeholder="https://linkedin.com/in/..." error={errors.linkedin} />
               </VisibilityField>
-              <InputField label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="https://..." />
+              <InputField label="Website" value={form.website} onChange={(v) => { set('website', v); setErrors((prev) => { const { website, ...rest } = prev; return rest; }); }} placeholder="https://..." error={errors.website} />
             </div>
           </FadeIn>
         )}
@@ -384,17 +394,18 @@ function InputField({ label, value, onChange, type = 'text', required, placehold
   );
 }
 
-function SelectField({ label, value, onChange, options, disabled }: {
-  label: string; value: string; onChange: (v: string) => void; options: { label: string; value: string }[]; disabled?: boolean;
+function SelectField({ label, value, onChange, options, disabled, error }: {
+  label: string; value: string; onChange: (v: string) => void; options: { label: string; value: string }[]; disabled?: boolean; error?: string;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
       <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
-        className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50">
+        className={`w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 ${error ? 'border-red-500' : ''}`}>
         <option value="">Select...</option>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
+      <FieldError message={error} />
     </div>
   );
 }

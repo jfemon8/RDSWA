@@ -5,6 +5,7 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { Plus, Loader2, Pencil, Trash2, Upload, X } from 'lucide-react';
 
 const DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
@@ -59,7 +60,7 @@ function OperatorsList() {
   const saveMutation = useMutation({
     mutationFn: () => editId ? api.patch(`/bus/operators/${editId}`, form) : api.post('/bus/operators', form),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] }); resetForm(); toast.success(editId ? 'Operator updated' : 'Operator added'); },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save operator'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save operator'); } },
   });
 
   const deleteMutation = useMutation({
@@ -179,7 +180,7 @@ function RoutesList() {
       return editId ? api.patch(`/bus/routes/${editId}`, payload) : api.post('/bus/routes', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'routes'] }); resetForm(); toast.success(editId ? 'Route updated' : 'Route added'); },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save route'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save route'); } },
   });
 
   const deleteMutation = useMutation({
@@ -348,7 +349,7 @@ function SchedulesList() {
       return editId ? api.patch(`/bus/schedules/${editId}`, payload) : api.post('/bus/schedules', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'schedules'] }); resetForm(); toast.success(editId ? 'Schedule updated' : 'Schedule added'); },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save schedule'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save schedule'); } },
   });
 
   const deleteMutation = useMutation({
@@ -559,7 +560,7 @@ function CountersList() {
       return editId ? api.patch(`/bus/counters/${editId}`, payload) : api.post('/bus/counters', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'counters'] }); resetForm(); toast.success(editId ? 'Counter updated' : 'Counter added'); },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save counter'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save counter'); } },
   });
 
   const deleteMutation = useMutation({

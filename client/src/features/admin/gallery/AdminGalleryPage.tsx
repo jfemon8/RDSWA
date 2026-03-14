@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { Plus, Loader2, Trash2, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -30,7 +31,7 @@ export default function AdminGalleryPage() {
       setForm({ title: '', description: '' });
       toast.success('Album created');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to create album'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create album'); } },
   });
 
   const deleteMutation = useMutation({

@@ -216,13 +216,53 @@ export default function ProfileViewPage() {
         )}
 
         {/* Social Links */}
-        <FadeIn delay={0.45} direction="up">
-          <Section title="Social Links" icon={<Globe className="h-4 w-4" />}>
-            <InfoRow icon={<Facebook className="h-4 w-4" />} label="Facebook" value={u.facebook} isLink />
-            <InfoRow icon={<Linkedin className="h-4 w-4" />} label="LinkedIn" value={u.linkedin} isLink />
-            <InfoRow icon={<Globe className="h-4 w-4" />} label="Website" value={u.website} isLink />
-          </Section>
-        </FadeIn>
+        {(u.facebook || u.linkedin || u.website) && (
+          <FadeIn delay={0.45} direction="up">
+            <Section title="Social Links" icon={<Globe className="h-4 w-4" />}>
+              <div className="flex items-center gap-3 py-2">
+                {u.facebook && (
+                  <motion.a
+                    href={u.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Facebook"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2.5 rounded-full bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2]/20 transition-colors"
+                  >
+                    <Facebook className="h-5 w-5" />
+                  </motion.a>
+                )}
+                {u.linkedin && (
+                  <motion.a
+                    href={u.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="LinkedIn"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2.5 rounded-full bg-[#0A66C2]/10 text-[#0A66C2] hover:bg-[#0A66C2]/20 transition-colors"
+                  >
+                    <Linkedin className="h-5 w-5" />
+                  </motion.a>
+                )}
+                {u.website && (
+                  <motion.a
+                    href={u.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Website"
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Globe className="h-5 w-5" />
+                  </motion.a>
+                )}
+              </div>
+            </Section>
+          </FadeIn>
+        )}
       </div>
     </div>
   );

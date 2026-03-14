@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 
@@ -200,7 +201,12 @@ function CreateTopicForm({
       onCreated();
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to create topic');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to create topic');
+      }
     },
   });
 

@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -55,7 +56,12 @@ export default function LoginPage() {
       setUser(data.data.user);
       navigate('/dashboard');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Login failed');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err.response?.data?.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }

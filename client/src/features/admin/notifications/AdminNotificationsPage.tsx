@@ -4,6 +4,7 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { Send, Loader2, Bell, Radio } from 'lucide-react';
 
 export default function AdminNotificationsPage() {
@@ -28,7 +29,7 @@ export default function AdminNotificationsPage() {
       toast.success(data?.message || 'Notification sent!');
       setForm({ title: '', message: '', link: '', targetRole: '', targetBatch: '' });
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to send notification'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to send notification'); } },
   });
 
   return (

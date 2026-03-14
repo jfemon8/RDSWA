@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Trash2, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -37,7 +38,7 @@ export default function AdminNoticesPage() {
       resetForm();
       toast.success(editId ? 'Notice updated' : 'Notice created');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save notice'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save notice'); } },
   });
 
   const deleteMutation = useMutation({

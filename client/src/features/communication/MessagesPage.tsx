@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { formatTime, formatDateCustom } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 
@@ -218,7 +219,12 @@ function ChatView({
       queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to send message');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        toast.error(Object.values(fieldErrors)[0]);
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to send message');
+      }
     },
   });
 

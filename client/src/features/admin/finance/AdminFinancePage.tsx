@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import {
   DollarSign, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
   Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
@@ -418,7 +419,7 @@ function ExpensesList() {
       setForm({ title: '', amount: '', category: 'other', description: '' });
       toast.success('Expense added');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to add expense'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to add expense'); } },
   });
 
   const expenses = data?.data || [];
@@ -534,7 +535,7 @@ function CampaignsList() {
       setShowForm(false);
       toast.success('Campaign created');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to create campaign'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create campaign'); } },
   });
 
   const campaigns = data?.data || [];

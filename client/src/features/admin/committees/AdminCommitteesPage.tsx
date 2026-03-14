@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Loader2, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -46,7 +47,7 @@ export default function AdminCommitteesPage() {
       setForm({ name: '', description: '', startDate: '', endDate: '' });
       toast.success(editId ? 'Committee updated' : 'Committee created');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to save committee'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save committee'); } },
   });
 
   const archiveMutation = useMutation({
@@ -232,7 +233,7 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
       setPosition(CommitteePosition.MEMBER);
       toast.success('Member added');
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to add member'); },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { toast.error(Object.values(fe)[0]); } else { toast.error(err.response?.data?.message || 'Failed to add member'); } },
   });
 
   const removeMutation = useMutation({

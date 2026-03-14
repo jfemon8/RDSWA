@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 import SEO from '@/components/SEO';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
@@ -181,7 +182,12 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       onSuccess();
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Donation failed');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err?.response?.data?.message || 'Donation failed');
+      }
     },
   });
 

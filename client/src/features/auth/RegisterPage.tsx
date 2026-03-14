@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
+import { extractFieldErrors } from '@/lib/formErrors';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -49,7 +50,12 @@ export default function RegisterPage() {
       await api.post('/auth/register', form);
       navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account.' } });
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Registration failed');
+      const fieldErrors = extractFieldErrors(err);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(err.response?.data?.message || 'Registration failed');
+      }
     } finally {
       setLoading(false);
     }
