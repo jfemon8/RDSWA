@@ -54,8 +54,8 @@ router.patch('/read-all', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, null, 'All notifications marked as read');
 }));
 
-// Broadcast (SuperAdmin) — uses centralized service with preferences
-router.post('/broadcast', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
+// Broadcast (Admin+) — uses centralized service with preferences
+router.post('/broadcast', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
   const { title, message, link } = req.body;
   const users = await User.find({ isDeleted: false, isActive: true }).select('_id');
   const recipientIds = users.map((u) => u._id);
