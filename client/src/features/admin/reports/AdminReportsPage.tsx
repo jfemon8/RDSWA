@@ -4,20 +4,27 @@ import { FadeIn, CountUp } from '@/components/reactbits';
 import api from '@/lib/api';
 import { Loader2, Users, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from 'recharts';
+import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
+import { hasMinRole } from '@/lib/roles';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
 type Tab = 'members' | 'finance' | 'events' | 'donations';
 
 export default function AdminReportsPage() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role ? hasMinRole(user.role, UserRole.ADMIN) : false;
   const [tab, setTab] = useState<Tab>('members');
 
-  const tabs: { key: Tab; label: string; icon: any }[] = [
+  const allTabs: { key: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
     { key: 'members', label: 'Members', icon: Users },
-    { key: 'finance', label: 'Finance', icon: TrendingUp },
+    { key: 'finance', label: 'Finance', icon: TrendingUp, adminOnly: true },
     { key: 'events', label: 'Events', icon: Calendar },
     { key: 'donations', label: 'Donations', icon: BarChart3 },
   ];
+
+  const tabs = allTabs.filter((t) => !t.adminOnly || isAdmin);
 
   return (
     <div className="container mx-auto space-y-6">
@@ -41,7 +48,7 @@ export default function AdminReportsPage() {
       </div>
 
       {tab === 'members' && <MembersReport />}
-      {tab === 'finance' && <FinanceReport />}
+      {tab === 'finance' && isAdmin && <FinanceReport />}
       {tab === 'events' && <EventsReport />}
       {tab === 'donations' && <DonationsReport />}
     </div>

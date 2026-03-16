@@ -141,7 +141,7 @@ router.patch('/about', authenticate(), authorize(UserRole.ADMIN), auditLog('sett
 }));
 
 // Update payment config (Admin+)
-router.patch('/payment', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_payment', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/payment', authenticate(), authorize(UserRole.MODERATOR), auditLog('settings.update_payment', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   // Strip _id from each provider subdocument
   const gateway = req.body.paymentGateway || {};

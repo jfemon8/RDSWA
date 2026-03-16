@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image,
   DollarSign, Vote, Bus, Bell, Settings, ScrollText, Shield,
-  LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound,
+  LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard,
 } from 'lucide-react';
 import { Suspense, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,7 +34,8 @@ const adminLinks: AdminLink[] = [
   { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },
   { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
   { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
-  { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.ADMIN },
+  { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.MODERATOR },
+  { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.MODERATOR },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },

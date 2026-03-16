@@ -12,7 +12,7 @@ import mongoose from 'mongoose';
 const router = Router();
 
 // ─── Member analytics ───
-router.get('/members', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+router.get('/members', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
   const [byRole, byBatch, byDepartment, byDistrict] = await Promise.all([
     User.aggregate([
       { $match: { isDeleted: false } },
@@ -157,7 +157,7 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
 }));
 
 // ─── Event participation stats ───
-router.get('/events', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+router.get('/events', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
   const stats = await Event.aggregate([
     { $match: { isDeleted: false } },
     { $group: {
@@ -171,7 +171,7 @@ router.get('/events', authenticate(), authorize(UserRole.ADMIN), asyncHandler(as
 }));
 
 // ─── Donation trends ───
-router.get('/donations', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+router.get('/donations', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
   const trends = await Donation.aggregate([
     { $match: { paymentStatus: 'completed', isDeleted: false } },
     { $group: {

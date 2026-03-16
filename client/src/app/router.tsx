@@ -72,6 +72,7 @@ const AdminForms = lazy(() => import('@/features/admin/forms/AdminFormsPage'));
 const AdminBus = lazy(() => import('@/features/admin/bus/AdminBusPage'));
 const AdminReports = lazy(() => import('@/features/admin/reports/AdminReportsPage'));
 const AdminNotifications = lazy(() => import('@/features/admin/notifications/AdminNotificationsPage'));
+const AdminPaymentConfig = lazy(() => import('@/features/admin/payment/AdminPaymentConfigPage'));
 const AdminSettings = lazy(() => import('@/features/admin/settings/AdminSettingsPage'));
 const AdminLogs = lazy(() => import('@/features/admin/logs/AdminLogsPage'));
 
@@ -154,13 +155,14 @@ export default function AppRouter() {
               <Route path="/admin/voting" element={<AdminVoting />} />
               <Route path="/admin/forms" element={<AdminForms />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
+              <Route path="/admin/payment" element={<AdminPaymentConfig />} />
 
               {/* Admin+ routes */}
               <Route path="/admin/roles" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminRoles /></AdminRoleGuard>} />
               <Route path="/admin/moderators" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminModerators /></AdminRoleGuard>} />
               <Route path="/admin/finance" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminFinance /></AdminRoleGuard>} />
               <Route path="/admin/bus" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBus /></AdminRoleGuard>} />
-              <Route path="/admin/reports" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminReports /></AdminRoleGuard>} />
+              <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/logs" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminLogs /></AdminRoleGuard>} />
 
               {/* SuperAdmin only */}

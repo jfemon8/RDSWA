@@ -111,7 +111,7 @@ export const PERMISSIONS: PermissionMap = {
   'notifications:manage': [UserRole.SUPER_ADMIN],
 
   // Reports
-  'reports:read': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  'reports:read': [UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],
   'reports:export': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 
   // Settings
