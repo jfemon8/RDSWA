@@ -197,6 +197,20 @@ export default function Navbar() {
                     >
                       Profile
                     </Link>
+                    <Link
+                      to="/dashboard/notifications"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                      Notifications
+                    </Link>
+                    <Link
+                      to="/dashboard/messages"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                      Messages
+                    </Link>
                     <button
                       onClick={async () => {
                         setUserMenuOpen(false);
