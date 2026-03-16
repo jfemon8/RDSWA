@@ -1,14 +1,17 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
+import { hasMinRole } from '@/lib/roles';
 import {
   User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap,
-  Briefcase, Globe, Facebook, Linkedin, Building2, ArrowLeft, MessageSquare,
+  Briefcase, Globe, Facebook, Linkedin, Building2, ArrowLeft, MessageSquare, ThumbsUp,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
+import { useToast } from '@/components/ui/Toast';
 
 function getOrdinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -19,6 +22,8 @@ function getOrdinal(n: number): string {
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user: currentUser } = useAuthStore();
+  const queryClient = useQueryClient();
+  const toast = useToast();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['user-profile', id],
@@ -27,6 +32,18 @@ export default function UserProfilePage() {
       return res.data.data;
     },
     enabled: !!id,
+  });
+
+  const endorseMutation = useMutation({
+    mutationFn: (skill: string) => api.post(`/users/${id}/endorse`, { skill }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['user-profile', id] }); toast.success('Skill endorsed'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to endorse skill'),
+  });
+
+  const unendorseMutation = useMutation({
+    mutationFn: (skill: string) => api.delete(`/users/${id}/endorse`, { data: { skill } }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['user-profile', id] }); toast.success('Endorsement removed'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to remove endorsement'),
   });
 
   if (isLoading) {
@@ -197,17 +214,47 @@ export default function UserProfilePage() {
               <div className="py-2">
                 <p className="text-xs text-muted-foreground mb-1.5">Skills</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {u.skills.map((s: string, i: number) => (
-                    <motion.span
-                      key={i}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 + i * 0.03 }}
-                      className="px-2 py-0.5 text-xs bg-muted rounded-full"
-                    >
-                      {s}
-                    </motion.span>
-                  ))}
+                  {u.skills.map((s: string, i: number) => {
+                    const endorsements = u.skillEndorsements?.filter((e: any) => e.skill === s) || [];
+                    const endorseCount = endorsements.length;
+                    const canEndorse = currentUser && !isSelf && hasMinRole(currentUser.role, UserRole.MEMBER);
+                    const hasEndorsed = endorsements.some((e: any) => e.endorsedBy === currentUser?._id || e.endorsedBy?._id === currentUser?._id);
+
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 + i * 0.03 }}
+                        className="flex items-center gap-1"
+                      >
+                        <span className="px-2 py-0.5 text-xs bg-muted rounded-full">{s}</span>
+                        <AnimatePresence>
+                          {endorseCount > 0 && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="text-[10px] text-primary font-medium"
+                            >
+                              {endorseCount}
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                        {canEndorse && (
+                          <motion.button
+                            whileHover={{ scale: 1.15 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => hasEndorsed ? unendorseMutation.mutate(s) : endorseMutation.mutate(s)}
+                            disabled={endorseMutation.isPending || unendorseMutation.isPending}
+                            title={hasEndorsed ? 'Remove endorsement' : 'Endorse this skill'}
+                            className={`p-0.5 rounded transition-colors ${hasEndorsed ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                          >
+                            <ThumbsUp className={`h-3 w-3 ${hasEndorsed ? 'fill-primary' : ''}`} />
+                          </motion.button>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             )}

@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Loader2, UserCheck, UserX, Ban } from 'lucide-react';
+import { Search, Loader2, UserCheck, UserX, Ban, Download } from 'lucide-react';
+import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
 export default function AdminUsersPage() {
@@ -57,7 +58,35 @@ export default function AdminUsersPage() {
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
-      <h1 className="text-xl sm:text-2xl font-bold mb-6 text-foreground">User Management</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">User Management</h1>
+        <div className="flex gap-2">
+          {(['csv', 'json'] as const).map((fmt) => (
+            <motion.button
+              key={fmt}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={async () => {
+                try {
+                  const { data } = await api.get(`/users/export/directory?format=${fmt}`, { responseType: fmt === 'csv' ? 'text' : 'json' });
+                  const content = fmt === 'csv' ? data : JSON.stringify(fmt === 'json' ? data.data : data, null, 2);
+                  const blob = new Blob([content], { type: fmt === 'csv' ? 'text/csv' : 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `member-directory.${fmt}`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success(`Exported as ${fmt.toUpperCase()}`);
+                } catch { toast.error('Export failed'); }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
+            >
+              <Download className="h-3.5 w-3.5" /> Export {fmt.toUpperCase()}
+            </motion.button>
+          ))}
+        </div>
+      </div>
 
       <FadeIn direction="up" delay={0}>
         <div className="flex flex-col sm:flex-row gap-2 mb-6">
