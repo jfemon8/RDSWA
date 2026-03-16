@@ -101,7 +101,7 @@ router.patch('/', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('set
 }));
 
 // Get academic config (public — needed for registration/profile dropdowns)
-router.get('/academic-config', cacheResponse(600), asyncHandler(async (_req, res) => {
+router.get('/academic-config', cacheResponse(300), asyncHandler(async (_req, res) => {
   let settings = await SiteSettings.findOne();
   if (!settings) settings = await SiteSettings.create({});
   ApiResponse.success(res, settings.academicConfig);

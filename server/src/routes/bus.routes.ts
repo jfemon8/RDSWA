@@ -21,7 +21,7 @@ const router = Router();
 
 // ── Operators ──
 
-router.get('/operators', cacheResponse(600), asyncHandler(async (req, res) => {
+router.get('/operators', cacheResponse(300), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.scheduleType) filter.scheduleType = req.query.scheduleType;
   const operators = await BusOperator.find(filter).sort({ name: 1 });
@@ -60,7 +60,7 @@ router.delete('/operators/:id', authenticate(), authorize(UserRole.ADMIN),
 
 // ── Routes ──
 
-router.get('/routes', cacheResponse(600), asyncHandler(async (req, res) => {
+router.get('/routes', cacheResponse(300), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.routeType) filter.routeType = req.query.routeType;
   if (req.query.operator) filter.operator = req.query.operator;
@@ -153,7 +153,7 @@ router.delete('/schedules/:id', authenticate(), authorize(UserRole.ADMIN),
 
 // ── Counters ──
 
-router.get('/counters', cacheResponse(600), asyncHandler(async (req, res) => {
+router.get('/counters', cacheResponse(300), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.operator) filter.operator = req.query.operator;
   const counters = await BusCounter.find(filter).populate('operator', 'name').sort({ name: 1 });

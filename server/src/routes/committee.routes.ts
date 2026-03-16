@@ -15,8 +15,8 @@ import { cacheResponse } from '../middlewares/cache.middleware';
 const router = Router();
 
 // Public (cached)
-router.get('/', cacheResponse(600), committeeController.getAll);
-router.get('/current', cacheResponse(600), committeeController.getCurrent);
+router.get('/', cacheResponse(300), committeeController.getAll);
+router.get('/current', cacheResponse(300), committeeController.getCurrent);
 router.get('/:id', committeeController.getById);
 
 // Moderator+

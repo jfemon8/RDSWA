@@ -32,7 +32,7 @@ export default function ProfilePage() {
       const { data } = await api.get('/settings/academic-config');
       return data.data as AcademicConfig;
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const ac = academicData || { batches: [], sessions: [], faculties: [] };
