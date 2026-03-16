@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
-  LayoutDashboard, Users, Building2, Calendar, FileText, Image,
+  LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   DollarSign, Vote, Bus, Bell, Settings, ScrollText, Shield,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard,
 } from 'lucide-react';
@@ -29,6 +29,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Committees', href: '/admin/committees', icon: Building2, minRole: UserRole.MODERATOR },
   { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
   { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },
+  { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
   { label: 'Finance', href: '/admin/finance', icon: DollarSign, minRole: UserRole.ADMIN },
   { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },

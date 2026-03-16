@@ -65,6 +65,7 @@ const AdminAdmins = lazy(() => import('@/features/admin/admins/AdminAdminsPage')
 const AdminCommittees = lazy(() => import('@/features/admin/committees/AdminCommitteesPage'));
 const AdminEvents = lazy(() => import('@/features/admin/events/AdminEventsPage'));
 const AdminNotices = lazy(() => import('@/features/admin/notices/AdminNoticesPage'));
+const AdminDocuments = lazy(() => import('@/features/admin/documents/AdminDocumentsPage'));
 const AdminGallery = lazy(() => import('@/features/admin/gallery/AdminGalleryPage'));
 const AdminFinance = lazy(() => import('@/features/admin/finance/AdminFinancePage'));
 const AdminVoting = lazy(() => import('@/features/admin/voting/AdminVotingPage'));
@@ -151,6 +152,7 @@ export default function AppRouter() {
               <Route path="/admin/events" element={<AdminEvents />} />
               <Route path="/admin/events/:id/checkin" element={<CheckInScanner />} />
               <Route path="/admin/notices" element={<AdminNotices />} />
+              <Route path="/admin/documents" element={<AdminDocuments />} />
               <Route path="/admin/gallery" element={<AdminGallery />} />
               <Route path="/admin/voting" element={<AdminVoting />} />
               <Route path="/admin/forms" element={<AdminForms />} />
