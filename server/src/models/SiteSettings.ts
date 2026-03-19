@@ -60,6 +60,7 @@ export interface ISiteSettingsDocument extends Document {
     sessions: string[];
     faculties: Array<{ name: string; departments: string[] }>;
   };
+  otherOrganizations: Array<{ name: string; description: string; website?: string; logo?: string }>;
   membershipCriteria?: Record<string, unknown>;
   votingRules?: Record<string, unknown>;
   updatedBy?: mongoose.Types.ObjectId;
@@ -202,6 +203,10 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
           { name: 'Faculty of Biological Science', departments: ['Biochemistry & Molecular Biology'] },
         ],
       },
+    },
+    otherOrganizations: {
+      type: [{ name: String, description: String, website: String, logo: String }],
+      default: [],
     },
     membershipCriteria: Schema.Types.Mixed,
     votingRules: Schema.Types.Mixed,

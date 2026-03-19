@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink } from 'lucide-react';
+import { Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import SEO from '@/components/SEO';
+
+const PAGE_LIMIT = 20;
 
 export default function BusSchedulePage() {
   const [routeType, setRouteType] = useState('university');
@@ -12,6 +14,7 @@ export default function BusSchedulePage() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterOperator, setFilterOperator] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
 
   const { data: routesData, isLoading: routesLoading } = useQuery({
     queryKey: ['bus', 'routes', routeType],
@@ -22,9 +25,9 @@ export default function BusSchedulePage() {
   });
 
   const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
-    queryKey: ['bus', 'schedules', routeType],
+    queryKey: ['bus', 'schedules', routeType, page],
     queryFn: async () => {
-      const { data } = await api.get(`/bus/schedules?routeType=${routeType}&limit=100`);
+      const { data } = await api.get(`/bus/schedules?routeType=${routeType}&page=${page}&limit=${PAGE_LIMIT}`);
       return data;
     },
   });
@@ -47,9 +50,12 @@ export default function BusSchedulePage() {
 
   const routes = routesData?.data || [];
   const allSchedules = schedulesData?.data || [];
+  const pagination = schedulesData?.pagination;
   const counters = countersData?.data || [];
   const operators = operatorsData?.data || [];
   const isLoading = routesLoading || schedulesLoading;
+
+  const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 1;
 
   // Extract unique categories from schedules
   const categories = useMemo(() => {
@@ -68,7 +74,7 @@ export default function BusSchedulePage() {
     );
   }, [routes, search]);
 
-  // Filter schedules by search + category + operator
+  // Filter schedules by search + category + operator (client-side on current page)
   const filteredSchedules = useMemo(() => {
     let result = allSchedules;
     if (search) {
@@ -90,6 +96,12 @@ export default function BusSchedulePage() {
 
   const hasActiveFilters = filterCategory || filterOperator;
 
+  // Reset page when routeType changes
+  const handleRouteTypeChange = (type: string) => {
+    setRouteType(type);
+    setPage(1);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <SEO title="Bus Schedule" description="Find university and intercity bus schedules, routes, and booking counters." />
@@ -99,13 +111,13 @@ export default function BusSchedulePage() {
       <FadeIn delay={0.1} direction="up">
         <div className="flex gap-2 mb-6 flex-wrap">
           <button
-            onClick={() => setRouteType('university')}
+            onClick={() => handleRouteTypeChange('university')}
             className={`px-4 py-2 text-sm rounded-md border ${routeType === 'university' ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'}`}
           >
             University Bus
           </button>
           <button
-            onClick={() => setRouteType('intercity')}
+            onClick={() => handleRouteTypeChange('intercity')}
             className={`px-4 py-2 text-sm rounded-md border ${routeType === 'intercity' ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'}`}
           >
             Way to Home (Inter-city)
@@ -199,7 +211,7 @@ export default function BusSchedulePage() {
                         {r.estimatedDuration && <p className="text-sm text-muted-foreground">Duration: {r.estimatedDuration}</p>}
                         {r.distanceKm && <p className="text-sm text-muted-foreground">Distance: {r.distanceKm} km</p>}
                         {r.stops?.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">Stops: {r.stops.map((s: any) => s.name).join(' → ')}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Stops: {r.stops.map((s: any) => s.name).join(' \u2192 ')}</p>
                         )}
                       </div>
                     </FadeIn>
@@ -222,7 +234,7 @@ export default function BusSchedulePage() {
                   )}
                 </h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border min-w-[600px]">
+                  <table className="w-full text-sm border min-w-[700px]">
                     <thead>
                       <tr className="bg-muted">
                         <th className="text-left p-3 font-medium text-foreground">Bus</th>
@@ -231,35 +243,100 @@ export default function BusSchedulePage() {
                         <th className="text-left p-3 font-medium text-foreground">Arrival</th>
                         <th className="text-left p-3 font-medium text-foreground">Category</th>
                         <th className="text-left p-3 font-medium text-foreground">Days</th>
+                        <th className="text-left p-3 font-medium text-foreground">Info</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredSchedules.map((s: any) => (
-                        <tr key={s._id} className="border-t hover:bg-accent/50">
-                          <td className="p-3">
-                            <p className="font-medium text-foreground">{s.busName || 'N/A'}</p>
-                            {s.busNumber && <p className="text-xs text-muted-foreground">{s.busNumber}</p>}
-                            {s.route?.operator?.name && <p className="text-xs text-muted-foreground">{s.route.operator.name}</p>}
-                          </td>
-                          <td className="p-3 text-xs text-foreground">
-                            {s.route?.origin} → {s.route?.destination}
-                          </td>
-                          <td className="p-3">
-                            <span className="flex items-center gap-1 text-foreground"><Clock className="h-3 w-3" /> {s.departureTime}</span>
-                          </td>
-                          <td className="p-3 text-foreground">{s.arrivalTime || '-'}</td>
-                          <td className="p-3 capitalize text-foreground">{s.busCategory?.replace('_', ' ') || '-'}</td>
-                          <td className="p-3 text-xs capitalize text-muted-foreground">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
-                        </tr>
-                      ))}
+                      <AnimatePresence>
+                        {filteredSchedules.map((s: any, index: number) => (
+                          <motion.tr
+                            key={s._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ delay: index * 0.03 }}
+                            className={`border-t hover:bg-accent/50 ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
+                          >
+                            <td className="p-3">
+                              <p className="font-medium text-foreground">{s.busName || 'N/A'}</p>
+                              {s.busNumber && <p className="text-xs text-muted-foreground">{s.busNumber}</p>}
+                              {s.route?.operator?.name && <p className="text-xs text-muted-foreground">{s.route.operator.name}</p>}
+                            </td>
+                            <td className="p-3 text-xs text-foreground">
+                              {s.route?.origin} → {s.route?.destination}
+                            </td>
+                            <td className="p-3">
+                              <span className="flex items-center gap-1 text-foreground"><Clock className="h-3 w-3" /> {s.departureTime}</span>
+                              {s.seasonalVariation?.adjustedDepartureTime && (
+                                <span className="text-xs text-amber-600 dark:text-amber-400 block mt-0.5">
+                                  {s.seasonalVariation.season}: {s.seasonalVariation.adjustedDepartureTime}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-foreground">
+                              {s.arrivalTime || '-'}
+                              {s.seasonalVariation?.adjustedArrivalTime && (
+                                <span className="text-xs text-amber-600 dark:text-amber-400 block mt-0.5">
+                                  {s.seasonalVariation.season}: {s.seasonalVariation.adjustedArrivalTime}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 capitalize text-foreground">{s.busCategory?.replace('_', ' ') || '-'}</td>
+                            <td className="p-3 text-xs capitalize text-muted-foreground">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
+                            <td className="p-3">
+                              {s.isSpecialSchedule && (
+                                <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400" title={s.specialScheduleNote || 'Special schedule'}>
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {s.specialScheduleNote || 'Special'}
+                                </span>
+                              )}
+                              {s.seasonalVariation?.note && !s.isSpecialSchedule && (
+                                <span className="text-xs text-muted-foreground">{s.seasonalVariation.note}</span>
+                              )}
+                              {s.additionalInfo && !s.isSpecialSchedule && !s.seasonalVariation?.note && (
+                                <span className="text-xs text-muted-foreground">{s.additionalInfo}</span>
+                              )}
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="text-sm text-muted-foreground">
+                      Page {page} of {totalPages} ({pagination?.total} schedules)
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="flex items-center gap-1 px-3 py-1.5 border rounded-md text-sm hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Previous
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="flex items-center gap-1 px-3 py-1.5 border rounded-md text-sm hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
               </div>
             </FadeIn>
           )}
 
-          {/* Counters — click-to-call */}
+          {/* Counters */}
           {counters.length > 0 && (
             <FadeIn delay={0.25} direction="up">
               <div>

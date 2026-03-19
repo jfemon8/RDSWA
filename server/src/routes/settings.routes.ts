@@ -40,6 +40,7 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       foundedYear: settings.foundedYear,
       homePageContent: settings.homePageContent,
       academicConfig: settings.academicConfig,
+      otherOrganizations: settings.otherOrganizations,
       faq: settings.faq,
       privacyPolicy: settings.privacyPolicy,
       termsConditions: settings.termsConditions,

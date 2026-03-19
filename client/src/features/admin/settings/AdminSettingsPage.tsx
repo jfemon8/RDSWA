@@ -37,6 +37,7 @@ export default function AdminSettingsPage() {
       ctaTitle: '', ctaButtonText: '',
     },
     universityInfo: { overview: '', history: '', campusInfo: '', admissionInfo: '', contactInfo: '' },
+    otherOrganizations: [] as Array<{ name: string; description: string; website: string; logo: string }>,
     faq: [] as Array<{ question: string; answer: string }>,
     privacyPolicy: [] as Array<{ title: string; content: string }>,
     termsConditions: [] as Array<{ title: string; content: string }>,
@@ -86,6 +87,9 @@ export default function AdminSettingsPage() {
           admissionInfo: s.universityInfo?.admissionInfo || '',
           contactInfo: s.universityInfo?.contactInfo || '',
         },
+        otherOrganizations: (s.otherOrganizations || []).map((o: any) => ({
+          name: o.name || '', description: o.description || '', website: o.website || '', logo: o.logo || '',
+        })),
         faq: s.faq || [],
         privacyPolicy: s.privacyPolicy || [],
         termsConditions: s.termsConditions || [],
@@ -288,6 +292,43 @@ export default function AdminSettingsPage() {
                 </div>
                 <Field label="Contact Info" value={form.universityInfo.contactInfo}
                   onChange={(v) => setForm({ ...form, universityInfo: { ...form.universityInfo, contactInfo: v } })} />
+              </div>
+            </section>
+          </FadeIn>
+
+          {/* Other Organizations */}
+          <FadeIn direction="up" delay={0.2}>
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-foreground">Other Organizations</h2>
+                <button type="button"
+                  onClick={() => setForm({ ...form, otherOrganizations: [...form.otherOrganizations, { name: '', description: '', website: '', logo: '' }] })}
+                  className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
+                  <Plus className="h-3 w-3" /> Add Organization
+                </button>
+              </div>
+              <div className="space-y-3">
+                {form.otherOrganizations.map((org, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
+                    <button type="button" onClick={() => setForm({ ...form, otherOrganizations: form.otherOrganizations.filter((_, idx) => idx !== i) })}
+                      className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    <input value={org.name} placeholder="Organization Name"
+                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], name: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                    <textarea value={org.description} placeholder="Description" rows={2}
+                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], description: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                    <input value={org.website} placeholder="Website URL (optional)"
+                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], website: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                    <input value={org.logo} placeholder="Logo URL (optional)"
+                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], logo: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
+                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  </motion.div>
+                ))}
+                {form.otherOrganizations.length === 0 && <p className="text-sm text-muted-foreground">No organizations. Click "Add Organization" to create one.</p>}
               </div>
             </section>
           </FadeIn>
