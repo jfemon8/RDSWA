@@ -10,6 +10,7 @@ import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, Chevr
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
@@ -409,26 +410,30 @@ function EventDetailPanel({ event }: { event: any }) {
         </h4>
 
         {/* Add photo form */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-3">
-          <input
-            placeholder="Photo URL"
+        <div className="space-y-2 mb-3">
+          <ImageUpload
             value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
+            onChange={(url) => setPhotoUrl(url)}
+            folder="events"
+            label="Upload Photo (max 5MB)"
           />
-          <input
-            placeholder="Caption (optional)"
-            value={photoCaption}
-            onChange={(e) => setPhotoCaption(e.target.value)}
-            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
-          />
-          <button
-            onClick={() => photoUrl && addPhotoMutation.mutate()}
-            disabled={!photoUrl || addPhotoMutation.isPending}
-            className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
-          >
-            {addPhotoMutation.isPending ? '...' : 'Add'}
-          </button>
+          {photoUrl && (
+            <div className="flex gap-2">
+              <input
+                placeholder="Caption (optional)"
+                value={photoCaption}
+                onChange={(e) => setPhotoCaption(e.target.value)}
+                className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
+              />
+              <button
+                onClick={() => addPhotoMutation.mutate()}
+                disabled={addPhotoMutation.isPending}
+                className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
+              >
+                {addPhotoMutation.isPending ? '...' : 'Save'}
+              </button>
+            </div>
+          )}
         </div>
 
         {photos.length > 0 && (

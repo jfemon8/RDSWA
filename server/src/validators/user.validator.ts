@@ -6,6 +6,7 @@ const optionalString = z.string().optional().transform(emptyToUndefined);
 const optionalUrl = z.union([z.string().url(), z.literal('')]).optional().transform(emptyToUndefined);
 
 export const updateProfileSchema = z.object({
+  avatar: optionalUrl,
   name: z.string().min(2).max(100).optional(),
   nameBn: optionalString,
   phone: optionalString,

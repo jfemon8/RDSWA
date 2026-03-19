@@ -76,7 +76,7 @@ export default function LoginPage() {
           >
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
-              <p className="text-muted-foreground">
+              <div className="text-muted-foreground">
                 Sign in to{' '}
                 <GradientText
                   colors={['#3b82f6', '#8b5cf6', '#3b82f6']}
@@ -85,7 +85,7 @@ export default function LoginPage() {
                 >
                   RDSWA
                 </GradientText>
-              </p>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">

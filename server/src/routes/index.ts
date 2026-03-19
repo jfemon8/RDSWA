@@ -19,6 +19,7 @@ import communicationRoutes from './communication.routes';
 import mentorshipRoutes from './mentorship.routes';
 import jobRoutes from './job.routes';
 import budgetRoutes from './budget.routes';
+import uploadRoutes from './upload.routes';
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.use('/communication', communicationRoutes);
 router.use('/mentorships', mentorshipRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/budgets', budgetRoutes);
+router.use('/upload', uploadRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

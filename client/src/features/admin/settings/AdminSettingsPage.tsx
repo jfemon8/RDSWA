@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -180,8 +181,12 @@ export default function AdminSettingsPage() {
                   onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroTagline: v } })} />
                 <Field label="Rotating Words (comma-separated)" value={form.homePageContent.rotatingWords.join(', ')}
                   onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, rotatingWords: v.split(',').map(w => w.trim()).filter(Boolean) } })} />
-                <Field label="Hero Image URL" value={form.homePageContent.heroImage}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroImage: v } })} />
+                <ImageUpload
+                  value={form.homePageContent.heroImage}
+                  onChange={(url) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroImage: url } })}
+                  folder="settings"
+                  label="Hero Image (max 5MB)"
+                />
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Intro / CTA Text</label>
                   <textarea value={form.homePageContent.introText} onChange={(e) => setForm({ ...form, homePageContent: { ...form.homePageContent, introText: e.target.value } })} rows={3}

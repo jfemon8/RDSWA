@@ -7,6 +7,7 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import { Plus, Loader2, Trash2, Image, ArrowLeft, Upload, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 export default function AdminGalleryPage() {
   const queryClient = useQueryClient();
@@ -96,9 +97,12 @@ export default function AdminGalleryPage() {
                 </div>
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                <input placeholder="Cover Photo URL (optional)" value={form.coverPhoto}
-                  onChange={(e) => setForm({ ...form, coverPhoto: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <ImageUpload
+                  value={form.coverPhoto}
+                  onChange={(url) => setForm({ ...form, coverPhoto: url })}
+                  folder="gallery"
+                  label="Cover Photo (optional, max 5MB)"
+                />
                 <div className="flex gap-2">
                   <button type="submit" disabled={createMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">
@@ -231,22 +235,26 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
                 <h2 className="font-semibold text-sm text-foreground">Add Photo</h2>
                 <button onClick={() => setShowUpload(false)} className="p-1 hover:bg-accent rounded"><X className="h-4 w-4" /></button>
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); if (!photoForm.url.trim()) { toast.error('Photo URL is required'); return; } uploadMutation.mutate(); }} className="space-y-3">
-                <input placeholder="Photo URL" value={photoForm.url}
-                  onChange={(e) => setPhotoForm({ ...photoForm, url: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+              <div className="space-y-3">
+                <ImageUpload
+                  value={photoForm.url}
+                  onChange={(url) => setPhotoForm({ ...photoForm, url: url })}
+                  folder="gallery"
+                  label="Photo (max 5MB)"
+                />
                 <input placeholder="Caption (optional)" value={photoForm.caption}
                   onChange={(e) => setPhotoForm({ ...photoForm, caption: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                 <div className="flex gap-2">
-                  <motion.button type="submit" disabled={uploadMutation.isPending}
+                  <motion.button type="button" disabled={uploadMutation.isPending || !photoForm.url}
+                    onClick={() => uploadMutation.mutate()}
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">
-                    {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upload'}
+                    {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Photo'}
                   </motion.button>
                   <button type="button" onClick={() => setShowUpload(false)} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
-              </form>
+              </div>
             </div>
           </motion.div>
         )}

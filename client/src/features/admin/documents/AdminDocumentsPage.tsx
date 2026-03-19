@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
-import { Plus, Loader2, Trash2, Edit2, FileText, Download, X } from 'lucide-react';
+import { Plus, Loader2, Trash2, Edit2, FileText, Download, X, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
@@ -134,19 +134,47 @@ export default function AdminDocumentsPage() {
                 <textarea placeholder="Description" value={form.description} rows={2}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-foreground text-sm">
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
-                  </select>
-                  <input placeholder="File Type (e.g. pdf, docx)" value={form.fileType}
-                    onChange={(e) => setForm({ ...form, fileType: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-                </div>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm">
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                </select>
                 <div>
-                  <input placeholder="File URL (Cloudinary or external link)" value={form.fileUrl}
-                    onChange={(e) => { setForm({ ...form, fileUrl: e.target.value }); setErrors((p) => { const { fileUrl, ...r } = p; return r; }); }}
-                    className={`w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none ${errors.fileUrl ? 'border-red-500' : ''}`} />
+                  <p className="text-xs text-muted-foreground mb-1.5">Upload File (max 10MB — PDF, Word, Excel, or Image)</p>
+                  {form.fileUrl ? (
+                    <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-xs text-foreground truncate flex-1">{form.fileUrl.split('/').pop() || form.fileUrl}</span>
+                      <button type="button" onClick={() => setForm({ ...form, fileUrl: '', fileType: '', fileSize: 0 })}
+                        className="p-1 hover:bg-accent rounded"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                      <Upload className="h-6 w-6 text-muted-foreground/40" />
+                      <span className="text-xs text-muted-foreground">Click to select file</span>
+                      <input type="file" className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setErrors((p) => { const { fileUrl, ...r } = p; return r; });
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          try {
+                            const { data } = await api.post('/upload/document', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                            setForm((f) => ({
+                              ...f,
+                              fileUrl: data.data.url,
+                              fileType: data.data.fileType || file.type.split('/').pop() || '',
+                              fileSize: data.data.fileSize || file.size,
+                            }));
+                          } catch (err: any) {
+                            setErrors({ fileUrl: err.response?.data?.message || 'Upload failed' });
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
                   <FieldError message={errors.fileUrl} />
                 </div>
                 <div className="flex items-center gap-4">

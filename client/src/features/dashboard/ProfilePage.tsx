@@ -8,6 +8,7 @@ import { Save, Loader2, Plus, Trash2, ArrowLeft, Eye, EyeOff } from 'lucide-reac
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import ImageUpload from '@/components/ui/ImageUpload';
 import { divisions, districts, upazilas, type Division } from '@/data/bdGeo';
 import { useToast } from '@/components/ui/Toast';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -38,6 +39,7 @@ export default function ProfilePage() {
   const ac = academicData || { batches: [], sessions: [], faculties: [] };
 
   const [form, setForm] = useState({
+    avatar: user?.avatar || '',
     name: user?.name || '',
     nameBn: user?.nameBn || '',
     phone: user?.phone || '',
@@ -178,6 +180,13 @@ export default function ProfilePage() {
         {activeTab === 'personal' && (
           <FadeIn direction="up" duration={0.4}>
             <div className="space-y-4">
+              <ImageUpload
+                value={form.avatar}
+                onChange={(url) => set('avatar', url)}
+                type="avatar"
+                label="Profile Picture (max 2MB)"
+                circular
+              />
               <InputField label="Full Name" value={form.name} onChange={(v) => { set('name', v); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }} required error={errors.name} />
               <InputField label="Name (Bangla)" value={form.nameBn} onChange={(v) => { set('nameBn', v); setErrors((prev) => { const { nameBn, ...rest } = prev; return rest; }); }} placeholder="বাংলায় নাম" error={errors.nameBn} />
               <VisibilityField label="Phone" isPublic={form.profileVisibility.phone ?? false} onToggle={(v) => setVisibility('phone', v)}>

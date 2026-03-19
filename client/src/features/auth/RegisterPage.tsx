@@ -74,7 +74,7 @@ export default function RegisterPage() {
           <div className="bg-card border rounded-2xl p-8 shadow-lg">
             <div className="text-center mb-6">
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">Create account</h1>
-              <p className="text-muted-foreground">
+              <div className="text-muted-foreground">
                 Join the{' '}
                 <GradientText
                   colors={['#3b82f6', '#8b5cf6', '#3b82f6']}
@@ -84,7 +84,7 @@ export default function RegisterPage() {
                   RDSWA
                 </GradientText>
                 {' '}community
-              </p>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
