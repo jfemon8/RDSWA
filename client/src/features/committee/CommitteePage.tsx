@@ -118,9 +118,9 @@ function MemberCard({ member }: { member: any }) {
   return (
     <div className={`flex items-center gap-3 p-3 border rounded-xl transition-colors ${isLeader ? 'border-primary/30 bg-primary/5' : 'hover:bg-accent'}`}>
       {member.user?.avatar ? (
-        <img src={member.user.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+        <img src={member.user.avatar} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
       ) : (
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
+        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm shrink-0">
           {member.user?.name?.[0] || '?'}
         </div>
       )}
@@ -129,7 +129,13 @@ function MemberCard({ member }: { member: any }) {
           {isLeader && <Crown className="h-3 w-3 text-yellow-500" />}
           {member.user?.name || 'Unknown'}
         </p>
-        <p className="text-xs text-muted-foreground capitalize">{member.position?.replace('_', ' ')}</p>
+        <p className="text-xs text-muted-foreground capitalize">{member.position?.replace(/_/g, ' ')}</p>
+        {member.positionBn && (
+          <p className="text-xs text-muted-foreground/70">{member.positionBn}</p>
+        )}
+        {member.responsibilities && (
+          <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2">{member.responsibilities}</p>
+        )}
       </div>
     </div>
   );

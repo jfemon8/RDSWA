@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Loader2, UserCheck, UserX, Ban, Download } from 'lucide-react';
+import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
@@ -60,8 +60,11 @@ export default function AdminUsersPage() {
     <div className="container mx-auto py-4 sm:py-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">User Management</h1>
-        <div className="flex gap-2">
-          {(['csv', 'json'] as const).map((fmt) => (
+        <div className="flex flex-wrap gap-2">
+          {([
+            { fmt: 'csv', label: 'Excel/CSV', icon: FileSpreadsheet },
+            { fmt: 'json', label: 'JSON', icon: Download },
+          ] as const).map(({ fmt, label, icon: Icon }) => (
             <motion.button
               key={fmt}
               whileHover={{ scale: 1.05 }}
@@ -70,21 +73,56 @@ export default function AdminUsersPage() {
                 try {
                   const { data } = await api.get(`/users/export/directory?format=${fmt}`, { responseType: fmt === 'csv' ? 'text' : 'json' });
                   const content = fmt === 'csv' ? data : JSON.stringify(fmt === 'json' ? data.data : data, null, 2);
-                  const blob = new Blob([content], { type: fmt === 'csv' ? 'text/csv' : 'application/json' });
+                  const blob = new Blob([content], { type: fmt === 'csv' ? 'text/csv; charset=utf-8' : 'application/json' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = `member-directory.${fmt}`;
+                  a.download = `member-directory.${fmt === 'csv' ? 'csv' : 'json'}`;
                   a.click();
                   URL.revokeObjectURL(url);
-                  toast.success(`Exported as ${fmt.toUpperCase()}`);
+                  toast.success(`Exported as ${label}`);
                 } catch { toast.error('Export failed'); }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
             >
-              <Download className="h-3.5 w-3.5" /> Export {fmt.toUpperCase()}
+              <Icon className="h-3.5 w-3.5" /> {label}
             </motion.button>
           ))}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={async () => {
+              try {
+                const { data } = await api.get('/users/export/directory?format=csv', { responseType: 'text' });
+                const rows = data.split('\n');
+                const printWin = window.open('', '_blank');
+                if (!printWin) { toast.error('Please allow popups'); return; }
+                printWin.document.write(`<!DOCTYPE html><html><head><title>Member Directory</title>
+                  <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    h1 { text-align: center; margin-bottom: 20px; font-size: 18px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+                    th { background: #f5f5f5; font-weight: 600; }
+                    tr:nth-child(even) { background: #fafafa; }
+                    @media print { body { margin: 10px; } h1 { font-size: 16px; } }
+                  </style></head><body>
+                  <h1>RDSWA Member Directory</h1><table>`);
+                rows.forEach((row: string, i: number) => {
+                  const cols = row.match(/(".*?"|[^,]+)/g)?.map((c: string) => c.replace(/^"|"$/g, '').replace(/""/g, '"')) || [];
+                  const tag = i === 0 ? 'th' : 'td';
+                  printWin.document.write('<tr>' + cols.map((c: string) => `<${tag}>${c}</${tag}>`).join('') + '</tr>');
+                });
+                printWin.document.write('</table></body></html>');
+                printWin.document.close();
+                setTimeout(() => printWin.print(), 300);
+                toast.success('PDF print dialog opened');
+              } catch { toast.error('Export failed'); }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
+          >
+            <FileText className="h-3.5 w-3.5" /> Print PDF
+          </motion.button>
         </div>
       </div>
 

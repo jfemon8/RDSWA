@@ -119,6 +119,7 @@ export default function AppRouter() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/jobs" element={<JobBoard />} />
         </Route>
 
         {/* Dashboard routes (authenticated) */}
@@ -134,7 +135,6 @@ export default function AppRouter() {
             <Route path="/dashboard/forum/:id" element={<TopicDetail />} />
             <Route path="/dashboard/messages" element={<Messages />} />
             <Route path="/dashboard/settings" element={<NotificationSettings />} />
-            <Route path="/dashboard/jobs" element={<JobBoard />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
             <Route path="/dashboard/attendance" element={<AttendanceHistory />} />
             <Route path="/dashboard/my-donations" element={<MyDonations />} />

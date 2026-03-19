@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
-import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { JobPost, Notification } from '../models';
+import { JobPost } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
@@ -13,8 +12,8 @@ import { IJobPostDocument } from '../models/JobPost';
 
 const router = Router();
 
-// List active job posts (Member+)
-router.get('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
+// List active job posts (Public — anyone can view)
+router.get('/', asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: FilterQuery<IJobPostDocument> = { isDeleted: false, isActive: true };
 
@@ -39,16 +38,32 @@ router.get('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (
   ApiResponse.paginated(res, jobs, total, page, limit);
 }));
 
-// Get single job post
-router.get('/:id', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
+// My job posts (authenticated) — MUST be before /:id to avoid route conflict
+router.get('/my/posts', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { page, limit } = parsePagination(req.query as any);
+
+  const [jobs, total] = await Promise.all([
+    JobPost.find({ postedBy: req.user._id, isDeleted: false })
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    JobPost.countDocuments({ postedBy: req.user._id, isDeleted: false }),
+  ]);
+
+  ApiResponse.paginated(res, jobs, total, page, limit);
+}));
+
+// Get single job post (Public — anyone can view)
+router.get('/:id', asyncHandler(async (req, res) => {
   const job = await JobPost.findOne({ _id: req.params.id as string, isDeleted: false })
     .populate('postedBy', 'name avatar department');
   if (!job) throw ApiError.notFound('Job post not found');
   ApiResponse.success(res, job);
 }));
 
-// Create job post (Member+)
-router.post('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
+// Create job post (Alumni+ only)
+router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { title, company, location, type, description, requirements, salary, applicationLink, expiresAt } = req.body;
 
@@ -105,22 +120,6 @@ router.delete('/:id', authenticate(), asyncHandler(async (req, res) => {
   await job.save();
 
   ApiResponse.success(res, null, 'Job deleted');
-}));
-
-// My job posts
-router.get('/my/posts', authenticate(), asyncHandler(async (req, res) => {
-  if (!req.user) throw ApiError.unauthorized();
-  const { page, limit } = parsePagination(req.query as any);
-
-  const [jobs, total] = await Promise.all([
-    JobPost.find({ postedBy: req.user._id, isDeleted: false })
-      .sort({ createdAt: -1 })
-      .skip(getSkip({ page, limit }))
-      .limit(limit),
-    JobPost.countDocuments({ postedBy: req.user._id, isDeleted: false }),
-  ]);
-
-  ApiResponse.paginated(res, jobs, total, page, limit);
 }));
 
 export default router;

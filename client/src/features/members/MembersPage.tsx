@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin } from 'lucide-react';
+import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
@@ -13,6 +13,13 @@ import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 
+const MEMBER_CATEGORIES = [
+  { key: '', label: 'All Members', icon: Users },
+  { key: UserRole.ALUMNI, label: 'Alumni', icon: GraduationCap },
+  { key: UserRole.ADVISOR, label: 'Advisors', icon: Award },
+  { key: UserRole.SENIOR_ADVISOR, label: 'Senior Advisors', icon: Star },
+] as const;
+
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
   const [search, setSearch] = useState('');
@@ -21,6 +28,7 @@ export default function MembersPage() {
   const [session, setSession] = useState('');
   const [homeDistrict, setHomeDistrict] = useState('');
   const [profession, setProfession] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [page, setPage] = useState(1);
 
   const filters: Record<string, string> = { page: String(page), limit: '20' };
@@ -30,6 +38,7 @@ export default function MembersPage() {
   if (session) filters.session = session;
   if (homeDistrict) filters.homeDistrict = homeDistrict;
   if (profession) filters.profession = profession;
+  if (roleFilter) filters.role = roleFilter;
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.users.members(filters),
@@ -49,12 +58,13 @@ export default function MembersPage() {
   }, []);
 
   const showBecomeMember = isAuthenticated && user?.membershipStatus === 'none';
+  const activeCategory = MEMBER_CATEGORIES.find((c) => c.key === roleFilter) || MEMBER_CATEGORIES[0];
 
   return (
     <div className="container mx-auto py-8">
-      <SEO title="Members" description="Browse the RDSWA member directory — students and alumni from Rangpur Division at University of Barishal." />
+      <SEO title={activeCategory.label} description="Browse the RDSWA member directory — students and alumni from Rangpur Division at University of Barishal." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
-        <BlurText text="Members" className="text-2xl sm:text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
+        <BlurText text={activeCategory.label} className="text-2xl sm:text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
         {showBecomeMember && (
           <FadeIn delay={0.3}>
@@ -67,6 +77,28 @@ export default function MembersPage() {
           </FadeIn>
         )}
       </div>
+
+      {/* Category Tabs */}
+      <FadeIn delay={0.1} direction="up">
+        <div className="flex flex-wrap gap-2 mb-6">
+          {MEMBER_CATEGORIES.map((cat) => (
+            <motion.button
+              key={cat.key}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => { setRoleFilter(cat.key); setPage(1); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                roleFilter === cat.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-accent'
+              }`}
+            >
+              <cat.icon className="h-3.5 w-3.5" />
+              {cat.label}
+            </motion.button>
+          ))}
+        </div>
+      </FadeIn>
 
       {/* Filters */}
       <FadeIn delay={0.15} direction="up">
@@ -125,7 +157,7 @@ export default function MembersPage() {
       ) : members.length === 0 ? (
         <div className="text-center py-12">
           <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No members found</p>
+          <p className="text-muted-foreground">No {activeCategory.label.toLowerCase()} found</p>
         </div>
       ) : (
         <>

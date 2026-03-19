@@ -2,8 +2,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
-import { UserRole } from '@rdswa/shared';
-import { hasMinRole } from '@/lib/roles';
 import {
   User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap,
   Briefcase, Globe, Facebook, Linkedin, Building2, ArrowLeft, MessageSquare, ThumbsUp,
@@ -217,7 +215,7 @@ export default function UserProfilePage() {
                   {u.skills.map((s: string, i: number) => {
                     const endorsements = u.skillEndorsements?.filter((e: any) => e.skill === s) || [];
                     const endorseCount = endorsements.length;
-                    const canEndorse = currentUser && !isSelf && hasMinRole(currentUser.role, UserRole.MEMBER);
+                    const canEndorse = currentUser && !isSelf;
                     const hasEndorsed = endorsements.some((e: any) => e.endorsedBy === currentUser?._id || e.endorsedBy?._id === currentUser?._id);
 
                     return (

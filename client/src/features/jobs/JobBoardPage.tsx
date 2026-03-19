@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
+import { hasMinRole } from '@/lib/roles';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2 } from 'lucide-react';
@@ -95,7 +97,7 @@ export default function JobBoardPage() {
             ))}
           </select>
 
-          {user && (
+          {user && hasMinRole(user.role, UserRole.ALUMNI) && (
             <button
               onClick={() => setShowForm(!showForm)}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
