@@ -9,6 +9,7 @@ interface ListNoticesQuery {
   category?: string;
   status?: string;
   search?: string;
+  archived?: string;
 }
 
 export class NoticeService {
@@ -17,21 +18,39 @@ export class NoticeService {
     const filter: FilterQuery<INoticeDocument> = { isDeleted: false };
 
     if (!isAdmin) {
-      filter.status = 'published';
-      filter.$or = [
-        { scheduledPublishAt: { $exists: false } },
-        { scheduledPublishAt: { $lte: new Date() } },
-      ];
+      // Public users: show published or archived (when toggled)
+      if (query.archived === 'true') {
+        filter.status = 'archived';
+      } else {
+        filter.status = 'published';
+        filter.$or = [
+          { scheduledPublishAt: { $exists: false } },
+          { scheduledPublishAt: { $lte: new Date() } },
+        ];
+      }
     } else if (query.status) {
       filter.status = query.status;
     }
 
     if (query.category) filter.category = query.category;
+
+    // Search filter — build $or separately and merge with $and if needed
     if (query.search) {
-      filter.$or = [
+      const searchCondition = [
         { title: { $regex: query.search, $options: 'i' } },
         { content: { $regex: query.search, $options: 'i' } },
       ];
+      if (filter.$or) {
+        // Combine existing $or (scheduled publish) with search $or using $and
+        const existingOr = filter.$or;
+        delete filter.$or;
+        filter.$and = [
+          { $or: existingOr },
+          { $or: searchCondition },
+        ];
+      } else {
+        filter.$or = searchCondition;
+      }
     }
 
     const [notices, total] = await Promise.all([

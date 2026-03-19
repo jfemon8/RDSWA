@@ -121,13 +121,13 @@ export default function NoticesPage() {
                   <div
                     className={`p-4 border rounded-xl bg-card hover:border-primary/30 transition-colors ${
                       n.priority === 'urgent' ? 'border-red-300 dark:border-red-800' : ''
-                    } ${n.isArchived ? 'opacity-70' : ''}`}
+                    } ${n.status === 'archived' ? 'opacity-70' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {n.priority === 'urgent' && <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />}
-                          {n.isArchived && <Archive className="h-4 w-4 text-amber-500 shrink-0" />}
+                          {n.status === 'archived' && <Archive className="h-4 w-4 text-amber-500 shrink-0" />}
                           <h3 className="font-semibold truncate">{n.title}</h3>
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2">{n.content?.replace(/<[^>]*>/g, '')}</p>
