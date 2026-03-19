@@ -39,6 +39,10 @@ export const resetPasswordSchema = z.object({
     .regex(/[0-9]/, 'Password must contain at least one number'),
 });
 
+export const sendOtpSchema = z.object({
+  email: z.string().email().toLowerCase(),
+});
+
 export const verifyOtpSchema = z.object({
   email: z.string().email().toLowerCase(),
   otp: z.string().length(6, 'OTP must be 6 digits'),

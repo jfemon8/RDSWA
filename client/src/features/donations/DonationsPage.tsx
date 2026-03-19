@@ -300,6 +300,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             className="px-3 py-2 border rounded-md bg-background text-sm">
             <option value="one-time">One-time</option>
             <option value="monthly">Monthly</option>
+            <option value="membership">Membership</option>
             <option value="event-based">Event-based</option>
             <option value="construction-fund">Construction Fund</option>
           </select>

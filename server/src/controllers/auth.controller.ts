@@ -90,6 +90,11 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   ApiResponse.success(res, null, 'Password reset successful');
 });
 
+export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
+  await authService.sendOtp(req.body.email);
+  ApiResponse.success(res, null, 'If that email exists and is not yet verified, an OTP has been sent');
+});
+
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const user = await authService.verifyOtp(req.body.email, req.body.otp);
   ApiResponse.success(res, { _id: user._id, email: user.email }, 'OTP verified');

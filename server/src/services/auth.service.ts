@@ -229,6 +229,34 @@ export class AuthService {
     await user.save();
   }
 
+  async sendOtp(email: string): Promise<void> {
+    const user = await User.findOne({ email, isDeleted: false });
+    if (!user) {
+      // Don't reveal whether user exists
+      return;
+    }
+
+    if (user.isEmailVerified) {
+      throw ApiError.badRequest('Email is already verified');
+    }
+
+    const otp = generateOTP(6);
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+
+    await sendEmail(
+      user.email,
+      'RDSWA Email Verification OTP',
+      `<h2>Email Verification</h2>
+       <p>Hello ${user.name},</p>
+       <p>Your OTP for email verification is:</p>
+       <h1 style="letter-spacing: 8px; font-size: 32px; text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px;">${otp}</h1>
+       <p>This OTP expires in 10 minutes.</p>
+       <p>If you did not request this, please ignore this email.</p>`
+    ).catch((err) => console.error('OTP email send error:', err));
+  }
+
   async verifyOtp(email: string, otp: string): Promise<IUserDocument> {
     const user = await User.findOne({
       email,
