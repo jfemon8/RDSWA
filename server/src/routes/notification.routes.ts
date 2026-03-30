@@ -72,9 +72,25 @@ router.post('/broadcast', authenticate(), authorize(UserRole.ADMIN), asyncHandle
 
 // Targeted notification (Moderator+) — uses centralized service
 router.post('/targeted', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
-  const { recipientIds, title, message, link, type } = req.body;
+  const { recipientIds, title, message, link, type, targetRole, targetBatch } = req.body;
+
+  let finalRecipientIds = recipientIds;
+
+  // If role or batch filter provided, query matching users
+  if (targetRole || targetBatch) {
+    const filter: any = { isDeleted: false, isActive: true };
+    if (targetRole) filter.role = targetRole;
+    if (targetBatch) filter.batch = targetBatch;
+    const users = await User.find(filter).select('_id');
+    finalRecipientIds = users.map((u) => u._id);
+  }
+
+  if (!finalRecipientIds || finalRecipientIds.length === 0) {
+    throw ApiError.badRequest('No recipients found matching the criteria');
+  }
+
   const count = await notificationService.sendBulk({
-    recipientIds,
+    recipientIds: finalRecipientIds,
     type: type || 'system',
     title,
     message,

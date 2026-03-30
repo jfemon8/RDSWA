@@ -11,12 +11,14 @@ export default function AdminFormsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 
   const filters: Record<string, string> = { page: String(page), limit: '20' };
   if (statusFilter) filters.status = statusFilter;
+  if (typeFilter) filters.type = typeFilter;
 
   const { data, isLoading } = useQuery({
     queryKey: ['forms', 'admin', filters],
@@ -42,7 +44,7 @@ export default function AdminFormsPage() {
       <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Form Submissions</h1>
 
-        <div className="flex flex-col sm:flex-row gap-2 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
           {['', 'pending', 'under_review', 'approved', 'rejected'].map((s) => (
             <button
               key={s}
@@ -51,6 +53,23 @@ export default function AdminFormsPage() {
                 statusFilter === s ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
               }`}>
               {s ? s.replace('_', ' ') : 'All'}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 mb-6">
+          {[
+            { key: '', label: 'All Types' },
+            { key: 'membership', label: 'Membership' },
+            { key: 'construction_fund', label: 'Construction Fund' },
+            { key: 'alumni', label: 'Alumni' },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setTypeFilter(t.key); setPage(1); }}
+              className={`px-3 py-1.5 text-sm rounded-md border ${
+                typeFilter === t.key ? 'bg-muted font-medium border-foreground/20' : 'hover:bg-accent'
+              }`}>
+              {t.label}
             </button>
           ))}
         </div>

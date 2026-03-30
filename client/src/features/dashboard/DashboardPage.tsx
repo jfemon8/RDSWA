@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen, Mail } from 'lucide-react';
+import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen, Mail, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -121,6 +122,15 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
+      {/* Email verification prompt */}
+      <AnimatePresence>
+        {user && !user.isEmailVerified && (
+          <FadeIn delay={0.05} direction="up">
+            <EmailVerifyPrompt email={user.email} />
+          </FadeIn>
+        )}
+      </AnimatePresence>
+
       {/* Status cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statusCards.map((card, i) => (
@@ -196,5 +206,107 @@ function QuickAction({ to, label, description, icon }: { to: string; label: stri
         <p className="text-sm text-muted-foreground mt-1">{description}</p>
       </Link>
     </div>
+  );
+}
+
+function EmailVerifyPrompt({ email }: { email: string }) {
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState('');
+  const { setUser } = useAuthStore();
+
+  const sendOtp = async () => {
+    setSending(true);
+    setError('');
+    try {
+      await api.post('/auth/send-otp', { email });
+      setSent(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (otp.length !== 6) { setError('OTP must be 6 digits'); return; }
+    setVerifying(true);
+    setError('');
+    try {
+      await api.post('/auth/verify-otp', { email, otp });
+      // Refresh user data
+      const { data } = await api.get('/users/me');
+      setUser(data.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid or expired OTP');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="mb-6 p-4 rounded-xl border bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-start gap-3">
+        <Mail className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+        <div className="flex-1">
+          <p className="font-medium text-sm text-amber-800 dark:text-amber-300">Verify your email</p>
+          <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-1">
+            Your email is not verified yet. Verify now or do it later from your profile.
+          </p>
+
+          <AnimatePresence mode="wait">
+            {!sent ? (
+              <motion.div key="send" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-3">
+                <motion.button
+                  onClick={sendOtp}
+                  disabled={sending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {sending ? <Clock className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  Send Verification OTP
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.div key="verify" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-3 flex items-center gap-2">
+                <input
+                  value={otp}
+                  onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(''); }}
+                  placeholder="Enter 6-digit OTP"
+                  className="w-32 px-3 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  maxLength={6}
+                />
+                <motion.button
+                  onClick={verifyOtp}
+                  disabled={verifying || otp.length !== 6}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {verifying ? <Clock className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                  Verify
+                </motion.button>
+                <button onClick={() => { setSent(false); setOtp(''); setError(''); }} className="text-xs text-amber-700 dark:text-amber-400 hover:underline">
+                  Resend
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {error && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-red-600 mt-2">
+              {error}
+            </motion.p>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 }

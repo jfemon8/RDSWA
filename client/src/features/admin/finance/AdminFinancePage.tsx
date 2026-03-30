@@ -227,11 +227,14 @@ function DonationsList() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState('');
   const [actionTarget, setActionTarget] = useState<{ id: string; action: string } | null>(null);
+  const [donationType, setDonationType] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['donations', 'admin'],
+    queryKey: ['donations', 'admin', donationType],
     queryFn: async () => {
-      const { data } = await api.get('/donations?limit=50');
+      const params = new URLSearchParams({ limit: '50' });
+      if (donationType) params.set('type', donationType);
+      const { data } = await api.get(`/donations?${params}`);
       return data;
     },
   });
@@ -254,7 +257,27 @@ function DonationsList() {
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
   return (
-    <div className="overflow-x-auto border rounded-lg">
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {[
+          { key: '', label: 'All Types' },
+          { key: 'one-time', label: 'One-time' },
+          { key: 'monthly', label: 'Monthly' },
+          { key: 'membership', label: 'Membership' },
+          { key: 'event-based', label: 'Event-based' },
+          { key: 'construction-fund', label: 'Construction Fund' },
+        ].map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setDonationType(t.key)}
+            className={`px-3 py-1.5 text-sm rounded-md border ${
+              donationType === t.key ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
+            }`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="overflow-x-auto border rounded-lg">
       <table className="w-full min-w-[600px] text-sm">
         <thead><tr className="bg-muted border-b">
           <th className="text-left p-3 font-medium text-foreground">Donor</th>
@@ -391,6 +414,7 @@ function DonationsList() {
           })}
         </tbody>
       </table>
+    </div>
     </div>
   );
 }
