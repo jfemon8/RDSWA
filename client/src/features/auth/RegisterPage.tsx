@@ -48,7 +48,7 @@ export default function RegisterPage() {
 
     try {
       await api.post('/auth/register', form);
-      navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account.' } });
+      navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account, or verify later from your profile.' } });
     } catch (err: any) {
       const fieldErrors = extractFieldErrors(err);
       if (fieldErrors) {

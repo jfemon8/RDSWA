@@ -16,6 +16,7 @@ const Register = lazy(() => import('@/features/auth/RegisterPage'));
 const ForgotPassword = lazy(() => import('@/features/auth/ForgotPasswordPage'));
 const ResetPassword = lazy(() => import('@/features/auth/ResetPasswordPage'));
 const EmailVerify = lazy(() => import('@/features/auth/EmailVerifyPage'));
+const OtpVerify = lazy(() => import('@/features/auth/OtpVerifyPage'));
 const About = lazy(() => import('@/features/about/AboutPage'));
 const University = lazy(() => import('@/features/university/UniversityPage'));
 const Committee = lazy(() => import('@/features/committee/CommitteePage'));
@@ -100,6 +101,7 @@ export default function AppRouter() {
             <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
           <Route path="/verify-email" element={<EmailVerify />} />
+          <Route path="/verify-otp" element={<OtpVerify />} />
           <Route path="/about" element={<About />} />
           <Route path="/university" element={<University />} />
           <Route path="/committee" element={<Committee />} />

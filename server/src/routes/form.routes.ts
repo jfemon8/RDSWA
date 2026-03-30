@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
+import { validate } from '../middlewares/validate.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
@@ -8,6 +9,7 @@ import { ApiError } from '../utils/ApiError';
 import { Form, User, Notification } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { submitFormSchema, reviewFormSchema } from '../validators/form.validator';
 
 const router = Router();
 
@@ -42,8 +44,16 @@ router.get('/:id', authenticate(), asyncHandler(async (req, res) => {
 }));
 
 // Submit form
-router.post('/', authenticate(), asyncHandler(async (req, res) => {
+router.post('/', authenticate(), validate({ body: submitFormSchema }), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+
+  // Alumni form: only approved members can apply
+  if (req.body.type === 'alumni') {
+    const applicant = await User.findById(req.user._id);
+    if (!applicant || applicant.membershipStatus !== 'approved') {
+      throw ApiError.forbidden('Only approved members can apply for alumni status');
+    }
+  }
 
   // For membership applications, check and update user status
   if (req.body.type === 'membership') {
@@ -67,7 +77,7 @@ router.post('/', authenticate(), asyncHandler(async (req, res) => {
 }));
 
 // Review form (approve/reject)
-router.patch('/:id/review', authenticate(), authorize(UserRole.MODERATOR), auditLog('form.review', 'forms'), asyncHandler(async (req, res) => {
+router.patch('/:id/review', authenticate(), authorize(UserRole.MODERATOR), validate({ body: reviewFormSchema }), auditLog('form.review', 'forms'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const form = await Form.findOne({ _id: req.params.id as string, isDeleted: false });
   if (!form) throw ApiError.notFound('Form not found');

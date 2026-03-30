@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/authStore';
 import { Link } from 'react-router-dom';
-import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2 } from 'lucide-react';
+import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
@@ -43,6 +43,33 @@ export default function ProfileViewPage() {
           </Link>
         </FadeIn>
       </div>
+
+      {/* Email not verified banner */}
+      {!u.isEmailVerified && (
+        <FadeIn delay={0.05} direction="up">
+          <motion.div
+            className="mb-6 p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div>
+                  <p className="font-medium text-sm text-amber-800 dark:text-amber-300">Email not verified</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">Verify your email to access all features</p>
+                </div>
+              </div>
+              <Link
+                to={`/verify-otp?email=${encodeURIComponent(u.email)}`}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+              >
+                <Mail className="h-3.5 w-3.5" /> Verify Now
+              </Link>
+            </div>
+          </motion.div>
+        </FadeIn>
+      )}
 
       {/* Avatar & Basic Info */}
       <FadeIn delay={0.1} direction="up">

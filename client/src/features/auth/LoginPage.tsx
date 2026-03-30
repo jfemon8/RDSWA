@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
@@ -15,6 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useAuthStore();
+  const queryClient = useQueryClient();
   const toast = useToast();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -54,6 +57,8 @@ export default function LoginPage() {
       const { data } = await api.post('/auth/login', form);
       localStorage.setItem('accessToken', data.data.accessToken);
       setUser(data.data.user);
+      // Immediately fetch full profile to replace partial login data
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
       navigate('/dashboard');
     } catch (err: any) {
       const fieldErrors = extractFieldErrors(err);
