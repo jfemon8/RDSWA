@@ -77,6 +77,7 @@ const AdminNotifications = lazy(() => import('@/features/admin/notifications/Adm
 const AdminPaymentConfig = lazy(() => import('@/features/admin/payment/AdminPaymentConfigPage'));
 const AdminSettings = lazy(() => import('@/features/admin/settings/AdminSettingsPage'));
 const AdminLogs = lazy(() => import('@/features/admin/logs/AdminLogsPage'));
+const AdminAlumniMonitor = lazy(() => import('@/features/admin/alumni/AdminAlumniMonitorPage'));
 
 function LoadingFallback() {
   return (
@@ -158,6 +159,7 @@ export default function AppRouter() {
               <Route path="/admin/gallery" element={<AdminGallery />} />
               <Route path="/admin/voting" element={<AdminVoting />} />
               <Route path="/admin/forms" element={<AdminForms />} />
+              <Route path="/admin/alumni-monitor" element={<AdminAlumniMonitor />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/payment" element={<AdminPaymentConfig />} />
 

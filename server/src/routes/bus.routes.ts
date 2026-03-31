@@ -259,4 +259,59 @@ router.post('/import', authenticate(), authorize(UserRole.ADMIN),
   }),
 );
 
+// ─── Export bus data ───
+router.get('/export/:type', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const exportType = req.params.type as string;
+  const format = (req.query.format as string) || 'json';
+
+  let data: any[];
+  let filename: string;
+
+  switch (exportType) {
+    case 'operators':
+      data = await BusOperator.find({ isDeleted: false }).lean();
+      filename = 'bus-operators';
+      break;
+    case 'routes':
+      data = await BusRoute.find({ isDeleted: false }).populate('operator', 'name').lean();
+      filename = 'bus-routes';
+      break;
+    case 'schedules':
+      data = await BusSchedule.find({ isDeleted: false }).populate('route').lean();
+      filename = 'bus-schedules';
+      break;
+    case 'counters':
+      data = await BusCounter.find({ isDeleted: false }).populate('operator', 'name').lean();
+      filename = 'bus-counters';
+      break;
+    default:
+      throw ApiError.badRequest('Invalid export type. Use operators, routes, schedules, or counters.');
+  }
+
+  if (format === 'csv') {
+    if (data.length === 0) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+      res.send('');
+      return;
+    }
+    const headers = Object.keys(data[0]).filter((k) => k !== '__v');
+    const csvRows = [
+      headers.join(','),
+      ...data.map((row) => headers.map((h) => {
+        const val = row[h];
+        const str = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
+        return `"${str.replace(/"/g, '""')}"`;
+      }).join(',')),
+    ];
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}.csv`);
+    res.send(csvRows.join('\n'));
+  } else {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}.json`);
+    res.send(JSON.stringify(data, null, 2));
+  }
+}));
+
 export default router;

@@ -20,6 +20,7 @@ export function auditLog(action: string, resource: string) {
           resourceId: req.params.id || body?.data?._id,
           ip: req.ip,
           userAgent: req.headers['user-agent'],
+          changes: req.body && Object.keys(req.body).length > 0 ? req.body : undefined,
         }).catch((err) => console.error('Audit log error:', err));
       }
 

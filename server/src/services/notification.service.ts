@@ -2,6 +2,7 @@ import { Notification, User } from '../models';
 import { getIO } from '../socket';
 import { sendEmail } from '../config/mail';
 import { sendPushNotification } from '../config/webpush';
+import { sendSms } from '../config/sms';
 import mongoose from 'mongoose';
 
 interface SendNotificationOpts {
@@ -39,7 +40,7 @@ export class NotificationService {
     const rid = recipientId.toString();
 
     // Fetch user preferences
-    const user = await User.findById(rid).select('notificationPrefs email name').lean();
+    const user = await User.findById(rid).select('notificationPrefs email name phone').lean();
     if (!user) return;
 
     const prefs = user.notificationPrefs || {
@@ -68,6 +69,11 @@ export class NotificationService {
     if (prefs.push || force) {
       this.sendPushSafe(rid, title, message, link);
     }
+
+    // 5. SMS (if enabled and user has phone number)
+    if (prefs.sms && (user as any).phone) {
+      sendSms({ to: (user as any).phone, message: `${title}: ${message}` }).catch(() => {});
+    }
   }
 
   /**
@@ -83,11 +89,12 @@ export class NotificationService {
     const users = await User.find({
       _id: { $in: recipientIds },
       isDeleted: false,
-    }).select('notificationPrefs email name').lean();
+    }).select('notificationPrefs email name phone').lean();
 
     const inAppDocs: any[] = [];
     const emailTargets: Array<{ email: string; name: string }> = [];
     const pushTargets: string[] = [];
+    const smsTargets: Array<{ phone: string }> = [];
 
     for (const user of users) {
       const prefs = user.notificationPrefs || {
@@ -116,6 +123,11 @@ export class NotificationService {
       if (prefs.push || force) {
         pushTargets.push(user._id.toString());
       }
+
+      // SMS
+      if (prefs.sms && (user as any).phone) {
+        smsTargets.push({ phone: (user as any).phone });
+      }
     }
 
     // Batch insert notifications
@@ -131,6 +143,11 @@ export class NotificationService {
     // Send push notifications (fire-and-forget)
     for (const uid of pushTargets) {
       this.sendPushSafe(uid, title, message, link);
+    }
+
+    // Send SMS notifications (fire-and-forget)
+    for (const t of smsTargets) {
+      sendSms({ to: t.phone, message: `${title}: ${message}` }).catch(() => {});
     }
 
     return inAppDocs.length;

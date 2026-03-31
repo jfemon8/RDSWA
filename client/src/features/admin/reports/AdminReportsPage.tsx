@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Users, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
+import { Loader2, Users, TrendingUp, Calendar, BarChart3, Vote } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
@@ -10,7 +10,7 @@ import { hasMinRole } from '@/lib/roles';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
-type Tab = 'members' | 'finance' | 'events' | 'donations';
+type Tab = 'members' | 'finance' | 'events' | 'donations' | 'voting';
 
 export default function AdminReportsPage() {
   const { user } = useAuthStore();
@@ -22,6 +22,7 @@ export default function AdminReportsPage() {
     { key: 'finance', label: 'Finance', icon: TrendingUp, adminOnly: true },
     { key: 'events', label: 'Events', icon: Calendar },
     { key: 'donations', label: 'Donations', icon: BarChart3 },
+    { key: 'voting', label: 'Voting', icon: Vote },
   ];
 
   const tabs = allTabs.filter((t) => !t.adminOnly || isAdmin);
@@ -51,6 +52,7 @@ export default function AdminReportsPage() {
       {tab === 'finance' && isAdmin && <FinanceReport />}
       {tab === 'events' && <EventsReport />}
       {tab === 'donations' && <DonationsReport />}
+      {tab === 'voting' && <VotingReport />}
     </div>
   );
 }
@@ -382,6 +384,86 @@ function DonationsReport() {
           ) : <EmptyChart />}
         </div>
       </FadeIn>
+    </div>
+  );
+}
+
+function VotingReport() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['reports', 'voting'],
+    queryFn: async () => {
+      const { data } = await api.get('/reports/voting');
+      return data;
+    },
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  const { byStatus = [], byEligibility = [] } = data?.data || {};
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {byStatus.map((s: any, i: number) => (
+          <FadeIn key={s._id} direction="up" delay={i * 0.06}>
+            <div className="border rounded-lg p-4 bg-card">
+              <p className="text-sm text-muted-foreground capitalize mb-1">{s._id || 'unknown'}</p>
+              <p className="text-2xl font-bold text-foreground"><CountUp to={s.count} duration={1.5} /></p>
+              <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                <span>Total voters: {s.totalVoters}</span>
+                <span>Avg: {Math.round(s.avgVoters || 0)}</span>
+              </div>
+            </div>
+          </FadeIn>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FadeIn direction="up" delay={0.2}>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">Votes by Status</h3>
+            {byStatus.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={byStatus.map((s: any) => ({ status: s._id, count: s.count, voters: s.totalVoters }))}>
+                  <XAxis dataKey="status" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" name="Polls" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="voters" name="Total Voters" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart />}
+          </div>
+        </FadeIn>
+
+        <FadeIn direction="up" delay={0.3}>
+          <div className="border rounded-lg p-4 sm:p-6 bg-card">
+            <h3 className="font-semibold text-foreground mb-4">By Eligibility Type</h3>
+            {byEligibility.length > 0 ? (
+              <div className="flex items-center gap-4">
+                <ResponsiveContainer width="55%" height={250}>
+                  <PieChart>
+                    <Pie data={byEligibility.map((e: any) => ({ name: e._id?.replace('_', ' '), value: e.count }))} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
+                      {byEligibility.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex-1 space-y-1.5">
+                  {byEligibility.map((e: any, i: number) => (
+                    <div key={e._id} className="flex items-center gap-2 text-sm">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="capitalize text-muted-foreground">{e._id?.replace('_', ' ')}</span>
+                      <span className="ml-auto font-medium text-foreground">{e.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : <EmptyChart />}
+          </div>
+        </FadeIn>
+      </div>
     </div>
   );
 }

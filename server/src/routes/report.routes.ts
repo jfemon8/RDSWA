@@ -5,7 +5,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { User, Donation, Event, Expense, Budget } from '../models';
+import { User, Donation, Event, Expense, Budget, Vote } from '../models';
 import { UserRole } from '@rdswa/shared';
 import mongoose from 'mongoose';
 
@@ -168,6 +168,30 @@ router.get('/events', authenticate(), authorize(UserRole.MODERATOR), asyncHandle
     }},
   ]);
   ApiResponse.success(res, stats);
+}));
+
+// ─── Voting participation stats ───
+router.get('/voting', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
+  const stats = await Vote.aggregate([
+    { $match: { isDeleted: false } },
+    { $group: {
+      _id: '$status',
+      count: { $sum: 1 },
+      avgVoters: { $avg: { $size: '$voters' } },
+      totalVoters: { $sum: { $size: '$voters' } },
+    }},
+  ]);
+
+  const byEligibility = await Vote.aggregate([
+    { $match: { isDeleted: false } },
+    { $group: {
+      _id: '$eligibleVoters',
+      count: { $sum: 1 },
+      totalVoters: { $sum: { $size: '$voters' } },
+    }},
+  ]);
+
+  ApiResponse.success(res, { byStatus: stats, byEligibility });
 }));
 
 // ─── Donation trends ───

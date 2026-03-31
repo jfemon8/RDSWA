@@ -141,6 +141,50 @@ router.get('/login-history', authenticate(), authorize(UserRole.ADMIN), asyncHan
   ApiResponse.paginated(res, history, total, page, limit);
 }));
 
+// Suspicious activity alerts
+router.get('/suspicious-activity', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // Failed login attempts grouped by IP (more than 5 in 24h)
+  const failedByIp = await LoginHistory.aggregate([
+    { $match: { success: false, createdAt: { $gte: oneDayAgo } } },
+    { $group: { _id: '$ip', count: { $sum: 1 }, users: { $addToSet: '$user' }, lastAttempt: { $max: '$createdAt' } } },
+    { $match: { count: { $gte: 5 } } },
+    { $sort: { count: -1 } },
+    { $limit: 20 },
+  ]);
+
+  // Failed login attempts grouped by user (more than 3 in 24h)
+  const failedByUser = await LoginHistory.aggregate([
+    { $match: { success: false, user: { $ne: null }, createdAt: { $gte: oneDayAgo } } },
+    { $group: { _id: '$user', count: { $sum: 1 }, ips: { $addToSet: '$ip' }, lastAttempt: { $max: '$createdAt' } } },
+    { $match: { count: { $gte: 3 } } },
+    { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userInfo' } },
+    { $unwind: { path: '$userInfo', preserveNullAndEmptyArrays: true } },
+    { $project: { count: 1, ips: 1, lastAttempt: 1, 'userInfo.name': 1, 'userInfo.email': 1 } },
+    { $sort: { count: -1 } },
+    { $limit: 20 },
+  ]);
+
+  // Users logging in from multiple IPs in 24h (potential account sharing)
+  const multipleIps = await LoginHistory.aggregate([
+    { $match: { success: true, createdAt: { $gte: oneDayAgo } } },
+    { $group: { _id: '$user', ips: { $addToSet: '$ip' } } },
+    { $match: { $expr: { $gte: [{ $size: '$ips' }, 3] } } },
+    { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userInfo' } },
+    { $unwind: { path: '$userInfo', preserveNullAndEmptyArrays: true } },
+    { $project: { ips: 1, 'userInfo.name': 1, 'userInfo.email': 1 } },
+    { $limit: 20 },
+  ]);
+
+  ApiResponse.success(res, {
+    failedByIp,
+    failedByUser,
+    multipleIps,
+    generatedAt: new Date(),
+  });
+}));
+
 // ─── Bulk Operations ───
 
 // Bulk approve members

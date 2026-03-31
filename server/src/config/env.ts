@@ -38,6 +38,10 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
 
+  // SMS Gateway
+  SMS_GATEWAY_URL: z.string().optional(),
+  SMS_API_KEY: z.string().optional(),
+
   // Sentry
   SENTRY_DSN: z.string().url().optional(),
 });

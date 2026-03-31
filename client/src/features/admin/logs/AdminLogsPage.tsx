@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Shield, Clock } from 'lucide-react';
+import { Loader2, Shield, Clock, AlertTriangle } from 'lucide-react';
 import { formatDateTime } from '@/lib/date';
 
-type Tab = 'audit' | 'login';
+type Tab = 'audit' | 'login' | 'suspicious';
 
 export default function AdminLogsPage() {
   const [tab, setTab] = useState<Tab>('audit');
@@ -32,10 +32,19 @@ export default function AdminLogsPage() {
           >
             <Clock className="h-4 w-4" /> Login History
           </button>
+          <button
+            onClick={() => setTab('suspicious')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 ${
+              tab === 'suspicious' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <AlertTriangle className="h-4 w-4" /> Suspicious Activity
+          </button>
         </div>
 
         {tab === 'audit' && <AuditLogsTab />}
         {tab === 'login' && <LoginHistoryTab />}
+        {tab === 'suspicious' && <SuspiciousActivityTab />}
       </div>
     </FadeIn>
   );
@@ -219,5 +228,164 @@ function LoginHistoryTab() {
         </>
       )}
     </>
+  );
+}
+
+function SuspiciousActivityTab() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'suspicious-activity'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/suspicious-activity');
+      return data;
+    },
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+
+  const { failedByIp = [], failedByUser = [], multipleIps = [] } = data?.data || {};
+
+  const hasNoData = failedByIp.length === 0 && failedByUser.length === 0 && multipleIps.length === 0;
+
+  if (hasNoData) {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+        <p className="text-muted-foreground">No suspicious activity detected in the last 24 hours</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Failed logins by IP */}
+      {failedByIp.length > 0 && (
+        <FadeIn direction="up" delay={0.1}>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                Failed Logins by IP (5+ in 24h)
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[500px] text-sm">
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">IP Address</th>
+                    <th className="text-left p-3 font-medium text-foreground">Attempts</th>
+                    <th className="text-left p-3 font-medium text-foreground">Last Attempt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failedByIp.map((item: any) => (
+                    <tr key={item._id} className="border-t hover:bg-accent/30">
+                      <td className="p-3 font-mono text-xs text-muted-foreground">{item._id || '-'}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          {item.count}
+                        </span>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-xs">{formatDateTime(item.lastAttempt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Failed logins by user */}
+      {failedByUser.length > 0 && (
+        <FadeIn direction="up" delay={0.2}>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                Failed Logins by User (3+ in 24h)
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">User</th>
+                    <th className="text-left p-3 font-medium text-foreground">Attempts</th>
+                    <th className="text-left p-3 font-medium text-foreground">IPs</th>
+                    <th className="text-left p-3 font-medium text-foreground">Last Attempt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failedByUser.map((item: any) => (
+                    <tr key={item._id} className="border-t hover:bg-accent/30">
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium text-sm text-foreground">{item.userInfo?.name || 'Unknown'}</p>
+                          <p className="text-xs text-muted-foreground">{item.userInfo?.email || ''}</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                          {item.count}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground font-mono">
+                        {(item.ips || []).join(', ')}
+                      </td>
+                      <td className="p-3 text-muted-foreground text-xs">{formatDateTime(item.lastAttempt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Multiple IP logins */}
+      {multipleIps.length > 0 && (
+        <FadeIn direction="up" delay={0.3}>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 bg-yellow-50 dark:bg-yellow-900/20 border-b">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                Multiple IP Logins (3+ IPs in 24h)
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">User</th>
+                    <th className="text-left p-3 font-medium text-foreground">IP Count</th>
+                    <th className="text-left p-3 font-medium text-foreground">IPs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {multipleIps.map((item: any) => (
+                    <tr key={item._id} className="border-t hover:bg-accent/30">
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium text-sm text-foreground">{item.userInfo?.name || 'Unknown'}</p>
+                          <p className="text-xs text-muted-foreground">{item.userInfo?.email || ''}</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                          {(item.ips || []).length}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground font-mono">
+                        {(item.ips || []).join(', ')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </FadeIn>
+      )}
+    </div>
   );
 }
