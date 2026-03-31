@@ -34,6 +34,13 @@ export default function EventDetailPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(id!) }),
   });
 
+  const selfCheckinMutation = useMutation({
+    mutationFn: () => api.post(`/events/${id}/attendance/self`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(id!) });
+    },
+  });
+
   const feedbackMutation = useMutation({
     mutationFn: () => api.post(`/events/${id}/feedback`, { rating, comment }),
     onSuccess: () => {
@@ -54,6 +61,8 @@ export default function EventDetailPage() {
     || event.registeredUsers?.includes?.(user?._id);
   const canRegister = isAuthenticated && event.registrationRequired && event.status === 'upcoming' && !isRegistered;
   const myAttendance = event.attendance?.find?.((a: any) => (typeof a.user === 'string' ? a.user : a.user?._id) === user?._id);
+  const isCheckedIn = myAttendance?.status === 'approved';
+  const isPendingCheckin = myAttendance?.status === 'pending';
   const hasSubmittedFeedback = event.feedbacks?.some?.((f: any) => (typeof f.user === 'string' ? f.user : f.user?._id) === user?._id);
   const photos = event.photos || [];
 
@@ -161,6 +170,46 @@ export default function EventDetailPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             />
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Self Check-in */}
+      {isAuthenticated && event && !['completed', 'cancelled'].includes(event.status) && (
+        <FadeIn delay={0.3}>
+          <div className="border rounded-xl p-4 bg-card mb-6">
+            <h3 className="font-semibold mb-3">Attendance</h3>
+            {isCheckedIn ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="text-sm font-medium">You are checked in</span>
+              </div>
+            ) : isPendingCheckin ? (
+              <div className="flex items-center gap-2 text-amber-600">
+                <Clock className="h-5 w-5" />
+                <span className="text-sm font-medium">Check-in pending moderator approval</span>
+              </div>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => selfCheckinMutation.mutate()}
+                disabled={selfCheckinMutation.isPending}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                {selfCheckinMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                Request Check-in
+              </motion.button>
+            )}
+            {selfCheckinMutation.isError && (
+              <p className="text-xs text-red-500 mt-2">
+                {(selfCheckinMutation.error as any)?.response?.data?.message || 'Check-in failed'}
+              </p>
+            )}
           </div>
         </FadeIn>
       )}

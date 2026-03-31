@@ -18,6 +18,10 @@ router.delete('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('e
 router.post('/:id/register', authenticate(), authorize(UserRole.MEMBER), eventController.register);
 router.post('/:id/checkin', authenticate(), authorize(UserRole.MODERATOR), eventController.checkin);
 router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.submitAttendance);
+router.post('/:id/attendance/bulk', authenticate(), authorize(UserRole.MODERATOR), eventController.bulkAttendance);
+router.post('/:id/attendance/self', authenticate(), eventController.selfCheckin);
+router.patch('/:id/attendance/:userId/approve', authenticate(), authorize(UserRole.MODERATOR), eventController.approveAttendance);
+router.patch('/:id/attendance/:userId/reject', authenticate(), authorize(UserRole.MODERATOR), eventController.rejectAttendance);
 router.post('/:id/feedback', authenticate(), authorize(UserRole.MEMBER), validate({ body: feedbackSchema }), eventController.submitFeedback);
 router.get('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.getAttendance);
 

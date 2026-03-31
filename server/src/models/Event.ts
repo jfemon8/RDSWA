@@ -19,8 +19,9 @@ export interface IEventDocument extends Document {
   attendance: Array<{
     user: mongoose.Types.ObjectId;
     checkedInAt: Date;
-    checkedInVia: 'qr' | 'manual';
+    checkedInVia: 'qr' | 'manual' | 'self';
     verifiedBy?: mongoose.Types.ObjectId;
+    status: 'approved' | 'pending';
   }>;
   feedbackEnabled: boolean;
   feedbacks: Array<{
@@ -71,8 +72,9 @@ const eventSchema = new Schema<IEventDocument>(
       {
         user: { type: Schema.Types.ObjectId, ref: 'User' },
         checkedInAt: { type: Date, default: Date.now },
-        checkedInVia: { type: String, enum: ['qr', 'manual'] },
+        checkedInVia: { type: String, enum: ['qr', 'manual', 'self'] },
         verifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        status: { type: String, enum: ['approved', 'pending'], default: 'approved' },
       },
     ],
     feedbackEnabled: { type: Boolean, default: false },

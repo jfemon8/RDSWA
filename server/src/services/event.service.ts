@@ -45,7 +45,9 @@ export class EventService {
     const event = await Event.findOne({ _id: id, isDeleted: false })
       .populate('createdBy', 'name avatar')
       .populate('committee', 'name')
-      .populate('registeredUsers', 'name avatar department batch');
+      .populate('registeredUsers', 'name avatar department batch')
+      .populate('attendance.user', 'name avatar department batch studentId')
+      .populate('attendance.verifiedBy', 'name');
     if (!event) throw ApiError.notFound('Event not found');
     return event;
   }
@@ -102,6 +104,7 @@ export class EventService {
       checkedInAt: new Date(),
       checkedInVia: via,
       verifiedBy: verifiedBy ? new mongoose.Types.ObjectId(verifiedBy) : undefined,
+      status: 'approved',
     } as any);
     await event.save();
   }
@@ -145,6 +148,56 @@ export class EventService {
     event.qrCode = qrDataUrl;
     await event.save();
     return qrDataUrl;
+  }
+
+  async selfCheckin(eventId: string, userId: string): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const already = event.attendance.some((a) => a.user.toString() === userId);
+    if (already) throw ApiError.conflict('You have already checked in or have a pending request');
+
+    event.attendance.push({
+      user: new mongoose.Types.ObjectId(userId),
+      checkedInAt: new Date(),
+      checkedInVia: 'self',
+      status: 'pending',
+    } as any);
+    await event.save();
+    return event;
+  }
+
+  async bulkAttendance(eventId: string, userIds: string[], verifiedBy: string): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    for (const uid of userIds) {
+      const already = event.attendance.some((a) => a.user.toString() === uid);
+      if (!already) {
+        event.attendance.push({
+          user: new mongoose.Types.ObjectId(uid),
+          checkedInAt: new Date(),
+          checkedInVia: 'manual',
+          verifiedBy: new mongoose.Types.ObjectId(verifiedBy),
+          status: 'approved',
+        } as any);
+      }
+    }
+    await event.save();
+    return event;
+  }
+
+  async approveAttendance(eventId: string, userId: string, verifiedBy: string): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const record = event.attendance.find((a) => a.user.toString() === userId);
+    if (!record) throw ApiError.notFound('Attendance record not found');
+
+    record.status = 'approved';
+    record.verifiedBy = new mongoose.Types.ObjectId(verifiedBy);
+    await event.save();
+    return event;
   }
 
   async removeAttendance(eventId: string, userId: string): Promise<IEventDocument> {

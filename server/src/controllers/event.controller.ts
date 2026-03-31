@@ -74,6 +74,31 @@ export const myAttendance = asyncHandler(async (req: Request, res: Response) => 
   ApiResponse.success(res, records);
 });
 
+export const selfCheckin = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const event = await eventService.selfCheckin(req.params.id as string, (req.user._id as any).toString());
+  ApiResponse.success(res, event, 'Check-in request submitted. Awaiting moderator approval.');
+});
+
+export const bulkAttendance = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds) || userIds.length === 0) throw ApiError.badRequest('userIds array is required');
+  const event = await eventService.bulkAttendance(req.params.id as string, userIds, (req.user._id as any).toString());
+  ApiResponse.success(res, event, `${userIds.length} users checked in`);
+});
+
+export const approveAttendance = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const event = await eventService.approveAttendance(req.params.id as string, req.params.userId as string, (req.user._id as any).toString());
+  ApiResponse.success(res, event, 'Attendance approved');
+});
+
+export const rejectAttendance = asyncHandler(async (req: Request, res: Response) => {
+  const event = await eventService.removeAttendance(req.params.id as string, req.params.userId as string);
+  ApiResponse.success(res, event, 'Attendance rejected');
+});
+
 export const removeAttendance = asyncHandler(async (req: Request, res: Response) => {
   const event = await eventService.removeAttendance(req.params.id as string, req.params.userId as string);
   ApiResponse.success(res, event, 'Attendance record removed');

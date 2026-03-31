@@ -6,7 +6,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -290,7 +290,8 @@ function EventDetailPanel({ event }: { event: any }) {
   const toast = useToast();
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoCaption, setPhotoCaption] = useState('');
-  const [manualUserId, setManualUserId] = useState('');
+  const [memberSearch, setMemberSearch] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [reportName, setReportName] = useState('');
   const [reportUrl, setReportUrl] = useState('');
 
@@ -305,15 +306,13 @@ function EventDetailPanel({ event }: { event: any }) {
 
   const fullEvent = data?.data || event;
 
-  const checkinMutation = useMutation({
-    mutationFn: (userId: string) => api.post(`/events/${event._id}/checkin`, { userId, method: 'manual' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      setManualUserId('');
-      toast.success('User checked in');
+  const { data: membersData } = useQuery({
+    queryKey: ['users', 'members', 'search', memberSearch],
+    queryFn: async () => {
+      const { data } = await api.get(`/users/members?search=${memberSearch}&limit=10`);
+      return data;
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Check-in failed'); },
+    enabled: memberSearch.length >= 2,
   });
 
   const addPhotoMutation = useMutation({
@@ -337,6 +336,29 @@ function EventDetailPanel({ event }: { event: any }) {
     mutationFn: (userId: string) => api.delete(`/events/${event._id}/attendance/${userId}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Attendance removed'); },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove'); },
+  });
+
+  const bulkAttendanceMutation = useMutation({
+    mutationFn: (userIds: string[]) => api.post(`/events/${event._id}/attendance/bulk`, { userIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
+      setSelectedUserIds(new Set());
+      setMemberSearch('');
+      toast.success('Attendance recorded');
+    },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
+  });
+
+  const approveAttendanceMutation = useMutation({
+    mutationFn: (userId: string) => api.patch(`/events/${event._id}/attendance/${userId}/approve`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Approved'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
+  });
+
+  const rejectAttendanceMutation = useMutation({
+    mutationFn: (userId: string) => api.patch(`/events/${event._id}/attendance/${userId}/reject`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Rejected'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
   });
 
   const addReportMutation = useMutation({
@@ -384,31 +406,109 @@ function EventDetailPanel({ event }: { event: any }) {
 
         {/* Attendance Section */}
         <div className="md:col-span-2">
-          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
-            <Users className="h-4 w-4 text-primary" /> Attendance ({attendance.length})
+          <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-3 text-foreground">
+            <Users className="h-4 w-4 text-primary" /> Attendance ({attendance.filter((a: any) => a.status === 'approved').length} approved, {attendance.filter((a: any) => a.status === 'pending').length} pending)
           </h4>
 
-          {/* Manual check-in */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-3">
-            <input
-              placeholder="User ID for manual check-in"
-              value={manualUserId}
-              onChange={(e) => setManualUserId(e.target.value)}
-              className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
-            />
-            <button
-              onClick={() => manualUserId && checkinMutation.mutate(manualUserId)}
-              disabled={!manualUserId || checkinMutation.isPending}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-              {checkinMutation.isPending ? '...' : 'Check In'}
-            </button>
+          {/* Member search + bulk check-in */}
+          <div className="mb-4 border rounded-lg p-3 bg-muted/30">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Add Attendance</p>
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                placeholder="Search members by name..."
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+
+            {memberSearch.length >= 2 && (membersData?.data || []).length > 0 && (
+              <div className="max-h-40 overflow-y-auto space-y-1 mb-2">
+                {(membersData?.data || []).map((m: any) => {
+                  const alreadyIn = attendance.some((a: any) => (a.user?._id || a.user) === m._id);
+                  return (
+                    <label
+                      key={m._id}
+                      className={`flex items-center gap-2 py-1.5 px-2 rounded text-xs cursor-pointer transition-colors ${
+                        alreadyIn ? 'opacity-40 cursor-not-allowed' : selectedUserIds.has(m._id) ? 'bg-primary/10' : 'hover:bg-accent'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        disabled={alreadyIn}
+                        checked={selectedUserIds.has(m._id)}
+                        onChange={(e) => {
+                          const next = new Set(selectedUserIds);
+                          if (e.target.checked) next.add(m._id);
+                          else next.delete(m._id);
+                          setSelectedUserIds(next);
+                        }}
+                        className="rounded"
+                      />
+                      <span className="font-medium text-foreground">{m.name}</span>
+                      {m.batch && <span className="text-muted-foreground">Batch {m.batch}</span>}
+                      {m.department && <span className="text-muted-foreground">· {m.department}</span>}
+                      {alreadyIn && <span className="ml-auto text-green-600 text-[10px]">Already in</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {selectedUserIds.size > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => bulkAttendanceMutation.mutate([...selectedUserIds])}
+                disabled={bulkAttendanceMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                {bulkAttendanceMutation.isPending ? 'Processing...' : `Check In ${selectedUserIds.size} Selected`}
+              </motion.button>
+            )}
           </div>
 
-          {attendance.length > 0 ? (
+          {/* Pending attendance requests */}
+          {attendance.filter((a: any) => a.status === 'pending').length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1.5">Pending Requests</p>
+              <div className="space-y-1">
+                {attendance.filter((a: any) => a.status === 'pending').map((a: any, i: number) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="flex items-center justify-between py-1.5 px-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded text-xs"
+                  >
+                    <span className="text-foreground">{a.user?.name || 'Unknown'}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-muted-foreground mr-2">{formatTime(a.checkedInAt)}</span>
+                      <button
+                        onClick={() => approveAttendanceMutation.mutate(a.user?._id || a.user)}
+                        className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-[10px]"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => rejectAttendanceMutation.mutate(a.user?._id || a.user)}
+                        className="px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700 text-[10px]"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Approved attendance list */}
+          {attendance.filter((a: any) => a.status !== 'pending').length > 0 ? (
             <div className="max-h-48 overflow-y-auto space-y-1">
-              {attendance.map((a: any, i: number) => (
+              {attendance.filter((a: any) => a.status !== 'pending').map((a: any, i: number) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -8 }}
