@@ -8,6 +8,7 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -139,28 +140,23 @@ export default function AdminSettingsPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">About Content</label>
-                  <textarea value={form.aboutContent} onChange={(e) => setForm({ ...form, aboutContent: e.target.value })} rows={4}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <RichTextEditor value={form.aboutContent} onChange={(v) => setForm({ ...form, aboutContent: v })} placeholder="About content..." minHeight="150px" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Mission</label>
-                  <textarea value={form.missionContent} onChange={(e) => setForm({ ...form, missionContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <RichTextEditor value={form.missionContent} onChange={(v) => setForm({ ...form, missionContent: v })} placeholder="Mission statement..." minHeight="100px" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Vision</label>
-                  <textarea value={form.visionContent} onChange={(e) => setForm({ ...form, visionContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <RichTextEditor value={form.visionContent} onChange={(v) => setForm({ ...form, visionContent: v })} placeholder="Vision statement..." minHeight="100px" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Objectives</label>
-                  <textarea value={form.objectivesContent} onChange={(e) => setForm({ ...form, objectivesContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <RichTextEditor value={form.objectivesContent} onChange={(v) => setForm({ ...form, objectivesContent: v })} placeholder="Objectives..." minHeight="100px" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">History</label>
-                  <textarea value={form.historyContent} onChange={(e) => setForm({ ...form, historyContent: e.target.value })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <RichTextEditor value={form.historyContent} onChange={(v) => setForm({ ...form, historyContent: v })} placeholder="Organization history..." minHeight="100px" />
                 </div>
               </div>
             </section>

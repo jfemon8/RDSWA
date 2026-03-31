@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDate } from '@/lib/date';
+import RichTextEditor from '@/components/ui/RichTextEditor';
+import RichContent from '@/components/ui/RichContent';
 
 const JOB_TYPES = ['full-time', 'part-time', 'internship', 'remote', 'contract'] as const;
 
@@ -137,8 +139,7 @@ export default function JobBoardPage() {
                 <input placeholder="Application Link" value={newJob.applicationLink} onChange={(e) => setNewJob({ ...newJob, applicationLink: e.target.value })}
                   className="px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
               </div>
-              <textarea placeholder="Description *" value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px]" />
+              <RichTextEditor value={newJob.description} onChange={(v) => setNewJob({ ...newJob, description: v })} placeholder="Job description..." minHeight="100px" />
               <input placeholder="Requirements (comma separated)" value={newJob.requirements} onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
               <div className="flex gap-3">
@@ -192,7 +193,7 @@ export default function JobBoardPage() {
                       {job.salary && <span className="flex items-center gap-1">BDT {job.salary}</span>}
                       <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {formatDate(job.createdAt)}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
+                    <div className="text-sm text-muted-foreground line-clamp-2"><RichContent html={job.description} /></div>
                     {job.requirements?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-3">
                         {job.requirements.map((r: string, j: number) => (

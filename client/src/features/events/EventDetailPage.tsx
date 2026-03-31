@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import SEO from '@/components/SEO';
+import RichContent from '@/components/ui/RichContent';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -167,7 +168,7 @@ export default function EventDetailPage() {
       {/* Description */}
       <FadeIn delay={0.3} direction="up">
         <div className="prose dark:prose-invert max-w-none mb-8">
-          <p className="whitespace-pre-wrap">{event.description}</p>
+          <RichContent html={event.description} />
         </div>
       </FadeIn>
 

@@ -63,3 +63,38 @@
     font-family: 'Noto Sans Bengali', sans-serif;
   }
 }
+
+/* TipTap Rich Text Editor */
+.rich-editor .tiptap {
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  color: hsl(var(--foreground));
+}
+.rich-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+.rich-editor .tiptap ul { list-style: disc; padding-left: 1.25rem; }
+.rich-editor .tiptap ol { list-style: decimal; padding-left: 1.25rem; }
+.rich-editor .tiptap li { margin: 0.15rem 0; }
+.rich-editor .tiptap blockquote {
+  border-left: 3px solid hsl(var(--primary));
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: hsl(var(--muted-foreground));
+}
+.rich-editor .tiptap hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: 0.75rem 0;
+}
+.rich-editor .tiptap p { margin: 0.25rem 0; }
+.rich-editor .tiptap strong { font-weight: 600; }
+.rich-editor .tiptap em { font-style: italic; }
+.rich-editor .tiptap u { text-decoration: underline; }
+.rich-editor .tiptap s { text-decoration: line-through; }

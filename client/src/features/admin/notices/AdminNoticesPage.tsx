@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Pencil, Trash2, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -100,8 +101,7 @@ export default function AdminNoticesPage() {
                   <FieldError message={errors.title} />
                 </div>
                 <div>
-                  <textarea placeholder="Content" value={form.content} onChange={(e) => { setForm({ ...form, content: e.target.value }); setErrors((prev) => { const { content, ...rest } = prev; return rest; }); }} rows={5}
-                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.content ? 'border-red-500' : ''}`} required />
+                  <RichTextEditor value={form.content} onChange={(v) => { setForm({ ...form, content: v }); setErrors((prev) => { const { content, ...rest } = prev; return rest; }); }} placeholder="Notice content..." minHeight="150px" />
                   <FieldError message={errors.content} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

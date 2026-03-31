@@ -4,6 +4,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Trash2, Edit2, FileText, Download, X, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -131,9 +132,7 @@ export default function AdminDocumentsPage() {
                     className={`w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none ${errors.title ? 'border-red-500' : ''}`} />
                   <FieldError message={errors.title} />
                 </div>
-                <textarea placeholder="Description" value={form.description} rows={2}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Document description..." minHeight="80px" />
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm">
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}

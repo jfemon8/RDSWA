@@ -122,13 +122,13 @@ export default function AppRouter() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/jobs" element={<JobBoard />} />
         </Route>
 
         {/* Dashboard routes (authenticated) */}
         <Route element={<RouteGuard />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/jobs" element={<JobBoard />} />
             <Route path="/dashboard/profile" element={<ProfileView />} />
             <Route path="/dashboard/profile/edit" element={<ProfileEdit />} />
             <Route path="/dashboard/notifications" element={<Notifications />} />

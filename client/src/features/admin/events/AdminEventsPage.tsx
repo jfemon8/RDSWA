@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
@@ -116,8 +117,7 @@ export default function AdminEventsPage() {
                   <FieldError message={errors.title} />
                 </div>
                 <div>
-                  <textarea placeholder="Description" value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); setErrors((prev) => { const { description, ...rest } = prev; return rest; }); }} rows={3}
-                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.description ? 'border-red-500' : ''}`} />
+                  <RichTextEditor value={form.description} onChange={(v) => { setForm({ ...form, description: v }); setErrors((prev) => { const { description, ...rest } = prev; return rest; }); }} placeholder="Event description..." minHeight="120px" />
                   <FieldError message={errors.description} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

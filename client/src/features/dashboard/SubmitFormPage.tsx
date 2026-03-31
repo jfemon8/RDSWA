@@ -10,6 +10,7 @@ import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { useToast } from '@/components/ui/Toast';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 
 interface UploadedFile {
   name: string;
@@ -244,14 +245,13 @@ export default function SubmitFormPage() {
                 <label className="block text-sm font-medium mb-1">
                   {isMembershipForm ? 'Why do you want to join RDSWA?' : isAlumniForm ? 'Tell us about your professional status' : 'Details / Reason'}
                 </label>
-                <textarea value={reason} onChange={(e) => { setReason(e.target.value); setErrors((prev) => { const { reason, ...rest } = prev; return rest; }); }} rows={4}
-                  className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 ${errors.reason ? 'border-red-500' : ''}`}
-                  placeholder={isMembershipForm
-                    ? 'Tell us about yourself — your district, department, why you want to join...'
-                    : isAlumniForm
-                      ? 'Describe your current profession, company/business...'
-                      : 'Provide details about your application...'}
-                  required />
+                <RichTextEditor
+                  value={reason}
+                  onChange={(v) => { setReason(v); setErrors((prev) => { const { reason, ...rest } = prev; return rest; }); }}
+                  placeholder={isMembershipForm ? 'Tell us about yourself — your district, department, why you want to join...' : isAlumniForm ? 'Describe your current profession, company/business...' : 'Provide details about your application...'}
+                  minHeight="120px"
+                  error={!!errors.reason}
+                />
                 <FieldError message={errors.reason} />
               </motion.div>
 

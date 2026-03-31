@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
+import RichContent from '@/components/ui/RichContent';
 
 export default function NoticeDetailPage() {
   const { id } = useParams();
@@ -75,7 +76,7 @@ export default function NoticeDetailPage() {
       </FadeIn>
 
       <FadeIn delay={0.25} direction="up">
-        <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: notice.content }} />
+        <RichContent html={notice.content} />
       </FadeIn>
 
       {notice.attachments?.length > 0 && (

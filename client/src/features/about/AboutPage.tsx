@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Users, Target, Eye, BookOpen, Info } from 'lucide-react';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
 import SEO from '@/components/SEO';
+import RichContent from '@/components/ui/RichContent';
 
 export default function AboutPage() {
   const { data } = useQuery({
@@ -37,7 +38,7 @@ export default function AboutPage() {
       {settings?.aboutContent ? (
         <FadeIn delay={0.2} blur>
           <div className="prose dark:prose-invert max-w-none mb-12">
-            <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-wrap">{settings.aboutContent}</p>
+            <RichContent html={settings.aboutContent} className="text-muted-foreground text-lg leading-relaxed" />
           </div>
         </FadeIn>
       ) : (
@@ -61,7 +62,7 @@ export default function AboutPage() {
                     </div>
                     <h3 className="text-lg font-semibold">{item.title}</h3>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{item.content}</p>
+                  <RichContent html={item.content} className="text-sm text-muted-foreground leading-relaxed" />
                 </div>
               </SpotlightCard>
             </FadeIn>

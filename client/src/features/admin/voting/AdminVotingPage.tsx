@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
 
@@ -80,8 +81,7 @@ export default function AdminVotingPage() {
                       className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
                     <FieldError message={errors.title} />
                   </div>
-                  <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                  <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Vote description..." minHeight="80px" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Start Time</label>
