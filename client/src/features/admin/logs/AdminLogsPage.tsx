@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Shield, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, Shield, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDateTime } from '@/lib/date';
 
 type Tab = 'audit' | 'login' | 'suspicious';
@@ -53,12 +54,15 @@ export default function AdminLogsPage() {
 function AuditLogsTab() {
   const [page, setPage] = useState(1);
   const [action, setAction] = useState('');
+  const [resource, setResource] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'logs', page, action],
+    queryKey: ['admin', 'logs', page, action, resource],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: '30' });
       if (action) params.set('action', action);
+      if (resource) params.set('resource', resource);
       const { data } = await api.get(`/admin/logs?${params}`);
       return data;
     },
@@ -70,10 +74,22 @@ function AuditLogsTab() {
   return (
     <>
       <FadeIn direction="up" delay={0.05}>
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-6">
           <input value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}
-            placeholder="Filter by action..."
+            placeholder="Search actions (e.g. approve, create, delete)..."
             className="px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full sm:w-64" />
+          <select value={resource} onChange={(e) => { setResource(e.target.value); setPage(1); }}
+            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
+            <option value="">All Resources</option>
+            <option value="users">Users</option>
+            <option value="committees">Committees</option>
+            <option value="events">Events</option>
+            <option value="notices">Notices</option>
+            <option value="forms">Forms</option>
+            <option value="documents">Documents</option>
+            <option value="albums">Albums</option>
+            <option value="site_settings">Settings</option>
+          </select>
         </div>
       </FadeIn>
 
@@ -87,32 +103,205 @@ function AuditLogsTab() {
       ) : (
         <>
           <FadeIn direction="up" delay={0.1}>
+            <div className="space-y-2">
+              {logs.map((log: any) => {
+                const hasChanges = log.changes && (log.changes.after || log.changes.before);
+                const isExpanded = expandedId === log._id;
+                const ip = log.ip || '-';
+
+                return (
+                  <div key={log._id} className="border rounded-lg bg-card overflow-hidden">
+                    <div
+                      className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                      onClick={() => setExpandedId(isExpanded ? null : log._id)}
+                    >
+                      {/* Action badge */}
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium shrink-0 ${
+                        log.action?.includes('delete') || log.action?.includes('reject') || log.action?.includes('remove')
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          : log.action?.includes('create') || log.action?.includes('approve') || log.action?.includes('assign')
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {log.action}
+                      </span>
+
+                      {/* Actor */}
+                      <span className="text-sm font-medium text-foreground shrink-0">
+                        {log.actor?.name || 'System'}
+                      </span>
+
+                      {/* Resource */}
+                      <span className="text-xs text-muted-foreground">
+                        on <span className="font-medium">{log.resource}</span>
+                        {(log.resourceName || log.resourceId) && (
+                          <span className="ml-1 text-[10px]">
+                            — <span className="font-medium text-foreground">{log.resourceName || `#${String(log.resourceId).slice(-6)}`}</span>
+                          </span>
+                        )}
+                      </span>
+
+                      {/* Spacer */}
+                      <div className="flex-1" />
+
+                      {/* IP */}
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0 hidden sm:inline">{ip}</span>
+
+                      {/* Date */}
+                      <span className="text-xs text-muted-foreground shrink-0">{formatDateTime(log.createdAt)}</span>
+
+                      {/* Expand toggle */}
+                      {hasChanges && (
+                        <span className="text-muted-foreground">
+                          {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Expanded: Show changes detail */}
+                    <AnimatePresence>
+                      {isExpanded && hasChanges && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="border-t px-4 py-3 bg-muted/30 space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">Changed Data</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                              {Object.entries(log.changes.after || log.changes || {}).map(([key, val]) => {
+                                if (key === '_id' || key === '__v' || key === 'after' || key === 'before') return null;
+                                let display = val;
+                                if (val === null || val === undefined) display = '—';
+                                else if (typeof val === 'boolean') display = val ? 'Yes' : 'No';
+                                else if (Array.isArray(val)) display = val.length > 0 ? val.join(', ') : '[]';
+                                else if (typeof val === 'object') display = JSON.stringify(val);
+                                else display = String(val);
+
+                                return (
+                                  <div key={key} className="flex gap-2 text-xs py-0.5">
+                                    <span className="text-muted-foreground font-medium min-w-[100px]">{key}:</span>
+                                    <span className="text-foreground break-all">{display as string}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {/* IP and User Agent in expanded view */}
+                            <div className="flex gap-4 text-[10px] text-muted-foreground pt-2 border-t mt-2">
+                              <span>IP: <span className="font-mono">{ip}</span></span>
+                              {log.userAgent && <span className="truncate max-w-[300px]">UA: {log.userAgent}</span>}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </FadeIn>
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
+              <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
+              <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Next</button>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+function LoginHistoryTab() {
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'login-history', page, statusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(page), limit: '30' });
+      const { data } = await api.get(`/admin/login-history?${params}`);
+      return data;
+    },
+  });
+
+  const allHistory = data?.data || [];
+  const pagination = data?.pagination;
+
+  // Client-side status filter (backend doesn't have success filter)
+  const history = statusFilter
+    ? allHistory.filter((h: any) => statusFilter === 'success' ? h.success !== false : h.success === false)
+    : allHistory;
+
+  return (
+    <>
+      <FadeIn direction="up" delay={0.05}>
+        <div className="flex gap-2 mb-6">
+          {['', 'success', 'failed'].map((s) => (
+            <button
+              key={s}
+              onClick={() => { setStatusFilter(s); setPage(1); }}
+              className={`px-3 py-1.5 text-sm rounded-md border capitalize ${
+                statusFilter === s ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
+              }`}
+            >
+              {s || 'All'}
+            </button>
+          ))}
+        </div>
+      </FadeIn>
+
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : history.length === 0 ? (
+        <div className="text-center py-12">
+          <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+          <p className="text-muted-foreground">No login history found</p>
+        </div>
+      ) : (
+        <>
+          <FadeIn direction="up" delay={0.1}>
             <div className="overflow-x-auto border rounded-lg">
               <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="bg-muted border-b">
-                    <th className="text-left p-3 font-medium text-foreground">Action</th>
-                    <th className="text-left p-3 font-medium text-foreground">Actor</th>
-                    <th className="text-left p-3 font-medium text-foreground">Resource</th>
-                    <th className="text-left p-3 font-medium text-foreground">IP</th>
+                    <th className="text-left p-3 font-medium text-foreground">User</th>
+                    <th className="text-left p-3 font-medium text-foreground">IP Address</th>
+                    <th className="text-left p-3 font-medium text-foreground">Device</th>
+                    <th className="text-left p-3 font-medium text-foreground">Status</th>
+                    <th className="text-left p-3 font-medium text-foreground">Reason</th>
                     <th className="text-left p-3 font-medium text-foreground">Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log: any) => (
-                    <tr
-                      key={log._id}
-                      className="border-t hover:bg-accent/30"
-                    >
+                  {history.map((h: any) => (
+                    <tr key={h._id} className="border-t hover:bg-accent/30">
                       <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-muted text-xs font-mono">{log.action}</span>
+                        <div>
+                          <p className="font-medium text-sm text-foreground">{h.user?.name || 'Unknown'}</p>
+                          <p className="text-xs text-muted-foreground">{h.user?.email || ''}</p>
+                        </div>
                       </td>
-                      <td className="p-3 text-foreground">{log.actor?.name || log.actor?.email || 'System'}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{log.resource}</td>
-                      <td className="p-3 text-muted-foreground text-xs font-mono">{log.ip || '-'}</td>
-                      <td className="p-3 text-muted-foreground text-xs">
-                        {formatDateTime(log.createdAt)}
+                      <td className="p-3 text-xs font-mono text-muted-foreground">{h.ip || '-'}</td>
+                      <td className="p-3 text-xs text-muted-foreground max-w-[180px] truncate" title={h.userAgent || ''}>
+                        {h.userAgent ? parseUserAgent(h.userAgent) : '-'}
                       </td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          h.success !== false
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                          {h.success !== false ? 'Success' : 'Failed'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{h.failureReason || '-'}</td>
+                      <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(h.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -135,100 +324,14 @@ function AuditLogsTab() {
   );
 }
 
-function LoginHistoryTab() {
-  const [page, setPage] = useState(1);
-  const [userFilter, setUserFilter] = useState('');
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'login-history', page, userFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '30' });
-      if (userFilter) params.set('userId', userFilter);
-      const { data } = await api.get(`/admin/login-history?${params}`);
-      return data;
-    },
-  });
-
-  const history = data?.data || [];
-  const pagination = data?.pagination;
-
-  return (
-    <>
-      <FadeIn direction="up" delay={0.05}>
-        <div className="flex gap-3 mb-6">
-          <input value={userFilter} onChange={(e) => { setUserFilter(e.target.value); setPage(1); }}
-            placeholder="Filter by user ID..."
-            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-full sm:w-64" />
-        </div>
-      </FadeIn>
-
-      {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : history.length === 0 ? (
-        <div className="text-center py-12">
-          <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No login history found</p>
-        </div>
-      ) : (
-        <>
-          <FadeIn direction="up" delay={0.1}>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full min-w-[600px] text-sm">
-                <thead>
-                  <tr className="bg-muted border-b">
-                    <th className="text-left p-3 font-medium text-foreground">User</th>
-                    <th className="text-left p-3 font-medium text-foreground">IP Address</th>
-                    <th className="text-left p-3 font-medium text-foreground">User Agent</th>
-                    <th className="text-left p-3 font-medium text-foreground">Status</th>
-                    <th className="text-left p-3 font-medium text-foreground">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((h: any) => (
-                    <tr
-                      key={h._id}
-                      className="border-t hover:bg-accent/30"
-                    >
-                      <td className="p-3">
-                        <div>
-                          <p className="font-medium text-sm text-foreground">{h.user?.name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{h.user?.email || ''}</p>
-                        </div>
-                      </td>
-                      <td className="p-3 text-xs font-mono text-muted-foreground">{h.ip || '-'}</td>
-                      <td className="p-3 text-xs text-muted-foreground max-w-[200px] truncate">{h.userAgent || '-'}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          h.success !== false
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
-                          {h.success !== false ? 'Success' : 'Failed'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-muted-foreground text-xs">
-                        {formatDateTime(h.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </FadeIn>
-
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
-              <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-              <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Next</button>
-            </div>
-          )}
-        </>
-      )}
-    </>
-  );
+/** Parse user agent string to a readable format */
+function parseUserAgent(ua: string): string {
+  if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
+  if (ua.includes('Edg')) return 'Edge';
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+  if (ua.includes('Postman')) return 'Postman';
+  return ua.slice(0, 30);
 }
 
 function SuspiciousActivityTab() {

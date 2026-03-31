@@ -112,19 +112,61 @@ router.delete('/admins/:userId', authenticate(), authorize(UserRole.SUPER_ADMIN)
   ApiResponse.success(res, target, 'Admin demoted');
 }));
 
+// Resource collection → model name field mapping for resolving IDs to names
+const RESOURCE_NAME_FIELDS: Record<string, { collection: string; field: string }> = {
+  users: { collection: 'users', field: 'name' },
+  committees: { collection: 'committees', field: 'name' },
+  events: { collection: 'events', field: 'title' },
+  notices: { collection: 'notices', field: 'title' },
+  forms: { collection: 'forms', field: 'type' },
+  documents: { collection: 'documents', field: 'title' },
+  albums: { collection: 'albums', field: 'title' },
+  site_settings: { collection: 'sitesettings', field: 'siteName' },
+  votes: { collection: 'votes', field: 'title' },
+  donations: { collection: 'donations', field: 'receiptNumber' },
+  expenses: { collection: 'expenses', field: 'title' },
+  budgets: { collection: 'budgets', field: 'title' },
+  reports: { collection: 'published_reports', field: 'title' },
+  system: { collection: '', field: '' },
+};
+
 // Audit logs
 router.get('/logs', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = {};
-  if (req.query.action) filter.action = req.query.action;
-  if (req.query.resource) filter.resource = req.query.resource;
+  if (req.query.action) filter.action = { $regex: req.query.action, $options: 'i' };
+  if (req.query.resource) filter.resource = { $regex: req.query.resource, $options: 'i' };
 
   const [logs, total] = await Promise.all([
-    AuditLog.find(filter).populate('actor', 'name email')
+    AuditLog.find(filter).populate('actor', 'name email avatar')
       .sort({ createdAt: -1 }).skip(getSkip({ page, limit })).limit(limit),
     AuditLog.countDocuments(filter),
   ]);
-  ApiResponse.paginated(res, logs, total, page, limit);
+
+  // Resolve resourceId → readable name/title
+  const db = mongoose.connection.db;
+  const enrichedLogs = await Promise.all(
+    logs.map(async (log) => {
+      const obj: any = log.toObject();
+      if (obj.resourceId && db) {
+        const mapping = RESOURCE_NAME_FIELDS[obj.resource];
+        if (mapping?.collection) {
+          try {
+            const doc = await db.collection(mapping.collection).findOne(
+              { _id: new mongoose.Types.ObjectId(obj.resourceId) },
+              { projection: { [mapping.field]: 1 } }
+            );
+            if (doc) {
+              obj.resourceName = doc[mapping.field] || String(obj.resourceId);
+            }
+          } catch {}
+        }
+      }
+      return obj;
+    })
+  );
+
+  ApiResponse.paginated(res, enrichedLogs, total, page, limit);
 }));
 
 // Login history

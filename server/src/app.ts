@@ -30,6 +30,9 @@ if (env.NODE_ENV !== 'test') {
 const app = express();
 const httpServer = createServer(app);
 
+// Trust proxy — required for correct req.ip behind reverse proxies (Vercel, Render, Cloudflare, nginx)
+app.set('trust proxy', true);
+
 // Security & parsing middleware
 app.use(helmet());
 app.use(cors({

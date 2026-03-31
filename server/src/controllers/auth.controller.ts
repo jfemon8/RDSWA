@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { authService } from '../services/auth.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
+import { getClientIp } from '../middlewares/audit.middleware';
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const user = await authService.register(req.body);
@@ -15,7 +16,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { user, tokens } = await authService.login(req.body, {
-    ip: req.ip,
+    ip: getClientIp(req),
     userAgent: req.headers['user-agent'],
   });
 
