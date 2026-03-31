@@ -96,7 +96,12 @@ export const removeEndorsement = asyncHandler(async (req: Request, res: Response
 
 export const exportDirectory = asyncHandler(async (req: Request, res: Response) => {
   const format = (req.query.format as string) === 'csv' ? 'csv' : 'json';
-  const result = await userService.exportDirectory(format);
+  const filters = {
+    role: req.query.role as string | undefined,
+    membershipStatus: req.query.membershipStatus as string | undefined,
+    search: req.query.search as string | undefined,
+  };
+  const result = await userService.exportDirectory(format, filters);
 
   if (format === 'csv') {
     res.setHeader('Content-Type', 'text/csv');

@@ -277,27 +277,61 @@ export class UserService {
     return target;
   }
 
-  async exportDirectory(format: 'json' | 'csv') {
-    const users = await User.find({
-      isDeleted: false,
-      membershipStatus: 'approved',
-    })
-      .select('name email phone department batch session homeDistrict bloodGroup profession skills role createdAt')
+  async exportDirectory(format: 'json' | 'csv', filters?: { role?: string; membershipStatus?: string; search?: string }) {
+    const query: FilterQuery<IUserDocument> = { isDeleted: false };
+    if (filters?.role) query.role = filters.role;
+    if (filters?.membershipStatus) query.membershipStatus = filters.membershipStatus;
+    if (filters?.search) {
+      query.$or = [
+        { name: { $regex: filters.search, $options: 'i' } },
+        { email: { $regex: filters.search, $options: 'i' } },
+        { studentId: { $regex: filters.search, $options: 'i' } },
+      ];
+    }
+    // If no filters at all, default to approved members
+    if (!filters?.role && !filters?.membershipStatus && !filters?.search) {
+      query.membershipStatus = 'approved';
+    }
+    const users = await User.find(query)
+      .select('name nameBn email phone studentId registrationNumber faculty department batch session homeDistrict gender bloodGroup isBloodDonor profession earningSource skills role membershipStatus profileVisibility createdAt')
       .sort({ name: 1 })
       .lean();
 
+    // Respect profileVisibility — hide fields users marked as private
+    const safeVal = (user: any, field: string, fallback = '') => {
+      const vis = user.profileVisibility || {};
+      // If visibility is explicitly false (private), hide the value
+      if (vis[field] === false) return '';
+      return user[field] || fallback;
+    };
+
     if (format === 'csv') {
-      const headers = ['Name', 'Email', 'Phone', 'Department', 'Batch', 'Session', 'District', 'Blood Group', 'Profession', 'Skills', 'Role'];
+      const headers = ['Name', 'Name (Bn)', 'Email', 'Phone', 'Student ID', 'Reg No.', 'Faculty', 'Department', 'Batch', 'Session', 'District', 'Gender', 'Blood Group', 'Blood Donor', 'Profession', 'Earning Source', 'Skills', 'Role', 'Joined'];
       const rows = users.map((u: any) => [
-        u.name, u.email, u.phone || '', u.department || '', u.batch || '', u.session || '',
-        u.homeDistrict || '', u.bloodGroup || '', u.profession || '',
+        u.name, u.nameBn || '',
+        safeVal(u, 'email'), safeVal(u, 'phone'),
+        safeVal(u, 'studentId'), safeVal(u, 'registrationNumber'),
+        u.faculty || '', u.department || '', u.batch || '', u.session || '',
+        u.homeDistrict || '', u.gender || '',
+        safeVal(u, 'bloodGroup'), u.isBloodDonor ? 'Yes' : 'No',
+        u.profession || '', u.earningSource || '',
         (u.skills || []).join('; '), u.role,
+        u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : '',
       ]);
       const csvLines = [headers.join(','), ...rows.map((r: string[]) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))];
       return csvLines.join('\n');
     }
 
-    return users;
+    // Strip private fields from JSON export too
+    return users.map((u: any) => {
+      const vis = u.profileVisibility || {};
+      const clean = { ...u };
+      for (const field of PRIVATE_FIELDS) {
+        if (vis[field] === false) delete clean[field];
+      }
+      delete clean.profileVisibility;
+      return clean;
+    });
   }
 
   async changeRole(

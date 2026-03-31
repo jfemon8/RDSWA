@@ -4,6 +4,7 @@ import api from '@/lib/api';
 import { Loader2, Receipt, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import { downloadHtmlPdf } from '@/lib/downloadPdf';
 import { useState } from 'react';
 
 const statusConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
@@ -35,11 +36,7 @@ export default function MyDonationsPage() {
 
   const downloadReceipt = async (id: string) => {
     const { data } = await api.get(`/donations/${id}/receipt`, { responseType: 'text' });
-    const blob = new Blob([data], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank');
-    if (w) w.focus();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    await downloadHtmlPdf(data, 'RDSWA-Donation-Receipt');
   };
 
   return (
