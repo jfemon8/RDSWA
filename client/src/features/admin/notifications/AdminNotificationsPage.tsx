@@ -8,11 +8,10 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import { Send, Loader2, Bell, Radio } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
-import { hasMinRole } from '@/lib/roles';
 
 export default function AdminNotificationsPage() {
   const { user } = useAuthStore();
-  const isAdmin = user?.role ? hasMinRole(user.role, UserRole.ADMIN) : false;
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
   const [type, setType] = useState<'broadcast' | 'targeted'>('targeted');
   const toast = useToast();
   const [form, setForm] = useState({ title: '', message: '', link: '', targetRole: '', targetBatch: '' });
@@ -50,7 +49,7 @@ export default function AdminNotificationsPage() {
             }`}>
             <Bell className="h-4 w-4" /> Targeted
           </button>
-          {isAdmin && (
+          {isSuperAdmin && (
             <button
               onClick={() => setType('broadcast')}
               className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md border ${
