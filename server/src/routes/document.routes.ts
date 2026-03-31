@@ -55,15 +55,23 @@ router.get('/:id/download', asyncHandler(async (req, res) => {
   ApiResponse.success(res, { fileUrl: doc.fileUrl, title: doc.title });
 }));
 
-// Upload document
+// Upload document (Moderator+ can create, but Moderator only public docs)
 router.post('/', authenticate(), authorize(UserRole.MODERATOR), auditLog('document.create', 'documents'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+  // Moderators can only create public documents
+  const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
+  if (!isAdmin && req.body.isPublic === false) {
+    throw ApiError.forbidden('Moderators can only upload public documents');
+  }
+  if (!isAdmin && req.body.accessRoles?.length > 0) {
+    throw ApiError.forbidden('Moderators cannot set role-based access restrictions');
+  }
   const doc = await DocumentModel.create({ ...req.body, uploadedBy: req.user._id });
   ApiResponse.created(res, doc, 'Document uploaded');
 }));
 
-// Update
-router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('document.update', 'documents'), asyncHandler(async (req, res) => {
+// Update (Admin+ only)
+router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('document.update', 'documents'), asyncHandler(async (req, res) => {
   const doc = await DocumentModel.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { $set: req.body },
@@ -73,8 +81,8 @@ router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('do
   ApiResponse.success(res, doc, 'Document updated');
 }));
 
-// Delete
-router.delete('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('document.delete', 'documents'), asyncHandler(async (req, res) => {
+// Delete (Admin+ only)
+router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('document.delete', 'documents'), asyncHandler(async (req, res) => {
   const doc = await DocumentModel.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { isDeleted: true },

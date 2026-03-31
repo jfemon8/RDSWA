@@ -32,11 +32,29 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
+  // Moderators can only delete their own notices
+  if (!isAdmin) {
+    const notice = await noticeService.getById(req.params.id as string);
+    if (notice.createdBy?.toString() !== (req.user._id as any).toString()) {
+      throw ApiError.forbidden('You can only delete your own notices');
+    }
+  }
   await noticeService.delete(req.params.id as string);
   ApiResponse.success(res, null, 'Notice deleted');
 });
 
 export const archive = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
+  // Moderators can only archive their own notices
+  if (!isAdmin) {
+    const notice = await noticeService.getById(req.params.id as string);
+    if (notice.createdBy?.toString() !== (req.user._id as any).toString()) {
+      throw ApiError.forbidden('You can only archive your own notices');
+    }
+  }
   const notice = await noticeService.archive(req.params.id as string);
   ApiResponse.success(res, notice, 'Notice archived');
 });

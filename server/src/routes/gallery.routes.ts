@@ -30,15 +30,15 @@ router.get('/albums/:id', asyncHandler(async (req, res) => {
   ApiResponse.success(res, { album, photos });
 }));
 
-// Create album
-router.post('/albums', authenticate(), authorize(UserRole.MODERATOR), auditLog('album.create', 'albums'), asyncHandler(async (req, res) => {
+// Create album (Admin+ only)
+router.post('/albums', authenticate(), authorize(UserRole.ADMIN), auditLog('album.create', 'albums'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const album = await Album.create({ ...req.body, createdBy: req.user._id });
   ApiResponse.created(res, album, 'Album created');
 }));
 
-// Update album
-router.patch('/albums/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('album.update', 'albums'), asyncHandler(async (req, res) => {
+// Update album (Admin+ only)
+router.patch('/albums/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('album.update', 'albums'), asyncHandler(async (req, res) => {
   const album = await Album.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { $set: req.body },
@@ -48,8 +48,8 @@ router.patch('/albums/:id', authenticate(), authorize(UserRole.MODERATOR), audit
   ApiResponse.success(res, album, 'Album updated');
 }));
 
-// Delete album
-router.delete('/albums/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('album.delete', 'albums'), asyncHandler(async (req, res) => {
+// Delete album (Admin+ only)
+router.delete('/albums/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('album.delete', 'albums'), asyncHandler(async (req, res) => {
   const album = await Album.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { isDeleted: true },
@@ -83,8 +83,8 @@ router.post('/albums/:id/photos', authenticate(), authorize(UserRole.MODERATOR),
   ApiResponse.created(res, photos, 'Photos uploaded');
 }));
 
-// Delete photo
-router.delete('/photos/:id', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
+// Delete photo (Admin+ only)
+router.delete('/photos/:id', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
   const photo = await Photo.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { isDeleted: true },

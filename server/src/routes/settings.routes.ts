@@ -126,6 +126,15 @@ router.patch('/academic-config', authenticate(), authorize(UserRole.ADMIN), audi
   ApiResponse.success(res, settings.academicConfig, 'Academic config updated');
 }));
 
+// Update homepage content (Admin+)
+router.patch('/homepage', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_homepage', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const update: any = { updatedBy: req.user._id };
+  if (req.body.homePageContent !== undefined) update.homePageContent = req.body.homePageContent;
+  const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+  ApiResponse.success(res, settings, 'Homepage content updated');
+}));
+
 // Update about content (Admin+)
 router.patch('/about', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_about', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
