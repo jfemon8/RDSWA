@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Users, TrendingUp, Calendar, BarChart3, Vote } from 'lucide-react';
+import { Loader2, Users, TrendingUp, Calendar, BarChart3, Vote, Wrench, Download, FileText } from 'lucide-react';
+import { motion } from 'motion/react';
+import { downloadTablePdf } from '@/lib/downloadPdf';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
@@ -10,7 +12,7 @@ import { hasMinRole } from '@/lib/roles';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
-type Tab = 'members' | 'finance' | 'events' | 'donations' | 'voting';
+type Tab = 'members' | 'finance' | 'events' | 'donations' | 'voting' | 'custom';
 
 export default function AdminReportsPage() {
   const { user } = useAuthStore();
@@ -23,6 +25,7 @@ export default function AdminReportsPage() {
     { key: 'events', label: 'Events', icon: Calendar },
     { key: 'donations', label: 'Donations', icon: BarChart3 },
     { key: 'voting', label: 'Voting', icon: Vote },
+    { key: 'custom', label: 'Custom Report', icon: Wrench, adminOnly: true },
   ];
 
   const tabs = allTabs.filter((t) => !t.adminOnly || isAdmin);
@@ -53,6 +56,7 @@ export default function AdminReportsPage() {
       {tab === 'events' && <EventsReport />}
       {tab === 'donations' && <DonationsReport />}
       {tab === 'voting' && <VotingReport />}
+      {tab === 'custom' && isAdmin && <CustomReportBuilder />}
     </div>
   );
 }
@@ -464,6 +468,350 @@ function VotingReport() {
           </div>
         </FadeIn>
       </div>
+    </div>
+  );
+}
+
+const SOURCE_FIELDS: Record<string, { label: string; fields: { key: string; label: string }[] }> = {
+  users: {
+    label: 'Members / Users',
+    fields: [
+      { key: 'name', label: 'Name' }, { key: 'nameBn', label: 'Name (Bn)' }, { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone' }, { key: 'studentId', label: 'Student ID' }, { key: 'registrationNumber', label: 'Reg No.' },
+      { key: 'faculty', label: 'Faculty' }, { key: 'department', label: 'Department' }, { key: 'batch', label: 'Batch' },
+      { key: 'session', label: 'Session' }, { key: 'homeDistrict', label: 'District' }, { key: 'gender', label: 'Gender' },
+      { key: 'bloodGroup', label: 'Blood Group' }, { key: 'profession', label: 'Profession' },
+      { key: 'role', label: 'Role' }, { key: 'membershipStatus', label: 'Membership Status' }, { key: 'createdAt', label: 'Joined' },
+    ],
+  },
+  donations: {
+    label: 'Donations',
+    fields: [
+      { key: 'amount', label: 'Amount' }, { key: 'type', label: 'Type' }, { key: 'paymentMethod', label: 'Method' },
+      { key: 'paymentStatus', label: 'Status' }, { key: 'transactionId', label: 'TxID' },
+      { key: 'senderNumber', label: 'Sender No.' }, { key: 'donorName', label: 'Donor Name' },
+      { key: 'receiptNumber', label: 'Receipt No.' }, { key: 'visibility', label: 'Visibility' },
+      { key: 'isRecurring', label: 'Recurring' }, { key: 'note', label: 'Note' }, { key: 'createdAt', label: 'Date' },
+    ],
+  },
+  events: {
+    label: 'Events',
+    fields: [
+      { key: 'title', label: 'Title' }, { key: 'type', label: 'Type' }, { key: 'status', label: 'Status' },
+      { key: 'startDate', label: 'Start Date' }, { key: 'endDate', label: 'End Date' },
+      { key: 'venue', label: 'Venue' }, { key: 'registrationRequired', label: 'Reg Required' },
+      { key: 'maxParticipants', label: 'Max Participants' }, { key: 'feedbackEnabled', label: 'Feedback' },
+      { key: 'createdAt', label: 'Created' },
+    ],
+  },
+  expenses: {
+    label: 'Expenses',
+    fields: [
+      { key: 'title', label: 'Title' }, { key: 'amount', label: 'Amount' }, { key: 'category', label: 'Category' },
+      { key: 'description', label: 'Description' }, { key: 'receiptUrl', label: 'Receipt URL' },
+      { key: 'createdAt', label: 'Date' },
+    ],
+  },
+};
+
+function CustomReportBuilder() {
+  const [source, setSource] = useState('users');
+  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set(['name', 'email', 'department', 'batch', 'role']));
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [sortBy, setSortBy] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [maxRows, setMaxRows] = useState('1000');
+  const [result, setResult] = useState<any>(null);
+
+  const availableFields = SOURCE_FIELDS[source]?.fields || [];
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const filters: any = {};
+      if (dateFrom) filters.dateFrom = dateFrom;
+      if (dateTo) filters.dateTo = dateTo;
+      if (filterRole) filters.role = filterRole;
+      if (filterStatus) {
+        if (source === 'users') filters.membershipStatus = filterStatus;
+        else filters.status = filterStatus;
+      }
+      if (filterType) filters.type = filterType;
+
+      const { data } = await api.post('/reports/custom', {
+        source,
+        fields: [...selectedFields],
+        filters,
+        sortBy: sortBy || undefined,
+        sortOrder,
+        limit: parseInt(maxRows, 10) || 1000,
+      });
+      return data.data;
+    },
+    onSuccess: (data) => setResult(data),
+  });
+
+  const toggleField = (key: string) => {
+    const next = new Set(selectedFields);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setSelectedFields(next);
+  };
+
+  const selectAllFields = () => setSelectedFields(new Set(availableFields.map((f) => f.key)));
+  const clearAllFields = () => setSelectedFields(new Set());
+
+  const handleSourceChange = (s: string) => {
+    setSource(s);
+    const defaults = SOURCE_FIELDS[s]?.fields.slice(0, 5).map((f) => f.key) || [];
+    setSelectedFields(new Set(defaults));
+    setResult(null);
+    setFilterRole('');
+    setFilterStatus('');
+    setFilterType('');
+  };
+
+  const downloadCsv = () => {
+    if (!result?.csv) return;
+    const blob = new Blob([result.csv], { type: 'text/csv; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `RDSWA-${source}-report.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadPdf = async () => {
+    if (!result?.csv) return;
+    await downloadTablePdf(result.csv, `${SOURCE_FIELDS[source]?.label || source} Report`, `RDSWA-${source}-report`);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Source Selection */}
+      <FadeIn direction="up" delay={0.1}>
+        <div className="border rounded-lg p-4 sm:p-5 bg-card">
+          <h3 className="font-semibold text-foreground mb-3">1. Select Data Source</h3>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(SOURCE_FIELDS).map(([key, { label }]) => (
+              <motion.button
+                key={key}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleSourceChange(key)}
+                className={`px-4 py-2 text-sm rounded-lg border font-medium transition-colors ${
+                  source === key ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
+                }`}
+              >
+                {label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* Field Selection */}
+      <FadeIn direction="up" delay={0.2}>
+        <div className="border rounded-lg p-4 sm:p-5 bg-card">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-foreground">2. Select Fields</h3>
+            <div className="flex gap-2">
+              <button onClick={selectAllFields} className="text-xs text-primary hover:underline">Select All</button>
+              <button onClick={clearAllFields} className="text-xs text-muted-foreground hover:underline">Clear</button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {availableFields.map((f) => (
+              <label
+                key={f.key}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border cursor-pointer transition-colors ${
+                  selectedFields.has(f.key) ? 'bg-primary/10 border-primary/30 text-primary font-medium' : 'hover:bg-accent'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedFields.has(f.key)}
+                  onChange={() => toggleField(f.key)}
+                  className="rounded"
+                />
+                {f.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* Filters */}
+      <FadeIn direction="up" delay={0.3}>
+        <div className="border rounded-lg p-4 sm:p-5 bg-card">
+          <h3 className="font-semibold text-foreground mb-3">3. Filters (optional)</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Date From</label>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Date To</label>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm" />
+            </div>
+            {source === 'users' && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Role</label>
+                <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}
+                  className="w-full px-3 py-1.5 border rounded-md bg-background text-sm">
+                  <option value="">All Roles</option>
+                  <option value="user">User</option>
+                  <option value="member">Member</option>
+                  <option value="alumni">Alumni</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            )}
+            {source === 'users' && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Membership Status</label>
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full px-3 py-1.5 border rounded-md bg-background text-sm">
+                  <option value="">All</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            )}
+            {(source === 'events' || source === 'donations') && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full px-3 py-1.5 border rounded-md bg-background text-sm">
+                  <option value="">All</option>
+                  {source === 'events' && <>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                  </>}
+                  {source === 'donations' && <>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                  </>}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Sort By</label>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm">
+                <option value="">Default</option>
+                {availableFields.filter((f) => selectedFields.has(f.key)).map((f) => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Order</label>
+              <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm">
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Max Rows</label>
+              <input type="number" value={maxRows} onChange={(e) => setMaxRows(e.target.value)}
+                className="w-full px-3 py-1.5 border rounded-md bg-background text-sm" min="1" max="5000" />
+            </div>
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* Generate Button */}
+      <FadeIn direction="up" delay={0.4}>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => generateMutation.mutate()}
+          disabled={selectedFields.size === 0 || generateMutation.isPending}
+          className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+        >
+          {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
+          Generate Report
+        </motion.button>
+      </FadeIn>
+
+      {/* Results */}
+      {result && (
+        <FadeIn direction="up" delay={0.1}>
+          <div className="border rounded-lg p-4 sm:p-5 bg-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">
+                Results — {result.totalRows} records from {SOURCE_FIELDS[source]?.label}
+              </h3>
+              <div className="flex gap-2">
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={downloadCsv}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent">
+                  <Download className="h-3.5 w-3.5" /> CSV
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={downloadPdf}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent">
+                  <FileText className="h-3.5 w-3.5" /> PDF
+                </motion.button>
+              </div>
+            </div>
+
+            {result.data?.length > 0 ? (
+              <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                <table className="w-full text-xs min-w-[400px]">
+                  <thead className="sticky top-0">
+                    <tr className="bg-muted border-b">
+                      {result.fields.map((f: string) => (
+                        <th key={f} className="text-left p-2 font-medium text-foreground whitespace-nowrap">
+                          {availableFields.find((af) => af.key === f)?.label || f}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.data.slice(0, 100).map((row: any, i: number) => (
+                      <tr key={i} className="border-b hover:bg-accent/30">
+                        {result.fields.map((f: string) => {
+                          let val = row[f];
+                          if (val === null || val === undefined) val = '';
+                          else if (Array.isArray(val)) val = val.join(', ');
+                          else if (typeof val === 'object') val = JSON.stringify(val);
+                          else if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
+                          else val = String(val);
+                          // Format dates
+                          if (f.includes('Date') || f === 'createdAt' || f === 'startDate' || f === 'endDate') {
+                            try { val = val ? new Date(val).toLocaleDateString() : ''; } catch {}
+                          }
+                          return <td key={f} className="p-2 text-muted-foreground max-w-[200px] truncate">{val}</td>;
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {result.data.length > 100 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    Showing first 100 rows in preview. Download CSV/PDF for full data ({result.totalRows} rows).
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-muted-foreground text-sm">No records found matching your criteria</p>
+            )}
+          </div>
+        </FadeIn>
+      )}
     </div>
   );
 }

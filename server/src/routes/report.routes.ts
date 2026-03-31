@@ -256,6 +256,72 @@ router.get('/finance/export', authenticate(), authorize(UserRole.ADMIN), asyncHa
   }
 }));
 
+// ─── Custom Report Builder ───
+router.post('/custom', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const { source, fields, filters, sortBy, sortOrder, limit: maxRows } = req.body;
+
+  if (!source || !fields || !Array.isArray(fields) || fields.length === 0) {
+    throw ApiError.badRequest('source and fields array are required');
+  }
+
+  const allowedSources: Record<string, { model: any; defaultSort: string }> = {
+    users: { model: User, defaultSort: 'name' },
+    donations: { model: Donation, defaultSort: 'createdAt' },
+    events: { model: Event, defaultSort: 'startDate' },
+    expenses: { model: Expense, defaultSort: 'createdAt' },
+  };
+
+  const config = allowedSources[source];
+  if (!config) throw ApiError.badRequest('Invalid source. Use: users, donations, events, expenses');
+
+  const query: any = { isDeleted: false };
+  if (filters) {
+    if (filters.dateFrom || filters.dateTo) {
+      const dateField = source === 'events' ? 'startDate' : 'createdAt';
+      query[dateField] = {};
+      if (filters.dateFrom) query[dateField].$gte = new Date(filters.dateFrom);
+      if (filters.dateTo) query[dateField].$lte = new Date(filters.dateTo);
+    }
+    if (filters.role && source === 'users') query.role = filters.role;
+    if (filters.membershipStatus && source === 'users') query.membershipStatus = filters.membershipStatus;
+    if (filters.status) {
+      if (source === 'events') query.status = filters.status;
+      if (source === 'donations') query.paymentStatus = filters.status;
+    }
+    if (filters.type) query.type = filters.type;
+    if (filters.category && source === 'expenses') query.category = filters.category;
+  }
+
+  const projection = fields.join(' ');
+  const sort: any = { [sortBy || config.defaultSort]: sortOrder === 'asc' ? 1 : -1 };
+  const rowLimit = Math.min(maxRows || 1000, 5000);
+
+  const data = await config.model.find(query)
+    .select(projection)
+    .sort(sort)
+    .limit(rowLimit)
+    .lean();
+
+  const headers = fields;
+  const rows = data.map((doc: any) =>
+    fields.map((f: string) => {
+      const val = doc[f];
+      if (val === null || val === undefined) return '';
+      if (val instanceof Date) return val.toISOString().slice(0, 10);
+      if (Array.isArray(val)) return val.join('; ');
+      if (typeof val === 'object') return JSON.stringify(val);
+      return String(val);
+    })
+  );
+
+  const csv = [
+    headers.join(','),
+    ...rows.map((r: string[]) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(',')),
+  ].join('\n');
+
+  ApiResponse.success(res, { source, fields, totalRows: data.length, csv, data });
+}));
+
 // ─── Published Reports (approval workflow) ───
 // Reports can be generated and published by admin. We'll use a lightweight
 // approach: save report snapshots in-memory via a simple collection.
