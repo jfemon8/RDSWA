@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   DollarSign, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
-  LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard,
+  LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard, Settings2,
 } from 'lucide-react';
 import { Suspense, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -37,8 +37,9 @@ const adminLinks: AdminLink[] = [
   { label: 'Alumni Monitor', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.MODERATOR },
   { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.MODERATOR },
-  { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.MODERATOR },
+  { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.ADMIN },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
+  { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },
 ];

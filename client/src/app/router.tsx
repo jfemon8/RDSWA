@@ -76,6 +76,7 @@ const AdminReports = lazy(() => import('@/features/admin/reports/AdminReportsPag
 const AdminNotifications = lazy(() => import('@/features/admin/notifications/AdminNotificationsPage'));
 const AdminPaymentConfig = lazy(() => import('@/features/admin/payment/AdminPaymentConfigPage'));
 const AdminSettings = lazy(() => import('@/features/admin/settings/AdminSettingsPage'));
+const AdminSystemConfig = lazy(() => import('@/features/admin/settings/AdminSystemConfigPage'));
 const AdminLogs = lazy(() => import('@/features/admin/logs/AdminLogsPage'));
 const AdminAlumniMonitor = lazy(() => import('@/features/admin/alumni/AdminAlumniMonitorPage'));
 
@@ -173,6 +174,7 @@ export default function AppRouter() {
 
               {/* SuperAdmin only */}
               <Route path="/admin/settings" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminSettings /></AdminRoleGuard>} />
+              <Route path="/admin/system-config" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminSystemConfig /></AdminRoleGuard>} />
               <Route path="/admin/admins" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminAdmins /></AdminRoleGuard>} />
             </Route>
           </Route>

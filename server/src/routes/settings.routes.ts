@@ -169,4 +169,55 @@ router.patch('/payment', authenticate(), authorize(UserRole.MODERATOR), auditLog
   ApiResponse.success(res, settings, 'Payment settings updated');
 }));
 
+// Update voting rules (Admin+)
+router.patch('/voting-rules', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_voting_rules', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const settings = await SiteSettings.findOneAndUpdate(
+    {},
+    { $set: { votingRules: req.body, updatedBy: req.user._id } },
+    { new: true, upsert: true }
+  );
+  ApiResponse.success(res, settings.votingRules, 'Voting rules updated');
+}));
+
+// Get voting rules (public)
+router.get('/voting-rules', asyncHandler(async (_req, res) => {
+  const settings = await SiteSettings.findOne();
+  ApiResponse.success(res, settings?.votingRules || {});
+}));
+
+// Update membership criteria (Admin+)
+router.patch('/membership-criteria', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_membership_criteria', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const settings = await SiteSettings.findOneAndUpdate(
+    {},
+    { $set: { membershipCriteria: req.body, updatedBy: req.user._id } },
+    { new: true, upsert: true }
+  );
+  ApiResponse.success(res, settings.membershipCriteria, 'Membership criteria updated');
+}));
+
+// Get membership criteria (public)
+router.get('/membership-criteria', asyncHandler(async (_req, res) => {
+  const settings = await SiteSettings.findOne();
+  ApiResponse.success(res, settings?.membershipCriteria || {});
+}));
+
+// Update auto-role assignment config (SuperAdmin only)
+router.patch('/auto-role-config', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_auto_role', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { moderatorPositions, retainPositions } = req.body;
+  const update: any = { updatedBy: req.user._id };
+  if (Array.isArray(moderatorPositions)) update['autoRoleConfig.moderatorPositions'] = moderatorPositions;
+  if (Array.isArray(retainPositions)) update['autoRoleConfig.retainPositions'] = retainPositions;
+  const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+  ApiResponse.success(res, settings.autoRoleConfig, 'Auto-role config updated');
+}));
+
+// Get auto-role config
+router.get('/auto-role-config', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+  const settings = await SiteSettings.findOne();
+  ApiResponse.success(res, settings?.autoRoleConfig || { moderatorPositions: [], retainPositions: [] });
+}));
+
 export default router;
