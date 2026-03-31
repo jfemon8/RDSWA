@@ -5,7 +5,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { User, AuditLog, LoginHistory, Notification, Donation, Event, Form } from '../models';
+import { User, AuditLog, LoginHistory, Notification, Donation, Event, Form, RoleAssignment } from '../models';
 import { UserRole, SUPER_ADMIN_EMAILS } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { sendEmail } from '../config/mail';
@@ -183,6 +183,26 @@ router.get('/suspicious-activity', authenticate(), authorize(UserRole.ADMIN), as
     multipleIps,
     generatedAt: new Date(),
   });
+}));
+
+// Role assignment history
+router.get('/role-history', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const { page, limit } = parsePagination(req.query as any);
+  const filter: any = {};
+  if (req.query.userId) filter.user = req.query.userId;
+  if (req.query.role) filter.role = req.query.role;
+  if (req.query.assignmentType) filter.assignmentType = req.query.assignmentType;
+
+  const [history, total] = await Promise.all([
+    RoleAssignment.find(filter)
+      .populate('user', 'name email avatar')
+      .populate('assignedBy', 'name')
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    RoleAssignment.countDocuments(filter),
+  ]);
+  ApiResponse.paginated(res, history, total, page, limit);
 }));
 
 // ─── Bulk Operations ───

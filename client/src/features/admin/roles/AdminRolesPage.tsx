@@ -1,7 +1,11 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
-import { Shield, Check, X } from 'lucide-react';
+import { Shield, Check, X, History, Loader2, ArrowRight } from 'lucide-react';
 import { UserRole, ROLE_HIERARCHY, PERMISSIONS, Module, Action } from '@rdswa/shared';
+import api from '@/lib/api';
+import { formatDate } from '@/lib/date';
 
 const ROLE_COLORS: Record<string, string> = {
   guest: 'bg-muted text-muted-foreground',
@@ -140,6 +144,138 @@ export default function AdminRolesPage() {
           </div>
         </div>
       </FadeIn>
+
+      {/* Role Assignment History */}
+      <RoleHistorySection />
     </div>
+  );
+}
+
+function RoleHistorySection() {
+  const [page, setPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState('');
+
+  const filters: Record<string, string> = { page: String(page), limit: '15' };
+  if (typeFilter) filters.assignmentType = typeFilter;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'role-history', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams(filters);
+      const { data } = await api.get(`/admin/role-history?${params}`);
+      return data;
+    },
+  });
+
+  const history = data?.data || [];
+  const pagination = data?.pagination;
+
+  return (
+    <FadeIn direction="up" delay={0.4}>
+      <div className="border rounded-lg p-4 sm:p-5 bg-card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold text-lg text-foreground">Role Assignment History</h2>
+          </div>
+          <div className="flex gap-2">
+            {['', 'auto', 'manual'].map((t) => (
+              <button
+                key={t}
+                onClick={() => { setTypeFilter(t); setPage(1); }}
+                className={`px-2.5 py-1 text-xs rounded-md border capitalize ${
+                  typeFilter === t ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
+                }`}
+              >
+                {t || 'All'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : history.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">No role changes recorded</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[600px]">
+              <thead>
+                <tr className="border-b bg-muted">
+                  <th className="text-left p-2.5 font-medium text-foreground">User</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">Change</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">Type</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">Reason</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">By</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h: any, i: number) => (
+                  <motion.tr
+                    key={h._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="border-b hover:bg-accent/30"
+                  >
+                    <td className="p-2.5">
+                      <div className="flex items-center gap-2">
+                        {h.user?.avatar ? (
+                          <img src={h.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                            {h.user?.name?.[0] || '?'}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{h.user?.name || 'Unknown'}</p>
+                          <p className="text-[10px] text-muted-foreground">{h.user?.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-2.5">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className={`px-1.5 py-0.5 rounded capitalize ${ROLE_COLORS[h.previousRole] || 'bg-muted text-muted-foreground'}`}>
+                          {h.previousRole?.replace('_', ' ')}
+                        </span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className={`px-1.5 py-0.5 rounded capitalize ${ROLE_COLORS[h.role] || 'bg-muted text-muted-foreground'}`}>
+                          {h.role?.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-2.5">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        h.assignmentType === 'auto'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                      }`}>
+                        {h.assignmentType}
+                      </span>
+                    </td>
+                    <td className="p-2.5 text-xs text-muted-foreground max-w-[150px] truncate" title={h.reason}>
+                      {h.reason?.replace(/_/g, ' ')}
+                    </td>
+                    <td className="p-2.5 text-xs text-muted-foreground">{h.assignedBy?.name || '—'}</td>
+                    <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(h.createdAt)}</td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+              className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
+            <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
+            <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
+              className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent">Next</button>
+          </div>
+        )}
+      </div>
+    </FadeIn>
   );
 }
