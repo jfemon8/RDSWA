@@ -74,6 +74,27 @@ export const myAttendance = asyncHandler(async (req: Request, res: Response) => 
   ApiResponse.success(res, records);
 });
 
+export const removeAttendance = asyncHandler(async (req: Request, res: Response) => {
+  const event = await eventService.removeAttendance(req.params.id as string, req.params.userId as string);
+  ApiResponse.success(res, event, 'Attendance record removed');
+});
+
+export const addReport = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const event = await eventService.addReport(
+    req.params.id as string,
+    req.body,
+    (req.user._id as any).toString()
+  );
+  ApiResponse.success(res, event, 'Report uploaded');
+});
+
+export const removeReport = asyncHandler(async (req: Request, res: Response) => {
+  const reportIndex = parseInt(req.params.reportIndex as string, 10);
+  const event = await eventService.removeReport(req.params.id as string, reportIndex);
+  ApiResponse.success(res, event, 'Report removed');
+});
+
 export const generateQrCode = asyncHandler(async (req: Request, res: Response) => {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   const qrCode = await eventService.generateQrCode(req.params.id as string, baseUrl);

@@ -21,8 +21,15 @@ router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), ev
 router.post('/:id/feedback', authenticate(), authorize(UserRole.MEMBER), validate({ body: feedbackSchema }), eventController.submitFeedback);
 router.get('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.getAttendance);
 
+// Remove attendance record
+router.delete('/:id/attendance/:userId', authenticate(), authorize(UserRole.MODERATOR), eventController.removeAttendance);
+
 // QR code generation
 router.post('/:id/qr', authenticate(), authorize(UserRole.MODERATOR), eventController.generateQrCode);
+
+// Event reports/documents
+router.post('/:id/reports', authenticate(), authorize(UserRole.MODERATOR), eventController.addReport);
+router.delete('/:id/reports/:reportIndex', authenticate(), authorize(UserRole.MODERATOR), eventController.removeReport);
 
 // Event photos
 router.post('/:id/photos', authenticate(), authorize(UserRole.MODERATOR), eventController.addPhoto);

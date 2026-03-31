@@ -36,6 +36,12 @@ export interface IEventDocument extends Document {
     taggedUsers: mongoose.Types.ObjectId[];
     uploadedBy: mongoose.Types.ObjectId;
   }>;
+  reports: Array<{
+    name: string;
+    url: string;
+    uploadedBy: mongoose.Types.ObjectId;
+    uploadedAt: Date;
+  }>;
   committee?: mongoose.Types.ObjectId;
   createdBy: mongoose.Types.ObjectId;
   isPublic: boolean;
@@ -85,6 +91,14 @@ const eventSchema = new Schema<IEventDocument>(
         caption: String,
         taggedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
         uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      },
+    ],
+    reports: [
+      {
+        name: String,
+        url: String,
+        uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        uploadedAt: { type: Date, default: Date.now },
       },
     ],
     committee: { type: Schema.Types.ObjectId, ref: 'Committee' },

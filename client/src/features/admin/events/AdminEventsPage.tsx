@@ -6,7 +6,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -291,6 +291,8 @@ function EventDetailPanel({ event }: { event: any }) {
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoCaption, setPhotoCaption] = useState('');
   const [manualUserId, setManualUserId] = useState('');
+  const [reportName, setReportName] = useState('');
+  const [reportUrl, setReportUrl] = useState('');
 
   // Fetch full event detail
   const { data } = useQuery({
@@ -331,8 +333,32 @@ function EventDetailPanel({ event }: { event: any }) {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove photo'); },
   });
 
+  const removeAttendanceMutation = useMutation({
+    mutationFn: (userId: string) => api.delete(`/events/${event._id}/attendance/${userId}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Attendance removed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove'); },
+  });
+
+  const addReportMutation = useMutation({
+    mutationFn: (report: { name: string; url: string }) => api.post(`/events/${event._id}/reports`, report),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
+      setReportName('');
+      setReportUrl('');
+      toast.success('Report uploaded');
+    },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
+  });
+
+  const removeReportMutation = useMutation({
+    mutationFn: (index: number) => api.delete(`/events/${event._id}/reports/${index}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Report removed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
+  });
+
   const photos = fullEvent.photos || [];
   const attendance = fullEvent.attendance || [];
+  const reports = fullEvent.reports || [];
 
   return (
     <div className="p-4 space-y-6">
@@ -388,12 +414,21 @@ function EventDetailPanel({ event }: { event: any }) {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center justify-between py-1.5 px-2 bg-muted rounded text-xs"
+                  className="flex items-center justify-between py-1.5 px-2 bg-muted rounded text-xs group"
                 >
                   <span className="text-foreground">{a.user?.name || a.user || 'Unknown'}</span>
-                  <span className="text-muted-foreground">
-                    {a.checkedInVia} • {formatTime(a.checkedInAt)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">
+                      {a.checkedInVia} • {formatTime(a.checkedInAt)}
+                    </span>
+                    <button
+                      onClick={() => removeAttendanceMutation.mutate(a.user?._id || a.user)}
+                      title="Remove attendance"
+                      className="p-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -456,6 +491,59 @@ function EventDetailPanel({ event }: { event: any }) {
                 {photo.caption && (
                   <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{photo.caption}</p>
                 )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Reports / Documents */}
+      <div>
+        <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
+          <FileText className="h-4 w-4 text-primary" /> Activity Reports ({reports.length})
+        </h4>
+
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <input
+            placeholder="Report name"
+            value={reportName}
+            onChange={(e) => setReportName(e.target.value)}
+            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
+          />
+          <input
+            placeholder="Document URL"
+            value={reportUrl}
+            onChange={(e) => setReportUrl(e.target.value)}
+            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
+          />
+          <button
+            onClick={() => reportName && reportUrl && addReportMutation.mutate({ name: reportName, url: reportUrl })}
+            disabled={!reportName || !reportUrl || addReportMutation.isPending}
+            className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
+          >
+            {addReportMutation.isPending ? '...' : 'Upload'}
+          </button>
+        </div>
+
+        {reports.length > 0 && (
+          <div className="space-y-1">
+            {reports.map((r: any, i: number) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="flex items-center justify-between py-1.5 px-2 bg-muted rounded text-xs group"
+              >
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate flex-1">
+                  {r.name}
+                </a>
+                <button
+                  onClick={() => removeReportMutation.mutate(i)}
+                  className="p-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </motion.div>
             ))}
           </div>

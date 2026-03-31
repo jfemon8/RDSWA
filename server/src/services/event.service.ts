@@ -147,6 +147,53 @@ export class EventService {
     return qrDataUrl;
   }
 
+  async removeAttendance(eventId: string, userId: string): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const idx = event.attendance.findIndex(
+      (a) => a.user.toString() === userId
+    );
+    if (idx === -1) throw ApiError.notFound('Attendance record not found');
+
+    event.attendance.splice(idx, 1);
+    await event.save();
+    return event;
+  }
+
+  async addReport(
+    eventId: string,
+    report: { name: string; url: string },
+    uploadedBy: string
+  ): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    if (!report.name || !report.url) throw ApiError.badRequest('Report name and URL are required');
+
+    event.reports.push({
+      name: report.name,
+      url: report.url,
+      uploadedBy: uploadedBy as any,
+      uploadedAt: new Date(),
+    });
+    await event.save();
+    return event;
+  }
+
+  async removeReport(eventId: string, reportIndex: number): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    if (reportIndex < 0 || reportIndex >= event.reports.length) {
+      throw ApiError.badRequest('Invalid report index');
+    }
+
+    event.reports.splice(reportIndex, 1);
+    await event.save();
+    return event;
+  }
+
   async addPhoto(
     eventId: string,
     photo: { url: string; caption?: string; taggedUsers?: string[] },
