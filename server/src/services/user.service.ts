@@ -412,8 +412,8 @@ export class UserService {
   ): Promise<IUserDocument> {
     const target = await User.findById(targetUserId);
     if (!target) throw ApiError.notFound('User not found');
-    if (target.membershipStatus !== 'pending') {
-      throw ApiError.badRequest('User does not have a pending membership application');
+    if (!['pending', 'rejected', 'suspended'].includes(target.membershipStatus)) {
+      throw ApiError.badRequest('User does not have a pending, rejected, or suspended membership');
     }
 
     target.membershipStatus = 'approved';

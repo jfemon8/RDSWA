@@ -312,10 +312,10 @@ export default function AdminUsersPage() {
                       <td className="p-3 text-muted-foreground">{u.batch || '-'}</td>
                       <td className="p-3">
                         <div className="flex gap-1">
-                          {u.membershipStatus === 'pending' && (
+                          {['pending', 'rejected', 'suspended'].includes(u.membershipStatus) && (
                             <button
                               onClick={() => approveMutation.mutate(u._id)}
-                              title="Approve"
+                              title={u.membershipStatus === 'pending' ? 'Approve' : 'Reinstate'}
                               className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                             >
                               <UserCheck className="h-4 w-4" />
