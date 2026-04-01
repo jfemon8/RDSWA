@@ -71,7 +71,7 @@ export default function NoticeDetailPage() {
       <FadeIn delay={0.2} direction="up">
         <p className="text-sm text-muted-foreground mb-6">
           Published {formatDate(notice.publishedAt || notice.createdAt, 'long')}
-          {notice.createdBy?.name && ` by ${notice.createdBy.name}`}
+          {notice.createdBy?.name && <> by <Link to={`/members/${notice.createdBy._id}`} className="hover:text-primary transition-colors">{notice.createdBy.name}</Link></>}
         </p>
       </FadeIn>
 

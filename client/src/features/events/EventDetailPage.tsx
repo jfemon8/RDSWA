@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
@@ -239,7 +239,7 @@ export default function EventDetailPage() {
                   transition={{ delay: i * 0.05 }}
                   className="px-2 py-1 bg-muted rounded-md text-xs"
                 >
-                  {a.user?.name || 'User'} • {a.checkedInVia}
+                  <Link to={`/members/${a.user?._id}`} className="hover:text-primary transition-colors">{a.user?.name || 'User'}</Link> • {a.checkedInVia}
                 </motion.span>
               ))}
               {event.attendance.length > 10 && (
@@ -365,7 +365,7 @@ export default function EventDetailPage() {
                       ))}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {fb.user?.name || 'Anonymous'} • {formatDate(fb.submittedAt)}
+                      <Link to={`/members/${fb.user?._id}`} className="hover:text-primary transition-colors">{fb.user?.name || 'Anonymous'}</Link> • {formatDate(fb.submittedAt)}
                     </span>
                   </div>
                   {fb.comment && <p className="text-sm">{fb.comment}</p>}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -210,9 +210,9 @@ export default function GroupChatPage() {
                     <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
                       {/* Sender name (for others) */}
                       {!isMine && (
-                        <p className="text-[10px] text-muted-foreground mb-0.5 ml-1">
+                        <Link to={`/members/${msg.sender?._id}`} className="text-[10px] text-muted-foreground mb-0.5 ml-1 hover:text-primary transition-colors block">
                           {msg.sender?.name || 'Unknown'}
-                        </p>
+                        </Link>
                       )}
                       <div className="flex items-end gap-1">
                         {isMine && (canEdit || canDelete) && editingId !== msg._id && (
@@ -428,7 +428,7 @@ export default function GroupChatPage() {
                             <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
                         </div>
-                        <span className="text-xs truncate flex-1">{member.name}</span>
+                        <Link to={`/members/${member._id}`} className="text-xs truncate flex-1 hover:text-primary transition-colors">{member.name}</Link>
                         {isAdmin && member._id !== user?._id && (
                           <button
                             onClick={() => removeMemberMutation.mutate(member._id)}

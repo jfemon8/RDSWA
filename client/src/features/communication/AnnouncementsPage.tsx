@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -100,10 +101,10 @@ export default function AnnouncementsPage() {
                       <h3 className="font-semibold text-sm mb-1">{title}</h3>
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{body}</p>
                       <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground pt-2 border-t">
-                        <span className="flex items-center gap-1">
+                        <Link to={`/members/${ann.sender?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors">
                           <UserIcon className="h-3 w-3" />
                           {ann.sender?.name || 'Unknown'}
-                        </span>
+                        </Link>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {formatDate(ann.createdAt)}

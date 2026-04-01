@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
@@ -406,7 +407,9 @@ function RecentDonations() {
               >
                 <div>
                   <p className="font-medium text-foreground">
-                    {d.visibility === 'private' ? 'Anonymous' : (d.donor?.name || d.donorName || 'Unknown')}
+                    {d.visibility === 'private' ? 'Anonymous' : d.donor?._id ? (
+                      <Link to={`/members/${d.donor._id}`} className="hover:text-primary transition-colors">{d.donor.name || d.donorName || 'Unknown'}</Link>
+                    ) : (d.donorName || 'Unknown')}
                   </p>
                   <p className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</p>
                 </div>

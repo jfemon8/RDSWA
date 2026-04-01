@@ -226,7 +226,7 @@ export default function JobBoardPage() {
                   </div>
                   {job.postedBy && (
                     <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
-                      Posted by {job.postedBy.name}
+                      Posted by <Link to={`/members/${job.postedBy._id}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">{job.postedBy.name}</Link>
                     </p>
                   )}
                 </motion.div>

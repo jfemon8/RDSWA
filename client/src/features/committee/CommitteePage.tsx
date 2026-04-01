@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Users, Crown } from 'lucide-react';
@@ -116,7 +117,7 @@ export default function CommitteePage() {
 function MemberCard({ member }: { member: any }) {
   const isLeader = ['president', 'general_secretary'].includes(member.position);
   return (
-    <div className={`flex items-center gap-3 p-3 border rounded-xl transition-colors ${isLeader ? 'border-primary/30 bg-primary/5' : 'hover:bg-accent'}`}>
+    <Link to={`/members/${member.user?._id}`} className={`flex items-center gap-3 p-3 border rounded-xl transition-colors ${isLeader ? 'border-primary/30 bg-primary/5' : 'hover:bg-accent hover:border-primary/30'}`}>
       {member.user?.avatar ? (
         <img src={member.user.avatar} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
       ) : (
@@ -137,6 +138,6 @@ function MemberCard({ member }: { member: any }) {
           <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2">{member.responsibilities}</p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }

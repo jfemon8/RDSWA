@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { Users, Calendar, DollarSign, FileText, Clock, UserCheck, Loader2, TrendingUp, Shield, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -279,7 +280,7 @@ export default function AdminDashboardPage() {
                     }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">
-                        <span className="font-medium text-foreground">{log.actor?.name || 'System'}</span>
+                        {log.actor?._id ? <Link to={`/members/${log.actor._id}`} className="font-medium text-foreground hover:text-primary transition-colors">{log.actor.name}</Link> : <span className="font-medium text-foreground">System</span>}
                         <span className="text-muted-foreground"> · </span>
                         <span className="text-muted-foreground font-mono text-xs">{log.action}</span>
                       </p>

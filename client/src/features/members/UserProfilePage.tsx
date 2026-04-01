@@ -216,7 +216,7 @@ export default function UserProfilePage() {
                     const endorsements = u.skillEndorsements?.filter((e: any) => e.skill === s) || [];
                     const endorseCount = endorsements.length;
                     const canEndorse = currentUser && !isSelf;
-                    const hasEndorsed = endorsements.some((e: any) => e.endorsedBy === currentUser?._id || e.endorsedBy?._id === currentUser?._id);
+                    const hasEndorsed = endorsements.some((e: any) => String(e.endorsedBy?._id || e.endorsedBy) === currentUser?._id);
 
                     return (
                       <motion.div

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -160,10 +160,10 @@ export default function TopicDetailPage() {
           <div className="mt-4 text-sm whitespace-pre-wrap">{topic.content}</div>
 
           <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground pt-3 border-t">
-            <span className="flex items-center gap-1">
+            <Link to={`/members/${topic.author?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors">
               <UserIcon className="h-3 w-3" />
               {topic.author?.name || 'Unknown'}
-            </span>
+            </Link>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatDate(topic.createdAt)}
@@ -196,7 +196,7 @@ export default function TopicDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">{reply.author?.name || 'Unknown'}</span>
+                        <Link to={`/members/${reply.author?._id}`} className="text-sm font-medium hover:text-primary transition-colors">{reply.author?.name || 'Unknown'}</Link>
                         <span className="text-xs text-muted-foreground">
                           {formatTimeAgo(reply.createdAt)}
                         </span>
