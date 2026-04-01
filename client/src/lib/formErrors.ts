@@ -16,3 +16,28 @@ export function extractFieldErrors(err: any): Record<string, string> | null {
   }
   return Object.keys(fieldErrors).length > 0 ? fieldErrors : null;
 }
+
+/**
+ * Extracts the best human-readable error message from an API error.
+ * Prioritizes field-level validation messages over generic "Validation failed".
+ * Use this in onError handlers: toast.error(getApiErrorMessage(err, 'Fallback'))
+ */
+export function getApiErrorMessage(err: any, fallback = 'Something went wrong'): string {
+  const data = err?.response?.data;
+  if (!data) return err?.message || fallback;
+
+  // If there are field-level errors, show the first one
+  if (data.errors && typeof data.errors === 'object') {
+    for (const messages of Object.values(data.errors)) {
+      if (Array.isArray(messages) && messages.length > 0) {
+        return messages[0];
+      }
+    }
+    // Mongoose validation error returns errors as string
+    if (typeof data.errors === 'string') {
+      return data.errors;
+    }
+  }
+
+  return data.message || fallback;
+}

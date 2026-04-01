@@ -44,6 +44,20 @@ api.interceptors.response.use(
       }
     }
 
+    // Normalize validation errors: if response has field-level errors,
+    // replace generic "Validation failed" message with the first specific error
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (data.errors && typeof data.errors === 'object' && data.message === 'Validation failed') {
+        for (const messages of Object.values(data.errors)) {
+          if (Array.isArray(messages) && messages.length > 0) {
+            data.message = messages[0];
+            break;
+          }
+        }
+      }
+    }
+
     return Promise.reject(error);
   }
 );

@@ -20,7 +20,7 @@ const notificationSchema = new Schema<INotificationDocument>(
       enum: [
         'member_approved', 'member_rejected', 'role_changed', 'event_reminder',
         'vote_opened', 'vote_closed', 'donation_received', 'form_status',
-        'notice_published', 'announcement', 'system', 'message',
+        'notice_published', 'announcement', 'system', 'message', 'skill_endorsed',
       ],
       required: true,
     },
