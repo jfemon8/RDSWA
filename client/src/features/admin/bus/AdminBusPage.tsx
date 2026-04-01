@@ -6,9 +6,43 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
-import { Plus, Loader2, Pencil, Trash2, Upload, X } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Upload, X, Download, FileText } from 'lucide-react';
+import { downloadTablePdf } from '@/lib/downloadPdf';
 
 const DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
+
+function ExportButtons({ type, label }: { type: string; label: string }) {
+  const toast = useToast();
+  return (
+    <div className="flex gap-1.5">
+      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+        onClick={async () => {
+          try {
+            const { data } = await api.get(`/bus/export/${type}?format=csv`, { responseType: 'text' });
+            const blob = new Blob([data], { type: 'text/csv; charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `bus-${type}.csv`; a.click();
+            URL.revokeObjectURL(url);
+            toast.success('CSV downloaded');
+          } catch { toast.error('Export failed'); }
+        }}
+        className="flex items-center gap-1 px-2.5 py-1.5 text-xs border rounded-md hover:bg-accent">
+        <Download className="h-3 w-3" /> CSV
+      </motion.button>
+      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+        onClick={async () => {
+          try {
+            const { data } = await api.get(`/bus/export/${type}?format=csv`, { responseType: 'text' });
+            await downloadTablePdf(data, `Bus ${label}`, `bus-${type}`);
+            toast.success('PDF downloaded');
+          } catch { toast.error('Export failed'); }
+        }}
+        className="flex items-center gap-1 px-2.5 py-1.5 text-xs border rounded-md hover:bg-accent">
+        <FileText className="h-3 w-3" /> PDF
+      </motion.button>
+    </div>
+  );
+}
 const DAY_LABELS: Record<string, string> = { sat: 'Sat', sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
 
 export default function AdminBusPage() {
@@ -81,7 +115,8 @@ function OperatorsList() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <ExportButtons type="operators" label="Operators" />
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
@@ -217,7 +252,8 @@ function RoutesList() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <ExportButtons type="routes" label="Routes" />
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
@@ -392,7 +428,8 @@ function SchedulesList() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <ExportButtons type="schedules" label="Schedules" />
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
@@ -588,7 +625,8 @@ function CountersList() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <ExportButtons type="counters" label="Counters" />
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
