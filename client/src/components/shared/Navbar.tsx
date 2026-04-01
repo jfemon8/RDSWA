@@ -17,6 +17,7 @@ const publicLinks = [
 ];
 
 const moreLinks = [
+  { label: 'Alumni', href: '/alumni' },
   { label: 'University', href: '/university' },
   { label: 'Gallery', href: '/gallery' },
   { label: 'Documents', href: '/documents' },

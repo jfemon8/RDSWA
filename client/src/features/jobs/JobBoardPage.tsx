@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -176,59 +177,60 @@ export default function JobBoardPage() {
         <div className="space-y-4">
           {jobs.map((job: any, i: number) => (
             <FadeIn key={job._id} delay={i * 0.05} direction="up">
-              <div
-                className="rounded-xl border bg-card p-6"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg">{job.title}</h3>
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
-                        {job.type?.replace('-', ' ')}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
-                      <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {job.company}</span>
-                      {job.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>}
-                      {job.salary && <span className="flex items-center gap-1">BDT {job.salary}</span>}
-                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {formatDate(job.createdAt)}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground line-clamp-2"><RichContent html={job.description} /></div>
-                    {job.requirements?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {job.requirements.map((r: string, j: number) => (
-                          <span key={j} className="px-2 py-0.5 text-xs bg-muted rounded-md">{r}</span>
-                        ))}
+              <Link to={`/dashboard/jobs/${job._id}`} className="block">
+                <motion.div
+                  whileHover={{ y: -2 }}
+                  className="rounded-xl border bg-card p-6 hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-lg">{job.title}</h3>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+                          {job.type?.replace('-', ' ')}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
+                        <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {job.company}</span>
+                        {job.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>}
+                        {job.salary && <span className="flex items-center gap-1">BDT {job.salary}</span>}
+                        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {formatDate(job.createdAt)}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground line-clamp-2"><RichContent html={job.description} /></div>
+                      {job.requirements?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {job.requirements.map((r: string, j: number) => (
+                            <span key={j} className="px-2 py-0.5 text-xs bg-muted rounded-md">{r}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 ml-4 shrink-0">
+                      {job.applicationLink && (
+                        <span
+                          onClick={(e) => { e.preventDefault(); window.open(job.applicationLink, '_blank'); }}
+                          className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </span>
+                      )}
+                      {user && (user._id === job.postedBy?._id || ['admin', 'super_admin'].includes(user.role)) && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); deleteMutation.mutate(job._id); }}
+                          className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4 shrink-0">
-                    {job.applicationLink && (
-                      <a
-                        href={job.applicationLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    )}
-                    {user && (user._id === job.postedBy?._id || ['admin', 'super_admin'].includes(user.role)) && (
-                      <button
-                        onClick={() => deleteMutation.mutate(job._id)}
-                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {job.postedBy && (
-                  <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
-                    Posted by {job.postedBy.name}
-                  </p>
-                )}
-              </div>
+                  {job.postedBy && (
+                    <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
+                      Posted by {job.postedBy.name}
+                    </p>
+                  )}
+                </motion.div>
+              </Link>
             </FadeIn>
           ))}
         </div>

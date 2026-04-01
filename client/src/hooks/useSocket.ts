@@ -121,6 +121,28 @@ export function useDMSocket(
 }
 
 /**
+ * Hook for real-time bus schedule updates.
+ * Auto-invalidates bus queries when admin changes schedules.
+ */
+export function useBusSocket() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const s = getSocket();
+
+    const handleBusUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['bus'] });
+    };
+
+    s.on('bus:updated', handleBusUpdate);
+
+    return () => {
+      s.off('bus:updated', handleBusUpdate);
+    };
+  }, [queryClient]);
+}
+
+/**
  * Hook to subscribe to real-time vote updates for a specific vote.
  */
 export function useVoteSocket(

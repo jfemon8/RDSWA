@@ -3,12 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
+import { useAuthStore } from '@/stores/authStore';
+import { hasMinRole } from '@/lib/roles';
+import { UserRole } from '@rdswa/shared';
 import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 
 export default function AdminUsersPage() {
+  const { user: currentUser } = useAuthStore();
+  const isAdmin = currentUser ? hasMinRole(currentUser.role, UserRole.ADMIN) : false;
   const queryClient = useQueryClient();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -89,49 +94,51 @@ export default function AdminUsersPage() {
     <div className="container mx-auto py-4 sm:py-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">User Management</h1>
-        <div className="flex flex-wrap gap-2">
-          {([
-            { fmt: 'csv', label: 'Excel/CSV', icon: FileSpreadsheet },
-            { fmt: 'json', label: 'JSON', icon: Download },
-          ] as const).map(({ fmt, label, icon: Icon }) => (
+        {isAdmin && (
+          <div className="flex flex-wrap gap-2">
+            {([
+              { fmt: 'csv', label: 'Excel/CSV', icon: FileSpreadsheet },
+              { fmt: 'json', label: 'JSON', icon: Download },
+            ] as const).map(({ fmt, label, icon: Icon }) => (
+              <motion.button
+                key={fmt}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={async () => {
+                  try {
+                    const { data } = await api.get(`/users/export/directory?format=${fmt}${exportQuery}`, { responseType: fmt === 'csv' ? 'text' : 'json' });
+                    const content = fmt === 'csv' ? data : JSON.stringify(fmt === 'json' ? data.data : data, null, 2);
+                    const blob = new Blob([content], { type: fmt === 'csv' ? 'text/csv; charset=utf-8' : 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `member-directory.${fmt === 'csv' ? 'csv' : 'json'}`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success(`Exported as ${label}`);
+                  } catch { toast.error('Export failed'); }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
+              >
+                <Icon className="h-3.5 w-3.5" /> {label}
+              </motion.button>
+            ))}
             <motion.button
-              key={fmt}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={async () => {
                 try {
-                  const { data } = await api.get(`/users/export/directory?format=${fmt}${exportQuery}`, { responseType: fmt === 'csv' ? 'text' : 'json' });
-                  const content = fmt === 'csv' ? data : JSON.stringify(fmt === 'json' ? data.data : data, null, 2);
-                  const blob = new Blob([content], { type: fmt === 'csv' ? 'text/csv; charset=utf-8' : 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `member-directory.${fmt === 'csv' ? 'csv' : 'json'}`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  toast.success(`Exported as ${label}`);
+                  const { data } = await api.get(`/users/export/directory?format=csv${exportQuery}`, { responseType: 'text' });
+                  await downloadTablePdf(data, 'Member Directory', 'RDSWA-Member-Directory');
+                  toast.success('PDF download started');
                 } catch { toast.error('Export failed'); }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
             >
-              <Icon className="h-3.5 w-3.5" /> {label}
+              <FileText className="h-3.5 w-3.5" /> Download PDF
             </motion.button>
-          ))}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={async () => {
-              try {
-                const { data } = await api.get(`/users/export/directory?format=csv${exportQuery}`, { responseType: 'text' });
-                await downloadTablePdf(data, 'Member Directory', 'RDSWA-Member-Directory');
-                toast.success('PDF download started');
-              } catch { toast.error('Export failed'); }
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
-          >
-            <FileText className="h-3.5 w-3.5" /> Download PDF
-          </motion.button>
-        </div>
+          </div>
+        )}
       </div>
 
       <FadeIn direction="up" delay={0}>
@@ -162,55 +169,57 @@ export default function AdminUsersPage() {
         </div>
       </FadeIn>
 
-      <AnimatePresence>
-        {selectedIds.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -10, height: 0 }}
-            className="mb-4 p-3 rounded-lg border bg-primary/5 border-primary/20"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => bulkApproveMutation.mutate([...selectedIds])}
-                disabled={bulkApproveMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50">
-                <UserCheck className="h-3 w-3" /> Approve
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => bulkRejectMutation.mutate([...selectedIds])}
-                disabled={bulkRejectMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">
-                <UserX className="h-3 w-3" /> Reject
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => setShowEmailForm(!showEmailForm)}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                <Mail className="h-3 w-3" /> Email
-              </motion.button>
-              <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-muted-foreground hover:text-foreground">Clear</button>
-            </div>
+      {isAdmin && (
+        <AnimatePresence>
+          {selectedIds.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className="mb-4 p-3 rounded-lg border bg-primary/5 border-primary/20"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => bulkApproveMutation.mutate([...selectedIds])}
+                  disabled={bulkApproveMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50">
+                  <UserCheck className="h-3 w-3" /> Approve
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => bulkRejectMutation.mutate([...selectedIds])}
+                  disabled={bulkRejectMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">
+                  <UserX className="h-3 w-3" /> Reject
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowEmailForm(!showEmailForm)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  <Mail className="h-3 w-3" /> Email
+                </motion.button>
+                <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-muted-foreground hover:text-foreground">Clear</button>
+              </div>
 
-            <AnimatePresence>
-              {showEmailForm && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-2 overflow-hidden">
-                  <input value={bulkEmail.subject} onChange={(e) => setBulkEmail({ ...bulkEmail, subject: e.target.value })}
-                    placeholder="Email subject" className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-                  <textarea value={bulkEmail.body} onChange={(e) => setBulkEmail({ ...bulkEmail, body: e.target.value })}
-                    placeholder="Email body" rows={3} className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    onClick={() => bulkEmailMutation.mutate({ ids: [...selectedIds], subject: bulkEmail.subject, body: bulkEmail.body })}
-                    disabled={!bulkEmail.subject.trim() || !bulkEmail.body.trim() || bulkEmailMutation.isPending}
-                    className="px-4 py-1.5 text-xs bg-primary text-primary-foreground rounded-md disabled:opacity-50">
-                    {bulkEmailMutation.isPending ? 'Sending...' : 'Send Email'}
-                  </motion.button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <AnimatePresence>
+                {showEmailForm && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-2 overflow-hidden">
+                    <input value={bulkEmail.subject} onChange={(e) => setBulkEmail({ ...bulkEmail, subject: e.target.value })}
+                      placeholder="Email subject" className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    <textarea value={bulkEmail.body} onChange={(e) => setBulkEmail({ ...bulkEmail, body: e.target.value })}
+                      placeholder="Email body" rows={3} className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                      onClick={() => bulkEmailMutation.mutate({ ids: [...selectedIds], subject: bulkEmail.subject, body: bulkEmail.body })}
+                      disabled={!bulkEmail.subject.trim() || !bulkEmail.body.trim() || bulkEmailMutation.isPending}
+                      className="px-4 py-1.5 text-xs bg-primary text-primary-foreground rounded-md disabled:opacity-50">
+                      {bulkEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -221,15 +230,17 @@ export default function AdminUsersPage() {
               <table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="bg-muted border-b">
-                    <th className="p-3 w-8">
-                      <input type="checkbox"
-                        checked={users.length > 0 && users.every((u: any) => selectedIds.has(u._id))}
-                        onChange={(e) => {
-                          if (e.target.checked) setSelectedIds(new Set(users.map((u: any) => u._id)));
-                          else setSelectedIds(new Set());
-                        }}
-                        className="rounded" />
-                    </th>
+                    {isAdmin && (
+                      <th className="p-3 w-8">
+                        <input type="checkbox"
+                          checked={users.length > 0 && users.every((u: any) => selectedIds.has(u._id))}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedIds(new Set(users.map((u: any) => u._id)));
+                            else setSelectedIds(new Set());
+                          }}
+                          className="rounded" />
+                      </th>
+                    )}
                     <th className="text-left p-3 font-medium text-foreground">User</th>
                     <th className="text-left p-3 font-medium text-foreground">Role</th>
                     <th className="text-left p-3 font-medium text-foreground">Membership</th>
@@ -243,17 +254,19 @@ export default function AdminUsersPage() {
                       key={u._id}
                       className="border-t hover:bg-accent/30"
                     >
-                      <td className="p-3">
-                        <input type="checkbox"
-                          checked={selectedIds.has(u._id)}
-                          onChange={(e) => {
-                            const next = new Set(selectedIds);
-                            if (e.target.checked) next.add(u._id);
-                            else next.delete(u._id);
-                            setSelectedIds(next);
-                          }}
-                          className="rounded" />
-                      </td>
+                      {isAdmin && (
+                        <td className="p-3">
+                          <input type="checkbox"
+                            checked={selectedIds.has(u._id)}
+                            onChange={(e) => {
+                              const next = new Set(selectedIds);
+                              if (e.target.checked) next.add(u._id);
+                              else next.delete(u._id);
+                              setSelectedIds(next);
+                            }}
+                            className="rounded" />
+                        </td>
+                      )}
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           {u.avatar ? (
@@ -270,14 +283,20 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="p-3">
-                        <select value={u.role} onChange={(e) => changeRoleMutation.mutate({ id: u._id, role: e.target.value })}
-                          className="px-2 py-1 border rounded text-xs bg-card text-foreground">
-                          <option value="user">User</option>
-                          <option value="member">Member</option>
-                          <option value="alumni">Alumni</option>
-                          <option value="moderator">Moderator</option>
-                          <option value="admin">Admin</option>
-                        </select>
+                        {isAdmin ? (
+                          <select value={u.role} onChange={(e) => changeRoleMutation.mutate({ id: u._id, role: e.target.value })}
+                            className="px-2 py-1 border rounded text-xs bg-card text-foreground">
+                            <option value="user">User</option>
+                            <option value="member">Member</option>
+                            <option value="alumni">Alumni</option>
+                            <option value="moderator">Moderator</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-muted text-muted-foreground">
+                            {u.role}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
@@ -294,24 +313,24 @@ export default function AdminUsersPage() {
                       <td className="p-3">
                         <div className="flex gap-1">
                           {u.membershipStatus === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => approveMutation.mutate(u._id)}
-                                title="Approve"
-                                className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
-                              >
-                                <UserCheck className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => rejectMutation.mutate(u._id)}
-                                title="Reject"
-                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                              >
-                                <UserX className="h-4 w-4" />
-                              </button>
-                            </>
+                            <button
+                              onClick={() => approveMutation.mutate(u._id)}
+                              title="Approve"
+                              className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                            </button>
                           )}
-                          {u.membershipStatus !== 'suspended' && u.role !== 'super_admin' && (
+                          {isAdmin && u.membershipStatus === 'pending' && (
+                            <button
+                              onClick={() => rejectMutation.mutate(u._id)}
+                              title="Reject"
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            >
+                              <UserX className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isAdmin && u.membershipStatus !== 'suspended' && u.role !== 'super_admin' && (
                             <button
                               onClick={() => suspendMutation.mutate(u._id)}
                               title="Suspend"

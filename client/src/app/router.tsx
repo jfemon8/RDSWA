@@ -38,7 +38,9 @@ const PrivacyPolicy = lazy(() => import('@/features/legal/PrivacyPolicyPage'));
 const Terms = lazy(() => import('@/features/legal/TermsPage'));
 const FAQ = lazy(() => import('@/features/legal/FAQPage'));
 const JobBoard = lazy(() => import('@/features/jobs/JobBoardPage'));
+const JobDetail = lazy(() => import('@/features/jobs/JobDetailPage'));
 const MentorshipPage = lazy(() => import('@/features/mentorship/MentorshipPage'));
+const Alumni = lazy(() => import('@/features/members/AlumniPage'));
 const NotFound = lazy(() => import('@/features/NotFoundPage'));
 
 // Dashboard pages
@@ -113,6 +115,7 @@ export default function AppRouter() {
           <Route path="/members" element={<Members />} />
           <Route path="/members/:id" element={<UserProfile />} />
           <Route path="/blood-donors" element={<BloodDonors />} />
+          <Route path="/alumni" element={<Alumni />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/meetings" element={<MeetingRecords />} />
@@ -133,6 +136,7 @@ export default function AppRouter() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/jobs" element={<JobBoard />} />
+            <Route path="/dashboard/jobs/:id" element={<JobDetail />} />
             <Route path="/dashboard/profile" element={<ProfileView />} />
             <Route path="/dashboard/profile/edit" element={<ProfileEdit />} />
             <Route path="/dashboard/notifications" element={<Notifications />} />

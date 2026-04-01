@@ -10,6 +10,7 @@ import { BusOperator, BusRoute, BusSchedule, BusCounter } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { cacheResponse } from '../middlewares/cache.middleware';
+import { getIO } from '../socket';
 import {
   createOperatorSchema, updateOperatorSchema,
   createRouteSchema, updateRouteSchema,
@@ -18,6 +19,14 @@ import {
 } from '../validators/bus.validator';
 
 const router = Router();
+
+/** Broadcast bus schedule change to all connected clients */
+function broadcastBusUpdate(action: string, data?: any): void {
+  const io = getIO();
+  if (io) {
+    io.emit('bus:updated', { action, data });
+  }
+}
 
 // ── Operators ──
 
@@ -108,7 +117,15 @@ router.get('/schedules', cacheResponse(300), asyncHandler(async (req, res) => {
   if (req.query.busCategory) filter.busCategory = req.query.busCategory;
   if (req.query.routeType) {
     const matchingRoutes = await BusRoute.find({ routeType: req.query.routeType, isDeleted: false }).select('_id');
-    filter.route = { $in: matchingRoutes.map((r) => r._id) };
+    filter.route = { ...(filter.route || {}), $in: matchingRoutes.map((r) => r._id) };
+  }
+
+  // Time-based search: departureAfter / departureBefore (HH:MM 24h format)
+  if (req.query.departureAfter || req.query.departureBefore) {
+    const timeFilters: any = {};
+    if (req.query.departureAfter) timeFilters.$gte = req.query.departureAfter as string;
+    if (req.query.departureBefore) timeFilters.$lte = req.query.departureBefore as string;
+    filter.departureTime = timeFilters;
   }
 
   const [schedules, total] = await Promise.all([
@@ -127,6 +144,7 @@ router.post('/schedules', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.schedule_create', 'bus_schedules'),
   asyncHandler(async (req, res) => {
     const schedule = await BusSchedule.create(req.body);
+    broadcastBusUpdate('created', schedule);
     ApiResponse.created(res, schedule, 'Schedule created');
   }),
 );
@@ -139,6 +157,7 @@ router.patch('/schedules/:id', authenticate(), authorize(UserRole.ADMIN),
       { _id: req.params.id, isDeleted: false }, { $set: req.body }, { new: true },
     );
     if (!schedule) throw ApiError.notFound('Schedule not found');
+    broadcastBusUpdate('updated', schedule);
     ApiResponse.success(res, schedule, 'Schedule updated');
   }),
 );
@@ -147,6 +166,7 @@ router.delete('/schedules/:id', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.schedule_delete', 'bus_schedules'),
   asyncHandler(async (req, res) => {
     await BusSchedule.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true });
+    broadcastBusUpdate('deleted', { _id: req.params.id });
     ApiResponse.success(res, null, 'Schedule deleted');
   }),
 );

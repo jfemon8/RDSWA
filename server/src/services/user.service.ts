@@ -167,15 +167,32 @@ export class UserService {
     if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
     if (query.profession) filter.profession = { $regex: query.profession, $options: 'i' };
-    if (query.role) filter.role = query.role;
+    if (query.role) {
+      if (query.role === UserRole.ALUMNI) {
+        // Alumni: match role='alumni' OR users with current job/business
+        const alumniCondition = {
+          $or: [
+            { role: UserRole.ALUMNI },
+            { 'jobHistory.isCurrent': true },
+            { 'businessInfo.isCurrent': true },
+          ],
+        };
+        filter.$and = [...(filter.$and || []), alumniCondition];
+      } else {
+        filter.role = query.role;
+      }
+    }
     if (query.membershipStatus) filter.membershipStatus = query.membershipStatus;
     if (query.search) {
-      filter.$or = [
-        { name: { $regex: query.search, $options: 'i' } },
-        { email: { $regex: query.search, $options: 'i' } },
-        { studentId: { $regex: query.search, $options: 'i' } },
-        { profession: { $regex: query.search, $options: 'i' } },
-      ];
+      const searchCondition = {
+        $or: [
+          { name: { $regex: query.search, $options: 'i' } },
+          { email: { $regex: query.search, $options: 'i' } },
+          { studentId: { $regex: query.search, $options: 'i' } },
+          { profession: { $regex: query.search, $options: 'i' } },
+        ],
+      };
+      filter.$and = [...(filter.$and || []), searchCondition];
     }
 
     const [users, total] = await Promise.all([

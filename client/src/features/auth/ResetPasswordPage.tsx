@@ -30,8 +30,8 @@ export default function ResetPasswordPage() {
       setErrors({ password: 'Password is required' });
       return;
     }
-    if (password.length < 8) {
-      setErrors({ password: 'Password must be at least 8 characters' });
+    if (password.length < 6) {
+      setErrors({ password: 'Password must be at least 6 characters' });
       return;
     }
     if (password !== confirmPassword) {
