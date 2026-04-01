@@ -56,6 +56,9 @@ const MyDonations = lazy(() => import('@/features/dashboard/MyDonationsPage'));
 const Forum = lazy(() => import('@/features/communication/ForumPage'));
 const TopicDetail = lazy(() => import('@/features/communication/TopicDetailPage'));
 const Messages = lazy(() => import('@/features/communication/MessagesPage'));
+const Groups = lazy(() => import('@/features/communication/GroupsPage'));
+const GroupChat = lazy(() => import('@/features/communication/GroupChatPage'));
+const Announcements = lazy(() => import('@/features/communication/AnnouncementsPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
@@ -138,6 +141,9 @@ export default function AppRouter() {
             <Route path="/dashboard/forum" element={<Forum />} />
             <Route path="/dashboard/forum/:id" element={<TopicDetail />} />
             <Route path="/dashboard/messages" element={<Messages />} />
+            <Route path="/dashboard/groups" element={<Groups />} />
+            <Route path="/dashboard/groups/:id" element={<GroupChat />} />
+            <Route path="/dashboard/announcements" element={<Announcements />} />
             <Route path="/dashboard/settings" element={<NotificationSettings />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
             <Route path="/dashboard/attendance" element={<AttendanceHistory />} />

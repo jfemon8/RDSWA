@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import {
-  ArrowLeft, Pin, Lock, Send, Loader2, Trash2,
+  ArrowLeft, Pin, Lock, Send, Loader2, Trash2, Pencil,
   User as UserIcon, Clock,
 } from 'lucide-react';
 
@@ -25,6 +25,8 @@ export default function TopicDetailPage() {
   const confirm = useConfirm();
   const [replyContent, setReplyContent] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState('');
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
 
@@ -67,6 +69,28 @@ export default function TopicDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/communication/forum/${id}`),
     onSuccess: () => navigate('/dashboard/forum'),
+  });
+
+  const editReplyMutation = useMutation({
+    mutationFn: ({ replyId, content }: { replyId: string; content: string }) =>
+      api.patch(`/communication/forum/${id}/reply/${replyId}`, { content }),
+    onSuccess: () => {
+      setEditingReplyId(null);
+      setEditReplyContent('');
+      queryClient.invalidateQueries({ queryKey: ['forum-topic', id] });
+      toast.success('Reply updated!');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to update reply');
+    },
+  });
+
+  const deleteReplyMutation = useMutation({
+    mutationFn: (replyId: string) => api.delete(`/communication/forum/${id}/reply/${replyId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['forum-topic', id] });
+      toast.success('Reply deleted');
+    },
   });
 
   const topic = data?.topic;
@@ -153,32 +177,94 @@ export default function TopicDetailPage() {
         <h3 className="text-sm font-semibold text-muted-foreground mb-2">
           {replies.length} {replies.length === 1 ? 'Reply' : 'Replies'}
         </h3>
-        {replies.map((reply: any, i: number) => (
-          <FadeIn key={reply._id} delay={i * 0.03} direction="up" distance={12}>
-            <div
-              className="bg-card border rounded-lg p-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                  {reply.author?.avatar ? (
-                    <img src={reply.author.avatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{reply.author?.name || 'Unknown'}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTimeAgo(reply.createdAt)}
-                    </span>
+        {replies.map((reply: any, i: number) => {
+          const isOwner = reply.author?._id === user?._id;
+          const canEdit = isOwner;
+          const canDelete = isOwner || isMod;
+
+          return (
+            <FadeIn key={reply._id} delay={i * 0.03} direction="up" distance={12}>
+              <div className="bg-card border rounded-lg p-4 group">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                    {reply.author?.avatar ? (
+                      <img src={reply.author.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">{reply.author?.name || 'Unknown'}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatTimeAgo(reply.createdAt)}
+                        </span>
+                      </div>
+                      {(canEdit || canDelete) && editingReplyId !== reply._id && (
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {canEdit && (
+                            <button
+                              onClick={() => { setEditingReplyId(reply._id); setEditReplyContent(reply.content); }}
+                              className="p-1 rounded hover:bg-accent"
+                              title="Edit"
+                            >
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={async () => {
+                                const ok = await confirm({ title: 'Delete Reply', message: 'Delete this reply?', confirmLabel: 'Delete', variant: 'danger' });
+                                if (ok) deleteReplyMutation.mutate(reply._id);
+                              }}
+                              className="p-1 rounded hover:bg-accent"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {editingReplyId === reply._id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editReplyContent}
+                          onChange={(e) => setEditReplyContent(e.target.value)}
+                          rows={2}
+                          className="w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          autoFocus
+                        />
+                        <div className="flex gap-1 justify-end">
+                          <button
+                            onClick={() => { setEditingReplyId(null); setEditReplyContent(''); }}
+                            className="px-3 py-1 text-xs text-muted-foreground hover:bg-accent rounded-md"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (editReplyContent.trim()) {
+                                editReplyMutation.mutate({ replyId: reply._id, content: editReplyContent });
+                              }
+                            }}
+                            disabled={editReplyMutation.isPending}
+                            className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-md disabled:opacity-50"
+                          >
+                            {editReplyMutation.isPending ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </FadeIn>
-        ))}
+            </FadeIn>
+          );
+        })}
       </div>
 
       {/* Reply form */}

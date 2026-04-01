@@ -49,10 +49,10 @@ export function useNotificationSocket(
       callbackRef.current?.(data);
     };
 
-    s.on('notification:new', handleNotification);
+    s.on('notification', handleNotification);
 
     return () => {
-      s.off('notification:new', handleNotification);
+      s.off('notification', handleNotification);
     };
   }, [queryClient]);
 }

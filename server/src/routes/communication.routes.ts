@@ -8,6 +8,7 @@ import { ChatGroup, Message, ForumTopic, ForumReply, User } from '../models';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { broadcastChatMessage, broadcastDM } from '../socket';
 
 /** Check if role is Admin or above */
 function isAdminOrAbove(role: string): boolean {
@@ -119,6 +120,9 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
 
   group.updatedAt = new Date();
   await group.save();
+
+  // Real-time broadcast to group room
+  broadcastChatMessage(id, message);
 
   ApiResponse.created(res, message);
 }));
@@ -394,6 +398,9 @@ router.post('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
   });
   await message.populate('sender', 'name avatar');
 
+  // Real-time broadcast to both users
+  broadcastDM(req.user._id.toString(), userId, message);
+
   ApiResponse.created(res, message);
 }));
 
@@ -464,6 +471,45 @@ router.post('/forum/:id/reply', authenticate(), asyncHandler(async (req, res) =>
 
   await reply.populate('author', 'name avatar');
   ApiResponse.created(res, reply);
+}));
+
+// Edit forum reply (own reply or Admin+)
+router.patch('/forum/:id/reply/:replyId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const replyId = req.params.replyId as string;
+  const reply = await ForumReply.findOne({ _id: replyId, isDeleted: false });
+  if (!reply) throw ApiError.notFound('Reply not found');
+
+  if (reply.author.toString() !== req.user._id.toString() && !isAdminOrAbove(req.user.role)) {
+    throw ApiError.forbidden('Cannot edit this reply');
+  }
+
+  reply.content = req.body.content || reply.content;
+  await reply.save();
+  await reply.populate('author', 'name avatar');
+  ApiResponse.success(res, reply, 'Reply updated');
+}));
+
+// Delete forum reply (own reply or Moderator+)
+router.delete('/forum/:id/reply/:replyId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const replyId = req.params.replyId as string;
+  const reply = await ForumReply.findOne({ _id: replyId, isDeleted: false });
+  if (!reply) throw ApiError.notFound('Reply not found');
+
+  const isMod = ROLE_HIERARCHY.indexOf(req.user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+  if (reply.author.toString() !== req.user._id.toString() && !isMod) {
+    throw ApiError.forbidden('Cannot delete this reply');
+  }
+
+  reply.isDeleted = true;
+  await reply.save();
+
+  // Decrement reply count on topic
+  await ForumTopic.findByIdAndUpdate(id, { $inc: { replyCount: -1 } });
+
+  ApiResponse.success(res, null, 'Reply deleted');
 }));
 
 // Pin/lock topic (moderator+)

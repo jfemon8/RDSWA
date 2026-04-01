@@ -35,7 +35,20 @@ export function initSocket(httpServer: HTTPServer): Server {
       socket.join(`user:${socket.data.userId}`);
     }
 
-    // Join a vote room to receive live updates
+    // ── Chat group rooms ──
+    socket.on('chat:join', (groupId: string) => {
+      if (groupId && typeof groupId === 'string') {
+        socket.join(`chat:${groupId}`);
+      }
+    });
+
+    socket.on('chat:leave', (groupId: string) => {
+      if (groupId && typeof groupId === 'string') {
+        socket.leave(`chat:${groupId}`);
+      }
+    });
+
+    // ── Vote rooms ──
     socket.on('vote:join', (voteId: string) => {
       if (voteId && typeof voteId === 'string') {
         socket.join(`vote:${voteId}`);
@@ -58,6 +71,26 @@ export function initSocket(httpServer: HTTPServer): Server {
 
 export function getIO(): Server | null {
   return io;
+}
+
+/**
+ * Broadcast a new group chat message to all clients in the group room.
+ */
+export function broadcastChatMessage(groupId: string, message: any): void {
+  if (io) {
+    io.to(`chat:${groupId}`).emit('chat:message', { groupId, message });
+  }
+}
+
+/**
+ * Broadcast a DM to both sender and recipient personal rooms.
+ */
+export function broadcastDM(senderId: string, recipientId: string, message: any): void {
+  if (io) {
+    const data = { senderId, recipientId, message };
+    io.to(`user:${senderId}`).emit('dm:message', data);
+    io.to(`user:${recipientId}`).emit('dm:message', data);
+  }
 }
 
 /**
