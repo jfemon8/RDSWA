@@ -8,6 +8,7 @@ import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
   ArrowLeft, Send, Loader2, Users, Trash2, Pencil,
   User as UserIcon, Globe, Building2, Hash, X, Check,
+  UserPlus, UserMinus, Search,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -35,6 +36,8 @@ export default function GroupChatPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [memberSearch, setMemberSearch] = useState('');
+  const [showAddMember, setShowAddMember] = useState(false);
 
   const isAdmin = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
 
@@ -87,6 +90,40 @@ export default function GroupChatPage() {
       api.delete(`/communication/groups/${id}/messages/${messageId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
+    },
+  });
+
+  // Member search for add (Admin+)
+  const { data: searchResults } = useQuery({
+    queryKey: ['member-search', memberSearch],
+    queryFn: async () => {
+      const { data } = await api.get(`/users/members?search=${encodeURIComponent(memberSearch)}&limit=10`);
+      return data.data;
+    },
+    enabled: !!isAdmin && showAddMember && memberSearch.length >= 2,
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: (userId: string) => api.post(`/communication/groups/${id}/members`, { userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      toast.success('Member added');
+      setMemberSearch('');
+      setShowAddMember(false);
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to add member');
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (userId: string) => api.delete(`/communication/groups/${id}/members/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      toast.success('Member removed');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to remove member');
     },
   });
 
@@ -316,14 +353,74 @@ export default function GroupChatPage() {
               <div className="p-3 w-60">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold">Members ({group.members?.length || 0})</h3>
-                  <button onClick={() => setShowMembers(false)} className="p-1 rounded hover:bg-accent">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex gap-1">
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowAddMember(!showAddMember)}
+                        className={`p-1 rounded hover:bg-accent ${showAddMember ? 'text-primary' : ''}`}
+                        title="Add member"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <button onClick={() => setShowMembers(false)} className="p-1 rounded hover:bg-accent">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-1 max-h-[calc(100vh-16rem)] overflow-y-auto">
+
+                {/* Add member search (Admin+) */}
+                <AnimatePresence>
+                  {isAdmin && showAddMember && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-3 overflow-hidden"
+                    >
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Search members..."
+                          value={memberSearch}
+                          onChange={(e) => setMemberSearch(e.target.value)}
+                          className="w-full pl-7 pr-2 py-1.5 border rounded-md bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          autoFocus
+                        />
+                      </div>
+                      {searchResults && searchResults.length > 0 && (
+                        <div className="mt-1 space-y-0.5 max-h-32 overflow-y-auto border rounded-md p-1 bg-background">
+                          {searchResults
+                            .filter((u: any) => !group.members?.some((m: any) => m._id === u._id))
+                            .map((u: any) => (
+                              <button
+                                key={u._id}
+                                onClick={() => addMemberMutation.mutate(u._id)}
+                                disabled={addMemberMutation.isPending}
+                                className="w-full flex items-center gap-2 px-2 py-1 rounded text-left hover:bg-accent text-xs disabled:opacity-50"
+                              >
+                                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                                  {u.avatar ? (
+                                    <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <UserIcon className="h-2.5 w-2.5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <span className="truncate flex-1">{u.name}</span>
+                                <UserPlus className="h-3 w-3 text-primary shrink-0" />
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="space-y-1 max-h-[calc(100vh-20rem)] overflow-y-auto">
                   {(group.members || []).map((member: any, i: number) => (
                     <FadeIn key={member._id} delay={i * 0.02} direction="up" distance={8}>
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent">
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent group/member">
                         <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                           {member.avatar ? (
                             <img src={member.avatar} alt="" className="w-full h-full object-cover" />
@@ -331,7 +428,17 @@ export default function GroupChatPage() {
                             <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
                         </div>
-                        <span className="text-xs truncate">{member.name}</span>
+                        <span className="text-xs truncate flex-1">{member.name}</span>
+                        {isAdmin && member._id !== user?._id && (
+                          <button
+                            onClick={() => removeMemberMutation.mutate(member._id)}
+                            disabled={removeMemberMutation.isPending}
+                            className="p-0.5 rounded opacity-0 group-hover/member:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-destructive"
+                            title="Remove member"
+                          >
+                            <UserMinus className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </FadeIn>
                   ))}

@@ -117,7 +117,7 @@ export default function RegisterPage() {
                     value={form.password}
                     onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors(prev => ({ ...prev, password: '' })); }}
                     className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary pr-10 transition-shadow ${errors.password ? 'border-red-500' : ''}`}
-                    placeholder="Min 8 chars, 1 upper, 1 lower, 1 number"
+                    placeholder="Minimum 6 characters"
                   />
                   <button
                     type="button"
