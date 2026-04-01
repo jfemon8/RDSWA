@@ -83,7 +83,7 @@ function OperatorsList() {
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', contactNumber: '', email: '', description: '', scheduleType: 'both' });
+  const [form, setForm] = useState({ name: '', contactNumber: '', email: '', description: '', scheduleType: 'both', rating: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
@@ -92,7 +92,7 @@ function OperatorsList() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: () => editId ? api.patch(`/bus/operators/${editId}`, form) : api.post('/bus/operators', form),
+    mutationFn: () => { const payload = { ...form, rating: form.rating ? parseFloat(form.rating) : undefined }; return editId ? api.patch(`/bus/operators/${editId}`, payload) : api.post('/bus/operators', payload); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] }); resetForm(); toast.success(editId ? 'Operator updated' : 'Operator added'); },
     onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save operator'); } },
   });
@@ -103,11 +103,11 @@ function OperatorsList() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete operator'); },
   });
 
-  const resetForm = () => { setShowForm(false); setEditId(null); setForm({ name: '', contactNumber: '', email: '', description: '', scheduleType: 'both' }); };
+  const resetForm = () => { setShowForm(false); setEditId(null); setForm({ name: '', contactNumber: '', email: '', description: '', scheduleType: 'both', rating: '' }); };
 
   const startEdit = (o: any) => {
     setEditId(o._id);
-    setForm({ name: o.name, contactNumber: o.contactNumber || '', email: o.email || '', description: o.description || '', scheduleType: o.scheduleType || 'both' });
+    setForm({ name: o.name, contactNumber: o.contactNumber || '', email: o.email || '', description: o.description || '', scheduleType: o.scheduleType || 'both', rating: o.rating?.toString() || '' });
     setShowForm(true);
   };
 
@@ -147,6 +147,10 @@ function OperatorsList() {
                     <option value="both">Both</option>
                   </select>
                   <input placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input placeholder="Rating (0-5)" type="number" min="0" max="5" step="0.1" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })}
                     className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div className="flex gap-2">
@@ -365,6 +369,8 @@ function SchedulesList() {
     route: '', busName: '', busNumber: '', busCategory: 'non_ac',
     departureTime: '', arrivalTime: '', seatType: '',
     isSpecialSchedule: false, specialScheduleNote: '',
+    seasonalSeason: '', seasonalStartDate: '', seasonalEndDate: '',
+    seasonalDepartureTime: '', seasonalArrivalTime: '', seasonalNote: '',
   });
   const [selectedDays, setSelectedDays] = useState<string[]>([...DAYS]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -381,7 +387,18 @@ function SchedulesList() {
 
   const saveMutation = useMutation({
     mutationFn: () => {
-      const payload = { ...form, daysOfOperation: selectedDays };
+      const { seasonalSeason, seasonalStartDate, seasonalEndDate, seasonalDepartureTime, seasonalArrivalTime, seasonalNote, ...rest } = form;
+      const payload: any = { ...rest, daysOfOperation: selectedDays };
+      if (seasonalSeason) {
+        payload.seasonalVariation = {
+          season: seasonalSeason,
+          startDate: seasonalStartDate || undefined,
+          endDate: seasonalEndDate || undefined,
+          adjustedDepartureTime: seasonalDepartureTime || undefined,
+          adjustedArrivalTime: seasonalArrivalTime || undefined,
+          note: seasonalNote || undefined,
+        };
+      }
       return editId ? api.patch(`/bus/schedules/${editId}`, payload) : api.post('/bus/schedules', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bus', 'schedules'] }); resetForm(); toast.success(editId ? 'Schedule updated' : 'Schedule added'); },
@@ -396,7 +413,7 @@ function SchedulesList() {
 
   const resetForm = () => {
     setShowForm(false); setEditId(null);
-    setForm({ route: '', busName: '', busNumber: '', busCategory: 'non_ac', departureTime: '', arrivalTime: '', seatType: '', isSpecialSchedule: false, specialScheduleNote: '' });
+    setForm({ route: '', busName: '', busNumber: '', busCategory: 'non_ac', departureTime: '', arrivalTime: '', seatType: '', isSpecialSchedule: false, specialScheduleNote: '', seasonalSeason: '', seasonalStartDate: '', seasonalEndDate: '', seasonalDepartureTime: '', seasonalArrivalTime: '', seasonalNote: '' });
     setSelectedDays([...DAYS]);
   };
 
@@ -412,6 +429,12 @@ function SchedulesList() {
       seatType: s.seatType || '',
       isSpecialSchedule: s.isSpecialSchedule || false,
       specialScheduleNote: s.specialScheduleNote || '',
+      seasonalSeason: s.seasonalVariation?.season || '',
+      seasonalStartDate: s.seasonalVariation?.startDate ? new Date(s.seasonalVariation.startDate).toISOString().slice(0, 10) : '',
+      seasonalEndDate: s.seasonalVariation?.endDate ? new Date(s.seasonalVariation.endDate).toISOString().slice(0, 10) : '',
+      seasonalDepartureTime: s.seasonalVariation?.adjustedDepartureTime || '',
+      seasonalArrivalTime: s.seasonalVariation?.adjustedArrivalTime || '',
+      seasonalNote: s.seasonalVariation?.note || '',
     });
     setSelectedDays(s.daysOfOperation?.length ? s.daysOfOperation : [...DAYS]);
     setShowForm(true);
@@ -504,10 +527,54 @@ function SchedulesList() {
                 </label>
                 <AnimatePresence>
                   {form.isSpecialSchedule && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
                       <input placeholder="Note (e.g. Eid special, Winter schedule)" value={form.specialScheduleNote}
                         onChange={(e) => setForm({ ...form, specialScheduleNote: e.target.value })}
                         className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+
+                      {/* Seasonal Variation */}
+                      <div className="border rounded-md p-3 bg-muted/30 space-y-3">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase">Seasonal Variation</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Season</label>
+                            <select value={form.seasonalSeason} onChange={(e) => setForm({ ...form, seasonalSeason: e.target.value })}
+                              className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm">
+                              <option value="">None</option>
+                              <option value="summer">Summer</option>
+                              <option value="winter">Winter</option>
+                              <option value="rainy">Rainy</option>
+                              <option value="eid">Eid</option>
+                              <option value="puja">Puja</option>
+                              <option value="exam">Exam Period</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Start Date</label>
+                            <input type="date" value={form.seasonalStartDate} onChange={(e) => setForm({ ...form, seasonalStartDate: e.target.value })}
+                              className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">End Date</label>
+                            <input type="date" value={form.seasonalEndDate} onChange={(e) => setForm({ ...form, seasonalEndDate: e.target.value })}
+                              className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Adjusted Departure</label>
+                            <input type="time" value={form.seasonalDepartureTime} onChange={(e) => setForm({ ...form, seasonalDepartureTime: e.target.value })}
+                              className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Adjusted Arrival</label>
+                            <input type="time" value={form.seasonalArrivalTime} onChange={(e) => setForm({ ...form, seasonalArrivalTime: e.target.value })}
+                              className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
+                          </div>
+                        </div>
+                        <input placeholder="Seasonal note (optional)" value={form.seasonalNote} onChange={(e) => setForm({ ...form, seasonalNote: e.target.value })}
+                          className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
