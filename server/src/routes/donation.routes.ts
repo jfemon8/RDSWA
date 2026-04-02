@@ -19,8 +19,8 @@ router.get('/:id', donationController.getById);
 router.get('/:id/receipt', donationController.getReceipt);
 router.post('/', authenticate(true), validate({ body: createDonationSchema }), donationController.create);
 router.patch('/:id/verify', authenticate(), authorize(UserRole.MODERATOR), validate({ body: verifyDonationSchema }), auditLog('donation.verify', 'donations'), donationController.verifyPayment);
-router.post('/campaigns', authenticate(), authorize(UserRole.ADMIN), validate({ body: createCampaignSchema }), auditLog('campaign.create', 'donation_campaigns'), donationController.createCampaign);
-router.patch('/campaigns/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body: updateCampaignSchema }), auditLog('campaign.update', 'donation_campaigns'), donationController.updateCampaign);
+router.post('/campaigns', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createCampaignSchema }), auditLog('campaign.create', 'donation_campaigns'), donationController.createCampaign);
+router.patch('/campaigns/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateCampaignSchema }), auditLog('campaign.update', 'donation_campaigns'), donationController.updateCampaign);
 
 // Admin: delete donation
 router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('donation.delete', 'donations'), async (req, res, next) => {

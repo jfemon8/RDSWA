@@ -11,7 +11,7 @@ import { parsePagination, getSkip } from '../utils/pagination';
 
 const router = Router();
 
-router.get('/', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+router.get('/', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = { isDeleted: false };
   if (req.query.category) filter.category = req.query.category;
@@ -24,13 +24,13 @@ router.get('/', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (r
   ApiResponse.paginated(res, expenses, total, page, limit);
 }));
 
-router.post('/', authenticate(), authorize(UserRole.ADMIN), auditLog('expense.create', 'expenses'), asyncHandler(async (req, res) => {
+router.post('/', authenticate(), authorize(UserRole.MODERATOR), auditLog('expense.create', 'expenses'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const expense = await Expense.create({ ...req.body, createdBy: req.user._id });
   ApiResponse.created(res, expense, 'Expense created');
 }));
 
-router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('expense.update', 'expenses'), asyncHandler(async (req, res) => {
+router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('expense.update', 'expenses'), asyncHandler(async (req, res) => {
   const expense = await Expense.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
     { $set: req.body },

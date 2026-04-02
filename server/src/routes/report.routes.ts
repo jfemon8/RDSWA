@@ -39,7 +39,7 @@ router.get('/members', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
 }));
 
 // ─── Financial reports (enhanced) ───
-router.get('/finance', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const yearFilter = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
 
   const donationMatch: any = { paymentStatus: 'completed', isDeleted: false };
