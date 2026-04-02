@@ -8,6 +8,7 @@ import { ApiError } from '../utils/ApiError';
 import { User, AuditLog, LoginHistory, Notification, Donation, Event, Form, RoleAssignment } from '../models';
 import { UserRole, SUPER_ADMIN_EMAILS } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { sendEmail } from '../config/mail';
 import mongoose from 'mongoose';
 
@@ -56,6 +57,7 @@ router.post('/moderators/:userId', authenticate(), authorize(UserRole.ADMIN), au
   if (!req.user) throw ApiError.unauthorized();
   const target = await User.findById(req.params.userId);
   if (!target) throw ApiError.notFound('User not found');
+  const previousRole = target.role;
   target.isModerator = true;
   if (target.role !== UserRole.ADMIN && target.role !== UserRole.SUPER_ADMIN) {
     target.role = UserRole.MODERATOR;
@@ -67,19 +69,57 @@ router.post('/moderators/:userId', authenticate(), authorize(UserRole.ADMIN), au
     assignedAt: new Date(),
   };
   await target.save();
+
+  await RoleAssignment.create({
+    user: target._id,
+    role: UserRole.MODERATOR,
+    previousRole,
+    assignmentType: 'manual',
+    reason: req.body.reason || 'manual_assignment',
+    assignedBy: req.user._id,
+  });
+
+  await Notification.create({
+    recipient: target._id,
+    type: 'role_changed',
+    title: 'Moderator Role Assigned',
+    message: `You have been assigned the Moderator role by an admin.`,
+    link: '/dashboard',
+  });
+
   ApiResponse.success(res, target, 'Moderator assigned');
 }));
 
 // Remove moderator
 router.delete('/moderators/:userId', authenticate(), authorize(UserRole.ADMIN), auditLog('admin.remove_moderator', 'users'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const target = await User.findById(req.params.userId);
   if (!target) throw ApiError.notFound('User not found');
+  const previousRole = target.role;
   target.isModerator = false;
   target.moderatorAssignment = undefined;
   if (target.role === UserRole.MODERATOR) {
-    target.role = target.membershipStatus === 'approved' ? UserRole.MEMBER : UserRole.USER;
+    target.role = resolveBaseRole(target);
   }
   await target.save();
+
+  await RoleAssignment.create({
+    user: target._id,
+    role: target.role,
+    previousRole,
+    assignmentType: 'manual',
+    reason: 'moderator_removed_by_admin',
+    assignedBy: req.user._id,
+  });
+
+  await Notification.create({
+    recipient: target._id,
+    type: 'role_changed',
+    title: 'Moderator Role Removed',
+    message: `Your Moderator role has been removed. Your role is now ${target.role.replace(/_/g, ' ')}.`,
+    link: '/dashboard',
+  });
+
   ApiResponse.success(res, target, 'Moderator removed');
 }));
 
@@ -94,21 +134,66 @@ router.get('/admins', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHand
 
 // Promote to admin
 router.post('/admins/:userId', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.promote', 'users'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const target = await User.findById(req.params.userId);
   if (!target) throw ApiError.notFound('User not found');
   if (SUPER_ADMIN_EMAILS.includes(target.email)) throw ApiError.badRequest('Cannot modify SuperAdmin');
+  const previousRole = target.role;
   target.role = UserRole.ADMIN;
   await target.save();
+
+  await RoleAssignment.create({
+    user: target._id,
+    role: UserRole.ADMIN,
+    previousRole,
+    assignmentType: 'manual',
+    reason: 'promoted_to_admin',
+    assignedBy: req.user._id,
+  });
+
+  await Notification.create({
+    recipient: target._id,
+    type: 'role_changed',
+    title: 'Promoted to Admin',
+    message: 'You have been promoted to Admin by a SuperAdmin.',
+    link: '/dashboard',
+  });
+
   ApiResponse.success(res, target, 'User promoted to Admin');
 }));
 
 // Demote admin
 router.delete('/admins/:userId', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.demote', 'users'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const target = await User.findById(req.params.userId);
   if (!target) throw ApiError.notFound('User not found');
   if (SUPER_ADMIN_EMAILS.includes(target.email)) throw ApiError.badRequest('Cannot modify SuperAdmin');
-  target.role = target.membershipStatus === 'approved' ? UserRole.MEMBER : UserRole.USER;
+  const previousRole = target.role;
+  // If user is also a moderator, fall back to moderator; otherwise resolve base role
+  if (target.isModerator) {
+    target.role = UserRole.MODERATOR;
+  } else {
+    target.role = resolveBaseRole(target);
+  }
   await target.save();
+
+  await RoleAssignment.create({
+    user: target._id,
+    role: target.role,
+    previousRole,
+    assignmentType: 'manual',
+    reason: 'admin_demoted',
+    assignedBy: req.user._id,
+  });
+
+  await Notification.create({
+    recipient: target._id,
+    type: 'role_changed',
+    title: 'Admin Role Removed',
+    message: `Your Admin role has been removed. Your role is now ${target.role.replace(/_/g, ' ')}.`,
+    link: '/dashboard',
+  });
+
   ApiResponse.success(res, target, 'Admin demoted');
 }));
 

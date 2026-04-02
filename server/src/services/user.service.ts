@@ -380,6 +380,14 @@ export class UserService {
         assignedBy: assignedBy._id as any,
         assignedAt: new Date(),
       };
+    } else if (
+      previousRole === UserRole.MODERATOR &&
+      newRole !== UserRole.ADMIN &&
+      newRole !== UserRole.SUPER_ADMIN
+    ) {
+      // Demoting from Moderator — clean up moderator flag
+      target.isModerator = false;
+      target.moderatorAssignment = undefined;
     }
 
     await target.save();

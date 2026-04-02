@@ -1,5 +1,6 @@
 import { Committee, ICommitteeDocument, User, RoleAssignment, Notification } from '../models';
 import { ApiError } from '../utils/ApiError';
+import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { UserRole, MODERATOR_AUTO_POSITIONS, MODERATOR_RETAIN_POSITIONS } from '@rdswa/shared';
 import mongoose from 'mongoose';
 
@@ -244,7 +245,7 @@ export class CommitteeService {
         user.isModerator = false;
         user.moderatorAssignment = undefined;
         if (user.role === UserRole.MODERATOR) {
-          user.role = user.membershipStatus === 'approved' ? UserRole.MEMBER : UserRole.USER;
+          user.role = resolveBaseRole(user);
         }
         await user.save();
 
@@ -254,6 +255,14 @@ export class CommitteeService {
           previousRole,
           assignmentType: 'auto',
           reason: `moderator_removed_${reason}`,
+        });
+
+        await Notification.create({
+          recipient: user._id,
+          type: 'role_changed',
+          title: 'Moderator Role Removed',
+          message: `Your Moderator role has been removed (reason: ${reason.replace(/_/g, ' ')}). Your role is now ${user.role.replace(/_/g, ' ')}.`,
+          link: '/dashboard',
         });
       }
     }
