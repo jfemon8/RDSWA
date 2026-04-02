@@ -42,7 +42,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
   { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.MODERATOR },
-  { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.ADMIN },
+  { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.MODERATOR },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
   { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },

@@ -176,8 +176,8 @@ export default function AppRouter() {
               <Route path="/admin/forms" element={<AdminForms />} />
               <Route path="/admin/alumni-monitor" element={<AdminAlumniMonitor />} />
               <Route path="/admin/donations" element={<AdminDonations />} />
-              <Route path="/admin/jobs" element={<AdminJobs />} />
-              <Route path="/admin/mentorship" element={<AdminMentorship />} />
+              <Route path="/admin/jobs" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminJobs /></AdminRoleGuard>} />
+              <Route path="/admin/mentorship" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminMentorship /></AdminRoleGuard>} />
               <Route path="/admin/forum" element={<AdminForum />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/payment" element={<AdminPaymentConfig />} />
