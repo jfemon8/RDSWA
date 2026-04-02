@@ -127,7 +127,6 @@ export default function AppRouter() {
           <Route path="/notices/:id" element={<NoticeDetail />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/donations" element={<Donations />} />
-          <Route path="/voting" element={<Voting />} />
           <Route path="/bus-schedule" element={<BusSchedule />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -138,6 +137,7 @@ export default function AppRouter() {
         {/* Dashboard routes (authenticated) */}
         <Route element={<RouteGuard />}>
           <Route element={<DashboardLayout />}>
+            <Route path="/voting" element={<Voting />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/jobs" element={<JobBoard />} />
             <Route path="/dashboard/jobs/:id" element={<JobDetail />} />

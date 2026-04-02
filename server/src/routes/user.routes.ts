@@ -21,9 +21,9 @@ const router = Router();
 router.get('/me', authenticate(), userController.getMe);
 router.patch('/me', authenticate(), validate({ body: updateProfileSchema }), userController.updateMe);
 
-// Member-accessible
-router.get('/members', authenticate(), validate({ query: listUsersQuerySchema }), userController.listMembers);
-router.get('/blood-donors', authenticate(), userController.listBloodDonors);
+// Public member directory (optional auth for visibility filtering)
+router.get('/members', authenticate(true), validate({ query: listUsersQuerySchema }), userController.listMembers);
+router.get('/blood-donors', authenticate(true), userController.listBloodDonors);
 
 // Skill endorsement (any authenticated user)
 router.post('/:id/endorse', authenticate(), userController.endorseSkill);
@@ -34,7 +34,7 @@ router.get('/export/directory', authenticate(), authorize(UserRole.ADMIN), userC
 
 // Admin routes
 router.get('/', authenticate(), authorize(UserRole.ADMIN), validate({ query: listUsersQuerySchema }), userController.listUsers);
-router.get('/:id', authenticate(), userController.getUserById);
+router.get('/:id', authenticate(true), userController.getUserById);
 
 // Admin+ can edit any user's profile
 router.patch('/:id/profile', authenticate(), authorize(UserRole.ADMIN), auditLog('user.admin_edit', 'users'), userController.adminUpdateUser);
