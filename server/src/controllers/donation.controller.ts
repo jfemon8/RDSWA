@@ -6,7 +6,8 @@ import { ApiError } from '../utils/ApiError';
 import { SiteSettings } from '../models';
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const { donations, total, page, limit } = await donationService.list(req.query as any);
+  const requesterRole = req.user?.role;
+  const { donations, total, page, limit } = await donationService.list(req.query as any, requesterRole);
   ApiResponse.paginated(res, donations, total, page, limit);
 });
 

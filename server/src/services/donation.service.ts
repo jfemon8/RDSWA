@@ -2,9 +2,10 @@ import { Donation, IDonationDocument, DonationCampaign, IDonationCampaignDocumen
 import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 
 export class DonationService {
-  async list(query: { page?: string; limit?: string; type?: string; paymentStatus?: string; donor?: string }) {
+  async list(query: { page?: string; limit?: string; type?: string; paymentStatus?: string; donor?: string }, requesterRole?: string) {
     const { page, limit } = parsePagination(query);
     const filter: FilterQuery<IDonationDocument> = { isDeleted: false };
 
@@ -22,10 +23,11 @@ export class DonationService {
       Donation.countDocuments(filter),
     ]);
 
-    // Respect donation privacy — hide donor info for private donations
+    // Respect donation privacy — hide donor info for private donations (skip for moderator+)
+    const isPrivileged = requesterRole && ROLE_HIERARCHY.indexOf(requesterRole as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
     const sanitized = donations.map((d) => {
       const obj = d.toObject();
-      if (obj.visibility === 'private') {
+      if (obj.visibility === 'private' && !isPrivileged) {
         obj.donor = undefined;
         obj.donorName = undefined;
         obj.donorEmail = undefined;
@@ -46,7 +48,9 @@ export class DonationService {
 
     const obj = donation.toObject();
     // Hide donor info for private donations unless the requester is the donor
-    if (obj.visibility === 'private' && obj.donor?._id?.toString() !== requesterId) {
+    const donorId = obj.donor?._id?.toString();
+    const isDonor = requesterId && donorId && donorId === requesterId;
+    if (obj.visibility === 'private' && !isDonor) {
       obj.donor = undefined;
       obj.donorName = undefined;
       obj.donorEmail = undefined;
@@ -79,6 +83,8 @@ export class DonationService {
     const donation = await Donation.findOne({ _id: id, isDeleted: false });
     if (!donation) throw ApiError.notFound('Donation not found');
 
+    const previousStatus = donation.paymentStatus;
+
     donation.paymentStatus = status as any;
     donation.paymentVerifiedBy = verifiedBy as any;
     donation.paymentVerifiedAt = new Date();
@@ -89,11 +95,19 @@ export class DonationService {
 
     await donation.save();
 
-    // Update campaign raised amount if completed
-    if (status === 'completed' && donation.campaign) {
-      await DonationCampaign.findByIdAndUpdate(donation.campaign, {
-        $inc: { raisedAmount: donation.amount },
-      });
+    // Update campaign raised amount on status transitions
+    if (donation.campaign) {
+      if (status === 'completed' && previousStatus !== 'completed') {
+        // Increment when newly completed
+        await DonationCampaign.findByIdAndUpdate(donation.campaign, {
+          $inc: { raisedAmount: donation.amount },
+        });
+      } else if (previousStatus === 'completed' && status !== 'completed') {
+        // Decrement when moving away from completed (refund, failed, etc.)
+        await DonationCampaign.findByIdAndUpdate(donation.campaign, {
+          $inc: { raisedAmount: -donation.amount },
+        });
+      }
     }
 
     // Notify the donor

@@ -94,7 +94,7 @@ export default function DonationsPage() {
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className="bg-primary rounded-full h-2 transition-all"
-                          style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }}
+                          style={{ width: `${c.targetAmount ? Math.min(100, (c.raisedAmount / c.targetAmount) * 100) : 0}%` }}
                         />
                       </div>
                     </div>

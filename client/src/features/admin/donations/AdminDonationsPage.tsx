@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
-import { Search, Loader2, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Search, Loader2, CheckCircle, XCircle, Trash2, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 
@@ -18,6 +19,7 @@ export default function AdminDonationsPage() {
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-donations', search, page],
@@ -30,8 +32,8 @@ export default function AdminDonationsPage() {
   });
 
   const verifyMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/donations/${id}/verify`, { status }),
+    mutationFn: ({ id, paymentStatus, revisionNote }: { id: string; paymentStatus: string; revisionNote?: string }) =>
+      api.patch(`/donations/${id}/verify`, { paymentStatus, ...(revisionNote ? { revisionNote } : {}) }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-donations'] }); toast.success('Donation verification updated'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
   });
@@ -71,61 +73,151 @@ export default function AdminDonationsPage() {
                   <th className="text-left p-3 font-medium">Amount</th>
                   <th className="text-left p-3 font-medium">Method</th>
                   <th className="text-left p-3 font-medium">Transaction</th>
+                  <th className="text-left p-3 font-medium">Visibility</th>
                   <th className="text-left p-3 font-medium">Status</th>
                   <th className="text-left p-3 font-medium">Date</th>
                   <th className="text-left p-3 font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody>
                 {donations.map((d: any) => (
-                  <tr key={d._id} className="border-t hover:bg-accent/30">
-                    <td className="p-3">
-                      {d.donor?._id ? (
-                        <Link to={`/members/${d.donor._id}`} className="font-medium hover:text-primary transition-colors">{d.donor.name}</Link>
-                      ) : (
-                        <span className="font-medium">{d.donorName || 'Anonymous'}</span>
+                  <motion.tbody key={d._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <tr className="border-t hover:bg-accent/30 cursor-pointer" onClick={() => setExpandedId(expandedId === d._id ? null : d._id)}>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1.5">
+                          <motion.span animate={{ rotate: expandedId === d._id ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          </motion.span>
+                          {d.donor?._id ? (
+                            <Link to={`/members/${d.donor._id}`} onClick={(e) => e.stopPropagation()} className="font-medium hover:text-primary transition-colors">{d.donor.name}</Link>
+                          ) : (
+                            <span className="font-medium">{d.donorName || 'Anonymous'}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 font-medium">BDT {d.amount}</td>
+                      <td className="p-3 text-muted-foreground capitalize">{d.paymentMethod}</td>
+                      <td className="p-3 text-xs text-muted-foreground">{d.transactionId || '-'}</td>
+                      <td className="p-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                          d.visibility === 'private'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          {d.visibility === 'private' ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          {d.visibility || 'public'}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                          d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            : d.paymentStatus === 'refunded' ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                            : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        }`}>
+                          {d.paymentStatus || 'pending'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{formatDate(d.createdAt)}</td>
+                      <td className="p-3">
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          {d.paymentStatus !== 'completed' && (
+                            <button onClick={() => verifyMutation.mutate({ id: d._id, paymentStatus: 'completed' })} title="Verify"
+                              className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded">
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          {d.paymentStatus !== 'failed' && (
+                            <button onClick={() => verifyMutation.mutate({ id: d._id, paymentStatus: 'failed' })} title="Reject"
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isSuperAdmin && (
+                            <button onClick={async () => {
+                              const ok = await confirm({ title: 'Delete Donation', message: 'Are you sure?', confirmLabel: 'Delete', variant: 'danger' });
+                              if (ok) deleteMutation.mutate(d._id);
+                            }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    <AnimatePresence>
+                      {expandedId === d._id && (
+                        <tr>
+                          <td colSpan={8} className="p-0">
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-4 py-3 bg-muted/50 border-b grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                                {d.senderNumber && (
+                                  <div>
+                                    <span className="text-muted-foreground">Sender Number</span>
+                                    <p className="font-medium text-foreground">{d.senderNumber}</p>
+                                  </div>
+                                )}
+                                {d.donorEmail && (
+                                  <div>
+                                    <span className="text-muted-foreground">Donor Email</span>
+                                    <p className="font-medium text-foreground">{d.donorEmail}</p>
+                                  </div>
+                                )}
+                                {d.donorPhone && (
+                                  <div>
+                                    <span className="text-muted-foreground">Donor Phone</span>
+                                    <p className="font-medium text-foreground">{d.donorPhone}</p>
+                                  </div>
+                                )}
+                                {d.receiptNumber && (
+                                  <div>
+                                    <span className="text-muted-foreground">Receipt</span>
+                                    <p className="font-medium text-foreground">{d.receiptNumber}</p>
+                                  </div>
+                                )}
+                                {d.type && (
+                                  <div>
+                                    <span className="text-muted-foreground">Type</span>
+                                    <p className="font-medium text-foreground capitalize">{d.type.replace('-', ' ')}</p>
+                                  </div>
+                                )}
+                                {d.isRecurring && (
+                                  <div>
+                                    <span className="text-muted-foreground">Recurring</span>
+                                    <p className="font-medium text-foreground capitalize">{d.recurringInterval}</p>
+                                  </div>
+                                )}
+                                {d.campaign?.title && (
+                                  <div>
+                                    <span className="text-muted-foreground">Campaign</span>
+                                    <p className="font-medium text-foreground">{d.campaign.title}</p>
+                                  </div>
+                                )}
+                                {d.note && (
+                                  <div className="col-span-full">
+                                    <span className="text-muted-foreground">Note</span>
+                                    <p className="font-medium text-foreground">{d.note}</p>
+                                  </div>
+                                )}
+                                {d.revisionNote && (
+                                  <div className="col-span-full">
+                                    <span className="text-muted-foreground">Revision Note</span>
+                                    <p className="font-medium text-orange-600 dark:text-orange-400">{d.revisionNote}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="p-3 font-medium">BDT {d.amount}</td>
-                    <td className="p-3 text-muted-foreground capitalize">{d.paymentMethod}</td>
-                    <td className="p-3 text-xs text-muted-foreground">{d.transactionId || '-'}</td>
-                    <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                        d.paymentStatus === 'verified' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : d.paymentStatus === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      }`}>
-                        {d.paymentStatus || 'pending'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">{formatDate(d.createdAt)}</td>
-                    <td className="p-3">
-                      <div className="flex gap-1">
-                        {d.paymentStatus !== 'verified' && (
-                          <button onClick={() => verifyMutation.mutate({ id: d._id, status: 'verified' })} title="Verify"
-                            className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded">
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        {d.paymentStatus !== 'rejected' && (
-                          <button onClick={() => verifyMutation.mutate({ id: d._id, status: 'rejected' })} title="Reject"
-                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        {isSuperAdmin && (
-                          <button onClick={async () => {
-                            const ok = await confirm({ title: 'Delete Donation', message: 'Are you sure?', confirmLabel: 'Delete', variant: 'danger' });
-                            if (ok) deleteMutation.mutate(d._id);
-                          }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                    </AnimatePresence>
+                  </motion.tbody>
                 ))}
-              </tbody>
             </table>
           </div>
         </FadeIn>
