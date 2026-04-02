@@ -6,7 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
-import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail } from 'lucide-react';
+import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2 } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -55,6 +55,14 @@ export default function AdminUsersPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User suspended'); },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to suspend user'); },
   });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/users/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete user'); },
+  });
+
+  const isSuperAdmin = currentUser ? hasMinRole(currentUser.role, UserRole.SUPER_ADMIN) : false;
 
   const changeRoleMutation = useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) => api.patch(`/users/${id}/role`, { role }),
@@ -337,6 +345,15 @@ export default function AdminUsersPage() {
                               className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
                             >
                               <Ban className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isSuperAdmin && u.role !== 'super_admin' && (
+                            <button
+                              onClick={() => deleteUserMutation.mutate(u._id)}
+                              title="Delete user"
+                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           )}
                         </div>

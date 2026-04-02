@@ -19,4 +19,16 @@ router.get('/:id/stats', authenticate(), authorize(UserRole.MODERATOR), voteCont
 router.patch('/:id/close', authenticate(), authorize(UserRole.MODERATOR), auditLog('vote.close', 'votes'), voteController.closeManually);
 router.patch('/:id/publish', authenticate(), authorize(UserRole.MODERATOR), auditLog('vote.publish', 'votes'), voteController.publishResults);
 
+// Admin: delete vote
+router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('vote.delete', 'votes'), async (req, res, next) => {
+  try {
+    const { Vote } = await import('../models');
+    const vote = await Vote.findById(req.params.id as string);
+    if (!vote) return res.status(404).json({ success: false, message: 'Vote not found' });
+    vote.isDeleted = true;
+    await vote.save();
+    res.json({ success: true, message: 'Vote deleted' });
+  } catch (err) { next(err); }
+});
+
 export default router;

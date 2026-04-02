@@ -99,6 +99,42 @@ router.post('/targeted', authenticate(), authorize(UserRole.MODERATOR), asyncHan
   ApiResponse.success(res, { count }, 'Notifications sent');
 }));
 
+// Delete notification (own or Admin+)
+router.delete('/:id', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const filter: any = { _id: req.params.id as string };
+  const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
+  if (!isAdmin) filter.recipient = req.user._id;
+  const notif = await Notification.findOneAndDelete(filter);
+  if (!notif) throw ApiError.notFound('Notification not found');
+  ApiResponse.success(res, null, 'Notification deleted');
+}));
+
+// Admin: list all notifications
+router.get('/admin/all', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const { page, limit } = parsePagination(req.query as any);
+  const filter: any = {};
+  if (req.query.type) filter.type = req.query.type;
+  if (req.query.recipient) filter.recipient = req.query.recipient;
+  const [notifications, total] = await Promise.all([
+    Notification.find(filter)
+      .populate('recipient', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    Notification.countDocuments(filter),
+  ]);
+  ApiResponse.paginated(res, notifications, total, page, limit);
+}));
+
+// Admin: bulk delete notifications
+router.post('/admin/bulk-delete', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) throw ApiError.badRequest('ids array is required');
+  const result = await Notification.deleteMany({ _id: { $in: ids } });
+  ApiResponse.success(res, { deleted: result.deletedCount }, 'Notifications deleted');
+}));
+
 // ── Push Subscription Endpoints ──
 
 // Get VAPID public key

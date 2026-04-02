@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -14,6 +16,8 @@ import { formatDate, formatDateTime } from '@/lib/date';
 export default function AdminVotingPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { user: currentUser } = useAuthStore();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [showForm, setShowForm] = useState(false);
   const [statsId, setStatsId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -42,6 +46,12 @@ export default function AdminVotingPage() {
       toast.success('Poll created successfully');
     },
     onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create poll'); } },
+  });
+
+  const deleteVoteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/votes/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }); toast.success('Vote deleted'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete vote'),
   });
 
   const publishMutation = useMutation({
@@ -185,6 +195,15 @@ export default function AdminVotingPage() {
                         <BarChart3 className="h-3 w-3" /> Stats
                         {statsId === v._id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </button>
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => deleteVoteMutation.mutate(v._id)}
+                          className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded"
+                          title="Delete vote"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

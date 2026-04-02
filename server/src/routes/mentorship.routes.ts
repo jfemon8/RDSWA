@@ -139,6 +139,30 @@ router.patch('/:id/cancel', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, mentorship, 'Mentorship cancelled');
 }));
 
+// Admin: list all mentorships
+router.get('/admin/all', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const { page, limit } = parsePagination(req.query as any);
+  const filter: any = {};
+  if (req.query.status) filter.status = req.query.status;
+  const [mentorships, total] = await Promise.all([
+    Mentorship.find(filter)
+      .populate('mentor', 'name avatar department')
+      .populate('mentee', 'name avatar department')
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    Mentorship.countDocuments(filter),
+  ]);
+  ApiResponse.paginated(res, mentorships, total, page, limit);
+}));
+
+// Admin: delete mentorship
+router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const mentorship = await Mentorship.findByIdAndDelete(req.params.id as string);
+  if (!mentorship) throw ApiError.notFound('Mentorship not found');
+  ApiResponse.success(res, null, 'Mentorship deleted');
+}));
+
 // List available mentors (members with skills/profession)
 router.get('/mentors', authenticate(), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);

@@ -110,7 +110,7 @@ router.patch('/:id/execute', authenticate(), authorize(UserRole.ADMIN), auditLog
 }));
 
 // Delete budget
-router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('budget.delete', 'budgets'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('budget.delete', 'budgets'), asyncHandler(async (req, res) => {
   await Budget.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true });
   ApiResponse.success(res, null, 'Budget deleted');
 }));

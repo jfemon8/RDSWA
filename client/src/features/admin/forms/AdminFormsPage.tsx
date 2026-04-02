@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Loader2, CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
 
 export default function AdminFormsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { user: currentUser } = useAuthStore();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -27,6 +31,12 @@ export default function AdminFormsPage() {
       const { data } = await api.get(`/forms?${params}`);
       return data;
     },
+  });
+
+  const deleteFormMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/forms/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['forms'] }); toast.success('Form deleted'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete form'),
   });
 
   const reviewMutation = useMutation({
@@ -108,6 +118,12 @@ export default function AdminFormsPage() {
                         >
                           {expandedId === f._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
+                        {isSuperAdmin && (
+                          <button onClick={() => deleteFormMutation.mutate(f._id)} title="Delete"
+                            className="p-1 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
 

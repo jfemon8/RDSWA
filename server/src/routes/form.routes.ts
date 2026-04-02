@@ -125,4 +125,11 @@ router.patch('/:id/review', authenticate(), authorize(UserRole.MODERATOR), valid
   ApiResponse.success(res, form, `Form ${req.body.status}`);
 }));
 
+// Admin: delete form submission
+router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('form.delete', 'forms'), asyncHandler(async (req, res) => {
+  const form = await Form.findByIdAndDelete(req.params.id as string);
+  if (!form) throw ApiError.notFound('Form not found');
+  ApiResponse.success(res, null, 'Form deleted');
+}));
+
 export default router;

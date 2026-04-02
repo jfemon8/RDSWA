@@ -4,6 +4,9 @@ import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
+import { asyncHandler } from '../utils/asyncHandler';
+import { ApiResponse } from '../utils/ApiResponse';
+import { ApiError } from '../utils/ApiError';
 import { UserRole } from '@rdswa/shared';
 import {
   updateProfileSchema,
@@ -41,5 +44,18 @@ router.patch('/:id/role', authenticate(), authorize(UserRole.ADMIN), validate({ 
 router.patch('/:id/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('user.approve', 'users'), userController.approveMembership);
 router.patch('/:id/reject', authenticate(), authorize(UserRole.MODERATOR), validate({ body: memberActionSchema }), auditLog('user.reject', 'users'), userController.rejectMembership);
 router.patch('/:id/suspend', authenticate(), authorize(UserRole.ADMIN), validate({ body: memberActionSchema }), auditLog('user.suspend', 'users'), userController.suspendUser);
+
+// SuperAdmin: soft-delete user
+router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('user.delete', 'users'), asyncHandler(async (req, res) => {
+  const { User } = await import('../models');
+  const id = req.params.id as string;
+  const target = await User.findById(id);
+  if (!target) throw ApiError.notFound('User not found');
+  if (target.role === UserRole.SUPER_ADMIN) throw ApiError.forbidden('Cannot delete a SuperAdmin');
+  target.isDeleted = true;
+  target.isActive = false;
+  await target.save();
+  ApiResponse.success(res, null, 'User deleted');
+}));
 
 export default router;

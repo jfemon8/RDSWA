@@ -40,7 +40,7 @@ router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('expens
   ApiResponse.success(res, expense, 'Expense updated');
 }));
 
-router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('expense.delete', 'expenses'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('expense.delete', 'expenses'), asyncHandler(async (req, res) => {
   await Expense.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true });
   ApiResponse.success(res, null, 'Expense deleted');
 }));
