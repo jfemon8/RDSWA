@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { useAuthStore } from '@/stores/authStore';
-import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer } from 'lucide-react';
+
+import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -146,13 +146,12 @@ function CountdownDisplay({ endTime }: { endTime: string }) {
 }
 
 function VoteCard({ vote }: { vote: any }) {
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string>('');
   const [liveOptions, setLiveOptions] = useState<any[] | null>(null);
   const [liveTotalVotes, setLiveTotalVotes] = useState<number | null>(null);
 
-  const hasVoted = vote.voters?.some((v: any) => v.user === user?._id || v.user?._id === user?._id);
+  const [hasVoted, setHasVoted] = useState(!!vote.hasVoted);
   const isActive = vote.status === 'active';
   const showResults = vote.status === 'published' || (vote.status === 'closed' && vote.isResultPublic);
 
@@ -175,7 +174,12 @@ function VoteCard({ vote }: { vote: any }) {
 
   const castMutation = useMutation({
     mutationFn: () => api.post(`/votes/${vote._id}/cast`, { optionId: selected }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }),
+    onSuccess: () => { setHasVoted(true); queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }); },
+  });
+
+  const skipMutation = useMutation({
+    mutationFn: () => api.post(`/votes/${vote._id}/skip`),
+    onSuccess: () => { setHasVoted(true); queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }); },
   });
 
   // Use live data if available, otherwise fall back to API data
@@ -188,7 +192,7 @@ function VoteCard({ vote }: { vote: any }) {
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-semibold mb-1 text-foreground">{vote.title}</h3>
-          {vote.description && <p className="text-sm text-muted-foreground mb-3">{vote.description}</p>}
+          {vote.description && <div className="text-sm text-muted-foreground mb-3 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: vote.description }} />}
         </div>
         {isActive && liveOptions && (
           <motion.div
@@ -264,17 +268,33 @@ function VoteCard({ vote }: { vote: any }) {
 
       <AnimatePresence>
         {isActive && !hasVoted && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => castMutation.mutate()}
-            disabled={!selected || castMutation.isPending}
-            className="mt-3 flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+            className="mt-3 flex items-center gap-2"
           >
-            {castMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-            Cast Vote
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => castMutation.mutate()}
+              disabled={!selected || castMutation.isPending || skipMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+            >
+              {castMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+              Cast Vote
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => skipMutation.mutate()}
+              disabled={castMutation.isPending || skipMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 border rounded-md text-sm text-muted-foreground hover:bg-accent disabled:opacity-50"
+            >
+              {skipMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SkipForward className="h-4 w-4" />}
+              Skip
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 

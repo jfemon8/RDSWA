@@ -4,8 +4,9 @@ import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 
-export const list = asyncHandler(async (_req: Request, res: Response) => {
-  const votes = await voteService.list();
+export const list = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user ? (req.user._id as any).toString() : undefined;
+  const votes = await voteService.list(userId, req.user?.role);
   ApiResponse.success(res, votes);
 });
 
@@ -31,13 +32,19 @@ export const castVote = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.success(res, null, 'Vote cast successfully');
 });
 
+export const skipVote = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  await voteService.skipVote(req.params.id as string, req.user);
+  ApiResponse.success(res, null, 'Vote skipped');
+});
+
 export const getResults = asyncHandler(async (req: Request, res: Response) => {
   const results = await voteService.getResults(req.params.id as string);
   ApiResponse.success(res, results);
 });
 
 export const getStats = asyncHandler(async (req: Request, res: Response) => {
-  const stats = await voteService.getStats(req.params.id as string);
+  const stats = await voteService.getStats(req.params.id as string, req.user?.role);
   ApiResponse.success(res, stats);
 });
 

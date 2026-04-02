@@ -15,17 +15,18 @@ export async function runVoteCloser(): Promise<void> {
     }).select('_id');
 
     if (expiredVotes.length > 0) {
+      // Auto-close and auto-publish so results are immediately visible
       await Vote.updateMany(
         { _id: { $in: expiredVotes.map((v) => v._id) } },
-        { $set: { status: 'closed' } }
+        { $set: { status: 'published', isResultPublic: true } }
       );
 
       // Broadcast status change to all watchers
       for (const vote of expiredVotes) {
-        broadcastVoteStatus((vote._id as any).toString(), 'closed');
+        broadcastVoteStatus((vote._id as any).toString(), 'published');
       }
 
-      console.log(`Vote closer: closed ${expiredVotes.length} expired votes`);
+      console.log(`Vote closer: closed & published ${expiredVotes.length} expired votes`);
     }
   } catch (err) {
     console.error('Vote closer error:', err);

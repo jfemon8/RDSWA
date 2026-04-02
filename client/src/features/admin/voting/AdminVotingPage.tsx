@@ -10,8 +10,19 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users, Pencil, X } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
+
+const emptyForm = {
+  title: '', description: '', startTime: '', endTime: '',
+  eligibleVoters: 'all_members', options: ['', ''],
+};
+
+/** Convert datetime-local value to ISO string with timezone offset */
+function toISOWithTZ(localDatetime: string): string {
+  if (!localDatetime) return localDatetime;
+  return new Date(localDatetime).toISOString();
+}
 
 export default function AdminVotingPage() {
   const queryClient = useQueryClient();
@@ -19,11 +30,9 @@ export default function AdminVotingPage() {
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [statsId, setStatsId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    title: '', description: '', startTime: '', endTime: '',
-    eligibleVoters: 'all_members', options: ['', ''],
-  });
+  const [form, setForm] = useState({ ...emptyForm });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
@@ -37,15 +46,34 @@ export default function AdminVotingPage() {
   const createMutation = useMutation({
     mutationFn: () => api.post('/votes', {
       ...form,
+      startTime: toISOWithTZ(form.startTime),
+      endTime: toISOWithTZ(form.endTime),
       options: form.options.filter(Boolean).map((text) => ({ text })),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.votes.all });
       setShowForm(false);
-      setForm({ title: '', description: '', startTime: '', endTime: '', eligibleVoters: 'all_members', options: ['', ''] });
+      setForm({ ...emptyForm });
       toast.success('Poll created successfully');
     },
     onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create poll'); } },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => api.patch(`/votes/${editingId}`, {
+      ...form,
+      startTime: toISOWithTZ(form.startTime),
+      endTime: toISOWithTZ(form.endTime),
+      options: form.options.filter(Boolean).map((text) => ({ text })),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.votes.all });
+      setEditingId(null);
+      setShowForm(false);
+      setForm({ ...emptyForm });
+      toast.success('Poll updated successfully');
+    },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to update poll'); } },
   });
 
   const deleteVoteMutation = useMutation({
@@ -60,18 +88,71 @@ export default function AdminVotingPage() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to publish results'); },
   });
 
+  const closeMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/votes/${id}/close`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.votes.all }); toast.success('Vote closed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
+  });
+
   const votes = data?.data || [];
+
+  const startEdit = (v: any) => {
+    const toLocalDateTime = (iso: string) => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    setEditingId(v._id);
+    setForm({
+      title: v.title || '',
+      description: v.description || '',
+      startTime: toLocalDateTime(v.startTime),
+      endTime: toLocalDateTime(v.endTime),
+      eligibleVoters: v.eligibleVoters || 'all_members',
+      options: v.options?.map((o: any) => o.text) || ['', ''],
+    });
+    setErrors({});
+    setShowForm(true);
+  };
+
+  const cancelForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...emptyForm });
+    setErrors({});
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    const errs: Record<string, string> = {};
+    if (!form.title.trim()) errs.title = 'Poll title is required';
+    if (!form.startTime) errs.startTime = 'Start time is required';
+    if (!form.endTime) errs.endTime = 'End time is required';
+    if (form.options.filter(Boolean).length < 2) errs.options = 'At least 2 options are required';
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (editingId) {
+      updateMutation.mutate();
+    } else {
+      createMutation.mutate();
+    }
+  };
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <FadeIn direction="up">
       <div className="container mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Voting & Polls</h1>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
-            <Plus className="h-4 w-4" /> New Poll
-          </button>
+          {!showForm && (
+            <button
+              onClick={() => { setEditingId(null); setForm({ ...emptyForm }); setErrors({}); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
+              <Plus className="h-4 w-4" /> New Poll
+            </button>
+          )}
         </div>
 
         <AnimatePresence>
@@ -84,8 +165,8 @@ export default function AdminVotingPage() {
               className="overflow-hidden"
             >
               <div className="border rounded-lg p-4 sm:p-6 bg-card mb-6">
-                <h3 className="font-semibold text-foreground mb-4">Create Poll</h3>
-                <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Poll title is required'; if (!form.startTime) errs.startTime = 'Start time is required'; if (!form.endTime) errs.endTime = 'End time is required'; if (form.options.filter(Boolean).length < 2) errs.options = 'At least 2 options are required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+                <h3 className="font-semibold text-foreground mb-4">{editingId ? 'Edit Poll' : 'Create Poll'}</h3>
+                <form noValidate onSubmit={handleSubmit} className="space-y-3">
                   <div>
                     <input placeholder="Poll Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                       className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
@@ -138,13 +219,13 @@ export default function AdminVotingPage() {
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      disabled={createMutation.isPending}
+                      disabled={isSubmitting}
                       className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">
-                      Create
+                      {isSubmitting ? 'Saving...' : editingId ? 'Update' : 'Create'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowForm(false)}
+                      onClick={cancelForm}
                       className="px-4 py-2 border rounded-md text-sm">
                       Cancel
                     </button>
@@ -177,16 +258,39 @@ export default function AdminVotingPage() {
                           : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                         }`}>{v.status}</span>
                         <span>{v.totalVotes || 0} votes</span>
-                        <span>Ends {formatDate(v.endTime)}</span>
+                        <span>Start {formatDate(v.startTime)}</span>
+                        <span>End {formatDate(v.endTime)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {v.status === 'draft' && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => startEdit(v)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs border rounded-md hover:bg-accent"
+                        >
+                          <Pencil className="h-3 w-3" /> Edit
+                        </motion.button>
+                      )}
+                      {v.status === 'active' && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => closeMutation.mutate(v._id)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs border border-orange-300 text-orange-600 dark:border-orange-700 dark:text-orange-400 rounded-md hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                        >
+                          <X className="h-3 w-3" /> Close
+                        </motion.button>
+                      )}
                       {v.status === 'closed' && !v.isResultPublic && (
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => publishMutation.mutate(v._id)}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md">
                           <Eye className="h-3 w-3" /> Publish
-                        </button>
+                        </motion.button>
                       )}
                       <button
                         onClick={() => setStatsId(statsId === v._id ? null : v._id)}
@@ -231,6 +335,9 @@ export default function AdminVotingPage() {
 }
 
 function VoteStatsPanel({ voteId }: { voteId: string }) {
+  const { user: currentUser } = useAuthStore();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
+
   const { data, isLoading } = useQuery({
     queryKey: ['votes', 'stats', voteId],
     queryFn: async () => {
@@ -269,6 +376,33 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
           </div>
         </FadeIn>
       </div>
+
+      {/* Per-option results */}
+      {stats.options?.length > 0 && (
+        <FadeIn delay={0.12} direction="up">
+          <div className="border rounded-lg p-3 bg-card">
+            <h4 className="text-xs font-medium text-muted-foreground mb-3">Option Results</h4>
+            <div className="space-y-2.5">
+              {stats.options.map((o: any, i: number) => (
+                <div key={o._id || i}>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-foreground">{o.text}</span>
+                    <span className="text-muted-foreground tabular-nums text-xs">{o.voteCount} ({o.percentage}%)</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      className="bg-primary rounded-full h-2"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${parseFloat(o.percentage)}%` }}
+                      transition={{ duration: 0.6, delay: i * 0.1 }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* By Batch */}
@@ -331,6 +465,7 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
         <div className="border rounded-lg p-3 bg-card">
           <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
             <Users className="h-3 w-3" /> Voters ({stats.voters?.length || 0})
+            {!isSuperAdmin && <span className="text-muted-foreground/60 ml-1">(vote choices visible to SuperAdmin only)</span>}
           </h4>
           {stats.voters?.length > 0 ? (
             <div className="max-h-48 overflow-y-auto space-y-1">
@@ -349,6 +484,9 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
                   </div>
                   <div className="flex items-center gap-2">
                     {v.skipped && <span className="text-orange-500 text-xs">Skipped</span>}
+                    {v.selectedOption && (
+                      <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">{v.selectedOption}</span>
+                    )}
                     <span className="text-muted-foreground">
                       {formatDateTime(v.votedAt)}
                     </span>

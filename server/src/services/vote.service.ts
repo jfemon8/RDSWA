@@ -1,14 +1,25 @@
 import { Vote, IVoteDocument, IUserDocument } from '../models';
 import { ApiError } from '../utils/ApiError';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import mongoose from 'mongoose';
 import { broadcastVoteUpdate, broadcastVoteStatus } from '../socket';
 
 export class VoteService {
-  async list() {
-    return Vote.find({ isDeleted: false, status: { $in: ['active', 'closed', 'published'] } })
-      .select('-voters')
-      .sort({ createdAt: -1 });
+  async list(userId?: string, requesterRole?: string): Promise<any[]> {
+    const isPrivileged = requesterRole && ROLE_HIERARCHY.indexOf(requesterRole as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+    const statuses = isPrivileged
+      ? ['draft', 'active', 'closed', 'published']
+      : ['active', 'closed', 'published'];
+
+    const votes = await Vote.find({ isDeleted: false, status: { $in: statuses } })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return votes.map((v) => {
+      const hasVoted = userId ? v.voters.some((voter: any) => voter.user.toString() === userId) : false;
+      const { voters, ...rest } = v;
+      return { ...rest, hasVoted };
+    });
   }
 
   async getById(id: string): Promise<IVoteDocument> {
@@ -24,8 +35,8 @@ export class VoteService {
   async update(id: string, data: any): Promise<IVoteDocument> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false });
     if (!vote) throw ApiError.notFound('Vote not found');
-    if (vote.status === 'closed' || vote.status === 'published') {
-      throw ApiError.badRequest('Cannot edit a closed or published vote');
+    if (vote.status === 'active' || vote.status === 'closed' || vote.status === 'published') {
+      throw ApiError.badRequest('Cannot edit a vote that has already started');
     }
     Object.assign(vote, data);
     await vote.save();
@@ -78,6 +89,37 @@ export class VoteService {
     });
   }
 
+  async skipVote(voteId: string, user: IUserDocument): Promise<void> {
+    const vote = await Vote.findOne({ _id: voteId, isDeleted: false });
+    if (!vote) throw ApiError.notFound('Vote not found');
+    if (vote.status !== 'active') throw ApiError.badRequest('This vote is not currently active');
+
+    // Check eligibility (same as castVote)
+    if (vote.eligibleVoters === 'batch_specific' && user.batch) {
+      if (!vote.eligibleBatches.includes(user.batch)) {
+        throw ApiError.forbidden('You are not eligible for this poll');
+      }
+    }
+    if (vote.eligibleVoters === 'role_specific') {
+      if (!vote.eligibleRoles.includes(user.role)) {
+        throw ApiError.forbidden('You are not eligible for this poll');
+      }
+    }
+
+    const userId = (user._id as any).toString();
+    const alreadyVoted = vote.voters.some((v) => v.user.toString() === userId);
+    if (alreadyVoted) throw ApiError.conflict('You have already voted or skipped');
+
+    vote.voters.push({
+      user: new mongoose.Types.ObjectId(userId),
+      selectedOption: new mongoose.Types.ObjectId(), // placeholder, not used
+      votedAt: new Date(),
+      skipped: true,
+    } as any);
+
+    await vote.save();
+  }
+
   async getResults(id: string): Promise<any> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false });
     if (!vote) throw ApiError.notFound('Vote not found');
@@ -98,7 +140,7 @@ export class VoteService {
     };
   }
 
-  async getStats(id: string): Promise<any> {
+  async getStats(id: string, requesterRole?: string): Promise<any> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false })
       .populate('voters.user', 'name batch role department');
     if (!vote) throw ApiError.notFound('Vote not found');
@@ -106,6 +148,14 @@ export class VoteService {
     const voters = vote.voters || [];
     const totalVoters = voters.length;
     const skippedCount = voters.filter((v) => v.skipped).length;
+
+    // Per-option vote counts (always visible to moderators)
+    const optionResults = vote.options.map((o) => ({
+      _id: (o._id as any).toString(),
+      text: o.text,
+      voteCount: o.voteCount,
+      percentage: vote.totalVotes > 0 ? ((o.voteCount / vote.totalVotes) * 100).toFixed(1) : '0',
+    }));
 
     // Participation by batch
     const byBatch: Record<number, number> = {};
@@ -116,6 +166,10 @@ export class VoteService {
       if (u?.role) byRole[u.role] = (byRole[u.role] || 0) + 1;
     }
 
+    // Build option lookup for voter-option mapping (SuperAdmin only)
+    const isSuperAdmin = requesterRole === UserRole.SUPER_ADMIN;
+    const optionMap = new Map(vote.options.map((o) => [(o._id as any).toString(), o.text]));
+
     return {
       voteId: id,
       title: vote.title,
@@ -123,6 +177,7 @@ export class VoteService {
       totalVotes: vote.totalVotes,
       totalVoters,
       skippedCount,
+      options: optionResults,
       byBatch: Object.entries(byBatch).map(([batch, count]) => ({ batch: Number(batch), count })).sort((a, b) => a.batch - b.batch),
       byRole: Object.entries(byRole).map(([role, count]) => ({ role, count })).sort((a, b) => b.count - a.count),
       voters: voters.map((v) => {
@@ -133,6 +188,8 @@ export class VoteService {
           role: u?.role,
           votedAt: v.votedAt,
           skipped: v.skipped,
+          // Only SuperAdmin can see which option each user selected
+          ...(isSuperAdmin && !v.skipped ? { selectedOption: optionMap.get(v.selectedOption.toString()) || 'Unknown' } : {}),
         };
       }),
     };

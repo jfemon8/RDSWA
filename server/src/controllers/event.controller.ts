@@ -40,8 +40,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const checkin = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { userId } = req.body;
-  await eventService.submitAttendance(req.params.id as string, userId, 'qr', (req.user._id as any).toString());
+  const { userId, method } = req.body;
+  const via = method === 'manual' ? 'manual' : 'qr';
+  await eventService.submitAttendance(req.params.id as string, userId, via, (req.user._id as any).toString());
   ApiResponse.success(res, null, 'Checked in');
 });
 

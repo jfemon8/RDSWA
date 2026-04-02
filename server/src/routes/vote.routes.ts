@@ -14,6 +14,7 @@ router.get('/:id', authenticate(), voteController.getById);
 router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createVoteSchema }), auditLog('vote.create', 'votes'), voteController.create);
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateVoteSchema }), auditLog('vote.update', 'votes'), voteController.update);
 router.post('/:id/cast', authenticate(), authorize(UserRole.MEMBER), validate({ body: castVoteSchema }), voteController.castVote);
+router.post('/:id/skip', authenticate(), authorize(UserRole.MEMBER), voteController.skipVote);
 router.get('/:id/results', authenticate(), voteController.getResults);
 router.get('/:id/stats', authenticate(), authorize(UserRole.MODERATOR), voteController.getStats);
 router.patch('/:id/close', authenticate(), authorize(UserRole.MODERATOR), auditLog('vote.close', 'votes'), voteController.closeManually);

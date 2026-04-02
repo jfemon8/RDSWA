@@ -14,6 +14,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import routes from './routes';
 import { startAlumniTagger } from './jobs/alumniTagger';
 import { startVoteCloser } from './jobs/voteCloser';
+import { startVoteActivator } from './jobs/voteActivator';
 import { startReminderSender } from './jobs/reminderSender';
 import { startPaymentReminder } from './jobs/paymentReminder';
 import { startNoticePublisher } from './jobs/noticePublisher';
@@ -73,6 +74,7 @@ async function start() {
   // Start scheduled jobs
   startAlumniTagger();
   startVoteCloser();
+  startVoteActivator();
   startReminderSender();
   startPaymentReminder();
   startNoticePublisher();
