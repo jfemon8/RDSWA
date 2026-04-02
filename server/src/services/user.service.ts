@@ -2,6 +2,7 @@ import { User, IUserDocument, RoleAssignment, Notification, ChatGroup } from '..
 import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { SUPER_ADMIN_EMAILS } from '../config/constants';
 import { FilterQuery } from 'mongoose';
 import { notificationService } from './notification.service';
@@ -116,8 +117,25 @@ export class UserService {
       const hasCurrentJob = user.jobHistory?.some((j: any) => j.isCurrent);
       const hasCurrentBusiness = user.businessInfo?.some((b: any) => b.isCurrent);
       if (hasCurrentJob || hasCurrentBusiness) {
+        const previousRole = user.role;
         user.role = UserRole.ALUMNI;
         await user.save();
+
+        await RoleAssignment.create({
+          user: user._id,
+          role: UserRole.ALUMNI,
+          previousRole,
+          assignmentType: 'auto',
+          reason: 'alumni_auto_detected',
+        });
+
+        await Notification.create({
+          recipient: user._id,
+          type: 'role_changed',
+          title: 'Alumni Status Assigned',
+          message: 'You have been classified as an Alumni based on your current employment or business.',
+          link: '/dashboard',
+        });
       }
     }
 
@@ -513,6 +531,44 @@ export class UserService {
     target.suspendedAt = new Date();
     target.suspendedBy = suspendedBy._id as any;
     await target.save();
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'system',
+      title: 'Account Suspended',
+      message: `Your account has been suspended. Reason: ${reason}`,
+      link: '/dashboard',
+    });
+
+    return target;
+  }
+
+  async unsuspendUser(
+    targetUserId: string,
+    unsuspendedBy: IUserDocument
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    if (target.membershipStatus !== 'suspended') {
+      throw ApiError.badRequest('User is not suspended');
+    }
+
+    target.membershipStatus = 'approved';
+    target.suspensionReason = undefined;
+    target.suspendedAt = undefined;
+    target.suspendedBy = undefined;
+    // Restore appropriate role
+    target.role = resolveBaseRole(target);
+    await target.save();
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'system',
+      title: 'Account Reinstated',
+      message: 'Your account suspension has been lifted. You can now access all member features.',
+      link: '/dashboard',
+    });
 
     return target;
   }

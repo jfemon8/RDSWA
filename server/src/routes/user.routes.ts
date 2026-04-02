@@ -44,6 +44,7 @@ router.patch('/:id/role', authenticate(), authorize(UserRole.ADMIN), validate({ 
 router.patch('/:id/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('user.approve', 'users'), userController.approveMembership);
 router.patch('/:id/reject', authenticate(), authorize(UserRole.MODERATOR), validate({ body: memberActionSchema }), auditLog('user.reject', 'users'), userController.rejectMembership);
 router.patch('/:id/suspend', authenticate(), authorize(UserRole.ADMIN), validate({ body: memberActionSchema }), auditLog('user.suspend', 'users'), userController.suspendUser);
+router.patch('/:id/unsuspend', authenticate(), authorize(UserRole.ADMIN), auditLog('user.unsuspend', 'users'), userController.unsuspendUser);
 
 // SuperAdmin: soft-delete user
 router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('user.delete', 'users'), asyncHandler(async (req, res) => {

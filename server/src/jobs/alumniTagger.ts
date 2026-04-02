@@ -1,4 +1,4 @@
-import { User } from '../models';
+import { User, RoleAssignment, Notification } from '../models';
 import { UserRole } from '@rdswa/shared';
 
 /**
@@ -21,9 +21,31 @@ export async function runAlumniTagger(): Promise<void> {
 
     let count = 0;
     for (const user of candidates) {
-      user.role = UserRole.ALUMNI;
-      await user.save();
-      count++;
+      try {
+        const previousRole = user.role;
+        user.role = UserRole.ALUMNI;
+        await user.save();
+
+        await RoleAssignment.create({
+          user: user._id,
+          role: UserRole.ALUMNI,
+          previousRole,
+          assignmentType: 'auto',
+          reason: 'alumni_auto_tagger',
+        });
+
+        await Notification.create({
+          recipient: user._id,
+          type: 'role_changed',
+          title: 'Alumni Status Assigned',
+          message: 'You have been classified as an Alumni based on your current employment or business.',
+          link: '/dashboard',
+        });
+
+        count++;
+      } catch (err) {
+        console.error(`Alumni tagger: failed to tag user ${user._id}:`, err);
+      }
     }
 
     if (count > 0) {

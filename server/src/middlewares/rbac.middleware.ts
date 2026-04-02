@@ -19,6 +19,11 @@ export function authorize(...allowedRoles: UserRole[]) {
       return next();
     }
 
+    // Suspended users cannot access any protected resource
+    if ((req.user as any).membershipStatus === 'suspended') {
+      return next(ApiError.forbidden('Your account has been suspended. Please contact an admin.'));
+    }
+
     // Check if user's role is in the allowed list
     if (allowedRoles.includes(userRole)) {
       return next();

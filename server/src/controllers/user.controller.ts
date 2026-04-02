@@ -76,6 +76,13 @@ export const suspendUser = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.success(res, user, 'User suspended');
 });
 
+export const unsuspendUser = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const user = await userService.unsuspendUser(id, req.user);
+  ApiResponse.success(res, user, 'User reinstated');
+});
+
 export const endorseSkill = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;

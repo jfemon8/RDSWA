@@ -99,7 +99,7 @@ export default function AdminAlumniMonitorPage() {
                         )}
                         {currentBiz && (
                           <span className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded">
-                            <Building2 className="h-3 w-3" /> {currentBiz.name} ({currentBiz.type})
+                            <Building2 className="h-3 w-3" /> {currentBiz.businessName} ({currentBiz.type})
                           </span>
                         )}
                         {!currentJob && !currentBiz && (
