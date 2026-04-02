@@ -64,7 +64,7 @@ export const getReceipt = asyncHandler(async (req: Request, res: Response) => {
 
   const donorName = (donation.donor as any)?.name || donation.donorName || 'Anonymous';
   const donorEmail = (donation.donor as any)?.email || donation.donorEmail || '';
-  const date = new Date(donation.createdAt).toLocaleDateString('en-US', { dateStyle: 'long' });
+  const date = new Date(donation.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
 
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Donation Receipt</title>

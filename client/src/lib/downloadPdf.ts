@@ -83,7 +83,7 @@ export async function downloadTablePdf(csv: string, title: string, filename: str
       </div>
       <h2 style="text-align:center;font-size:16px;margin:8px 0 4px;">${title}</h2>
       <p style="text-align:center;color:#888;font-size:10px;margin:0 0 12px;">
-        Generated on ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })} — Total: ${rows.length} records
+        Generated on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' })} — Total: ${rows.length} records
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:10px;">
         <thead>

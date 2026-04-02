@@ -20,7 +20,7 @@ export default function ProfileViewPage() {
 
   const formatDate = (d: string | Date | undefined) => {
     if (!d) return null;
-    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
   };
 
   const formatAddress = (addr: any) => {

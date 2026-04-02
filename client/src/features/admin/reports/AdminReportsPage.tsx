@@ -792,7 +792,7 @@ function CustomReportBuilder() {
                           else val = String(val);
                           // Format dates
                           if (f.includes('Date') || f === 'createdAt' || f === 'startDate' || f === 'endDate') {
-                            try { val = val ? new Date(val).toLocaleDateString() : ''; } catch {}
+                            try { val = val ? new Date(val).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' }) : ''; } catch {}
                           }
                           return <td key={f} className="p-2 text-muted-foreground max-w-[200px] truncate">{val}</td>;
                         })}

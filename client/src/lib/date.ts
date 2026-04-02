@@ -1,27 +1,31 @@
 const TZ = 'Asia/Dhaka';
 
-/** Format date only — e.g. "Mar 12, 2026" */
-export function formatDate(date: string | Date, style: 'short' | 'medium' | 'long' | 'full' = 'medium') {
-  return new Date(date).toLocaleDateString('en-US', { dateStyle: style, timeZone: TZ });
+const DATE_OPTS: Intl.DateTimeFormatOptions = {
+  day: '2-digit', month: 'long', year: 'numeric', timeZone: TZ,
+};
+
+const TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: TZ,
+};
+
+/** Format date — e.g. "02 April 2026" (dd MMMM yyyy, BST) */
+export function formatDate(date: string | Date, _style?: string) {
+  return new Date(date).toLocaleDateString('en-GB', DATE_OPTS);
 }
 
-/** Format time only — e.g. "2:30 PM" */
-export function formatTime(date: string | Date, style: 'short' | 'medium' | 'long' = 'short') {
-  return new Date(date).toLocaleTimeString('en-US', { timeStyle: style, timeZone: TZ });
+/** Format time — e.g. "09:20:00 PM" (hh:mm:ss AM/PM, BST) */
+export function formatTime(date: string | Date, _style?: string) {
+  return new Date(date).toLocaleTimeString('en-US', TIME_OPTS);
 }
 
-/** Format date + time — e.g. "3/12/26, 2:30 PM" */
-export function formatDateTime(
-  date: string | Date,
-  dateStyle: 'short' | 'medium' | 'long' = 'short',
-  timeStyle: 'short' | 'medium' | 'long' = 'short',
-) {
-  return new Date(date).toLocaleString('en-US', { dateStyle, timeStyle, timeZone: TZ });
+/** Format date + time — e.g. "02 April 2026, 09:20:00 PM" (BST) */
+export function formatDateTime(date: string | Date, _dateStyle?: string, _timeStyle?: string) {
+  return `${formatDate(date)}, ${formatTime(date)}`;
 }
 
-/** Format with custom options */
-export function formatDateCustom(date: string | Date, options: Intl.DateTimeFormatOptions) {
-  return new Date(date).toLocaleDateString('en-US', { ...options, timeZone: TZ });
+/** Format with custom options (always BST) */
+export function formatDateCustom(date: string | Date, _options?: Intl.DateTimeFormatOptions) {
+  return formatDate(date);
 }
 
 /** Convert UTC date to Asia/Dhaka datetime-local input value (YYYY-MM-DDTHH:mm) */
