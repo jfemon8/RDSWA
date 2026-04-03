@@ -7,6 +7,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
+import RichContent from '@/components/ui/RichContent';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -88,7 +89,7 @@ export default function CommitteePage() {
                       {c.tenure.endDate ? ` - ${new Date(c.tenure.endDate).getFullYear()}` : ' - Present'}
                     </p>
                   )}
-                  {c.description && <p className="text-sm text-muted-foreground mt-2">{c.description}</p>}
+                  {c.description && <RichContent html={c.description} className="text-sm text-muted-foreground mt-2" />}
                 </div>
 
                 <div className="p-6">
@@ -135,7 +136,7 @@ function MemberCard({ member }: { member: any }) {
           <p className="text-xs text-muted-foreground/70">{member.positionBn}</p>
         )}
         {member.responsibilities && (
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2">{member.responsibilities}</p>
+          <RichContent html={member.responsibilities} className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2" />
         )}
       </div>
     </Link>

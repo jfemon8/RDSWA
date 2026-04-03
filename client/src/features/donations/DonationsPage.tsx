@@ -11,6 +11,7 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import SEO from '@/components/SEO';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import RichContent from '@/components/ui/RichContent';
 
 interface PaymentMethod {
   provider: string;
@@ -85,7 +86,7 @@ export default function DonationsPage() {
                   >
                     {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
                     <h3 className="font-semibold mb-2 text-foreground">{c.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>
+                    {c.description && <RichContent html={c.description} className="text-sm text-muted-foreground mb-3 line-clamp-2" />}
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Raised</span>

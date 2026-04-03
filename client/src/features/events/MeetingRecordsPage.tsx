@@ -6,6 +6,7 @@ import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Users, FileText, Loader2 } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
+import RichContent from '@/components/ui/RichContent';
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
@@ -81,7 +82,7 @@ export default function MeetingRecordsPage() {
                           <h3 className="font-semibold truncate">{m.title}</h3>
                         </div>
                         {m.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{m.description}</p>
+                          <RichContent html={m.description} className="text-sm text-muted-foreground line-clamp-2 mb-2" />
                         )}
                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">

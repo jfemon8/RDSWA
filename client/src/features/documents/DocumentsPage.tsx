@@ -5,6 +5,7 @@ import { FileText, Download, Loader2, Search } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
+import RichContent from '@/components/ui/RichContent';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -88,7 +89,7 @@ export default function DocumentsPage() {
                 {getFileIcon(doc.fileType)}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium truncate text-foreground">{doc.title}</h3>
-                  {doc.description && <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{doc.description}</p>}
+                  {doc.description && <RichContent html={doc.description} className="text-sm text-muted-foreground line-clamp-1 mt-0.5" />}
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                     <span className="capitalize">{doc.category}</span>
                     {doc.fileType && <span className="uppercase">{doc.fileType}</span>}

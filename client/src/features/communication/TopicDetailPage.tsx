@@ -10,6 +10,7 @@ import {
 
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import RichContent from '@/components/ui/RichContent';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { formatDate } from '@/lib/date';
@@ -157,7 +158,7 @@ export default function TopicDetailPage() {
             )}
           </div>
 
-          <div className="mt-4 text-sm whitespace-pre-wrap">{topic.content}</div>
+          <RichContent html={topic.content} className="mt-4 text-sm" />
 
           <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground pt-3 border-t">
             <Link to={`/members/${topic.author?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors">
@@ -257,7 +258,7 @@ export default function TopicDetailPage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                      <RichContent html={reply.content} className="text-sm" />
                     )}
                   </div>
                 </div>
