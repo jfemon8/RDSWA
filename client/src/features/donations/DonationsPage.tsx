@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
-import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw } from 'lucide-react';
+import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw, Landmark } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -15,8 +15,13 @@ import RichContent from '@/components/ui/RichContent';
 
 interface PaymentMethod {
   provider: string;
-  number: string;
-  accountType: string;
+  number?: string;
+  accountType?: string;
+  bankName?: string;
+  branchName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  routingNumber?: string;
 }
 
 export default function DonationsPage() {
@@ -223,29 +228,53 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className={`flex items-center justify-between p-2.5 rounded-md border text-sm ${
+                className={`p-2.5 rounded-md border text-sm ${
                   m.provider.toLowerCase() === form.paymentMethod.toLowerCase()
                     ? 'border-primary bg-primary/5'
                     : 'border'
-                }`}
+                } ${m.provider === 'bank' ? 'sm:col-span-2' : ''}`}
               >
-                <div>
-                  <span className="font-medium capitalize text-foreground">{m.provider}</span>
-                  <span className="text-muted-foreground ml-1 text-xs">({m.accountType})</span>
-                  <p className="font-mono text-sm text-foreground">{m.number}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => copyNumber(m.number)}
-                  className="p-1.5 rounded hover:bg-accent"
-                  title="Copy number"
-                >
-                  {copiedNumber === m.number ? (
-                    <Check className="h-3.5 w-3.5 text-green-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </button>
+                {m.provider === 'bank' ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Landmark className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-foreground">Bank Transfer</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                      <div><span className="text-muted-foreground">Bank:</span> <span className="text-foreground">{m.bankName}</span></div>
+                      {m.branchName && <div><span className="text-muted-foreground">Branch:</span> <span className="text-foreground">{m.branchName}</span></div>}
+                      <div><span className="text-muted-foreground">A/C Name:</span> <span className="text-foreground">{m.accountName}</span></div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">A/C No:</span>
+                        <span className="font-mono text-foreground">{m.accountNumber}</span>
+                        <button type="button" onClick={() => copyNumber(m.accountNumber!)} className="p-0.5 rounded hover:bg-accent" title="Copy account number">
+                          {copiedNumber === m.accountNumber ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                        </button>
+                      </div>
+                      {m.routingNumber && <div><span className="text-muted-foreground">Routing:</span> <span className="font-mono text-foreground">{m.routingNumber}</span></div>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium capitalize text-foreground">{m.provider}</span>
+                      <span className="text-muted-foreground ml-1 text-xs">({m.accountType})</span>
+                      <p className="font-mono text-sm text-foreground">{m.number}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyNumber(m.number!)}
+                      className="p-1.5 rounded hover:bg-accent"
+                      title="Copy number"
+                    >
+                      {copiedNumber === m.number ? (
+                        <Check className="h-3.5 w-3.5 text-green-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

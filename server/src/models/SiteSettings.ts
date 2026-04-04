@@ -54,6 +54,14 @@ export interface ISiteSettingsDocument extends Document {
     bkash?: { number: string; accountType: string; isActive: boolean };
     nagad?: { number: string; accountType: string; isActive: boolean };
     rocket?: { number: string; accountType: string; isActive: boolean };
+    bank?: {
+      bankName: string;
+      branchName: string;
+      accountName: string;
+      accountNumber: string;
+      routingNumber: string;
+      isActive: boolean;
+    };
   };
   academicConfig: {
     batches: string[];
@@ -176,6 +184,14 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       bkash: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
       nagad: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
       rocket: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
+      bank: {
+        bankName: { type: String },
+        branchName: { type: String },
+        accountName: { type: String },
+        accountNumber: { type: String },
+        routingNumber: { type: String },
+        isActive: { type: Boolean, default: false },
+      },
     },
     academicConfig: {
       batches: {
