@@ -26,4 +26,7 @@ router.post('/:id/archive', authenticate(), authorize(UserRole.MODERATOR), audit
 router.post('/:id/members', authenticate(), authorize(UserRole.MODERATOR), validate({ body: addCommitteeMemberSchema }), auditLog('committee.add_member', 'committees'), committeeController.addMember);
 router.delete('/:id/members/:userId', authenticate(), authorize(UserRole.MODERATOR), auditLog('committee.remove_member', 'committees'), committeeController.removeMember);
 
+// Admin+: delete committee (soft-delete)
+router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('committee.delete', 'committees'), committeeController.remove);
+
 export default router;

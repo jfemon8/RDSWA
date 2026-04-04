@@ -6,16 +6,22 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Loader2, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
-import { CommitteePosition } from '@rdswa/shared';
+import { CommitteePosition, UserRole } from '@rdswa/shared';
+import { useAuthStore } from '@/stores/authStore';
+import { useConfirm } from '@/components/ui/ConfirmModal';
+import { hasMinRole } from '@/lib/roles';
 
 const POSITIONS = Object.values(CommitteePosition);
 
 export default function AdminCommitteesPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
+  const { user: currentUser } = useAuthStore();
+  const canDelete = currentUser?.role ? hasMinRole(currentUser.role, UserRole.ADMIN) : false;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -55,6 +61,12 @@ export default function AdminCommitteesPage() {
     mutationFn: (id: string) => api.post(`/committees/${id}/archive`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }); toast.success('Committee archived'); },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to archive committee'); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/committees/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.committees.all }); toast.success('Committee deleted'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete committee'); },
   });
 
   const committees = data?.data || [];
@@ -177,6 +189,18 @@ export default function AdminCommitteesPage() {
                         title="Archive"
                       >
                         <Archive className="h-4 w-4 text-foreground" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={async () => {
+                          const ok = await confirm({ title: 'Delete Committee', message: `Are you sure you want to delete "${c.name}"? This action cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                          if (ok) deleteMutation.mutate(c._id);
+                        }}
+                        className="p-2 hover:bg-accent rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </button>
                     )}
                   </div>

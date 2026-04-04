@@ -47,3 +47,8 @@ export const archive = asyncHandler(async (req: Request, res: Response) => {
   const committee = await committeeService.archive(req.params.id as string);
   ApiResponse.success(res, committee, 'Committee archived');
 });
+
+export const remove = asyncHandler(async (req: Request, res: Response) => {
+  await committeeService.delete(req.params.id as string);
+  ApiResponse.success(res, null, 'Committee deleted');
+});

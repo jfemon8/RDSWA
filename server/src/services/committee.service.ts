@@ -168,6 +168,15 @@ export class CommitteeService {
     return committee;
   }
 
+  async delete(id: string): Promise<void> {
+    const committee = await Committee.findOne({ _id: id, isDeleted: false });
+    if (!committee) throw ApiError.notFound('Committee not found');
+
+    committee.isDeleted = true;
+    committee.isCurrent = false;
+    await committee.save();
+  }
+
   /**
    * Auto-assign moderator roles to qualifying committee positions.
    */
