@@ -45,11 +45,11 @@ export const getPaymentMethods = asyncHandler(async (_req: Request, res: Respons
   let settings = await SiteSettings.findOne();
   if (!settings) settings = await SiteSettings.create({});
 
-  const methods: Array<{ provider: string; number: string; type: string }> = [];
+  const methods: Array<{ provider: string; number: string; accountType: string }> = [];
   const gw = settings.paymentGateway;
-  if (gw?.bkash?.isActive && gw.bkash.number) methods.push({ provider: 'bkash', number: gw.bkash.number, type: gw.bkash.type });
-  if (gw?.nagad?.isActive && gw.nagad.number) methods.push({ provider: 'nagad', number: gw.nagad.number, type: gw.nagad.type });
-  if (gw?.rocket?.isActive && gw.rocket.number) methods.push({ provider: 'rocket', number: gw.rocket.number, type: gw.rocket.type });
+  if (gw?.bkash?.isActive && gw.bkash.number) methods.push({ provider: 'bkash', number: gw.bkash.number, accountType: gw.bkash.accountType });
+  if (gw?.nagad?.isActive && gw.nagad.number) methods.push({ provider: 'nagad', number: gw.nagad.number, accountType: gw.nagad.accountType });
+  if (gw?.rocket?.isActive && gw.rocket.number) methods.push({ provider: 'rocket', number: gw.rocket.number, accountType: gw.rocket.accountType });
 
   ApiResponse.success(res, methods);
 });

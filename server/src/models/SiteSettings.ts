@@ -51,9 +51,9 @@ export interface ISiteSettingsDocument extends Document {
   privacyPolicy: Array<{ title: string; content: string }>;
   termsConditions: Array<{ title: string; content: string }>;
   paymentGateway: {
-    bkash?: { number: string; type: string; isActive: boolean };
-    nagad?: { number: string; type: string; isActive: boolean };
-    rocket?: { number: string; type: string; isActive: boolean };
+    bkash?: { number: string; accountType: string; isActive: boolean };
+    nagad?: { number: string; accountType: string; isActive: boolean };
+    rocket?: { number: string; accountType: string; isActive: boolean };
   };
   academicConfig: {
     batches: string[];
@@ -173,9 +173,9 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       ],
     },
     paymentGateway: {
-      bkash: { number: String, type: String, isActive: { type: Boolean, default: false } },
-      nagad: { number: String, type: String, isActive: { type: Boolean, default: false } },
-      rocket: { number: String, type: String, isActive: { type: Boolean, default: false } },
+      bkash: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
+      nagad: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
+      rocket: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
     },
     academicConfig: {
       batches: {

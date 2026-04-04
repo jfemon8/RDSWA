@@ -16,7 +16,7 @@ import RichContent from '@/components/ui/RichContent';
 interface PaymentMethod {
   provider: string;
   number: string;
-  type: string;
+  accountType: string;
 }
 
 export default function DonationsPage() {
@@ -231,7 +231,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
               >
                 <div>
                   <span className="font-medium capitalize text-foreground">{m.provider}</span>
-                  <span className="text-muted-foreground ml-1 text-xs">({m.type})</span>
+                  <span className="text-muted-foreground ml-1 text-xs">({m.accountType})</span>
                   <p className="font-mono text-sm text-foreground">{m.number}</p>
                 </div>
                 <button

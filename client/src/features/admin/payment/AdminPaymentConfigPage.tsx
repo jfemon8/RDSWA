@@ -7,17 +7,26 @@ import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, CreditCard } from 'lucide-react';
 
+interface GatewayEntry { number: string; accountType: string; isActive: boolean }
 interface PaymentGateway {
-  bkash: { number: string; isActive: boolean };
-  nagad: { number: string; isActive: boolean };
-  rocket: { number: string; isActive: boolean };
+  bkash: GatewayEntry;
+  nagad: GatewayEntry;
+  rocket: GatewayEntry;
 }
 
 const DEFAULT_GATEWAY: PaymentGateway = {
-  bkash: { number: '', isActive: false },
-  nagad: { number: '', isActive: false },
-  rocket: { number: '', isActive: false },
+  bkash: { number: '', accountType: 'personal', isActive: false },
+  nagad: { number: '', accountType: 'personal', isActive: false },
+  rocket: { number: '', accountType: 'personal', isActive: false },
 };
+
+const BD_MOBILE_REGEX = /^01[3-9]\d{8}$/;
+const BD_ROCKET_REGEX = /^01[3-9]\d{8,9}$/;
+
+function isValidFormat(method: 'bkash' | 'nagad' | 'rocket', num: string): boolean {
+  if (num === '') return true;
+  return method === 'rocket' ? BD_ROCKET_REGEX.test(num) : BD_MOBILE_REGEX.test(num);
+}
 
 export default function AdminPaymentConfigPage() {
   const queryClient = useQueryClient();
@@ -37,9 +46,9 @@ export default function AdminPaymentConfigPage() {
     if (data?.data) {
       const s = data.data;
       setForm({
-        bkash: s.paymentGateway?.bkash || DEFAULT_GATEWAY.bkash,
-        nagad: s.paymentGateway?.nagad || DEFAULT_GATEWAY.nagad,
-        rocket: s.paymentGateway?.rocket || DEFAULT_GATEWAY.rocket,
+        bkash: { ...DEFAULT_GATEWAY.bkash, ...s.paymentGateway?.bkash },
+        nagad: { ...DEFAULT_GATEWAY.nagad, ...s.paymentGateway?.nagad },
+        rocket: { ...DEFAULT_GATEWAY.rocket, ...s.paymentGateway?.rocket },
       });
     }
   }, [data]);
@@ -53,8 +62,19 @@ export default function AdminPaymentConfigPage() {
     onError: () => toast.error('Failed to update payment configuration'),
   });
 
+  const hasValidationErrors = (['bkash', 'nagad', 'rocket'] as const).some(
+    (m) => !isValidFormat(m, form[m].number)
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    for (const method of ['bkash', 'nagad', 'rocket'] as const) {
+      if (!isValidFormat(method, form[method].number)) {
+        const hint = method === 'rocket' ? '01XXXXXXXXX অথবা 01XXXXXXXXXX' : '01XXXXXXXXX';
+        toast.error(`${method} এর জন্য সঠিক মোবাইল নম্বর দিন (${hint})`);
+        return;
+      }
+    }
     saveMutation.mutate();
   };
 
@@ -102,22 +122,54 @@ export default function AdminPaymentConfigPage() {
                     Active
                   </label>
                 </div>
-                <input
-                  placeholder={`${method.charAt(0).toUpperCase() + method.slice(1)} Number`}
-                  value={form[method].number}
+                <div>
+                  <input
+                    placeholder="01XXXXXXXXX"
+                    value={form[method].number}
+                    maxLength={method === 'rocket' ? 12 : 11}
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '');
+                      setForm({
+                        ...form,
+                        [method]: { ...form[method], number: digits },
+                      });
+                    }}
+                    className={`w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
+                      !isValidFormat(method, form[method].number) ? 'border-destructive' : ''
+                    }`}
+                  />
+                  {!isValidFormat(method, form[method].number) && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-destructive mt-1"
+                    >
+                      {method === 'rocket'
+                        ? 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX বা 01XXXXXXXXXX)'
+                        : 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX)'}
+                    </motion.p>
+                  )}
+                </div>
+                <select
+                  value={form[method].accountType}
                   onChange={(e) => setForm({
                     ...form,
-                    [method]: { ...form[method], number: e.target.value },
+                    [method]: { ...form[method], accountType: e.target.value },
                   })}
                   className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                />
+                >
+                  <option value="personal">Personal</option>
+                  <option value="agent">Agent</option>
+                  <option value="merchant">Merchant</option>
+                </select>
               </div>
             </FadeIn>
           ))}
 
           <motion.button
             type="submit"
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || hasValidationErrors}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
