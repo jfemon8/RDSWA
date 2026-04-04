@@ -136,6 +136,10 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     paymentMethod: 'bkash',
     transactionId: '',
     senderNumber: '',
+    senderBankName: '',
+    senderAccountNumber: '',
+    cashDate: '',
+    cashTime: '',
     donorName: '',
     donorEmail: '',
     donorPhone: '',
@@ -144,6 +148,10 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     isRecurring: false,
     recurringInterval: 'monthly' as 'monthly' | 'yearly',
   });
+
+  const isMobile = ['bkash', 'nagad', 'rocket'].includes(form.paymentMethod);
+  const isBank = form.paymentMethod === 'bank';
+  const isCash = form.paymentMethod === 'cash';
 
   // Fetch dynamic payment methods from DB
   const { data: paymentMethodsData, isLoading: loadingMethods } = useQuery({
@@ -167,12 +175,21 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
         amount: Number(form.amount),
         type: form.type,
         paymentMethod: form.paymentMethod,
-        transactionId: form.transactionId,
-        senderNumber: form.senderNumber,
         note: form.note,
         visibility: form.visibility,
         isRecurring: form.isRecurring,
       };
+      if (isMobile) {
+        payload.transactionId = form.transactionId;
+        payload.senderNumber = form.senderNumber;
+      } else if (isBank) {
+        payload.transactionId = form.transactionId;
+        payload.senderBankName = form.senderBankName;
+        payload.senderAccountNumber = form.senderAccountNumber;
+      } else if (isCash) {
+        payload.cashDate = form.cashDate;
+        payload.cashTime = form.cashTime;
+      }
       if (form.isRecurring) {
         payload.recurringInterval = form.recurringInterval;
       }
@@ -336,20 +353,53 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             <option value="construction-fund">Construction Fund</option>
           </select>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
-            className="px-3 py-2 border rounded-md bg-background text-sm">
-            <option value="bkash">bKash</option>
-            <option value="nagad">Nagad</option>
-            <option value="rocket">Rocket</option>
-            <option value="bank">Bank Transfer</option>
-            <option value="cash">Cash</option>
-          </select>
-          <input placeholder="Transaction ID" value={form.transactionId} onChange={(e) => setForm({ ...form, transactionId: e.target.value })}
-            className="px-3 py-2 border rounded-md bg-background text-sm" />
-        </div>
-        <input placeholder="Sender Number (your mobile banking number)" value={form.senderNumber} onChange={(e) => setForm({ ...form, senderNumber: e.target.value })}
-          className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+        <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+          className="w-full px-3 py-2 border rounded-md bg-background text-sm">
+          <option value="bkash">bKash</option>
+          <option value="nagad">Nagad</option>
+          <option value="rocket">Rocket</option>
+          <option value="bank">Bank Transfer</option>
+          <option value="cash">Cash</option>
+        </select>
+
+        <AnimatePresence mode="wait">
+          {isMobile && (
+            <motion.div key="mobile-fields" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3">
+              <input placeholder="Transaction ID" value={form.transactionId} onChange={(e) => setForm({ ...form, transactionId: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+              <input placeholder="Sender Number (your mobile banking number)" value={form.senderNumber} onChange={(e) => setForm({ ...form, senderNumber: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+            </motion.div>
+          )}
+          {isBank && (
+            <motion.div key="bank-fields" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3">
+              <input placeholder="Transaction ID / Reference" value={form.transactionId} onChange={(e) => setForm({ ...form, transactionId: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input placeholder="Sender Bank Name" value={form.senderBankName} onChange={(e) => setForm({ ...form, senderBankName: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm" />
+                <input placeholder="Sender Account Number" value={form.senderAccountNumber} onChange={(e) => setForm({ ...form, senderAccountNumber: e.target.value })}
+                  className="px-3 py-2 border rounded-md bg-background text-sm" />
+              </div>
+            </motion.div>
+          )}
+          {isCash && (
+            <motion.div key="cash-fields" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Date of Payment</label>
+                  <input type="date" value={form.cashDate} onChange={(e) => setForm({ ...form, cashDate: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Time of Payment</label>
+                  <input type="time" value={form.cashTime} onChange={(e) => setForm({ ...form, cashTime: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-background text-sm" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Recurring toggle */}
         <div className="flex items-center gap-4 flex-wrap">

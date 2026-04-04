@@ -12,6 +12,10 @@ export interface IDonationDocument extends Document {
   paymentMethod: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash' | 'other';
   senderNumber?: string;
   transactionId?: string;
+  senderBankName?: string;
+  senderAccountNumber?: string;
+  cashDate?: string;
+  cashTime?: string;
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded' | 'revision';
   revisionNote?: string;
   paymentVerifiedBy?: mongoose.Types.ObjectId;
@@ -41,6 +45,10 @@ const donationSchema = new Schema<IDonationDocument>(
     paymentMethod: { type: String, enum: ['bkash', 'nagad', 'rocket', 'bank', 'cash', 'other'], required: true },
     senderNumber: String,
     transactionId: String,
+    senderBankName: String,
+    senderAccountNumber: String,
+    cashDate: String,
+    cashTime: String,
     paymentStatus: { type: String, enum: ['pending', 'completed', 'failed', 'refunded', 'revision'], default: 'pending' },
     revisionNote: String,
     paymentVerifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
