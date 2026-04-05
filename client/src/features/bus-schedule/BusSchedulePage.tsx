@@ -1,16 +1,19 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
   Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink,
   ChevronLeft, ChevronRight, AlertTriangle, ArrowLeft, Info, Star, Building2,
+  MessageSquare, Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import { useBusSocket } from '@/hooks/useSocket';
-import { formatTimeString } from '@/lib/date';
+import { formatDate, formatTimeString } from '@/lib/date';
+import { useAuthStore } from '@/stores/authStore';
+import { useToast } from '@/components/ui/Toast';
 
 const PAGE_LIMIT = 20;
 
@@ -343,7 +346,7 @@ export default function BusSchedulePage() {
                             ))}
                           </div>
                         )}
-                        <p className="text-xs text-primary mt-2">View schedules &rarr;</p>
+                        <p className="text-xs text-primary mt-2">View schedules</p>
                       </motion.button>
                     </FadeIn>
                   ))}
@@ -479,7 +482,7 @@ export default function BusSchedulePage() {
                             <p className="text-xs text-muted-foreground capitalize mt-0.5">
                               {op.scheduleType}{op.contactNumber ? ` · ${op.contactNumber}` : ''}
                             </p>
-                            <p className="text-xs text-primary mt-2">View details &rarr;</p>
+                            <p className="text-xs text-primary mt-2">View details</p>
                           </div>
                         </div>
                       </motion.button>
@@ -576,7 +579,7 @@ function ScheduleDetailView({ schedule: s, onOperatorClick }: { schedule: any; o
                             onClick={() => onOperatorClick(opId)}
                             className="text-sm font-medium text-primary hover:underline text-left"
                           >
-                            {opName} &rarr;
+                            {opName}
                           </button>
                         ) : (
                           <p className="text-sm font-medium">{opName || 'N/A'}</p>
@@ -734,7 +737,193 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
           )}
         </div>
       </FadeIn>
+
+      {/* Reviews & Rating */}
+      <FadeIn delay={0.15} direction="up">
+        <div className="border rounded-xl p-5 bg-card mt-4">
+          <OperatorReviews operatorId={operatorId} />
+        </div>
+      </FadeIn>
     </motion.div>
+  );
+}
+
+function OperatorReviews({ operatorId }: { operatorId: string }) {
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['bus', 'operator', operatorId, 'reviews'],
+    queryFn: async () => {
+      const { data } = await api.get(`/bus/operators/${operatorId}/reviews`);
+      return data;
+    },
+  });
+
+  const reviews = data?.data || [];
+  const myReview = user ? reviews.find((r: any) => r.user?._id === user._id) : null;
+
+  const submitMutation = useMutation({
+    mutationFn: () => api.post(`/bus/operators/${operatorId}/reviews`, { rating, comment: comment.trim() || undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bus', 'operator', operatorId] });
+      queryClient.invalidateQueries({ queryKey: ['bus', 'operator', operatorId, 'reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] });
+      setEditing(false);
+      toast.success(myReview ? 'Review updated' : 'Review submitted');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to submit review'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (reviewId: string) => api.delete(`/bus/operators/${operatorId}/reviews/${reviewId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bus', 'operator', operatorId] });
+      queryClient.invalidateQueries({ queryKey: ['bus', 'operator', operatorId, 'reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['bus', 'operators'] });
+      toast.success('Review removed');
+      setEditing(false);
+      setRating(0);
+      setComment('');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to remove review'),
+  });
+
+  const startEdit = () => {
+    setRating(myReview?.rating || 0);
+    setComment(myReview?.comment || '');
+    setEditing(true);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h3 className="font-semibold text-sm flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" /> Reviews ({reviews.length})
+        </h3>
+        {user && !editing && (
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={startEdit}
+            className="px-3 py-1.5 text-xs rounded-md border hover:bg-accent"
+          >
+            {myReview ? 'Edit your review' : 'Write a review'}
+          </motion.button>
+        )}
+      </div>
+
+      {!user && (
+        <p className="text-sm text-muted-foreground mb-3">Log in to rate this operator.</p>
+      )}
+
+      <AnimatePresence>
+        {editing && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-4"
+          >
+            <div className="border rounded-lg p-4 bg-background">
+              <div className="mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Your rating *</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(n)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setRating(n)}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star className={`h-6 w-6 ${n <= (hoverRating || rating) ? 'text-amber-500 fill-current' : 'text-muted-foreground/40'}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <textarea
+                placeholder="Optional comment..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                maxLength={1000}
+                rows={3}
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
+              />
+              <div className="flex gap-2 flex-wrap">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={rating < 1 || submitMutation.isPending}
+                  onClick={() => submitMutation.mutate()}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+                >
+                  {submitMutation.isPending ? 'Saving...' : myReview ? 'Update' : 'Submit'}
+                </motion.button>
+                {myReview && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate(myReview._id)}
+                    className="flex items-center gap-1 px-3 py-2 border border-destructive text-destructive rounded-md text-sm hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                  </motion.button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="px-3 py-2 border rounded-md text-sm hover:bg-accent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {isLoading ? (
+        <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : reviews.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No reviews yet. Be the first to review.</p>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((r: any, i: number) => (
+            <motion.div
+              key={r._id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className={`border rounded-lg p-3 bg-background ${myReview?._id === r._id ? 'border-primary/40' : ''}`}
+            >
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">{r.user?.name || 'Anonymous'}</span>
+                  {myReview?._id === r._id && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">Your review</span>
+                  )}
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star key={n} className={`h-3 w-3 ${n <= r.rating ? 'text-amber-500 fill-current' : 'text-muted-foreground/30'}`} />
+                    ))}
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">{formatDate(r.createdAt)}</span>
+              </div>
+              {r.comment && <p className="text-sm text-foreground mt-1.5">{r.comment}</p>}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
