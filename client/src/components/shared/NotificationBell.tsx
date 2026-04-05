@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationSocket } from '@/hooks/useSocket';
+import { formatDate } from '@/lib/date';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -189,5 +190,5 @@ function formatTimeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
+  return formatDate(dateStr);
 }

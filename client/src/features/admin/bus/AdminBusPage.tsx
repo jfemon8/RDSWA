@@ -10,6 +10,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
 import { Plus, Loader2, Pencil, Trash2, Upload, X, Download, FileText, Star } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
+import { toDateInput, formatTimeString } from '@/lib/date';
 
 const DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
 const DAY_LABELS: Record<string, string> = { sat: 'Sat', sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
@@ -438,8 +439,8 @@ function SchedulesList() {
       isSpecialSchedule: s.isSpecialSchedule || false,
       specialScheduleNote: s.specialScheduleNote || '',
       seasonalSeason: s.seasonalVariation?.season || '',
-      seasonalStartDate: s.seasonalVariation?.startDate ? new Date(s.seasonalVariation.startDate).toISOString().slice(0, 10) : '',
-      seasonalEndDate: s.seasonalVariation?.endDate ? new Date(s.seasonalVariation.endDate).toISOString().slice(0, 10) : '',
+      seasonalStartDate: s.seasonalVariation?.startDate ? toDateInput(s.seasonalVariation.startDate) : '',
+      seasonalEndDate: s.seasonalVariation?.endDate ? toDateInput(s.seasonalVariation.endDate) : '',
       seasonalDepartureTime: s.seasonalVariation?.adjustedDepartureTime || '',
       seasonalArrivalTime: s.seasonalVariation?.adjustedArrivalTime || '',
       seasonalNote: s.seasonalVariation?.note || '',
@@ -577,12 +578,12 @@ function SchedulesList() {
                 </div>
 
                 {/* Special schedule */}
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.isSpecialSchedule}
+                <div className="flex items-center gap-2">
+                  <input id="isSpecialSchedule" type="checkbox" checked={form.isSpecialSchedule}
                     onChange={(e) => setForm({ ...form, isSpecialSchedule: e.target.checked })}
-                    className="rounded" />
+                    className="rounded cursor-pointer" />
                   <span className="text-sm text-foreground">Special/Seasonal Schedule</span>
-                </label>
+                </div>
                 <AnimatePresence>
                   {form.isSpecialSchedule && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
@@ -663,8 +664,8 @@ function SchedulesList() {
                 {schedules.map((s: any) => (
                   <tr key={s._id} className="border-t hover:bg-accent/30">
                     <td className="p-3 text-xs text-foreground">{s.route?.origin} → {s.route?.destination}</td>
-                    <td className="p-3 text-foreground">{s.departureTime}</td>
-                    <td className="p-3 text-foreground">{s.arrivalTime || '-'}</td>
+                    <td className="p-3 text-foreground">{formatTimeString(s.departureTime)}</td>
+                    <td className="p-3 text-foreground">{s.arrivalTime ? formatTimeString(s.arrivalTime) : '-'}</td>
                     <td className="p-3 text-xs text-foreground">
                       {(s.buses || []).map((b: any, i: number) => (
                         <div key={i} className="py-0.5">

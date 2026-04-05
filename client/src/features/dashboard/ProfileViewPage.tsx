@@ -4,6 +4,7 @@ import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Bri
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
+import { formatDate as formatDateBST } from '@/lib/date';
 
 function getOrdinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -20,7 +21,7 @@ export default function ProfileViewPage() {
 
   const formatDate = (d: string | Date | undefined) => {
     if (!d) return null;
-    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
+    return formatDateBST(d);
   };
 
   const formatAddress = (addr: any) => {

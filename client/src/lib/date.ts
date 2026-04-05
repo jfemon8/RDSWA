@@ -18,6 +18,16 @@ export function formatTime(date: string | Date, _style?: string) {
   return new Date(date).toLocaleTimeString('en-US', TIME_OPTS);
 }
 
+/** Format "HH:MM" (24h) or "HH:MM:SS" string → "hh:mm AM/PM" */
+export function formatTimeString(hhmm: string | undefined | null): string {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return hhmm;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 /** Format date + time — e.g. "02 April 2026, 09:20:00 PM" (BST) */
 export function formatDateTime(date: string | Date, _dateStyle?: string, _timeStyle?: string) {
   return `${formatDate(date)}, ${formatTime(date)}`;
@@ -26,6 +36,17 @@ export function formatDateTime(date: string | Date, _dateStyle?: string, _timeSt
 /** Format with custom options (always BST) */
 export function formatDateCustom(date: string | Date, _options?: Intl.DateTimeFormatOptions) {
   return formatDate(date);
+}
+
+/** Convert date to Asia/Dhaka date input value (YYYY-MM-DD) */
+export function toDateInput(date: string | Date) {
+  const d = new Date(date);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: TZ,
+  });
+  const parts = formatter.formatToParts(d);
+  const get = (type: string) => parts.find(p => p.type === type)?.value || '00';
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 /** Convert UTC date to Asia/Dhaka datetime-local input value (YYYY-MM-DDTHH:mm) */

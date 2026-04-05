@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { hasMinRole } from '@/lib/roles';
+import { formatDate } from '@/lib/date';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
@@ -792,7 +793,7 @@ function CustomReportBuilder() {
                           else val = String(val);
                           // Format dates
                           if (f.includes('Date') || f === 'createdAt' || f === 'startDate' || f === 'endDate') {
-                            try { val = val ? new Date(val).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' }) : ''; } catch {}
+                            try { val = val ? formatDate(val) : ''; } catch {}
                           }
                           return <td key={f} className="p-2 text-muted-foreground max-w-[200px] truncate">{val}</td>;
                         })}
