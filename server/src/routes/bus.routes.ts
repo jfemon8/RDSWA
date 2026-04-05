@@ -6,7 +6,8 @@ import { validate } from '../middlewares/validate.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { BusOperator, BusRoute, BusSchedule, BusCounter } from '../models';
+import mongoose from 'mongoose';
+import { BusOperator, BusRoute, BusSchedule, BusCounter, BusReview } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { cacheResponse } from '../middlewares/cache.middleware';
@@ -16,6 +17,7 @@ import {
   createRouteSchema, updateRouteSchema,
   createScheduleSchema, updateScheduleSchema,
   createCounterSchema, updateCounterSchema,
+  createReviewSchema,
 } from '../validators/bus.validator';
 
 const router = Router();
@@ -28,6 +30,20 @@ function broadcastBusUpdate(action: string, data?: any): void {
   }
 }
 
+/** Recompute operator rating from non-deleted reviews */
+async function recomputeOperatorRating(operatorId: string): Promise<void> {
+  const agg = await BusReview.aggregate([
+    { $match: { operator: new mongoose.Types.ObjectId(operatorId), isDeleted: false } },
+    { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+  ]);
+  const avg = agg[0]?.avg || 0;
+  const count = agg[0]?.count || 0;
+  await BusOperator.findByIdAndUpdate(operatorId, {
+    rating: Math.round(avg * 10) / 10,
+    ratingCount: count,
+  });
+}
+
 // ── Operators ──
 
 router.get('/operators', cacheResponse(300), asyncHandler(async (req, res) => {
@@ -35,6 +51,12 @@ router.get('/operators', cacheResponse(300), asyncHandler(async (req, res) => {
   if (req.query.scheduleType) filter.scheduleType = req.query.scheduleType;
   const operators = await BusOperator.find(filter).sort({ name: 1 });
   ApiResponse.success(res, operators);
+}));
+
+router.get('/operators/:id', asyncHandler(async (req, res) => {
+  const op = await BusOperator.findOne({ _id: req.params.id, isDeleted: false });
+  if (!op) throw ApiError.notFound('Operator not found');
+  ApiResponse.success(res, op);
 }));
 
 router.post('/operators', authenticate(), authorize(UserRole.ADMIN),
@@ -67,15 +89,57 @@ router.delete('/operators/:id', authenticate(), authorize(UserRole.ADMIN),
   }),
 );
 
+// ── Operator Reviews (user feedback + rating) ──
+
+router.get('/operators/:id/reviews', asyncHandler(async (req, res) => {
+  const reviews = await BusReview.find({ operator: req.params.id, isDeleted: false })
+    .populate('user', 'name avatar')
+    .sort({ createdAt: -1 });
+  ApiResponse.success(res, reviews);
+}));
+
+router.post('/operators/:id/reviews', authenticate(),
+  validate({ body: createReviewSchema }),
+  auditLog('bus.review_submit', 'bus_reviews'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const operatorId = req.params.id as string;
+    const operator = await BusOperator.findOne({ _id: operatorId, isDeleted: false });
+    if (!operator) throw ApiError.notFound('Operator not found');
+    const review = await BusReview.findOneAndUpdate(
+      { operator: operatorId, user: req.user._id },
+      { $set: { rating: req.body.rating, comment: req.body.comment, isDeleted: false } },
+      { new: true, upsert: true },
+    );
+    await recomputeOperatorRating(operatorId);
+    ApiResponse.success(res, review, 'Review submitted');
+  }),
+);
+
+router.delete('/operators/:id/reviews/:reviewId', authenticate(),
+  auditLog('bus.review_delete', 'bus_reviews'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const review = await BusReview.findById(req.params.reviewId);
+    if (!review) throw ApiError.notFound('Review not found');
+    const isOwner = review.user.toString() === (req.user._id as any).toString();
+    const isAdmin = req.user.role === UserRole.ADMIN || req.user.role === UserRole.SUPER_ADMIN || req.user.role === UserRole.MODERATOR;
+    if (!isOwner && !isAdmin) throw ApiError.forbidden('Cannot delete this review');
+    review.isDeleted = true;
+    await review.save();
+    await recomputeOperatorRating(review.operator.toString());
+    ApiResponse.success(res, null, 'Review deleted');
+  }),
+);
+
 // ── Routes ──
 
 router.get('/routes', cacheResponse(300), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.routeType) filter.routeType = req.query.routeType;
-  if (req.query.operator) filter.operator = req.query.operator;
   if (req.query.origin) filter.origin = { $regex: req.query.origin, $options: 'i' };
   if (req.query.destination) filter.destination = { $regex: req.query.destination, $options: 'i' };
-  const routes = await BusRoute.find(filter).populate('operator', 'name logo').sort({ origin: 1 });
+  const routes = await BusRoute.find(filter).sort({ origin: 1 });
   ApiResponse.success(res, routes);
 }));
 
@@ -114,7 +178,8 @@ router.get('/schedules', cacheResponse(300), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = { isDeleted: false, isActive: true };
   if (req.query.route) filter.route = req.query.route;
-  if (req.query.busCategory) filter.busCategory = req.query.busCategory;
+  if (req.query.busCategory) filter['buses.busCategory'] = req.query.busCategory;
+  if (req.query.operator) filter['buses.operator'] = req.query.operator;
   if (req.query.routeType) {
     const matchingRoutes = await BusRoute.find({ routeType: req.query.routeType, isDeleted: false }).select('_id');
     filter.route = { ...(filter.route || {}), $in: matchingRoutes.map((r) => r._id) };
@@ -130,7 +195,8 @@ router.get('/schedules', cacheResponse(300), asyncHandler(async (req, res) => {
 
   const [schedules, total] = await Promise.all([
     BusSchedule.find(filter)
-      .populate({ path: 'route', populate: { path: 'operator', select: 'name logo' } })
+      .populate('route')
+      .populate('buses.operator', 'name logo rating')
       .sort({ departureTime: 1 })
       .skip(getSkip({ page, limit }))
       .limit(limit),
@@ -234,13 +300,14 @@ router.post('/import', authenticate(), authorize(UserRole.ADMIN),
               name: row.name,
               contactNumber: row.contactNumber,
               email: row.email,
+              website: row.website,
+              description: row.description,
               scheduleType: row.scheduleType || 'intercity',
               createdBy: req.user!._id,
             });
             break;
           case 'routes':
             await BusRoute.create({
-              operator: row.operator,
               origin: row.origin,
               destination: row.destination,
               routeType: row.routeType || 'intercity',
@@ -252,12 +319,13 @@ router.post('/import', authenticate(), authorize(UserRole.ADMIN),
           case 'schedules':
             await BusSchedule.create({
               route: row.route,
-              busName: row.busName,
-              busNumber: row.busNumber,
-              busCategory: row.busCategory || 'non_ac',
+              buses: row.buses || [],
               departureTime: row.departureTime,
               arrivalTime: row.arrivalTime,
               daysOfOperation: row.daysOfOperation || [],
+              isSpecialSchedule: row.isSpecialSchedule || false,
+              specialScheduleNote: row.specialScheduleNote,
+              additionalInfo: row.additionalInfo,
             });
             break;
           case 'counters':
@@ -266,6 +334,7 @@ router.post('/import', authenticate(), authorize(UserRole.ADMIN),
               name: row.name,
               location: row.location,
               phoneNumbers: row.phoneNumbers || [],
+              bookingLink: row.bookingLink,
             });
             break;
         }
@@ -293,11 +362,11 @@ router.get('/export/:type', authenticate(), authorize(UserRole.ADMIN), asyncHand
       filename = 'bus-operators';
       break;
     case 'routes':
-      data = await BusRoute.find({ isDeleted: false }).populate('operator', 'name').lean();
+      data = await BusRoute.find({ isDeleted: false }).lean();
       filename = 'bus-routes';
       break;
     case 'schedules':
-      data = await BusSchedule.find({ isDeleted: false }).populate('route').lean();
+      data = await BusSchedule.find({ isDeleted: false }).populate('route').populate('buses.operator', 'name').lean();
       filename = 'bus-schedules';
       break;
     case 'counters':

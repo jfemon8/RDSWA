@@ -58,6 +58,9 @@ export type { IBusScheduleDocument } from './BusSchedule';
 export { BusCounter } from './BusCounter';
 export type { IBusCounterDocument } from './BusCounter';
 
+export { BusReview } from './BusReview';
+export type { IBusReviewDocument } from './BusReview';
+
 export { ChatGroup } from './ChatGroup';
 export type { IChatGroupDocument } from './ChatGroup';
 

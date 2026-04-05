@@ -6,8 +6,8 @@ export const createOperatorSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   contactNumber: z.string().max(20).optional(),
   email: z.string().email().optional().or(z.literal('')),
-  rating: z.number().min(0).max(5).optional(),
-  description: z.string().max(1000).optional(),
+  website: z.string().url().optional().or(z.literal('')),
+  description: z.string().max(10000).optional(),
   logo: z.string().url().optional().or(z.literal('')),
   scheduleType: z.enum(['university', 'intercity', 'both']).optional(),
 });
@@ -22,7 +22,6 @@ const stopSchema = z.object({
 });
 
 export const createRouteSchema = z.object({
-  operator: z.string().min(1, 'Operator is required'),
   origin: z.string().min(1, 'Origin is required').max(200),
   destination: z.string().min(1, 'Destination is required').max(200),
   stops: z.array(stopSchema).optional(),
@@ -37,6 +36,14 @@ export const updateRouteSchema = createRouteSchema.partial();
 
 const daysEnum = z.enum(['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri']);
 
+const scheduleBusSchema = z.object({
+  operator: z.string().min(1, 'Operator is required'),
+  busName: z.string().max(200).optional(),
+  busNumber: z.string().max(50).optional(),
+  busCategory: z.enum(['ac', 'non_ac', 'sleeper', 'economy']).optional(),
+  seatType: z.string().max(50).optional(),
+});
+
 const seasonalVariationSchema = z.object({
   season: z.string().min(1).max(100),
   startDate: z.string().optional(),
@@ -48,12 +55,9 @@ const seasonalVariationSchema = z.object({
 
 export const createScheduleSchema = z.object({
   route: z.string().min(1, 'Route is required'),
-  busName: z.string().max(200).optional(),
-  busNumber: z.string().max(50).optional(),
-  busCategory: z.enum(['ac', 'non_ac', 'sleeper', 'economy']).optional(),
+  buses: z.array(scheduleBusSchema).min(1, 'At least one bus is required'),
   departureTime: z.string().min(1, 'Departure time is required'),
   arrivalTime: z.string().optional(),
-  seatType: z.string().max(50).optional(),
   daysOfOperation: z.array(daysEnum).optional(),
   isSpecialSchedule: z.boolean().optional(),
   specialScheduleNote: z.string().max(500).optional(),
@@ -75,6 +79,13 @@ export const createCounterSchema = z.object({
 });
 
 export const updateCounterSchema = createCounterSchema.partial();
+
+// ── Review ──
+
+export const createReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(1000).optional(),
+});
 
 // ── CSV Import ──
 

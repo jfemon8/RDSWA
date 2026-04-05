@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IBusRouteDocument extends Document {
-  operator: mongoose.Types.ObjectId;
   origin: string;
   destination: string;
   stops: Array<{ name: string; order: number }>;
@@ -15,7 +14,6 @@ export interface IBusRouteDocument extends Document {
 
 const busRouteSchema = new Schema<IBusRouteDocument>(
   {
-    operator: { type: Schema.Types.ObjectId, ref: 'BusOperator' },
     origin: { type: String, required: true },
     destination: { type: String, required: true },
     stops: [{ name: String, order: Number }],
@@ -29,6 +27,5 @@ const busRouteSchema = new Schema<IBusRouteDocument>(
 
 busRouteSchema.index({ origin: 1, destination: 1 });
 busRouteSchema.index({ routeType: 1 });
-busRouteSchema.index({ operator: 1 });
 
 export const BusRoute = mongoose.model<IBusRouteDocument>('BusRoute', busRouteSchema);
