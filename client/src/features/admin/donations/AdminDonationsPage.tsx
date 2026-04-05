@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { Search, Loader2, CheckCircle, XCircle, Trash2, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
-import { formatDate } from '@/lib/date';
+import { formatDate, formatTime } from '@/lib/date';
 
 export default function AdminDonationsPage() {
   const queryClient = useQueryClient();
@@ -156,11 +156,46 @@ export default function AdminDonationsPage() {
                               className="overflow-hidden"
                             >
                               <div className="px-4 py-3 bg-muted/50 border-b grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
-                                {d.senderNumber && (
+                                {/* Mobile Banking (bkash/nagad/rocket): sender number + transaction ID */}
+                                {['bkash', 'nagad', 'rocket'].includes(d.paymentMethod) && d.senderNumber && (
                                   <div>
                                     <span className="text-muted-foreground">Sender Number</span>
-                                    <p className="font-medium text-foreground">{d.senderNumber}</p>
+                                    <p className="font-medium text-foreground font-mono">{d.senderNumber}</p>
                                   </div>
+                                )}
+                                {/* Bank Transfer: sender bank + account number */}
+                                {d.paymentMethod === 'bank' && (
+                                  <>
+                                    {d.senderBankName && (
+                                      <div>
+                                        <span className="text-muted-foreground">Sender Bank</span>
+                                        <p className="font-medium text-foreground">{d.senderBankName}</p>
+                                      </div>
+                                    )}
+                                    {d.senderAccountNumber && (
+                                      <div>
+                                        <span className="text-muted-foreground">Sender A/C No</span>
+                                        <p className="font-medium text-foreground font-mono">{d.senderAccountNumber}</p>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                                {/* Cash: date + time */}
+                                {d.paymentMethod === 'cash' && (
+                                  <>
+                                    {d.cashDate && (
+                                      <div>
+                                        <span className="text-muted-foreground">Payment Date</span>
+                                        <p className="font-medium text-foreground">{formatDate(d.cashDate)}</p>
+                                      </div>
+                                    )}
+                                    {d.cashTime && d.cashDate && (
+                                      <div>
+                                        <span className="text-muted-foreground">Payment Time</span>
+                                        <p className="font-medium text-foreground">{formatTime(`${d.cashDate}T${d.cashTime}`)}</p>
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                                 {d.donorEmail && (
                                   <div>

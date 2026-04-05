@@ -462,7 +462,7 @@ function RecentDonations() {
   const { data, isLoading } = useQuery({
     queryKey: ['donations', 'recent'],
     queryFn: async () => {
-      const { data } = await api.get('/donations?limit=10');
+      const { data } = await api.get('/donations?limit=10&paymentStatus=completed');
       return data;
     },
   });
