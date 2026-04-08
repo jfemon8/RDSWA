@@ -362,17 +362,64 @@ function RoutesList() {
   );
 }
 
-// -- Schedules (common route/time/days + MULTIPLE buses array) --
+// -- Schedules (two-level: select route first, then CRUD schedules for that route) --
 
 interface ScheduleBus { operator: string; busName: string; busNumber: string; busCategory: string; seatType: string }
 
 function SchedulesList() {
+  const [selectedRoute, setSelectedRoute] = useState<any>(null);
+
+  const { data: routesData, isLoading: routesLoading } = useQuery({
+    queryKey: ['bus', 'routes'],
+    queryFn: async () => { const { data } = await api.get('/bus/routes'); return data; },
+  });
+
+  const routes = routesData?.data || [];
+
+  if (selectedRoute) {
+    return <RouteSchedules route={selectedRoute} onBack={() => setSelectedRoute(null)} />;
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <ExportButtons type="schedules" label="Schedules" />
+        <p className="text-sm text-muted-foreground">Select a route to manage schedules</p>
+      </div>
+      {routesLoading ? <Spinner /> : routes.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">No routes found. Add routes first.</p>
+      ) : (
+        <div className="space-y-2">
+          {routes.map((r: any, index: number) => (
+            <FadeIn key={r._id} direction="up" delay={index * 0.05} duration={0.4}>
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => setSelectedRoute(r)}
+                className="w-full text-left border rounded-lg p-3 bg-card hover:border-primary/40 transition-colors"
+              >
+                <p className="font-medium text-sm text-foreground">{r.origin} → {r.destination}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {r.routeType}{r.estimatedDuration ? ` · ${r.estimatedDuration}` : ''}
+                  {r.distanceKm ? ` · ${r.distanceKm}km` : ''}
+                  {r.stops?.length ? ` · ${r.stops.length} stops` : ''}
+                </p>
+              </motion.button>
+            </FadeIn>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    route: '', departureTime: '', arrivalTime: '',
+    departureTime: '', arrivalTime: '',
     isSpecialSchedule: false, specialScheduleNote: '',
     seasonalSeason: '', seasonalStartDate: '', seasonalEndDate: '',
     seasonalDepartureTime: '', seasonalArrivalTime: '', seasonalNote: '',
@@ -383,13 +430,8 @@ function SchedulesList() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
-    queryKey: ['bus', 'schedules'],
-    queryFn: async () => { const { data } = await api.get('/bus/schedules?limit=100'); return data; },
-  });
-
-  const { data: routesData } = useQuery({
-    queryKey: ['bus', 'routes'],
-    queryFn: async () => { const { data } = await api.get('/bus/routes'); return data; },
+    queryKey: ['bus', 'schedules', 'route', route._id],
+    queryFn: async () => { const { data } = await api.get(`/bus/schedules?route=${route._id}&limit=100`); return data; },
   });
 
   const { data: operatorsData } = useQuery({
@@ -400,7 +442,7 @@ function SchedulesList() {
   const saveMutation = useMutation({
     mutationFn: () => {
       const { seasonalSeason, seasonalStartDate, seasonalEndDate, seasonalDepartureTime, seasonalArrivalTime, seasonalNote, ...rest } = form;
-      const payload: any = { ...rest, daysOfOperation: selectedDays, buses: buses.filter((b) => b.operator) };
+      const payload: any = { ...rest, route: route._id, daysOfOperation: selectedDays, buses: buses.filter((b) => b.operator) };
       if (seasonalSeason) {
         payload.seasonalVariation = {
           season: seasonalSeason,
@@ -425,7 +467,7 @@ function SchedulesList() {
 
   const resetForm = () => {
     setShowForm(false); setEditId(null);
-    setForm({ route: '', departureTime: '', arrivalTime: '', isSpecialSchedule: false, specialScheduleNote: '', seasonalSeason: '', seasonalStartDate: '', seasonalEndDate: '', seasonalDepartureTime: '', seasonalArrivalTime: '', seasonalNote: '' });
+    setForm({ departureTime: '', arrivalTime: '', isSpecialSchedule: false, specialScheduleNote: '', seasonalSeason: '', seasonalStartDate: '', seasonalEndDate: '', seasonalDepartureTime: '', seasonalArrivalTime: '', seasonalNote: '' });
     setBuses([emptyBus()]);
     setSelectedDays([...DAYS]);
   };
@@ -433,7 +475,6 @@ function SchedulesList() {
   const startEdit = (s: any) => {
     setEditId(s._id);
     setForm({
-      route: s.route?._id || s.route || '',
       departureTime: s.departureTime || '',
       arrivalTime: s.arrivalTime || '',
       isSpecialSchedule: s.isSpecialSchedule || false,
@@ -465,19 +506,26 @@ function SchedulesList() {
   const removeBus = (idx: number) => setBuses(buses.length > 1 ? buses.filter((_, i) => i !== idx) : buses);
 
   const schedules = data?.data || [];
-  const routes = routesData?.data || [];
   const operators = operatorsData?.data || [];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <ExportButtons type="schedules" label="Schedules" />
+      {/* Route header + back */}
+      <div className="flex items-center gap-3 mb-4">
+        <button onClick={onBack} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
+          <X className="h-4 w-4" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground">{route.origin} → {route.destination}</p>
+          <p className="text-xs text-muted-foreground capitalize">{route.routeType}{route.estimatedDuration ? ` · ${route.estimatedDuration}` : ''}</p>
+        </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm shrink-0">
           <Plus className="h-4 w-4" /> Add Schedule
         </button>
       </div>
+
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
@@ -485,7 +533,6 @@ function SchedulesList() {
               <form noValidate onSubmit={(e) => {
                 e.preventDefault(); setErrors({});
                 const errs: Record<string, string> = {};
-                if (!form.route) errs.route = 'Please select a route';
                 if (!form.departureTime.trim()) errs.departureTime = 'Departure time is required';
                 const validBuses = buses.filter((b) => b.operator);
                 if (validBuses.length === 0) errs.buses = 'At least one bus with an operator is required';
@@ -494,17 +541,7 @@ function SchedulesList() {
               }} className="space-y-4">
                 {/* Common fields */}
                 <div className="space-y-3 border-b pb-4">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">Common</span>
-                  <div>
-                    <select value={form.route} onChange={(e) => { setForm({ ...form, route: e.target.value }); setErrors((prev) => { const { route, ...rest } = prev; return rest; }); }}
-                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.route ? 'border-red-500' : ''}`} required>
-                      <option value="">Select Route *</option>
-                      {routes.map((r: any) => (
-                        <option key={r._id} value={r._id}>{r.origin} → {r.destination} ({r.routeType})</option>
-                      ))}
-                    </select>
-                    <FieldError message={errors.route} />
-                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">Schedule Details</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Departure Time *</label>
@@ -648,12 +685,13 @@ function SchedulesList() {
           </motion.div>
         )}
       </AnimatePresence>
-      {isLoading ? <Spinner /> : (
+      {isLoading ? <Spinner /> : schedules.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">No schedules for this route yet.</p>
+      ) : (
         <FadeIn direction="up" duration={0.4}>
           <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full min-w-[700px] text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead><tr className="bg-muted border-b">
-                <th className="text-left p-3 font-medium text-foreground">Route</th>
                 <th className="text-left p-3 font-medium text-foreground">Departure</th>
                 <th className="text-left p-3 font-medium text-foreground">Arrival</th>
                 <th className="text-left p-3 font-medium text-foreground">Buses</th>
@@ -663,7 +701,6 @@ function SchedulesList() {
               <tbody>
                 {schedules.map((s: any) => (
                   <tr key={s._id} className="border-t hover:bg-accent/30">
-                    <td className="p-3 text-xs text-foreground">{s.route?.origin} → {s.route?.destination}</td>
                     <td className="p-3 text-foreground">{formatTimeString(s.departureTime)}</td>
                     <td className="p-3 text-foreground">{s.arrivalTime ? formatTimeString(s.arrivalTime) : '-'}</td>
                     <td className="p-3 text-xs text-foreground">
