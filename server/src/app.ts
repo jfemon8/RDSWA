@@ -32,7 +32,8 @@ const app = express();
 const httpServer = createServer(app);
 
 // Trust proxy — required for correct req.ip behind reverse proxies (Vercel, Render, Cloudflare, nginx)
-app.set('trust proxy', true);
+// Use 1 (single proxy hop) instead of true to satisfy express-rate-limit v7+ validation
+app.set('trust proxy', 1);
 
 // Security & parsing middleware
 app.use(helmet());
