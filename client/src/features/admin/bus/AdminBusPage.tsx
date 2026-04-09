@@ -8,7 +8,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
-import { Plus, Loader2, Pencil, Trash2, Upload, X, Download, FileText, Star } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Upload, X, Download, FileText, Star, ChevronDown } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { toDateInput, formatTimeString } from '@/lib/date';
 
@@ -88,6 +88,7 @@ function OperatorsList() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', contactNumber: '', email: '', website: '', description: '', scheduleType: 'both' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'operators'],
@@ -172,33 +173,44 @@ function OperatorsList() {
         <div className="space-y-2">
           {operators.map((o: any, index: number) => (
             <FadeIn key={o._id} direction="up" delay={index * 0.05} duration={0.4}>
-              <div className="border rounded-lg p-3 bg-card hover:bg-accent/30 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium text-sm text-foreground">{o.name}</p>
-                      <span className="inline-flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-400">
-                        <Star className="h-3 w-3 fill-current" />
-                        {o.rating?.toFixed(1) || '0.0'}
-                        <span className="text-muted-foreground ml-0.5">({o.ratingCount || 0})</span>
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      <span className="capitalize">{o.scheduleType}</span> · {o.contactNumber || 'N/A'}{o.email ? ` · ${o.email}` : ''}
-                      {o.website ? ` · ` : ''}
-                      {o.website && <a href={o.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">{o.website.replace(/^https?:\/\//, '')}</a>}
-                    </p>
-                    {o.description && (
-                      <div className="text-xs text-muted-foreground mt-2">
-                        <RichContent html={o.description} className="line-clamp-2" />
-                      </div>
-                    )}
+              <div className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
+                <div className="flex items-center justify-between gap-3 p-3 cursor-pointer" onClick={() => setExpandedId(expandedId === o._id ? null : o._id)}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <motion.span animate={{ rotate: expandedId === o._id ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </motion.span>
+                    <p className="font-medium text-sm text-foreground truncate">{o.name}</p>
+                    <span className="inline-flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-400 shrink-0">
+                      <Star className="h-3 w-3 fill-current" />
+                      {o.rating?.toFixed(1) || '0.0'}
+                      <span className="text-muted-foreground">({o.ratingCount || 0})</span>
+                    </span>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
+                  <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <EditBtn onClick={() => startEdit(o)} />
                     <DeleteBtn onClick={() => deleteMutation.mutate(o._id)} />
                   </div>
                 </div>
+                <AnimatePresence>
+                  {expandedId === o._id && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="px-3 pb-3 pt-0 border-t mx-3 mb-3 space-y-2 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                          <div><span className="text-muted-foreground">Type:</span> <span className="capitalize text-foreground">{o.scheduleType}</span></div>
+                          <div><span className="text-muted-foreground">Contact:</span> <span className="text-foreground">{o.contactNumber || 'N/A'}</span></div>
+                          {o.email && <div><span className="text-muted-foreground">Email:</span> <span className="text-foreground">{o.email}</span></div>}
+                          {o.website && <div><span className="text-muted-foreground">Website:</span> <a href={o.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{o.website.replace(/^https?:\/\//, '')}</a></div>}
+                        </div>
+                        {o.description && (
+                          <div className="pt-2 border-t">
+                            <span className="text-muted-foreground block mb-1">Description:</span>
+                            <RichContent html={o.description} className="text-foreground prose-sm max-w-none" />
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </FadeIn>
           ))}
@@ -218,6 +230,7 @@ function RoutesList() {
   const [form, setForm] = useState({ origin: '', destination: '', routeType: 'university', estimatedDuration: '', distanceKm: '' });
   const [stops, setStops] = useState<Array<{ name: string; order: number }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'routes'],
@@ -340,19 +353,46 @@ function RoutesList() {
         <div className="space-y-2">
           {routes.map((r: any, index: number) => (
             <FadeIn key={r._id} direction="up" delay={index * 0.05} duration={0.4}>
-              <div className="border rounded-lg p-3 bg-card flex items-center justify-between hover:bg-accent/30 transition-colors">
-                <div>
-                  <p className="font-medium text-sm text-foreground">{r.origin} → {r.destination}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {r.routeType} · {r.estimatedDuration || 'N/A'}
-                    {r.distanceKm ? ` · ${r.distanceKm}km` : ''}
-                    {r.stops?.length ? ` · ${r.stops.length} stops` : ''}
-                  </p>
+              <div className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
+                <div className="flex items-center justify-between gap-3 p-3 cursor-pointer" onClick={() => setExpandedId(expandedId === r._id ? null : r._id)}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <motion.span animate={{ rotate: expandedId === r._id ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </motion.span>
+                    <p className="font-medium text-sm text-foreground truncate">{r.origin} → {r.destination}</p>
+                    <span className="text-xs capitalize text-muted-foreground shrink-0">{r.routeType}</span>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <EditBtn onClick={() => startEdit(r)} />
+                    <DeleteBtn onClick={() => deleteMutation.mutate(r._id)} />
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <EditBtn onClick={() => startEdit(r)} />
-                  <DeleteBtn onClick={() => deleteMutation.mutate(r._id)} />
-                </div>
+                <AnimatePresence>
+                  {expandedId === r._id && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="px-3 pb-3 pt-0 border-t mx-3 mb-3 space-y-2 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                          <div><span className="text-muted-foreground">Type:</span> <span className="capitalize text-foreground">{r.routeType}</span></div>
+                          {r.estimatedDuration && <div><span className="text-muted-foreground">Duration:</span> <span className="text-foreground">{r.estimatedDuration}</span></div>}
+                          {r.distanceKm && <div><span className="text-muted-foreground">Distance:</span> <span className="text-foreground">{r.distanceKm} km</span></div>}
+                        </div>
+                        {r.stops?.length > 0 && (
+                          <div className="pt-2 border-t">
+                            <span className="text-muted-foreground block mb-1">Stops ({r.stops.length}):</span>
+                            <div className="flex flex-wrap gap-1">
+                              {r.stops.sort((a: any, b: any) => a.order - b.order).map((s: any, si: number) => (
+                                <span key={si} className="inline-flex items-center text-foreground">
+                                  {si > 0 && <span className="mx-1 text-muted-foreground/50">→</span>}
+                                  <span className="px-1.5 py-0.5 bg-muted rounded">{s.name}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </FadeIn>
           ))}
@@ -786,6 +826,7 @@ function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => v
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', location: '', phoneNumbers: '', bookingLink: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['bus', 'counters', 'operator', operator._id],
@@ -880,18 +921,39 @@ function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => v
         <div className="space-y-2">
           {counters.map((c: any, index: number) => (
             <FadeIn key={c._id} direction="up" delay={index * 0.05} duration={0.4}>
-              <div className="border rounded-lg p-3 bg-card flex items-center justify-between hover:bg-accent/30 transition-colors">
-                <div>
-                  <p className="font-medium text-sm text-foreground">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.location || 'N/A'}
-                    {c.phoneNumbers?.length ? ` · ${c.phoneNumbers.join(', ')}` : ''}
-                  </p>
+              <div className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
+                <div className="flex items-center justify-between gap-3 p-3 cursor-pointer" onClick={() => setExpandedId(expandedId === c._id ? null : c._id)}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <motion.span animate={{ rotate: expandedId === c._id ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </motion.span>
+                    <p className="font-medium text-sm text-foreground truncate">{c.name}</p>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <EditBtn onClick={() => startEdit(c)} />
+                    <DeleteBtn onClick={() => deleteMutation.mutate(c._id)} />
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <EditBtn onClick={() => startEdit(c)} />
-                  <DeleteBtn onClick={() => deleteMutation.mutate(c._id)} />
-                </div>
+                <AnimatePresence>
+                  {expandedId === c._id && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="px-3 pb-3 pt-0 border-t mx-3 mb-3 space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          {c.location && <div><span className="text-muted-foreground">Location:</span> <span className="text-foreground">{c.location}</span></div>}
+                          {c.phoneNumbers?.length > 0 && (
+                            <div>
+                              <span className="text-muted-foreground">Phone:</span>{' '}
+                              {c.phoneNumbers.map((p: string, pi: number) => (
+                                <span key={pi}>{pi > 0 && ', '}<a href={`tel:${p.replace(/\s/g, '')}`} className="text-primary hover:underline">{p}</a></span>
+                              ))}
+                            </div>
+                          )}
+                          {c.bookingLink && <div><span className="text-muted-foreground">Booking:</span> <a href={c.bookingLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{c.bookingLink.replace(/^https?:\/\//, '')}</a></div>}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </FadeIn>
           ))}
