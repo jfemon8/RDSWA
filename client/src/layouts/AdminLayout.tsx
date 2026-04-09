@@ -13,6 +13,7 @@ import { GradientText } from '@/components/reactbits';
 import { UserRole } from '@rdswa/shared';
 import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 interface AdminLink {
   label: string;
@@ -61,6 +62,7 @@ export default function AdminLayout() {
     navigate('/login');
   };
 
+  const { settings: siteSettings } = useSiteSettings();
   const visibleLinks = adminLinks.filter((link) =>
     user?.role ? hasMinRole(user.role, link.minRole) : false
   );
@@ -77,7 +79,7 @@ export default function AdminLayout() {
           </button>
           <Link to="/admin" className="text-xl font-bold">
             <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
-              RDSWA Admin
+              {siteSettings?.siteName || 'RDSWA'} Admin
             </GradientText>
           </Link>
         </div>

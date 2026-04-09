@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 interface SEOProps {
   title?: string;
@@ -8,7 +9,6 @@ interface SEOProps {
   type?: string;
 }
 
-const SITE_NAME = 'RDSWA - Rangpur Divisional Student Welfare Association';
 const DEFAULT_DESC = 'Official platform of Rangpur Divisional Student Welfare Association, University of Barishal. Member directory, events, notices, committees, and more.';
 
 export default function SEO({
@@ -18,12 +18,17 @@ export default function SEO({
   url,
   type = 'website',
 }: SEOProps) {
-  const pageTitle = title ? `${title} | RDSWA` : SITE_NAME;
+  const { settings } = useSiteSettings();
+  const siteName = settings?.siteName || 'RDSWA';
+  const fullSiteName = settings?.siteNameFull ? `${siteName} - ${settings.siteNameFull}` : siteName;
+  const pageTitle = title ? `${title} | ${siteName}` : fullSiteName;
+  const favicon = settings?.favicon;
 
   return (
     <Helmet>
       <title>{pageTitle}</title>
       <meta name="description" content={description} />
+      {favicon && <link rel="icon" href={favicon} />}
 
       {/* Open Graph */}
       <meta property="og:type" content={type} />
@@ -31,7 +36,7 @@ export default function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
       {url && <meta property="og:url" content={url} />}
-      <meta property="og:site_name" content="RDSWA" />
+      <meta property="og:site_name" content={siteName} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />

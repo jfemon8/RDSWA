@@ -2,8 +2,13 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISiteSettingsDocument extends Document {
   siteName: string;
+  siteNameFull?: string;
   siteNameBn?: string;
+  siteNameBnFull?: string;
   logo?: string;
+  logoDark?: string;
+  footerLogo?: string;
+  footerLogoDark?: string;
   favicon?: string;
   theme: 'light' | 'dark' | 'system';
   primaryColor?: string;
@@ -22,6 +27,12 @@ export interface ISiteSettingsDocument extends Document {
   objectivesContent?: string;
   historyContent?: string;
   universityInfo: {
+    name?: string;
+    logo?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    address?: string;
     overview?: string;
     history?: string;
     campusInfo?: string;
@@ -82,8 +93,13 @@ export interface ISiteSettingsDocument extends Document {
 const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
   {
     siteName: { type: String, default: 'RDSWA' },
+    siteNameFull: { type: String, default: 'Rangpur Divisional Student Welfare Association' },
     siteNameBn: String,
+    siteNameBnFull: String,
     logo: String,
+    logoDark: String,
+    footerLogo: String,
+    footerLogoDark: String,
     favicon: String,
     theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
     primaryColor: String,
@@ -102,6 +118,12 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
     objectivesContent: String,
     historyContent: String,
     universityInfo: {
+      name: { type: String, default: 'University of Barishal' },
+      logo: String,
+      email: String,
+      phone: String,
+      website: String,
+      address: String,
       overview: String,
       history: String,
       campusInfo: String,

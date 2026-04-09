@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import api from '@/lib/api';
 
 const publicLinks = [
@@ -36,6 +37,8 @@ export default function Navbar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user, logout } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
+  const { settings } = useSiteSettings();
+  const navLogo = theme === 'dark' ? (settings?.logoDark || settings?.logo) : settings?.logo;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -65,13 +68,17 @@ export default function Navbar() {
     >
       <div className="container mx-auto flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <GradientText
-            colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
-            animationSpeed={6}
-            className="text-xl font-bold"
-          >
-            RDSWA
-          </GradientText>
+          {navLogo ? (
+            <img src={navLogo} alt={settings?.siteName || 'RDSWA'} className="h-9 object-contain" />
+          ) : (
+            <GradientText
+              colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
+              animationSpeed={6}
+              className="text-xl font-bold"
+            >
+              {settings?.siteName || 'RDSWA'}
+            </GradientText>
+          )}
         </Link>
 
         {/* Desktop navigation */}

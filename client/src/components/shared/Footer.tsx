@@ -1,23 +1,34 @@
 import { Link } from 'react-router-dom';
 import { FadeIn, GradientText } from '@/components/reactbits';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useThemeStore } from '@/stores/themeStore';
 
 export default function Footer() {
+  const { settings } = useSiteSettings();
+  const { theme } = useThemeStore();
+  const fLogo = theme === 'dark' ? (settings?.footerLogoDark || settings?.footerLogo) : settings?.footerLogo;
+  const siteName = settings?.siteName || 'RDSWA';
+
   return (
     <footer role="contentinfo" className="border-t bg-background">
       <div className="container mx-auto py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <FadeIn delay={0}>
             <div>
-              <GradientText
-                colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
-                animationSpeed={6}
-                className="text-lg font-bold mb-3"
-              >
-                RDSWA
-              </GradientText>
+              {fLogo ? (
+                <img src={fLogo} alt={siteName} className="h-10 object-contain mb-3" />
+              ) : (
+                <GradientText
+                  colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
+                  animationSpeed={6}
+                  className="text-lg font-bold mb-3"
+                >
+                  {siteName}
+                </GradientText>
+              )}
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Rangpur Divisional Student Welfare Association, University of Barishal.
-                Connecting students from Rangpur Division.
+                {settings?.siteNameFull || siteName}
+                {settings?.address ? `, ${settings.address}` : ''}
               </p>
             </div>
           </FadeIn>
@@ -57,7 +68,7 @@ export default function Footer() {
         </div>
         <FadeIn>
           <div className="mt-10 pt-6 border-t flex items-center justify-between text-sm text-muted-foreground">
-            <span>&copy; {new Date().getFullYear()} RDSWA. All rights reserved.</span>
+            <span>&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</span>
             <span className="text-xs">Developed by <a href="https://github.com/jfemon8" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline underline-offset-2">Emon</a></span>
           </div>
         </FadeIn>

@@ -4,474 +4,57 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 
+const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social'] as const;
+type Tab = typeof TABS[number];
+const TAB_LABELS: Record<Tab, string> = {
+  general: 'General & Branding', homepage: 'Home Page', content: 'About & Content',
+  university: 'University', organizations: 'Organizations', legal: 'Legal', social: 'Social Links',
+};
+
 export default function AdminSettingsPage() {
-  const queryClient = useQueryClient();
-  const toast = useToast();
+  const [tab, setTab] = useState<Tab>('general');
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.settings.all,
-    queryFn: async () => {
-      const { data } = await api.get('/settings');
-      return data;
-    },
-  });
-
-  const [form, setForm] = useState({
-    siteName: '', contactEmail: '', contactPhone: '', address: '',
-    foundedYear: 2021,
-    aboutContent: '', missionContent: '', visionContent: '',
-    objectivesContent: '', historyContent: '',
-    homePageContent: {
-      heroTitle: '', heroTitleGradient: '', heroBadgeText: '',
-      heroSubtitle: '', heroImage: '', heroTagline: '',
-      rotatingWords: [] as string[],
-      introText: '', featuresHeading: '', featuresSubheading: '',
-      features: [] as Array<{ title: string; description: string }>,
-      servicesHeading: '',
-      services: [] as Array<{ title: string; description: string; link: string }>,
-      ctaTitle: '', ctaButtonText: '',
-    },
-    universityInfo: { overview: '', history: '', campusInfo: '', admissionInfo: '', contactInfo: '' },
-    otherOrganizations: [] as Array<{ name: string; description: string; website: string; logo: string }>,
-    faq: [] as Array<{ question: string; answer: string }>,
-    privacyPolicy: [] as Array<{ title: string; content: string }>,
-    termsConditions: [] as Array<{ title: string; content: string }>,
-    socialLinks: { facebook: '', youtube: '', linkedin: '' },
-    paymentGateway: {
-      bkash: { number: '', isActive: false },
-      nagad: { number: '', isActive: false },
-      rocket: { number: '', isActive: false },
-    },
-  });
-
-  useEffect(() => {
-    if (data?.data) {
-      const s = data.data;
-      setForm({
-        siteName: s.siteName || '',
-        contactEmail: s.contactEmail || '',
-        contactPhone: s.contactPhone || '',
-        address: s.address || '',
-        aboutContent: s.aboutContent || '',
-        missionContent: s.missionContent || '',
-        visionContent: s.visionContent || '',
-        objectivesContent: s.objectivesContent || '',
-        historyContent: s.historyContent || '',
-        foundedYear: s.foundedYear || 2021,
-        homePageContent: {
-          heroTitle: s.homePageContent?.heroTitle || '',
-          heroTitleGradient: s.homePageContent?.heroTitleGradient || '',
-          heroBadgeText: s.homePageContent?.heroBadgeText || '',
-          heroSubtitle: s.homePageContent?.heroSubtitle || '',
-          heroImage: s.homePageContent?.heroImage || '',
-          heroTagline: s.homePageContent?.heroTagline || '',
-          rotatingWords: s.homePageContent?.rotatingWords || [],
-          introText: s.homePageContent?.introText || '',
-          featuresHeading: s.homePageContent?.featuresHeading || '',
-          featuresSubheading: s.homePageContent?.featuresSubheading || '',
-          features: s.homePageContent?.features || [],
-          servicesHeading: s.homePageContent?.servicesHeading || '',
-          services: s.homePageContent?.services || [],
-          ctaTitle: s.homePageContent?.ctaTitle || '',
-          ctaButtonText: s.homePageContent?.ctaButtonText || '',
-        },
-        universityInfo: {
-          overview: s.universityInfo?.overview || '',
-          history: s.universityInfo?.history || '',
-          campusInfo: s.universityInfo?.campusInfo || '',
-          admissionInfo: s.universityInfo?.admissionInfo || '',
-          contactInfo: s.universityInfo?.contactInfo || '',
-        },
-        otherOrganizations: (s.otherOrganizations || []).map((o: any) => ({
-          name: o.name || '', description: o.description || '', website: o.website || '', logo: o.logo || '',
-        })),
-        faq: s.faq || [],
-        privacyPolicy: s.privacyPolicy || [],
-        termsConditions: s.termsConditions || [],
-        socialLinks: s.socialLinks || { facebook: '', youtube: '', linkedin: '' },
-        paymentGateway: s.paymentGateway || {
-          bkash: { number: '', isActive: false },
-          nagad: { number: '', isActive: false },
-          rocket: { number: '', isActive: false },
-        },
-      });
-    }
-  }, [data]);
-
-  const saveMutation = useMutation({
-    mutationFn: () => api.patch('/settings', form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Settings saved successfully'); },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { toast.error(Object.values(fe)[0]); } else { toast.error(err.response?.data?.message || 'Failed to save settings'); } },
+    queryFn: async () => { const { data } = await api.get('/settings'); return data; },
   });
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  const settings = data?.data || {};
+
   return (
     <FadeIn direction="up">
       <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Site Settings</h1>
 
-        <form noValidate onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
-          {/* General */}
-          <FadeIn direction="up" delay={0}>
-            <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">General</h2>
-              <div className="space-y-3">
-                <Field label="Site Name" value={form.siteName} onChange={(v) => setForm({ ...form, siteName: v })} />
-                <Field label="Contact Email" value={form.contactEmail} onChange={(v) => setForm({ ...form, contactEmail: v })} />
-                <Field label="Contact Phone" value={form.contactPhone} onChange={(v) => setForm({ ...form, contactPhone: v })} />
-                <Field label="Address" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
-              </div>
-            </section>
-          </FadeIn>
+        <div className="flex flex-wrap gap-1.5 mb-6 border-b pb-2 overflow-x-auto">
+          {TABS.map((t) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}>
+              {TAB_LABELS[t]}
+            </button>
+          ))}
+        </div>
 
-          {/* Content */}
-          <FadeIn direction="up" delay={0.1}>
-            <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Content</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">About Content</label>
-                  <RichTextEditor value={form.aboutContent} onChange={(v) => setForm({ ...form, aboutContent: v })} placeholder="About content..." minHeight="150px" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Mission</label>
-                  <RichTextEditor value={form.missionContent} onChange={(v) => setForm({ ...form, missionContent: v })} placeholder="Mission statement..." minHeight="100px" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Vision</label>
-                  <RichTextEditor value={form.visionContent} onChange={(v) => setForm({ ...form, visionContent: v })} placeholder="Vision statement..." minHeight="100px" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Objectives</label>
-                  <RichTextEditor value={form.objectivesContent} onChange={(v) => setForm({ ...form, objectivesContent: v })} placeholder="Objectives..." minHeight="100px" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">History</label>
-                  <RichTextEditor value={form.historyContent} onChange={(v) => setForm({ ...form, historyContent: v })} placeholder="Organization history..." minHeight="100px" />
-                </div>
-              </div>
-            </section>
-          </FadeIn>
+        {tab === 'general' && <GeneralTab settings={settings} />}
+        {tab === 'homepage' && <HomepageTab settings={settings} />}
+        {tab === 'content' && <ContentTab settings={settings} />}
+        {tab === 'university' && <UniversityTab settings={settings} />}
+        {tab === 'organizations' && <OrganizationsTab settings={settings} />}
+        {tab === 'legal' && <LegalTab settings={settings} />}
+        {tab === 'social' && <SocialTab settings={settings} />}
 
-          {/* Homepage Content */}
-          <FadeIn direction="up" delay={0.15}>
-            <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Homepage Content</h2>
-              <div className="space-y-3">
-                <Field label="Founded Year" value={String(form.foundedYear)}
-                  onChange={(v) => setForm({ ...form, foundedYear: parseInt(v) || 2021 })} />
-                <Field label="Hero Badge Text" value={form.homePageContent.heroBadgeText}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroBadgeText: v } })} />
-                <Field label="Hero Title (Line 1)" value={form.homePageContent.heroTitle}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroTitle: v } })} />
-                <Field label="Hero Title Gradient (Line 2)" value={form.homePageContent.heroTitleGradient}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroTitleGradient: v } })} />
-                <Field label="Hero Subtitle" value={form.homePageContent.heroSubtitle}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroSubtitle: v } })} />
-                <Field label="Hero Tagline (before rotating words)" value={form.homePageContent.heroTagline}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroTagline: v } })} />
-                <Field label="Rotating Words (comma-separated)" value={form.homePageContent.rotatingWords.join(', ')}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, rotatingWords: v.split(',').map(w => w.trim()).filter(Boolean) } })} />
-                <ImageUpload
-                  value={form.homePageContent.heroImage}
-                  onChange={(url) => setForm({ ...form, homePageContent: { ...form.homePageContent, heroImage: url } })}
-                  folder="settings"
-                  label="Hero Image (max 5MB)"
-                />
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Intro / CTA Text</label>
-                  <textarea value={form.homePageContent.introText} onChange={(e) => setForm({ ...form, homePageContent: { ...form.homePageContent, introText: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                </div>
-                <Field label="CTA Title (gradient text)" value={form.homePageContent.ctaTitle}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, ctaTitle: v } })} />
-                <Field label="CTA Button Text" value={form.homePageContent.ctaButtonText}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, ctaButtonText: v } })} />
-                <Field label="Features Heading" value={form.homePageContent.featuresHeading}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, featuresHeading: v } })} />
-                <Field label="Features Subheading" value={form.homePageContent.featuresSubheading}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, featuresSubheading: v } })} />
-                <Field label="Services Heading" value={form.homePageContent.servicesHeading}
-                  onChange={(v) => setForm({ ...form, homePageContent: { ...form.homePageContent, servicesHeading: v } })} />
-
-                {/* Features */}
-                <div className="pt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-foreground">Features (What We Offer)</label>
-                    <button type="button"
-                      onClick={() => setForm({ ...form, homePageContent: { ...form.homePageContent, features: [...form.homePageContent.features, { title: '', description: '' }] } })}
-                      className="flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-                      <Plus className="h-3 w-3" /> Add
-                    </button>
-                  </div>
-                  {form.homePageContent.features.map((f, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
-                      <button type="button" onClick={() => { const features = form.homePageContent.features.filter((_, idx) => idx !== i); setForm({ ...form, homePageContent: { ...form.homePageContent, features } }); }}
-                        className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                      <input value={f.title} placeholder="Title"
-                        onChange={(e) => { const features = [...form.homePageContent.features]; features[i] = { ...features[i], title: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, features } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                      <textarea value={f.description} placeholder="Description" rows={2}
-                        onChange={(e) => { const features = [...form.homePageContent.features]; features[i] = { ...features[i], description: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, features } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Services */}
-                <div className="pt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-foreground">Services (Everything You Need)</label>
-                    <button type="button"
-                      onClick={() => setForm({ ...form, homePageContent: { ...form.homePageContent, services: [...form.homePageContent.services, { title: '', description: '', link: '' }] } })}
-                      className="flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-                      <Plus className="h-3 w-3" /> Add
-                    </button>
-                  </div>
-                  {form.homePageContent.services.map((s, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
-                      <button type="button" onClick={() => { const services = form.homePageContent.services.filter((_, idx) => idx !== i); setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                      <input value={s.title} placeholder="Title"
-                        onChange={(e) => { const services = [...form.homePageContent.services]; services[i] = { ...services[i], title: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                      <textarea value={s.description} placeholder="Description" rows={2}
-                        onChange={(e) => { const services = [...form.homePageContent.services]; services[i] = { ...services[i], description: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                      <input value={s.link} placeholder="Link (e.g. /blood-donors)"
-                        onChange={(e) => { const services = [...form.homePageContent.services]; services[i] = { ...services[i], link: e.target.value }; setForm({ ...form, homePageContent: { ...form.homePageContent, services } }); }}
-                        className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* University Info */}
-          <FadeIn direction="up" delay={0.18}>
-            <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">University Information</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Overview</label>
-                  <textarea value={form.universityInfo.overview} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, overview: e.target.value } })} rows={4}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">History</label>
-                  <textarea value={form.universityInfo.history} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, history: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Campus Info</label>
-                  <textarea value={form.universityInfo.campusInfo} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, campusInfo: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Admission Info</label>
-                  <textarea value={form.universityInfo.admissionInfo} onChange={(e) => setForm({ ...form, universityInfo: { ...form.universityInfo, admissionInfo: e.target.value } })} rows={3}
-                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                </div>
-                <Field label="Contact Info" value={form.universityInfo.contactInfo}
-                  onChange={(v) => setForm({ ...form, universityInfo: { ...form.universityInfo, contactInfo: v } })} />
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* Other Organizations */}
-          <FadeIn direction="up" delay={0.2}>
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">Other Organizations</h2>
-                <button type="button"
-                  onClick={() => setForm({ ...form, otherOrganizations: [...form.otherOrganizations, { name: '', description: '', website: '', logo: '' }] })}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-                  <Plus className="h-3 w-3" /> Add Organization
-                </button>
-              </div>
-              <div className="space-y-3">
-                {form.otherOrganizations.map((org, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
-                    <button type="button" onClick={() => setForm({ ...form, otherOrganizations: form.otherOrganizations.filter((_, idx) => idx !== i) })}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    <input value={org.name} placeholder="Organization Name"
-                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], name: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    <textarea value={org.description} placeholder="Description" rows={2}
-                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], description: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    <input value={org.website} placeholder="Website URL (optional)"
-                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], website: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    <input value={org.logo} placeholder="Logo URL (optional)"
-                      onChange={(e) => { const orgs = [...form.otherOrganizations]; orgs[i] = { ...orgs[i], logo: e.target.value }; setForm({ ...form, otherOrganizations: orgs }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                  </motion.div>
-                ))}
-                {form.otherOrganizations.length === 0 && <p className="text-sm text-muted-foreground">No organizations. Click "Add Organization" to create one.</p>}
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* FAQ */}
-          <FadeIn direction="up" delay={0.22}>
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">FAQ Items</h2>
-                <button type="button"
-                  onClick={() => setForm({ ...form, faq: [...form.faq, { question: '', answer: '' }] })}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-                  <Plus className="h-3 w-3" /> Add FAQ
-                </button>
-              </div>
-              <div className="space-y-3">
-                {form.faq.map((item, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
-                    <button type="button" onClick={() => setForm({ ...form, faq: form.faq.filter((_, idx) => idx !== i) })}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    <input value={item.question} placeholder="Question"
-                      onChange={(e) => { const faq = [...form.faq]; faq[i] = { ...faq[i], question: e.target.value }; setForm({ ...form, faq }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    <textarea value={item.answer} placeholder="Answer" rows={2}
-                      onChange={(e) => { const faq = [...form.faq]; faq[i] = { ...faq[i], answer: e.target.value }; setForm({ ...form, faq }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                  </motion.div>
-                ))}
-                {form.faq.length === 0 && <p className="text-sm text-muted-foreground">No FAQ items. Click "Add FAQ" to create one.</p>}
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* Privacy Policy */}
-          <FadeIn direction="up" delay={0.26}>
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">Privacy Policy Sections</h2>
-                <button type="button"
-                  onClick={() => setForm({ ...form, privacyPolicy: [...form.privacyPolicy, { title: '', content: '' }] })}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-                  <Plus className="h-3 w-3" /> Add Section
-                </button>
-              </div>
-              <div className="space-y-3">
-                {form.privacyPolicy.map((item, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
-                    <button type="button" onClick={() => setForm({ ...form, privacyPolicy: form.privacyPolicy.filter((_, idx) => idx !== i) })}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    <input value={item.title} placeholder="Section Title"
-                      onChange={(e) => { const pp = [...form.privacyPolicy]; pp[i] = { ...pp[i], title: e.target.value }; setForm({ ...form, privacyPolicy: pp }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    <textarea value={item.content} placeholder="Section Content" rows={3}
-                      onChange={(e) => { const pp = [...form.privacyPolicy]; pp[i] = { ...pp[i], content: e.target.value }; setForm({ ...form, privacyPolicy: pp }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                  </motion.div>
-                ))}
-                {form.privacyPolicy.length === 0 && <p className="text-sm text-muted-foreground">No sections. Click "Add Section" to create one.</p>}
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* Terms & Conditions */}
-          <FadeIn direction="up" delay={0.3}>
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">Terms & Conditions Sections</h2>
-                <button type="button"
-                  onClick={() => setForm({ ...form, termsConditions: [...form.termsConditions, { title: '', content: '' }] })}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-                  <Plus className="h-3 w-3" /> Add Section
-                </button>
-              </div>
-              <div className="space-y-3">
-                {form.termsConditions.map((item, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
-                    <button type="button" onClick={() => setForm({ ...form, termsConditions: form.termsConditions.filter((_, idx) => idx !== i) })}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    <input value={item.title} placeholder="Section Title"
-                      onChange={(e) => { const tc = [...form.termsConditions]; tc[i] = { ...tc[i], title: e.target.value }; setForm({ ...form, termsConditions: tc }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                    <textarea value={item.content} placeholder="Section Content" rows={3}
-                      onChange={(e) => { const tc = [...form.termsConditions]; tc[i] = { ...tc[i], content: e.target.value }; setForm({ ...form, termsConditions: tc }); }}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                  </motion.div>
-                ))}
-                {form.termsConditions.length === 0 && <p className="text-sm text-muted-foreground">No sections. Click "Add Section" to create one.</p>}
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* Social Links */}
-          <FadeIn direction="up" delay={0.38}>
-            <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Social Links</h2>
-              <div className="space-y-3">
-                <Field label="Facebook" value={form.socialLinks.facebook}
-                  onChange={(v) => setForm({ ...form, socialLinks: { ...form.socialLinks, facebook: v } })} />
-                <Field label="YouTube" value={form.socialLinks.youtube}
-                  onChange={(v) => setForm({ ...form, socialLinks: { ...form.socialLinks, youtube: v } })} />
-                <Field label="LinkedIn" value={form.socialLinks.linkedin}
-                  onChange={(v) => setForm({ ...form, socialLinks: { ...form.socialLinks, linkedin: v } })} />
-              </div>
-            </section>
-          </FadeIn>
-
-          {/* Payment Gateway */}
-          <FadeIn direction="up" delay={0.45}>
-            <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Payment Gateway</h2>
-              {(['bkash', 'nagad', 'rocket'] as const).map((method) => (
-                <div key={method} className="flex items-center gap-3 mb-3">
-                  <label className="flex items-center gap-2 text-sm w-20 capitalize text-foreground">
-                    <input type="checkbox" checked={form.paymentGateway[method]?.isActive || false}
-                      onChange={(e) => setForm({
-                        ...form,
-                        paymentGateway: { ...form.paymentGateway, [method]: { ...form.paymentGateway[method], isActive: e.target.checked } },
-                      })} />
-                    {method}
-                  </label>
-                  <input placeholder="Number" value={form.paymentGateway[method]?.number || ''}
-                    onChange={(e) => setForm({
-                      ...form,
-                      paymentGateway: { ...form.paymentGateway, [method]: { ...form.paymentGateway[method], number: e.target.value } },
-                    })}
-                    className="flex-1 px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                </div>
-              ))}
-            </section>
-          </FadeIn>
-
-          <button
-            type="submit"
-            disabled={saveMutation.isPending}
-            className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50">
-            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Settings
-          </button>
-        </form>
-
-        {/* Academic Config — separate section with its own save */}
+        {/* Academic Config — always below */}
         <div className="mt-10 pt-8 border-t">
           <AcademicConfigSection />
         </div>
@@ -480,16 +63,429 @@ export default function AdminSettingsPage() {
   );
 }
 
+// ═══════════════════════════════════════════
+// General & Branding
+// ═══════════════════════════════════════════
+
+function GeneralTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    siteName: '', siteNameFull: '', siteNameBn: '', siteNameBnFull: '',
+    contactEmail: '', contactPhone: '', address: '', foundedYear: 2021,
+    logo: '', logoDark: '', footerLogo: '', footerLogoDark: '', favicon: '',
+  });
+
+  useEffect(() => {
+    setForm({
+      siteName: s.siteName || '', siteNameFull: s.siteNameFull || '',
+      siteNameBn: s.siteNameBn || '', siteNameBnFull: s.siteNameBnFull || '',
+      contactEmail: s.contactEmail || '', contactPhone: s.contactPhone || '',
+      address: s.address || '', foundedYear: s.foundedYear || 2021,
+      logo: s.logo || '', logoDark: s.logoDark || '',
+      footerLogo: s.footerLogo || '', footerLogoDark: s.footerLogoDark || '',
+      favicon: s.favicon || '',
+    });
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/general', form),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('General settings saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Association Name</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Short Name (EN)" value={form.siteName} onChange={(v) => setForm({ ...form, siteName: v })} placeholder="e.g. RDSWA" />
+          <Field label="Full Name (EN)" value={form.siteNameFull} onChange={(v) => setForm({ ...form, siteNameFull: v })} placeholder="e.g. Rangpur Divisional Student Welfare Association" />
+          <Field label="Short Name (বাংলা)" value={form.siteNameBn} onChange={(v) => setForm({ ...form, siteNameBn: v })} placeholder="e.g. রবিকস" />
+          <Field label="Full Name (বাংলা)" value={form.siteNameBnFull} onChange={(v) => setForm({ ...form, siteNameBnFull: v })} placeholder="e.g. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি" />
+        </div>
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">Contact Information</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Contact Email" value={form.contactEmail} onChange={(v) => setForm({ ...form, contactEmail: v })} />
+          <Field label="Contact Phone" value={form.contactPhone} onChange={(v) => setForm({ ...form, contactPhone: v })} />
+        </div>
+        <Field label="Address" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
+        <Field label="Founded Year" value={String(form.foundedYear)} onChange={(v) => setForm({ ...form, foundedYear: parseInt(v) || 2021 })} />
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">Branding & Logos</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="block text-xs text-muted-foreground mb-1">Navbar Logo (Light Mode)</label><ImageUpload value={form.logo} onChange={(url) => setForm({ ...form, logo: url })} folder="branding" /></div>
+          <div><label className="block text-xs text-muted-foreground mb-1">Navbar Logo (Dark Mode)</label><ImageUpload value={form.logoDark} onChange={(url) => setForm({ ...form, logoDark: url })} folder="branding" /></div>
+          <div><label className="block text-xs text-muted-foreground mb-1">Footer Logo (Light Mode)</label><ImageUpload value={form.footerLogo} onChange={(url) => setForm({ ...form, footerLogo: url })} folder="branding" /></div>
+          <div><label className="block text-xs text-muted-foreground mb-1">Footer Logo (Dark Mode)</label><ImageUpload value={form.footerLogoDark} onChange={(url) => setForm({ ...form, footerLogoDark: url })} folder="branding" /></div>
+          <div><label className="block text-xs text-muted-foreground mb-1">Favicon</label><ImageUpload value={form.favicon} onChange={(url) => setForm({ ...form, favicon: url })} folder="branding" /></div>
+        </div>
+
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Home Page
+// ═══════════════════════════════════════════
+
+function HomepageTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    heroTitle: '', heroTitleGradient: '', heroBadgeText: '', heroSubtitle: '',
+    heroImage: '', heroTagline: '', rotatingWords: [] as string[],
+    introText: '', featuresHeading: '', featuresSubheading: '',
+    features: [] as Array<{ title: string; description: string }>,
+    servicesHeading: '',
+    services: [] as Array<{ title: string; description: string; link: string }>,
+    ctaTitle: '', ctaButtonText: '',
+  });
+
+  useEffect(() => {
+    const h = s.homePageContent || {};
+    setForm({
+      heroTitle: h.heroTitle || '', heroTitleGradient: h.heroTitleGradient || '',
+      heroBadgeText: h.heroBadgeText || '', heroSubtitle: h.heroSubtitle || '',
+      heroImage: h.heroImage || '', heroTagline: h.heroTagline || '',
+      rotatingWords: h.rotatingWords || [],
+      introText: h.introText || '', featuresHeading: h.featuresHeading || '',
+      featuresSubheading: h.featuresSubheading || '',
+      features: h.features || [], servicesHeading: h.servicesHeading || '',
+      services: h.services || [], ctaTitle: h.ctaTitle || '', ctaButtonText: h.ctaButtonText || '',
+    });
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/homepage', { homePageContent: form }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Homepage saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Hero Section</h2>
+        <Field label="Badge Text" value={form.heroBadgeText} onChange={(v) => setForm({ ...form, heroBadgeText: v })} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Hero Title (Line 1)" value={form.heroTitle} onChange={(v) => setForm({ ...form, heroTitle: v })} />
+          <Field label="Hero Title Gradient (Line 2)" value={form.heroTitleGradient} onChange={(v) => setForm({ ...form, heroTitleGradient: v })} />
+        </div>
+        <Field label="Hero Subtitle" value={form.heroSubtitle} onChange={(v) => setForm({ ...form, heroSubtitle: v })} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Tagline (before rotating words)" value={form.heroTagline} onChange={(v) => setForm({ ...form, heroTagline: v })} />
+          <Field label="Rotating Words (comma-separated)" value={form.rotatingWords.join(', ')} onChange={(v) => setForm({ ...form, rotatingWords: v.split(',').map(w => w.trim()).filter(Boolean) })} />
+        </div>
+        <ImageUpload value={form.heroImage} onChange={(url) => setForm({ ...form, heroImage: url })} folder="settings" label="Hero Image" />
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">CTA Section</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="CTA Title" value={form.ctaTitle} onChange={(v) => setForm({ ...form, ctaTitle: v })} />
+          <Field label="CTA Button Text" value={form.ctaButtonText} onChange={(v) => setForm({ ...form, ctaButtonText: v })} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">Intro / CTA Text</label>
+          <textarea value={form.introText} onChange={(e) => setForm({ ...form, introText: e.target.value })} rows={3}
+            className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+        </div>
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">Features (What We Offer)</h2>
+        <Field label="Features Heading" value={form.featuresHeading} onChange={(v) => setForm({ ...form, featuresHeading: v })} />
+        <Field label="Features Subheading" value={form.featuresSubheading} onChange={(v) => setForm({ ...form, featuresSubheading: v })} />
+        <ArrayEditor items={form.features} fields={['title', 'description']}
+          onChange={(features) => setForm({ ...form, features })}
+          onAdd={() => setForm({ ...form, features: [...form.features, { title: '', description: '' }] })} label="Feature" />
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">Services (Everything You Need)</h2>
+        <Field label="Services Heading" value={form.servicesHeading} onChange={(v) => setForm({ ...form, servicesHeading: v })} />
+        <ArrayEditor items={form.services} fields={['title', 'description', 'link']}
+          onChange={(services) => setForm({ ...form, services })}
+          onAdd={() => setForm({ ...form, services: [...form.services, { title: '', description: '', link: '' }] })} label="Service" />
+
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// About & Content
+// ═══════════════════════════════════════════
+
+function ContentTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    aboutContent: '', missionContent: '', visionContent: '', objectivesContent: '', historyContent: '',
+  });
+
+  useEffect(() => {
+    setForm({
+      aboutContent: s.aboutContent || '', missionContent: s.missionContent || '',
+      visionContent: s.visionContent || '', objectivesContent: s.objectivesContent || '',
+      historyContent: s.historyContent || '',
+    });
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/about', form),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Content saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-4">
+        <RichField label="About Content" value={form.aboutContent} onChange={(v) => setForm({ ...form, aboutContent: v })} placeholder="About the association..." />
+        <RichField label="Mission" value={form.missionContent} onChange={(v) => setForm({ ...form, missionContent: v })} placeholder="Mission statement..." />
+        <RichField label="Vision" value={form.visionContent} onChange={(v) => setForm({ ...form, visionContent: v })} placeholder="Vision statement..." />
+        <RichField label="Objectives" value={form.objectivesContent} onChange={(v) => setForm({ ...form, objectivesContent: v })} placeholder="Objectives..." />
+        <RichField label="History" value={form.historyContent} onChange={(v) => setForm({ ...form, historyContent: v })} placeholder="Organization history..." />
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// University
+// ═══════════════════════════════════════════
+
+function UniversityTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    name: '', logo: '', email: '', phone: '', website: '', address: '',
+    overview: '', history: '', campusInfo: '', admissionInfo: '', contactInfo: '',
+    location: { lat: 0, lng: 0 },
+  });
+
+  useEffect(() => {
+    const u = s.universityInfo || {};
+    setForm({
+      name: u.name || '', logo: u.logo || '', email: u.email || '', phone: u.phone || '',
+      website: u.website || '', address: u.address || '', overview: u.overview || '',
+      history: u.history || '', campusInfo: u.campusInfo || '', admissionInfo: u.admissionInfo || '',
+      contactInfo: u.contactInfo || '', location: u.location || { lat: 0, lng: 0 },
+    });
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/university', { universityInfo: form }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('University info saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  const u = (field: string, value: any) => setForm({ ...form, [field]: value });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2"><GraduationCap className="h-5 w-5" /> University Details</h2>
+        <Field label="University Name" value={form.name} onChange={(v) => u('name', v)} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Email" value={form.email} onChange={(v) => u('email', v)} />
+          <Field label="Phone" value={form.phone} onChange={(v) => u('phone', v)} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Website" value={form.website} onChange={(v) => u('website', v)} />
+          <Field label="Address" value={form.address} onChange={(v) => u('address', v)} />
+        </div>
+        <div><label className="block text-sm font-medium text-foreground mb-1">Logo</label><ImageUpload value={form.logo} onChange={(url) => u('logo', url)} folder="university" /></div>
+        <Field label="Contact Info (legacy)" value={form.contactInfo} onChange={(v) => u('contactInfo', v)} />
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">Content</h2>
+        <RichField label="Overview" value={form.overview} onChange={(v) => u('overview', v)} placeholder="University overview..." />
+        <RichField label="History" value={form.history} onChange={(v) => u('history', v)} placeholder="University history..." />
+        <RichField label="Campus Info" value={form.campusInfo} onChange={(v) => u('campusInfo', v)} placeholder="Campus information..." />
+        <RichField label="Admission Info" value={form.admissionInfo} onChange={(v) => u('admissionInfo', v)} placeholder="Admission information..." />
+
+        <h2 className="text-lg font-semibold text-foreground pt-2">Map Location</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Latitude" value={String(form.location.lat || '')} onChange={(v) => setForm({ ...form, location: { ...form.location, lat: Number(v) || 0 } })} />
+          <Field label="Longitude" value={String(form.location.lng || '')} onChange={(v) => setForm({ ...form, location: { ...form.location, lng: Number(v) || 0 } })} />
+        </div>
+
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Organizations
+// ═══════════════════════════════════════════
+
+function OrganizationsTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [orgs, setOrgs] = useState<Array<{ name: string; description: string; website: string; logo: string }>>([]);
+
+  useEffect(() => {
+    setOrgs((s.otherOrganizations || []).map((o: any) => ({ name: o.name || '', description: o.description || '', website: o.website || '', logo: o.logo || '' })));
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/organizations', { otherOrganizations: orgs }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Organizations saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Other Organizations</h2>
+          <button type="button" onClick={() => setOrgs([...orgs, { name: '', description: '', website: '', logo: '' }])}
+            className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
+            <Plus className="h-3 w-3" /> Add
+          </button>
+        </div>
+        {orgs.map((org, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
+            <button type="button" onClick={() => setOrgs(orgs.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+            <input value={org.name} placeholder="Organization Name" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], name: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            <textarea value={org.description} placeholder="Description" rows={2} onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], description: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            <input value={org.website} placeholder="Website URL" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], website: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            <input value={org.logo} placeholder="Logo URL" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], logo: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+          </motion.div>
+        ))}
+        {orgs.length === 0 && <p className="text-sm text-muted-foreground">No organizations yet.</p>}
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Legal (FAQ + Privacy + Terms)
+// ═══════════════════════════════════════════
+
+function LegalTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [faq, setFaq] = useState<Array<{ question: string; answer: string }>>([]);
+  const [privacy, setPrivacy] = useState<Array<{ title: string; content: string }>>([]);
+  const [terms, setTerms] = useState<Array<{ title: string; content: string }>>([]);
+
+  useEffect(() => {
+    setFaq(s.faq || []);
+    setPrivacy(s.privacyPolicy || []);
+    setTerms(s.termsConditions || []);
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/legal', { faq, privacyPolicy: privacy, termsConditions: terms }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Legal content saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-6">
+        {/* FAQ */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-foreground">FAQ</h2>
+            <button type="button" onClick={() => setFaq([...faq, { question: '', answer: '' }])}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20"><Plus className="h-3 w-3" /> Add</button>
+          </div>
+          {faq.map((item, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
+              <button type="button" onClick={() => setFaq(faq.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+              <input value={item.question} placeholder="Question" onChange={(e) => { const f = [...faq]; f[i] = { ...f[i], question: e.target.value }; setFaq(f); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <textarea value={item.answer} placeholder="Answer" rows={2} onChange={(e) => { const f = [...faq]; f[i] = { ...f[i], answer: e.target.value }; setFaq(f); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            </motion.div>
+          ))}
+          {faq.length === 0 && <p className="text-sm text-muted-foreground">No FAQ items.</p>}
+        </div>
+
+        {/* Privacy Policy */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-foreground">Privacy Policy</h2>
+            <button type="button" onClick={() => setPrivacy([...privacy, { title: '', content: '' }])}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20"><Plus className="h-3 w-3" /> Add Section</button>
+          </div>
+          {privacy.map((item, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
+              <button type="button" onClick={() => setPrivacy(privacy.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+              <input value={item.title} placeholder="Section Title" onChange={(e) => { const p = [...privacy]; p[i] = { ...p[i], title: e.target.value }; setPrivacy(p); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <textarea value={item.content} placeholder="Section Content" rows={3} onChange={(e) => { const p = [...privacy]; p[i] = { ...p[i], content: e.target.value }; setPrivacy(p); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            </motion.div>
+          ))}
+          {privacy.length === 0 && <p className="text-sm text-muted-foreground">No sections.</p>}
+        </div>
+
+        {/* Terms */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-foreground">Terms & Conditions</h2>
+            <button type="button" onClick={() => setTerms([...terms, { title: '', content: '' }])}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20"><Plus className="h-3 w-3" /> Add Section</button>
+          </div>
+          {terms.map((item, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
+              <button type="button" onClick={() => setTerms(terms.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+              <input value={item.title} placeholder="Section Title" onChange={(e) => { const t = [...terms]; t[i] = { ...t[i], title: e.target.value }; setTerms(t); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <textarea value={item.content} placeholder="Section Content" rows={3} onChange={(e) => { const t = [...terms]; t[i] = { ...t[i], content: e.target.value }; setTerms(t); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            </motion.div>
+          ))}
+          {terms.length === 0 && <p className="text-sm text-muted-foreground">No sections.</p>}
+        </div>
+
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Social Links
+// ═══════════════════════════════════════════
+
+function SocialTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({ facebook: '', youtube: '', linkedin: '', twitter: '' });
+
+  useEffect(() => {
+    const sl = s.socialLinks || {};
+    setForm({ facebook: sl.facebook || '', youtube: sl.youtube || '', linkedin: sl.linkedin || '', twitter: sl.twitter || '' });
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/social', { socialLinks: form }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Social links saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <FadeIn direction="up">
+      <div className="space-y-4">
+        <Field label="Facebook" value={form.facebook} onChange={(v) => setForm({ ...form, facebook: v })} placeholder="https://facebook.com/..." />
+        <Field label="YouTube" value={form.youtube} onChange={(v) => setForm({ ...form, youtube: v })} placeholder="https://youtube.com/..." />
+        <Field label="LinkedIn" value={form.linkedin} onChange={(v) => setForm({ ...form, linkedin: v })} placeholder="https://linkedin.com/..." />
+        <Field label="Twitter / X" value={form.twitter} onChange={(v) => setForm({ ...form, twitter: v })} placeholder="https://x.com/..." />
+        <SaveButton mutation={mutation} />
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Academic Config (separate section, existing)
+// ═══════════════════════════════════════════
+
 function AcademicConfigSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
-
   const { data: acData, isLoading } = useQuery({
     queryKey: ['settings', 'academic-config'],
-    queryFn: async () => {
-      const { data } = await api.get('/settings/academic-config');
-      return data.data as { batches: string[]; sessions: string[]; faculties: Array<{ name: string; departments: string[] }> };
-    },
+    queryFn: async () => { const { data } = await api.get('/settings/academic-config'); return data.data as { batches: string[]; sessions: string[]; faculties: Array<{ name: string; departments: string[] }> }; },
   });
 
   const [batches, setBatches] = useState('');
@@ -504,17 +500,14 @@ function AcademicConfigSection() {
     }
   }, [acData]);
 
-  const saveMutation = useMutation({
+  const mutation = useMutation({
     mutationFn: () => api.patch('/settings/academic-config', {
       batches: batches.split(',').map((b) => b.trim()).filter(Boolean),
       sessions: sessions.split(',').map((s) => s.trim()).filter(Boolean),
       faculties,
     }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings', 'academic-config'] });
-      toast.success('Academic config saved');
-    },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { toast.error(Object.values(fe)[0]); } else { toast.error(err.response?.data?.message || 'Failed to save'); } },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings', 'academic-config'] }); toast.success('Academic config saved'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
   if (isLoading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -525,91 +518,114 @@ function AcademicConfigSection() {
         <GraduationCap className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-semibold text-foreground">Academic Config</h2>
       </div>
-      <p className="text-sm text-muted-foreground mb-4">
-        Manage the dropdown values for University Batch, Session, Faculty, and Department used in user profiles.
-      </p>
-
+      <p className="text-sm text-muted-foreground mb-4">Manage dropdown values for batch, session, faculty, and department used in user profiles.</p>
       <div className="space-y-5">
-        {/* Batches */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">University Batches (comma-separated)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Batches (comma-separated)</label>
           <input value={batches} onChange={(e) => setBatches(e.target.value)} placeholder="1st, 2nd, 3rd, ..."
             className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
-          <p className="text-xs text-muted-foreground mt-1">e.g. 1st, 2nd, 3rd, 4th, ...</p>
         </div>
-
-        {/* Sessions */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">Sessions (comma-separated)</label>
           <input value={sessions} onChange={(e) => setSessions(e.target.value)} placeholder="2010-11, 2011-12, ..."
             className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
-          <p className="text-xs text-muted-foreground mt-1">e.g. 2010-11, 2011-12, 2012-13, ...</p>
         </div>
-
-        {/* Faculties & Departments */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-foreground">Faculties & Departments</label>
-            <button type="button"
-              onClick={() => setFaculties([...faculties, { name: '', departments: [] }])}
-              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20">
-              <Plus className="h-3 w-3" /> Add Faculty
-            </button>
+            <button type="button" onClick={() => setFaculties([...faculties, { name: '', departments: [] }])}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20"><Plus className="h-3 w-3" /> Add Faculty</button>
           </div>
           <AnimatePresence>
             {faculties.map((fac, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                className="border rounded-lg p-4 space-y-3 relative mb-3"
-              >
-                <button type="button" onClick={() => setFaculties(faculties.filter((_, idx) => idx !== i))}
-                  className="absolute top-3 right-3 text-muted-foreground hover:text-red-500 transition-colors">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="border rounded-lg p-4 space-y-3 relative mb-3">
+                <button type="button" onClick={() => setFaculties(faculties.filter((_, idx) => idx !== i))} className="absolute top-3 right-3 text-muted-foreground hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Faculty Name</label>
-                  <input value={fac.name} placeholder="e.g. Faculty of Science"
-                    onChange={(e) => { const f = [...faculties]; f[i] = { ...f[i], name: e.target.value }; setFaculties(f); }}
+                  <input value={fac.name} placeholder="e.g. Faculty of Science" onChange={(e) => { const f = [...faculties]; f[i] = { ...f[i], name: e.target.value }; setFaculties(f); }}
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Departments (comma-separated)</label>
-                  <textarea value={fac.departments.join(', ')} placeholder="Mathematics, Physics, Chemistry, ..." rows={2}
-                    onChange={(e) => {
-                      const f = [...faculties];
-                      f[i] = { ...f[i], departments: e.target.value.split(',').map((d) => d.trim()).filter(Boolean) };
-                      setFaculties(f);
-                    }}
+                  <textarea value={fac.departments.join(', ')} placeholder="Mathematics, Physics, ..." rows={2}
+                    onChange={(e) => { const f = [...faculties]; f[i] = { ...f[i], departments: e.target.value.split(',').map((d) => d.trim()).filter(Boolean) }; setFaculties(f); }}
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
-          {faculties.length === 0 && <p className="text-sm text-muted-foreground">No faculties. Click "Add Faculty" to create one.</p>}
+          {faculties.length === 0 && <p className="text-sm text-muted-foreground">No faculties.</p>}
         </div>
-
-        <button
-          type="button"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50">
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save Academic Config
-        </button>
+        <SaveButton mutation={mutation} label="Save Academic Config" />
       </div>
     </FadeIn>
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+// ═══════════════════════════════════════════
+// Shared UI components
+// ═══════════════════════════════════════════
+
+function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div>
       <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
-      <input value={value} onChange={(e) => onChange(e.target.value)}
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+    </div>
+  );
+}
+
+function RichField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
+      <RichTextEditor value={value} onChange={onChange} placeholder={placeholder} />
+    </div>
+  );
+}
+
+function SaveButton({ mutation, label = 'Save' }: { mutation: { mutate: () => void; isPending: boolean }; label?: string }) {
+  return (
+    <motion.button
+      type="button"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => mutation.mutate()}
+      disabled={mutation.isPending}
+      className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 mt-4"
+    >
+      {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+      {label}
+    </motion.button>
+  );
+}
+
+function ArrayEditor({ items, fields, onChange, onAdd, label }: {
+  items: any[]; fields: string[]; onChange: (items: any[]) => void; onAdd: () => void; label: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-foreground">{label}s</span>
+        <button type="button" onClick={onAdd} className="flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20"><Plus className="h-3 w-3" /> Add</button>
+      </div>
+      {items.map((item, i) => (
+        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
+          <button type="button" onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+          {fields.map((f) => (
+            f === 'description' ? (
+              <textarea key={f} value={item[f] || ''} placeholder={f.charAt(0).toUpperCase() + f.slice(1)} rows={2}
+                onChange={(e) => { const arr = [...items]; arr[i] = { ...arr[i], [f]: e.target.value }; onChange(arr); }}
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            ) : (
+              <input key={f} value={item[f] || ''} placeholder={f === 'link' ? 'Link (e.g. /blood-donors)' : f.charAt(0).toUpperCase() + f.slice(1)}
+                onChange={(e) => { const arr = [...items]; arr[i] = { ...arr[i], [f]: e.target.value }; onChange(arr); }}
+                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            )
+          ))}
+        </motion.div>
+      ))}
     </div>
   );
 }

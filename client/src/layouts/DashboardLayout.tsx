@@ -11,6 +11,7 @@ import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import { AnimatePresence, motion } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import NotificationBell from '@/components/shared/NotificationBell';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const sidebarLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: Home },
@@ -38,6 +39,7 @@ export default function DashboardLayout() {
     logout();
     navigate('/login');
   };
+  const { settings: siteSettings } = useSiteSettings();
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -52,7 +54,7 @@ export default function DashboardLayout() {
           </button>
           <Link to="/" className="text-xl font-bold">
             <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
-              RDSWA
+              {siteSettings?.siteName || 'RDSWA'}
             </GradientText>
           </Link>
         </div>

@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { queryKeys } from "@/lib/queryKeys";
-import { GraduationCap, BookOpen, Loader2, Users } from "lucide-react";
+import { GraduationCap, BookOpen, Loader2, Users, Phone, Mail, MapPin, ExternalLink } from "lucide-react";
 import { FadeIn, BlurText } from "@/components/reactbits";
 import { motion } from "motion/react";
 import SEO from "@/components/SEO";
+import RichContent from "@/components/ui/RichContent";
 
 export default function UniversityPage() {
   const { data, isLoading } = useQuery({
@@ -18,12 +19,7 @@ export default function UniversityPage() {
   const settings = data?.data;
   const uni = settings?.universityInfo;
   const orgs = settings?.otherOrganizations as
-    | Array<{
-        name: string;
-        description: string;
-        website?: string;
-        logo?: string;
-      }>
+    | Array<{ name: string; description: string; website?: string; logo?: string }>
     | undefined;
 
   if (isLoading) {
@@ -34,44 +30,77 @@ export default function UniversityPage() {
     );
   }
 
+  const hasContact = uni?.phone || uni?.email || uni?.website || uni?.address;
+
   return (
     <div className="container mx-auto py-8">
       <SEO
-        title="University"
-        description="Learn about University of Barishal — overview, history, campus info, and admissions."
+        title={uni?.name || "University"}
+        description={`Learn about ${uni?.name || 'University of Barishal'} — overview, history, campus info, and admissions.`}
       />
-      <BlurText
-        text="University of Barishal"
-        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"
-        delay={80}
-        animateBy="words"
-        direction="bottom"
-      />
-      {(settings?.foundedYear || uni?.contactInfo) && (
-        <FadeIn delay={0.2} direction="up">
-          <p className="text-muted-foreground mb-8">
-            {uni?.contactInfo ||
-              (settings?.foundedYear
-                ? `Established ${settings.foundedYear}`
-                : "")}
-          </p>
+
+      {/* Header with logo + name */}
+      <FadeIn direction="up">
+        <div className="flex items-start gap-4 mb-6">
+          {uni?.logo && (
+            <motion.img
+              src={uni.logo}
+              alt={uni.name || 'University'}
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-lg shrink-0"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            />
+          )}
+          <div>
+            <BlurText
+              text={uni?.name || "University of Barishal"}
+              className="text-2xl sm:text-3xl md:text-4xl font-bold"
+              delay={80}
+              animateBy="words"
+              direction="bottom"
+            />
+            {uni?.address && (
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 shrink-0" /> {uni.address}
+              </p>
+            )}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* Contact Info */}
+      {hasContact && (
+        <FadeIn delay={0.1} direction="up">
+          <div className="flex flex-wrap gap-4 mb-8 text-sm">
+            {uni?.phone && (
+              <a href={`tel:${uni.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 text-primary hover:underline">
+                <Phone className="h-4 w-4" /> {uni.phone}
+              </a>
+            )}
+            {uni?.email && (
+              <a href={`mailto:${uni.email}`} className="flex items-center gap-1.5 text-primary hover:underline">
+                <Mail className="h-4 w-4" /> {uni.email}
+              </a>
+            )}
+            {uni?.website && (
+              <a href={uni.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-primary hover:underline">
+                <ExternalLink className="h-4 w-4" /> {uni.website.replace(/^https?:\/\//, '')}
+              </a>
+            )}
+          </div>
         </FadeIn>
       )}
 
       {/* Overview */}
       {uni?.overview && (
-        <FadeIn delay={0.1} direction="up">
+        <FadeIn delay={0.15} direction="up">
           <section className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <GraduationCap className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">
-                Overview
-              </h2>
+              <h2 className="text-xl font-semibold text-foreground">Overview</h2>
             </div>
-            <div
-              className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: uni.overview }}
-            />
+            <RichContent html={uni.overview} />
           </section>
         </FadeIn>
       )}
@@ -84,51 +113,36 @@ export default function UniversityPage() {
               <BookOpen className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold text-foreground">History</h2>
             </div>
-            <div
-              className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: uni.history }}
-            />
+            <RichContent html={uni.history} />
           </section>
         </FadeIn>
       )}
 
       {/* Campus Info */}
       {uni?.campusInfo && (
-        <FadeIn delay={0.3} direction="up">
+        <FadeIn delay={0.25} direction="up">
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-foreground">
-              Campus Information
-            </h2>
-            <div
-              className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: uni.campusInfo }}
-            />
+            <h2 className="text-xl font-semibold mb-3 text-foreground">Campus Information</h2>
+            <RichContent html={uni.campusInfo} />
           </section>
         </FadeIn>
       )}
 
       {/* Admission Info */}
       {uni?.admissionInfo && (
-        <FadeIn delay={0.4} direction="up">
+        <FadeIn delay={0.3} direction="up">
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-foreground">
-              Admission Information
-            </h2>
-            <div
-              className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: uni.admissionInfo }}
-            />
+            <h2 className="text-xl font-semibold mb-3 text-foreground">Admission Information</h2>
+            <RichContent html={uni.admissionInfo} />
           </section>
         </FadeIn>
       )}
 
       {/* Map */}
       {uni?.location?.lat && uni?.location?.lng && (
-        <FadeIn delay={0.5} direction="up">
+        <FadeIn delay={0.35} direction="up">
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-3 text-foreground">
-              Location
-            </h2>
+            <h2 className="text-xl font-semibold mb-3 text-foreground">Location</h2>
             <div className="border rounded-lg overflow-hidden">
               <iframe
                 title="University Location"
@@ -145,21 +159,16 @@ export default function UniversityPage() {
 
       {/* Other Organizations */}
       {orgs && orgs.length > 0 && (
-        <FadeIn delay={0.6} direction="up">
+        <FadeIn delay={0.4} direction="up">
           <section className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Users className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">
-                Other Organizations
-              </h2>
+              <h2 className="text-xl font-semibold text-foreground">Other Organizations</h2>
             </div>
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {orgs.map((org, i) => (
                 <FadeIn key={i} delay={0.1 + i * 0.06} direction="up">
-                  <motion.div
-                    whileHover={{ y: -2 }}
-                    className="border rounded-lg p-4 bg-card h-full"
-                  >
+                  <motion.div whileHover={{ y: -2 }} className="border rounded-lg p-4 bg-card h-full">
                     {org.logo && (
                       <motion.img
                         src={org.logo}
@@ -169,13 +178,9 @@ export default function UniversityPage() {
                         animate={{ opacity: 1 }}
                       />
                     )}
-                    <p className="font-medium text-foreground mb-1">
-                      {org.name}
-                    </p>
+                    <p className="font-medium text-foreground mb-1">{org.name}</p>
                     {org.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {org.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-2">{org.description}</p>
                     )}
                     {org.website && (
                       <a
@@ -184,7 +189,7 @@ export default function UniversityPage() {
                         rel="noopener noreferrer"
                         className="text-sm text-primary hover:underline"
                       >
-                        Visit Website
+                        Visit website
                       </a>
                     )}
                   </motion.div>
@@ -195,21 +200,15 @@ export default function UniversityPage() {
         </FadeIn>
       )}
 
-      {/* Empty state when no content at all */}
-      {!uni?.overview &&
-        !uni?.history &&
-        !uni?.campusInfo &&
-        !uni?.admissionInfo &&
-        (!orgs || orgs.length === 0) && (
-          <FadeIn delay={0.2} direction="up">
-            <div className="text-center py-12">
-              <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground">
-                University information has not been configured yet.
-              </p>
-            </div>
-          </FadeIn>
-        )}
+      {/* Empty state */}
+      {!uni?.overview && !uni?.history && !uni?.campusInfo && !uni?.admissionInfo && (!orgs || orgs.length === 0) && (
+        <FadeIn delay={0.2} direction="up">
+          <div className="text-center py-12">
+            <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">University information has not been configured yet.</p>
+          </div>
+        </FadeIn>
+      )}
     </div>
   );
 }

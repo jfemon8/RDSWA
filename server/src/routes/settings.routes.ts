@@ -22,8 +22,13 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
   if (!req.user || ![UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole)) {
     const publicFields = {
       siteName: settings.siteName,
+      siteNameFull: settings.siteNameFull,
       siteNameBn: settings.siteNameBn,
+      siteNameBnFull: settings.siteNameBnFull,
       logo: settings.logo,
+      logoDark: settings.logoDark,
+      footerLogo: settings.footerLogo,
+      footerLogoDark: settings.footerLogoDark,
       favicon: settings.favicon,
       theme: settings.theme,
       primaryColor: settings.primaryColor,
@@ -135,6 +140,20 @@ router.patch('/homepage', authenticate(), authorize(UserRole.ADMIN), auditLog('s
   ApiResponse.success(res, settings, 'Homepage content updated');
 }));
 
+// Update university info (SuperAdmin)
+router.patch('/university', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_university', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const uni = req.body.universityInfo || {};
+  // Strip _id
+  const { _id, ...cleanUni } = uni;
+  const settings = await SiteSettings.findOneAndUpdate(
+    {},
+    { $set: { universityInfo: cleanUni, updatedBy: req.user._id } },
+    { new: true, upsert: true }
+  );
+  ApiResponse.success(res, settings, 'University info updated');
+}));
+
 // Update about content (Admin+)
 router.patch('/about', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_about', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
@@ -148,6 +167,52 @@ router.patch('/about', authenticate(), authorize(UserRole.ADMIN), auditLog('sett
 
   const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
   ApiResponse.success(res, settings, 'Content updated');
+}));
+
+// Update general info (SuperAdmin) — name, branding, contact
+router.patch('/general', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_general', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const allowed = ['siteName', 'siteNameFull', 'siteNameBn', 'siteNameBnFull', 'contactEmail', 'contactPhone', 'address', 'logo', 'logoDark', 'footerLogo', 'footerLogoDark', 'favicon', 'foundedYear'];
+  const update: any = { updatedBy: req.user._id };
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) update[key] = req.body[key];
+  }
+  const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+  ApiResponse.success(res, settings, 'General settings updated');
+}));
+
+// Update organizations (SuperAdmin)
+router.patch('/organizations', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_organizations', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const orgs = (req.body.otherOrganizations || []).map(({ _id, ...rest }: any) => rest);
+  const settings = await SiteSettings.findOneAndUpdate(
+    {},
+    { $set: { otherOrganizations: orgs, updatedBy: req.user._id } },
+    { new: true, upsert: true }
+  );
+  ApiResponse.success(res, settings, 'Organizations updated');
+}));
+
+// Update legal content (SuperAdmin) — FAQ, Privacy, Terms
+router.patch('/legal', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_legal', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const update: any = { updatedBy: req.user._id };
+  if (req.body.faq !== undefined) update.faq = (req.body.faq as any[]).map(({ _id, ...rest }: any) => rest);
+  if (req.body.privacyPolicy !== undefined) update.privacyPolicy = (req.body.privacyPolicy as any[]).map(({ _id, ...rest }: any) => rest);
+  if (req.body.termsConditions !== undefined) update.termsConditions = (req.body.termsConditions as any[]).map(({ _id, ...rest }: any) => rest);
+  const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+  ApiResponse.success(res, settings, 'Legal content updated');
+}));
+
+// Update social links (SuperAdmin)
+router.patch('/social', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_social', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const settings = await SiteSettings.findOneAndUpdate(
+    {},
+    { $set: { socialLinks: req.body.socialLinks || {}, updatedBy: req.user._id } },
+    { new: true, upsert: true }
+  );
+  ApiResponse.success(res, settings, 'Social links updated');
 }));
 
 // Update payment config (Admin+)

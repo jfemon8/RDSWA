@@ -67,7 +67,7 @@ async function htmlToPdf(container: HTMLElement, filename: string, orientation: 
  * Build styled HTML table from CSV, render offscreen, capture as PDF.
  * Supports Bangla/Unicode text perfectly since it uses browser font rendering.
  */
-export async function downloadTablePdf(csv: string, title: string, filename: string): Promise<void> {
+export async function downloadTablePdf(csv: string, title: string, filename: string, siteName = 'RDSWA', siteNameFull = ''): Promise<void> {
   const { headers, rows } = parseCsv(csv);
 
   // Build HTML table
@@ -79,8 +79,8 @@ export async function downloadTablePdf(csv: string, title: string, filename: str
   const html = `
     <div style="font-family:'Noto Sans Bengali','Segoe UI',Arial,sans-serif;padding:20px;color:#333;background:#fff;">
       <div style="text-align:center;margin-bottom:6px;">
-        <h1 style="margin:0;color:#2563eb;font-size:22px;">RDSWA</h1>
-        <p style="margin:2px 0;color:#666;font-size:11px;">Rangpur Divisional Student Welfare Association — University of Barishal</p>
+        <h1 style="margin:0;color:#2563eb;font-size:22px;">${siteName}</h1>
+        <p style="margin:2px 0;color:#666;font-size:11px;">${siteNameFull}</p>
       </div>
       <h2 style="text-align:center;font-size:16px;margin:8px 0 4px;">${title}</h2>
       <p style="text-align:center;color:#888;font-size:10px;margin:0 0 12px;">
@@ -93,7 +93,7 @@ export async function downloadTablePdf(csv: string, title: string, filename: str
         <tbody>${bodyRows}</tbody>
       </table>
       <p style="text-align:center;font-size:9px;color:#aaa;margin-top:12px;border-top:1px solid #e5e7eb;padding-top:8px;">
-        RDSWA — Rangpur Divisional Student Welfare Association, University of Barishal
+        ${siteName}${siteNameFull ? ` — ${siteNameFull}` : ''}
       </p>
     </div>
   `;
