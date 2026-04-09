@@ -3,9 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IScheduleBus {
   operator: mongoose.Types.ObjectId;
   busName?: string;
-  busNumber?: string;
   busCategory: 'ac' | 'non_ac' | 'sleeper' | 'economy';
-  seatType?: string;
 }
 
 export interface IBusScheduleDocument extends Document {
@@ -35,9 +33,7 @@ const scheduleBusSchema = new Schema<IScheduleBus>(
   {
     operator: { type: Schema.Types.ObjectId, ref: 'BusOperator', required: true },
     busName: String,
-    busNumber: String,
     busCategory: { type: String, enum: ['ac', 'non_ac', 'sleeper', 'economy'], default: 'non_ac' },
-    seatType: String,
   },
   { _id: false }
 );

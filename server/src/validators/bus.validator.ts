@@ -39,9 +39,7 @@ const daysEnum = z.enum(['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri']);
 const scheduleBusSchema = z.object({
   operator: z.string().min(1, 'Operator is required'),
   busName: z.string().max(200).optional(),
-  busNumber: z.string().max(50).optional(),
   busCategory: z.enum(['ac', 'non_ac', 'sleeper', 'economy']).optional(),
-  seatType: z.string().max(50).optional(),
 });
 
 const seasonalVariationSchema = z.object({

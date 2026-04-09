@@ -404,7 +404,7 @@ function RoutesList() {
 
 // -- Schedules (two-level: select route first, then CRUD schedules for that route) --
 
-interface ScheduleBus { operator: string; busName: string; busNumber: string; busCategory: string; seatType: string }
+interface ScheduleBus { operator: string; busName: string; busCategory: string }
 
 function SchedulesList() {
   const [selectedRoute, setSelectedRoute] = useState<any>(null);
@@ -464,7 +464,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
     seasonalSeason: '', seasonalStartDate: '', seasonalEndDate: '',
     seasonalDepartureTime: '', seasonalArrivalTime: '', seasonalNote: '',
   });
-  const emptyBus = (): ScheduleBus => ({ operator: '', busName: '', busNumber: '', busCategory: 'non_ac', seatType: '' });
+  const emptyBus = (): ScheduleBus => ({ operator: '', busName: '', busCategory: 'non_ac' });
   const [buses, setBuses] = useState<ScheduleBus[]>([emptyBus()]);
   const [selectedDays, setSelectedDays] = useState<string[]>([...DAYS]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -528,8 +528,8 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
     });
     setBuses((s.buses || []).length ? s.buses.map((b: any) => ({
       operator: b.operator?._id || b.operator || '',
-      busName: b.busName || '', busNumber: b.busNumber || '',
-      busCategory: b.busCategory || 'non_ac', seatType: b.seatType || '',
+      busName: b.busName || '',
+      busCategory: b.busCategory || 'non_ac',
     })) : [emptyBus()]);
     setSelectedDays(s.daysOfOperation?.length ? s.daysOfOperation : [...DAYS]);
     setShowForm(true);
@@ -640,14 +640,8 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                             <option value="economy">Economy</option>
                           </select>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <input placeholder="Bus Name" value={bus.busName} onChange={(e) => updateBus(idx, 'busName', e.target.value)}
-                            className="px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
-                          <input placeholder="Bus Number" value={bus.busNumber} onChange={(e) => updateBus(idx, 'busNumber', e.target.value)}
-                            className="px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
-                          <input placeholder="Seat Type" value={bus.seatType} onChange={(e) => updateBus(idx, 'seatType', e.target.value)}
-                            className="px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
-                        </div>
+                        <input placeholder="Bus Name" value={bus.busName} onChange={(e) => updateBus(idx, 'busName', e.target.value)}
+                          className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -747,7 +741,6 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                       {(s.buses || []).map((b: any, i: number) => (
                         <div key={i} className="py-0.5">
                           <span className="font-medium">{b.busName || 'N/A'}</span>
-                          {b.busNumber && <span className="text-muted-foreground"> · {b.busNumber}</span>}
                           <span className="text-muted-foreground"> · {b.operator?.name || 'N/A'}</span>
                           <span className="capitalize text-muted-foreground"> · {b.busCategory?.replace('_', ' ')}</span>
                         </div>
@@ -990,7 +983,7 @@ function BulkImport() {
   const placeholders: Record<string, string> = {
     operators: `[\n  { "name": "Shyamoli Paribahan", "contactNumber": "01711...", "email": "info@shyamoli.com", "website": "https://shyamoli.com", "description": "<p>Premium intercity</p>", "scheduleType": "intercity" }\n]`,
     routes: `[\n  { "origin": "Barishal", "destination": "Dhaka", "routeType": "intercity", "distanceKm": 230, "estimatedDuration": "5h 30m", "stops": [{ "name": "Faridpur", "order": 0 }] }\n]`,
-    schedules: `[\n  {\n    "route": "<routeId>",\n    "departureTime": "08:00",\n    "arrivalTime": "13:30",\n    "daysOfOperation": ["sat","sun","mon"],\n    "buses": [\n      { "operator": "<operatorId>", "busName": "Shyamoli Express", "busNumber": "DHA-1234", "busCategory": "ac", "seatType": "2+2" }\n    ]\n  }\n]`,
+    schedules: `[\n  {\n    "route": "<routeId>",\n    "departureTime": "08:00",\n    "arrivalTime": "13:30",\n    "daysOfOperation": ["sat","sun","mon"],\n    "buses": [\n      { "operator": "<operatorId>", "busName": "Shyamoli Express", "busCategory": "ac" }\n    ]\n  }\n]`,
     counters: `[\n  { "operator": "<operatorId>", "name": "Sayedabad Counter", "location": "Sayedabad, Dhaka", "phoneNumbers": ["01711..."], "bookingLink": "https://..." }\n]`,
   };
 

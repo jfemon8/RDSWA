@@ -23,9 +23,7 @@ type View = 'routes' | 'schedules' | 'schedule-detail' | 'operators' | 'operator
 interface ScheduleBus {
   operator?: { _id: string; name: string; logo?: string; rating?: number } | string;
   busName?: string;
-  busNumber?: string;
   busCategory?: string;
-  seatType?: string;
 }
 
 export default function BusSchedulePage() {
@@ -382,17 +380,14 @@ export default function BusSchedulePage() {
                 <>
                   <FadeIn direction="up" duration={0.4}>
                     <div className="overflow-x-auto border rounded-lg">
-                      <table className="w-full text-sm min-w-[700px]">
+                      <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-muted border-b">
                             <th className="p-3 font-medium text-center text-foreground">Time</th>
                             <th className="p-3 font-medium text-center text-foreground">Bus Name</th>
-                            <th className="p-3 font-medium text-center text-foreground">Bus Number</th>
                             <th className="p-3 font-medium text-center text-foreground">Operator</th>
-                            <th className="p-3 font-medium text-center text-foreground">Category</th>
-                            <th className="p-3 font-medium text-center text-foreground">Seat</th>
-                            <th className="p-3 font-medium text-center text-foreground">Days</th>
-                            <th className="p-3 font-medium text-center text-foreground">Info</th>
+                            {tab === 'intercity' && <th className="p-3 font-medium text-center text-foreground">Category</th>}
+                            {tab === 'university' && <th className="p-3 font-medium text-center text-foreground">Days</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -402,22 +397,19 @@ export default function BusSchedulePage() {
                             return buses.length > 0 ? buses.map((b, bi) => (
                               <tr key={`${s._id}-${bi}`} className={`border-t hover:bg-accent/30 cursor-pointer ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`} onClick={() => handleScheduleClick(s)}>
                                 {bi === 0 && (
-                                  <>
-                                    <td rowSpan={n} className="p-3 text-center align-middle border-r font-semibold">
-                                      <div className="flex flex-col items-center gap-0.5">
-                                        <span>{formatTimeString(s.departureTime)}</span>
-                                        {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
-                                        {s.seasonalVariation?.adjustedDepartureTime && (
-                                          <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
-                                            {s.seasonalVariation.season}: {formatTimeString(s.seasonalVariation.adjustedDepartureTime)}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </>
+                                  <td rowSpan={n} className="p-3 text-center align-middle border-r font-semibold">
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span>{formatTimeString(s.departureTime)}</span>
+                                      {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
+                                      {s.seasonalVariation?.adjustedDepartureTime && (
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                          {s.seasonalVariation.season}: {formatTimeString(s.seasonalVariation.adjustedDepartureTime)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
                                 )}
                                 <td className="p-3 text-center align-middle">{b.busName || '-'}</td>
-                                <td className="p-3 text-center align-middle text-muted-foreground">{b.busNumber || '-'}</td>
                                 <td className="p-3 text-center align-middle">
                                   {typeof b.operator === 'object' && b.operator ? (
                                     <button onClick={(e) => { e.stopPropagation(); handleOperatorClick((b.operator as { _id: string; name: string })._id); }} className="text-primary hover:underline">
@@ -425,13 +417,9 @@ export default function BusSchedulePage() {
                                     </button>
                                   ) : '-'}
                                 </td>
-                                <td className="p-3 text-center align-middle capitalize">{b.busCategory?.replace('_', ' ') || '-'}</td>
-                                <td className="p-3 text-center align-middle text-muted-foreground">{b.seatType || '-'}</td>
-                                {bi === 0 && (
-                                  <>
-                                    <td rowSpan={n} className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
-                                    <td rowSpan={n} className="p-3 text-center align-middle border-l"><ScheduleInfoCell schedule={s} /></td>
-                                  </>
+                                {tab === 'intercity' && <td className="p-3 text-center align-middle capitalize">{b.busCategory?.replace('_', ' ') || '-'}</td>}
+                                {bi === 0 && tab === 'university' && (
+                                  <td rowSpan={n} className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
                                 )}
                               </tr>
                             )) : (
@@ -442,9 +430,8 @@ export default function BusSchedulePage() {
                                     {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
                                   </div>
                                 </td>
-                                <td colSpan={5} className="p-3 text-center align-middle text-muted-foreground">No buses</td>
-                                <td className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
-                                <td className="p-3 text-center align-middle border-l"><ScheduleInfoCell schedule={s} /></td>
+                                <td colSpan={tab === 'university' ? 2 : 3} className="p-3 text-center align-middle text-muted-foreground">No buses</td>
+                                {tab === 'university' && <td className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>}
                               </tr>
                             );
                           })}
@@ -607,7 +594,6 @@ function ScheduleDetailView({ schedule: s, onOperatorClick }: { schedule: any; o
                   className="border rounded-lg p-4 bg-background">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                     <DetailRow icon={<Bus className="h-4 w-4" />} label="Bus Name" value={b.busName || 'N/A'} />
-                    {b.busNumber && <DetailRow icon={<Info className="h-4 w-4" />} label="Bus Number" value={b.busNumber} />}
                     <div className="flex items-start gap-2">
                       <span className="text-primary mt-0.5 shrink-0"><Building2 className="h-4 w-4" /></span>
                       <div className="flex-1 min-w-0">
@@ -627,7 +613,6 @@ function ScheduleDetailView({ schedule: s, onOperatorClick }: { schedule: any; o
                     <DetailRow icon={<Clock className="h-4 w-4" />} label="Departure Time" value={formatTimeString(s.departureTime)} />
                     {s.arrivalTime && <DetailRow icon={<Clock className="h-4 w-4" />} label="Arrival Time" value={formatTimeString(s.arrivalTime)} />}
                     {b.busCategory && <DetailRow icon={<Info className="h-4 w-4" />} label="Category" value={b.busCategory.replace('_', ' ')} />}
-                    {b.seatType && <DetailRow icon={<Info className="h-4 w-4" />} label="Seat Type" value={b.seatType} />}
                   </div>
                 </motion.div>
               );
@@ -974,18 +959,6 @@ function EmptyState({ text }: { text: string }) {
       </div>
     </FadeIn>
   );
-}
-
-function ScheduleInfoCell({ schedule: s }: { schedule: any }) {
-  if (s.isSpecialSchedule) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400" title={s.specialScheduleNote || 'Special schedule'}>
-        <AlertTriangle className="h-3 w-3" />
-        {s.specialScheduleNote || 'Special'}
-      </span>
-    );
-  }
-  return null;
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
