@@ -241,7 +241,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </FadeIn>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 gap-6">
               {events.map((e: any, i: number) => (
                 <FadeIn key={e._id} delay={i * 0.08} direction="up">
                   <Link to={`/events/${e._id}`}>
@@ -290,7 +290,7 @@ export default function HomePage() {
               </p>
             </FadeIn>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, i) => {
                 const Icon = featureIconMap[feature.title] || Heart;
                 const color = featureColorMap[feature.title] || 'rgba(59, 130, 246, 0.15)';
@@ -321,7 +321,7 @@ export default function HomePage() {
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-14">{hp?.servicesHeading || 'Everything You Need'}</h2>
             </FadeIn>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {services.map((service, i) => {
                 const Icon = serviceIconMap[service.title] || Heart;
                 return (

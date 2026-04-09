@@ -51,7 +51,7 @@ export default function AboutPage() {
       )}
 
       {cards.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
           {cards.map((item, i) => (
             <FadeIn key={item.title} delay={0.1 + i * 0.1} direction="up" scale>
               <SpotlightCard className="bg-card border-border p-6 h-full" spotlightColor={item.color}>

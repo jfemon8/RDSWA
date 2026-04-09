@@ -35,7 +35,7 @@ export default function GalleryPage() {
     return (
       <div className="container mx-auto py-8">
         <div className="h-10 w-32 mb-6" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function GalleryPage() {
               <p className="text-muted-foreground">No albums yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {albums.map((a: any, i: number) => (
                 <FadeIn key={a._id} delay={i * 0.08} direction="up">
                   <div onClick={() => setSelectedAlbum(a._id)}

@@ -91,7 +91,7 @@ export default function BloodDonorsPage() {
           </div>
         </FadeIn>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {donors.map((d: any, index: number) => (
             <FadeIn key={d._id} delay={0.05 * index} direction="up">
               <div

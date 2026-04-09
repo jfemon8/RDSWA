@@ -94,7 +94,7 @@ export default function AlumniPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 9 }).map((_, i) => <ListItemSkeleton key={i} />)}
         </div>
       ) : members.length === 0 ? (
@@ -104,7 +104,7 @@ export default function AlumniPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {members.map((m: any, i: number) => (
               <FadeIn key={m._id} delay={i * 0.04} direction="up">
                 <Link

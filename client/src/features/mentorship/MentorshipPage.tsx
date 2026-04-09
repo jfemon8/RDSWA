@@ -126,7 +126,7 @@ export default function MentorshipPage() {
           ) : mentors.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No mentors found.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-equal grid-cols-1 md:grid-cols-2 gap-4">
               {mentors.map((mentor: any, i: number) => (
                 <FadeIn key={mentor._id} delay={i * 0.05} direction="up">
                   <div

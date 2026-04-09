@@ -114,7 +114,7 @@ export default function UniversityPage() {
               <Users className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold text-foreground">Other Organizations</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {orgs.map((org, i) => (
                 <FadeIn key={i} delay={0.1 + i * 0.06} direction="up">
                   <motion.div

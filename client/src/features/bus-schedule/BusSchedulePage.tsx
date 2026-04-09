@@ -321,7 +321,7 @@ export default function BusSchedulePage() {
               {filteredRoutes.length === 0 ? (
                 <EmptyState text={search ? 'No routes found.' : 'No bus routes available.'} />
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 gap-3">
                   {filteredRoutes.map((r: any, i: number) => (
                     <FadeIn key={r._id} delay={i * 0.04} direction="up">
                       <motion.button
@@ -380,40 +380,78 @@ export default function BusSchedulePage() {
                 <EmptyState text="No schedules found for this route." />
               ) : (
                 <>
-                  <div className="space-y-3">
-                    {filteredSchedules.map((s: any, index: number) => (
-                      <motion.button
-                        key={s._id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        whileHover={{ y: -2 }}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => handleScheduleClick(s)}
-                        className={`w-full text-left border rounded-lg p-4 bg-card hover:border-primary/40 cursor-pointer transition-colors ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
-                      >
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div>
-                            <span className="flex items-center gap-1.5 text-sm font-semibold">
-                              <Clock className="h-4 w-4 text-primary" /> {formatTimeString(s.departureTime)}
-                              {s.arrivalTime && <span className="text-muted-foreground font-normal"> → {formatTimeString(s.arrivalTime)}</span>}
-                            </span>
-                            <p className="text-xs text-muted-foreground mt-1 capitalize">{s.daysOfOperation?.join(', ') || 'Daily'}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-muted-foreground">{(s.buses || []).length} bus{(s.buses || []).length !== 1 ? 'es' : ''}</span>
-                            <ScheduleInfoCell schedule={s} />
-                          </div>
-                        </div>
-                        {s.seasonalVariation?.adjustedDepartureTime && (
-                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                            {s.seasonalVariation.season}: {formatTimeString(s.seasonalVariation.adjustedDepartureTime)}
-                            {s.seasonalVariation.adjustedArrivalTime && ` → ${formatTimeString(s.seasonalVariation.adjustedArrivalTime)}`}
-                          </p>
-                        )}
-                      </motion.button>
-                    ))}
-                  </div>
+                  <FadeIn direction="up" duration={0.4}>
+                    <div className="overflow-x-auto border rounded-lg">
+                      <table className="w-full text-sm min-w-[700px]">
+                        <thead>
+                          <tr className="bg-muted border-b">
+                            <th className="p-3 font-medium text-center text-foreground">Time</th>
+                            <th className="p-3 font-medium text-center text-foreground">Bus Name</th>
+                            <th className="p-3 font-medium text-center text-foreground">Bus Number</th>
+                            <th className="p-3 font-medium text-center text-foreground">Operator</th>
+                            <th className="p-3 font-medium text-center text-foreground">Category</th>
+                            <th className="p-3 font-medium text-center text-foreground">Seat</th>
+                            <th className="p-3 font-medium text-center text-foreground">Days</th>
+                            <th className="p-3 font-medium text-center text-foreground">Info</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredSchedules.map((s: any) => {
+                            const buses: ScheduleBus[] = s.buses || [];
+                            const n = Math.max(buses.length, 1);
+                            return buses.length > 0 ? buses.map((b, bi) => (
+                              <tr key={`${s._id}-${bi}`} className={`border-t hover:bg-accent/30 cursor-pointer ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`} onClick={() => handleScheduleClick(s)}>
+                                {bi === 0 && (
+                                  <>
+                                    <td rowSpan={n} className="p-3 text-center align-middle border-r font-semibold">
+                                      <div className="flex flex-col items-center gap-0.5">
+                                        <span>{formatTimeString(s.departureTime)}</span>
+                                        {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
+                                        {s.seasonalVariation?.adjustedDepartureTime && (
+                                          <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                            {s.seasonalVariation.season}: {formatTimeString(s.seasonalVariation.adjustedDepartureTime)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </>
+                                )}
+                                <td className="p-3 text-center align-middle">{b.busName || '-'}</td>
+                                <td className="p-3 text-center align-middle text-muted-foreground">{b.busNumber || '-'}</td>
+                                <td className="p-3 text-center align-middle">
+                                  {typeof b.operator === 'object' && b.operator ? (
+                                    <button onClick={(e) => { e.stopPropagation(); handleOperatorClick((b.operator as { _id: string; name: string })._id); }} className="text-primary hover:underline">
+                                      {(b.operator as { name: string }).name}
+                                    </button>
+                                  ) : '-'}
+                                </td>
+                                <td className="p-3 text-center align-middle capitalize">{b.busCategory?.replace('_', ' ') || '-'}</td>
+                                <td className="p-3 text-center align-middle text-muted-foreground">{b.seatType || '-'}</td>
+                                {bi === 0 && (
+                                  <>
+                                    <td rowSpan={n} className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
+                                    <td rowSpan={n} className="p-3 text-center align-middle border-l"><ScheduleInfoCell schedule={s} /></td>
+                                  </>
+                                )}
+                              </tr>
+                            )) : (
+                              <tr key={s._id} className={`border-t hover:bg-accent/30 cursor-pointer ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`} onClick={() => handleScheduleClick(s)}>
+                                <td className="p-3 text-center align-middle border-r font-semibold">
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <span>{formatTimeString(s.departureTime)}</span>
+                                    {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
+                                  </div>
+                                </td>
+                                <td colSpan={5} className="p-3 text-center align-middle text-muted-foreground">No buses</td>
+                                <td className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
+                                <td className="p-3 text-center align-middle border-l"><ScheduleInfoCell schedule={s} /></td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </FadeIn>
 
                   {totalPages > 1 && (
                     <div className="flex items-center justify-between mt-4">
@@ -451,7 +489,7 @@ export default function BusSchedulePage() {
               {filteredOperators.length === 0 ? (
                 <EmptyState text={search ? 'No operators found.' : 'No operators available.'} />
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredOperators.map((op: any, i: number) => (
                     <FadeIn key={op._id} delay={i * 0.04} direction="up">
                       <motion.button

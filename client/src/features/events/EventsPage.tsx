@@ -159,7 +159,7 @@ export default function EventsPage() {
             transition={{ duration: 0.3 }}
           >
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
               </div>
             ) : events.length === 0 ? (
@@ -171,7 +171,7 @@ export default function EventsPage() {
               </FadeIn>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {events.map((e: any, i: number) => (
                     <FadeIn key={e._id} delay={i * 0.05} direction="up">
                       <Link to={`/events/${e._id}`}>

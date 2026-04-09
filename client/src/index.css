@@ -64,9 +64,11 @@
   }
 }
 
-/* Equal-height grid cards: stretch grid children and their first child (e.g. FadeIn wrapper → card) */
-[class*="grid-cols-"] > * { display: flex; flex-direction: column; }
-[class*="grid-cols-"] > * > * { flex: 1; }
+/* Equal-height grid cards: apply h-full to card elements inside grids via utility class */
+.grid-equal > *,
+.grid-equal > * > * {
+  height: 100%;
+}
 
 /* TipTap Rich Text Editor */
 .rich-editor .tiptap {

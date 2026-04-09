@@ -124,7 +124,7 @@ export default function AdminGalleryPage() {
           <p className="text-muted-foreground">No albums yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {albums.map((a: any, i: number) => (
             <FadeIn key={a._id} direction="up" delay={i * 0.06}>
               <motion.div

@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((card, i) => {
           const Icon = card.icon;
           return (

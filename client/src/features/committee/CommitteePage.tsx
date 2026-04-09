@@ -29,7 +29,7 @@ export default function CommitteePage() {
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-32" />
             </div>
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="p-6 grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Array.from({ length: 6 }).map((_, j) => (
                 <div key={j} className="flex items-center gap-3 p-3 border rounded-xl">
                   <Skeleton className="h-10 w-10 rounded-full" />
@@ -93,7 +93,7 @@ export default function CommitteePage() {
                 </div>
 
                 <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {c.members?.map((m: any, i: number) => (
                       <motion.div
                         key={i}

@@ -132,7 +132,7 @@ export default function DashboardPage() {
       </AnimatePresence>
 
       {/* Status cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statusCards.map((card, i) => (
           <FadeIn key={card.label} delay={i * 0.08} direction="up">
             <StatusCard
@@ -147,7 +147,7 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <QuickAction to="/dashboard/profile" label="View Profile" description="View and manage your personal information" />
         <QuickAction to="/dashboard/notifications" label="View Notifications" description="Check recent notifications" />
         <QuickAction to="/events" label="Browse Events" description="See upcoming events" />

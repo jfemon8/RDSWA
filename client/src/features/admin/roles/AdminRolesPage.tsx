@@ -75,7 +75,7 @@ export default function AdminRolesPage() {
       <FadeIn direction="up" delay={0.2}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <h2 className="font-semibold text-lg mb-4 text-foreground">Role Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-equal grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {ROLE_HIERARCHY.map((role, i) => (
               <motion.div
                 key={role}

@@ -83,7 +83,7 @@ export default function DonationsPage() {
         <FadeIn delay={0.2} direction="up">
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Active Campaigns</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 gap-4">
               {campaigns.filter((c: any) => c.status === 'active').map((c: any, index: number) => (
                 <FadeIn key={c._id} delay={0.1 * index} direction="up">
                   <div
