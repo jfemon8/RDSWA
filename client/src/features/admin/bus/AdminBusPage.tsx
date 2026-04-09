@@ -183,8 +183,8 @@ function OperatorsList() {
                         <span className="text-muted-foreground ml-0.5">({o.ratingCount || 0})</span>
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                      {o.scheduleType} · {o.contactNumber || 'N/A'}{o.email ? ` · ${o.email}` : ''}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      <span className="capitalize">{o.scheduleType}</span> · {o.contactNumber || 'N/A'}{o.email ? ` · ${o.email}` : ''}
                       {o.website ? ` · ` : ''}
                       {o.website && <a href={o.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">{o.website.replace(/^https?:\/\//, '')}</a>}
                     </p>
