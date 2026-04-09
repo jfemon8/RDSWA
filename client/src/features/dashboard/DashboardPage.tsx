@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen, Mail, Send } from 'lucide-react';
+import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCircle, AlertCircle, ClipboardCheck, BookOpen, Mail, Send, User, Calendar, FileText, Heart, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -148,19 +148,19 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
       <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <QuickAction to="/dashboard/profile" label="View Profile" description="View and manage your personal information" />
-        <QuickAction to="/dashboard/notifications" label="View Notifications" description="Check recent notifications" />
-        <QuickAction to="/events" label="Browse Events" description="See upcoming events" />
-        <QuickAction to="/notices" label="Read Notices" description="Latest announcements" />
+        <QuickAction to="/dashboard/profile" label="View Profile" description="View and manage your personal information" icon={<User className="h-4 w-4 text-primary" />} />
+        <QuickAction to="/dashboard/notifications" label="View Notifications" description="Check recent notifications" icon={<Bell className="h-4 w-4 text-primary" />} />
+        <QuickAction to="/events" label="Browse Events" description="See upcoming events" icon={<Calendar className="h-4 w-4 text-primary" />} />
+        <QuickAction to="/notices" label="Read Notices" description="Latest announcements" icon={<Megaphone className="h-4 w-4 text-primary" />} />
         <QuickAction to="/dashboard/jobs" label="Job Board" description="Find job opportunities from alumni" icon={<Briefcase className="h-4 w-4 text-primary" />} />
         <QuickAction to="/dashboard/mentorship" label="Mentorship" description="Connect with mentors for guidance" icon={<GraduationCap className="h-4 w-4 text-primary" />} />
         {user?.membershipStatus === 'none' && (
-          <QuickAction to="/dashboard/forms/new" label="Apply for Membership" description="Submit your membership application" />
+          <QuickAction to="/dashboard/forms/new" label="Apply for Membership" description="Submit your membership application" icon={<Users className="h-4 w-4 text-primary" />} />
         )}
         <QuickAction to="/dashboard/attendance" label="Attendance History" description="View your event check-in records" icon={<ClipboardCheck className="h-4 w-4 text-primary" />} />
         <QuickAction to="/meetings" label="Meeting Records" description="View past and upcoming meetings" icon={<BookOpen className="h-4 w-4 text-primary" />} />
-        <QuickAction to="/dashboard/forms" label="My Submissions" description="Track your form submissions" />
-        <QuickAction to="/donations" label="Make Donation" description="Support RDSWA activities" />
+        <QuickAction to="/dashboard/forms" label="My Submissions" description="Track your form submissions" icon={<FileText className="h-4 w-4 text-primary" />} />
+        <QuickAction to="/donations" label="Make Donation" description="Support RDSWA activities" icon={<Heart className="h-4 w-4 text-primary" />} />
       </div>
 
       {/* Recent notifications */}

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
-import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw, Landmark } from 'lucide-react';
+import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw, Landmark, Target } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -90,7 +90,9 @@ export default function DonationsPage() {
                     className="border rounded-lg p-5 bg-card"
                   >
                     {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
-                    <h3 className="font-semibold mb-2 text-foreground">{c.title}</h3>
+                    <h3 className="font-semibold mb-2 text-foreground flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary shrink-0" /> {c.title}
+                    </h3>
                     {c.description && <RichContent html={c.description} className="text-sm text-muted-foreground mb-3 line-clamp-2" />}
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
@@ -485,13 +487,16 @@ function RecentDonations() {
               <div
                 className="flex items-center justify-between p-3 border rounded-lg text-sm bg-card"
               >
-                <div>
-                  <p className="font-medium text-foreground">
-                    {d.visibility === 'private' ? 'Anonymous' : d.donor?._id ? (
-                      <Link to={`/members/${d.donor._id}`} className="hover:text-primary transition-colors">{d.donor.name || d.donorName || 'Unknown'}</Link>
-                    ) : (d.donorName || 'Unknown')}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</p>
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {d.visibility === 'private' ? 'Anonymous' : d.donor?._id ? (
+                        <Link to={`/members/${d.donor._id}`} className="hover:text-primary transition-colors">{d.donor.name || d.donorName || 'Unknown'}</Link>
+                      ) : (d.donorName || 'Unknown')}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-green-600">৳{d.amount?.toLocaleString()}</p>

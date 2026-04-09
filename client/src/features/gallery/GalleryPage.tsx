@@ -91,7 +91,9 @@ export default function GalleryPage() {
                       </div>
                     )}
                     <div className="p-3">
-                      <h3 className="font-medium text-foreground">{a.title}</h3>
+                      <h3 className="font-medium text-foreground flex items-center gap-2">
+                        <Image className="h-4 w-4 text-primary shrink-0" /> {a.title}
+                      </h3>
                       <p className="text-xs text-muted-foreground mt-1">{a.photoCount || 0} photos</p>
                     </div>
                   </div>

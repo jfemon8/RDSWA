@@ -5,7 +5,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, UserPlus, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
+import { Search, UserPlus, CheckCircle, XCircle, Clock, Loader2, GraduationCap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function MentorshipPage() {
@@ -141,7 +141,9 @@ export default function MentorshipPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold">{mentor.name}</h3>
+                        <h3 className="font-semibold flex items-center gap-1.5">
+                          <GraduationCap className="h-4 w-4 text-primary shrink-0" /> {mentor.name}
+                        </h3>
                         <p className="text-sm text-muted-foreground">
                           {mentor.profession || mentor.department || ''} {mentor.batch ? `• Batch ${mentor.batch}` : ''}
                         </p>

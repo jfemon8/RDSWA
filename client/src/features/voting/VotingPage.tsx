@@ -191,7 +191,9 @@ function VoteCard({ vote }: { vote: any }) {
     <div className="border rounded-lg p-5 bg-card">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold mb-1 text-foreground">{vote.title}</h3>
+          <h3 className="font-semibold mb-1 text-foreground flex items-center gap-2">
+            <Vote className="h-4 w-4 text-primary shrink-0" /> {vote.title}
+          </h3>
           {vote.description && <div className="text-sm text-muted-foreground mb-3 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: vote.description }} />}
         </div>
         {isActive && liveOptions && (

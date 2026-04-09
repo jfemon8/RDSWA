@@ -128,7 +128,7 @@ function MemberCard({ member }: { member: any }) {
       )}
       <div className="min-w-0">
         <p className="font-medium text-sm truncate flex items-center gap-1">
-          {isLeader && <Crown className="h-3 w-3 text-yellow-500" />}
+          {isLeader ? <Crown className="h-3 w-3 text-yellow-500" /> : <Users className="h-3 w-3 text-primary" />}
           {member.user?.name || 'Unknown'}
         </p>
         <p className="text-xs text-muted-foreground capitalize">{member.position?.replace(/_/g, ' ')}</p>
