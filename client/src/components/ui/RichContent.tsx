@@ -23,7 +23,7 @@ export default function RichContent({ html, className = '' }: RichContentProps) 
 
   return (
     <div
-      className={`prose prose-sm dark:prose-invert max-w-none
+      className={`prose prose-sm dark:prose-invert max-w-none text-justify
         prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5
         prose-blockquote:border-l-primary prose-blockquote:not-italic
         prose-hr:my-3 prose-a:text-primary ${className}`}
