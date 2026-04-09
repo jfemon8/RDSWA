@@ -64,6 +64,10 @@
   }
 }
 
+/* Equal-height grid cards: stretch grid children and their first child (e.g. FadeIn wrapper → card) */
+[class*="grid-cols-"] > * { display: flex; flex-direction: column; }
+[class*="grid-cols-"] > * > * { flex: 1; }
+
 /* TipTap Rich Text Editor */
 .rich-editor .tiptap {
   padding: 0.5rem 0.75rem;

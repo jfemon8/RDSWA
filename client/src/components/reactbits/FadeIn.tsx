@@ -53,7 +53,7 @@ export default function FadeIn({
       whileInView={whileInView}
       viewport={{ once, margin: '-20px' }}
       transition={{ duration, delay, ease: [0.25, 0.1, 0.25, 1] }}
-      className={className}
+      className={`h-full ${className}`}
       style={{ overflow: 'visible' }}
     >
       {children}
