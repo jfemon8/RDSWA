@@ -182,7 +182,7 @@ export default function UniversityPage() {
                     )}
                     <p className="font-medium text-foreground mb-1">{org.name}</p>
                     {org.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{org.description}</p>
+                      <RichContent html={org.description} className="text-sm text-muted-foreground mb-2" />
                     )}
                     {org.website && (
                       <a

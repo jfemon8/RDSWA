@@ -6,6 +6,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
+import RichContent from '@/components/ui/RichContent';
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export default function GalleryPage() {
             ← Back to Albums
           </button>
           <h2 className="text-xl font-semibold mb-4 text-foreground">{albumDetail.title}</h2>
-          {albumDetail.description && <p className="text-muted-foreground mb-4">{albumDetail.description}</p>}
+          {albumDetail.description && <RichContent html={albumDetail.description} className="text-muted-foreground mb-4" />}
 
           {albumDetail.photos?.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

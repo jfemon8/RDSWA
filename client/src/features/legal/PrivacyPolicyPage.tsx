@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { Shield } from 'lucide-react';
+import RichContent from '@/components/ui/RichContent';
 import { Skeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import { formatDateCustom } from '@/lib/date';
@@ -65,7 +66,7 @@ export default function PrivacyPolicyPage() {
                   </motion.div>
                   <div>
                     <h3 className="font-semibold text-lg mb-2 text-foreground">{section.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
+                    <RichContent html={section.content} className="text-sm text-muted-foreground leading-relaxed" />
                   </div>
                 </div>
               </div>

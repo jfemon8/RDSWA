@@ -6,6 +6,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import RichContent from '@/components/ui/RichContent';
 import SEO from '@/components/SEO';
 
 function FAQItem({ faq, index }: { faq: { question: string; answer: string }; index: number }) {
@@ -36,9 +37,9 @@ function FAQItem({ faq, index }: { faq: { question: string; answer: string }; in
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
             >
-              <p className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">
-                {faq.answer}
-              </p>
+              <div className="px-5 pb-5">
+                <RichContent html={faq.answer} className="text-sm text-muted-foreground leading-relaxed" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

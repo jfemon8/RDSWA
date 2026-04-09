@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import {
   DollarSign, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
   Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
@@ -489,8 +490,7 @@ function ExpensesList() {
                   <option value="other">Other</option>
                 </select>
               </div>
-              <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Description..." minHeight="80px" />
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -589,8 +589,7 @@ function CampaignsList() {
                   className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
                 <FieldError message={errors.title} />
               </div>
-              <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Description..." minHeight="80px" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => { setForm({ ...form, targetAmount: e.target.value }); setErrors((prev) => { const { targetAmount, ...rest } = prev; return rest; }); }}

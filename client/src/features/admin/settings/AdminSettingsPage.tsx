@@ -345,7 +345,7 @@ function OrganizationsTab({ settings: s }: { settings: any }) {
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative">
             <button type="button" onClick={() => setOrgs(orgs.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
             <input value={org.name} placeholder="Organization Name" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], name: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-            <textarea value={org.description} placeholder="Description" rows={2} onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], description: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            <RichTextEditor value={org.description} onChange={(v) => { const o = [...orgs]; o[i] = { ...o[i], description: v }; setOrgs(o); }} placeholder="Description..." minHeight="80px" />
             <input value={org.website} placeholder="Website URL" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], website: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
             <input value={org.logo} placeholder="Logo URL" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], logo: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
           </motion.div>
@@ -394,7 +394,7 @@ function LegalTab({ settings: s }: { settings: any }) {
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
               <button type="button" onClick={() => setFaq(faq.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               <input value={item.question} placeholder="Question" onChange={(e) => { const f = [...faq]; f[i] = { ...f[i], question: e.target.value }; setFaq(f); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-              <textarea value={item.answer} placeholder="Answer" rows={2} onChange={(e) => { const f = [...faq]; f[i] = { ...f[i], answer: e.target.value }; setFaq(f); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <RichTextEditor value={item.answer} onChange={(v) => { const f = [...faq]; f[i] = { ...f[i], answer: v }; setFaq(f); }} placeholder="Answer..." minHeight="80px" />
             </motion.div>
           ))}
           {faq.length === 0 && <p className="text-sm text-muted-foreground">No FAQ items.</p>}
@@ -411,7 +411,7 @@ function LegalTab({ settings: s }: { settings: any }) {
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
               <button type="button" onClick={() => setPrivacy(privacy.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               <input value={item.title} placeholder="Section Title" onChange={(e) => { const p = [...privacy]; p[i] = { ...p[i], title: e.target.value }; setPrivacy(p); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-              <textarea value={item.content} placeholder="Section Content" rows={3} onChange={(e) => { const p = [...privacy]; p[i] = { ...p[i], content: e.target.value }; setPrivacy(p); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <RichTextEditor value={item.content} onChange={(v) => { const p = [...privacy]; p[i] = { ...p[i], content: v }; setPrivacy(p); }} placeholder="Section content..." minHeight="100px" />
             </motion.div>
           ))}
           {privacy.length === 0 && <p className="text-sm text-muted-foreground">No sections.</p>}
@@ -428,7 +428,7 @@ function LegalTab({ settings: s }: { settings: any }) {
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="border rounded-lg p-3 space-y-2 relative mb-2">
               <button type="button" onClick={() => setTerms(terms.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
               <input value={item.title} placeholder="Section Title" onChange={(e) => { const t = [...terms]; t[i] = { ...t[i], title: e.target.value }; setTerms(t); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-              <textarea value={item.content} placeholder="Section Content" rows={3} onChange={(e) => { const t = [...terms]; t[i] = { ...t[i], content: e.target.value }; setTerms(t); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+              <RichTextEditor value={item.content} onChange={(v) => { const t = [...terms]; t[i] = { ...t[i], content: v }; setTerms(t); }} placeholder="Section content..." minHeight="100px" />
             </motion.div>
           ))}
           {terms.length === 0 && <p className="text-sm text-muted-foreground">No sections.</p>}

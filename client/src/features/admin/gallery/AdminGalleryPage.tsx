@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { Plus, Loader2, Trash2, Image, ArrowLeft, Upload, X } from 'lucide-react';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
@@ -95,8 +96,7 @@ export default function AdminGalleryPage() {
                     className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
                   <FieldError message={errors.title} />
                 </div>
-                <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Album description..." minHeight="80px" />
                 <ImageUpload
                   value={form.coverPhoto}
                   onChange={(url) => setForm({ ...form, coverPhoto: url })}
