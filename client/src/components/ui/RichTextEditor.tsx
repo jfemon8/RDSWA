@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -36,6 +37,15 @@ export default function RichTextEditor({
       onChange(editor.getHTML());
     },
   });
+
+  // Sync external value changes into editor (e.g. after API data loads)
+  useEffect(() => {
+    if (!editor || editor.isFocused) return;
+    const current = editor.getHTML();
+    if (value !== current && !(value === '' && current === '<p></p>')) {
+      editor.commands.setContent(value || '');
+    }
+  }, [editor, value]);
 
   if (!editor) return null;
 

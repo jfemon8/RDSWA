@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
@@ -20,8 +19,9 @@ export default function AdminSettingsPage() {
   const [tab, setTab] = useState<Tab>('general');
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.settings.all,
+    queryKey: ['settings', 'admin'],
     queryFn: async () => { const { data } = await api.get('/settings'); return data; },
+    staleTime: 0,
   });
 
   if (isLoading) {
@@ -90,7 +90,7 @@ function GeneralTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/general', form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('General settings saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('General settings saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
@@ -161,7 +161,7 @@ function HomepageTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/homepage', { homePageContent: form }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Homepage saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('Homepage saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
@@ -232,7 +232,7 @@ function ContentTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/about', form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Content saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('Content saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
@@ -275,7 +275,7 @@ function UniversityTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/university', { universityInfo: form }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('University info saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('University info saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
@@ -330,7 +330,7 @@ function OrganizationsTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/organizations', { otherOrganizations: orgs }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Organizations saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('Organizations saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
@@ -379,7 +379,7 @@ function LegalTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/legal', { faq, privacyPolicy: privacy, termsConditions: terms }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Legal content saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('Legal content saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
@@ -459,7 +459,7 @@ function SocialTab({ settings: s }: { settings: any }) {
 
   const mutation = useMutation({
     mutationFn: () => api.patch('/settings/social', { socialLinks: form }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.settings.all }); toast.success('Social links saved'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings'] }); toast.success('Social links saved'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
