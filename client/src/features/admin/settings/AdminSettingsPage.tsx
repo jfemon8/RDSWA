@@ -259,8 +259,8 @@ function UniversityTab({ settings: s }: { settings: any }) {
   const toast = useToast();
   const [form, setForm] = useState({
     name: '', logo: '', email: '', phone: '', website: '', address: '',
-    overview: '', history: '', campusInfo: '', admissionInfo: '', contactInfo: '',
-    location: { lat: 0, lng: 0 },
+    overview: '', history: '', campusInfo: '', admissionInfo: '',
+    mapEmbedUrl: '',
   });
 
   useEffect(() => {
@@ -269,7 +269,7 @@ function UniversityTab({ settings: s }: { settings: any }) {
       name: u.name || '', logo: u.logo || '', email: u.email || '', phone: u.phone || '',
       website: u.website || '', address: u.address || '', overview: u.overview || '',
       history: u.history || '', campusInfo: u.campusInfo || '', admissionInfo: u.admissionInfo || '',
-      contactInfo: u.contactInfo || '', location: u.location || { lat: 0, lng: 0 },
+      mapEmbedUrl: u.mapEmbedUrl || '',
     });
   }, [s]);
 
@@ -295,7 +295,6 @@ function UniversityTab({ settings: s }: { settings: any }) {
           <Field label="Address" value={form.address} onChange={(v) => u('address', v)} />
         </div>
         <div><label className="block text-sm font-medium text-foreground mb-1">Logo</label><ImageUpload value={form.logo} onChange={(url) => u('logo', url)} folder="university" /></div>
-        <Field label="Contact Info (legacy)" value={form.contactInfo} onChange={(v) => u('contactInfo', v)} />
 
         <h2 className="text-lg font-semibold text-foreground pt-2">Content</h2>
         <RichField label="Overview" value={form.overview} onChange={(v) => u('overview', v)} placeholder="University overview..." />
@@ -303,11 +302,9 @@ function UniversityTab({ settings: s }: { settings: any }) {
         <RichField label="Campus Info" value={form.campusInfo} onChange={(v) => u('campusInfo', v)} placeholder="Campus information..." />
         <RichField label="Admission Info" value={form.admissionInfo} onChange={(v) => u('admissionInfo', v)} placeholder="Admission information..." />
 
-        <h2 className="text-lg font-semibold text-foreground pt-2">Map Location</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Latitude" value={String(form.location.lat || '')} onChange={(v) => setForm({ ...form, location: { ...form.location, lat: Number(v) || 0 } })} />
-          <Field label="Longitude" value={String(form.location.lng || '')} onChange={(v) => setForm({ ...form, location: { ...form.location, lng: Number(v) || 0 } })} />
-        </div>
+        <h2 className="text-lg font-semibold text-foreground pt-2">Google Map Location</h2>
+        <Field label="Google Maps Embed URL" value={form.mapEmbedUrl} onChange={(v) => u('mapEmbedUrl', v)} placeholder="https://www.google.com/maps/embed?pb=..." />
+        <p className="text-xs text-muted-foreground -mt-2">Google Maps &gt; Share &gt; Embed a map &gt; Copy the src URL from the iframe code</p>
 
         <SaveButton mutation={mutation} />
       </div>

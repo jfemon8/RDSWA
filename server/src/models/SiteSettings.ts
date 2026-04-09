@@ -38,6 +38,7 @@ export interface ISiteSettingsDocument extends Document {
     campusInfo?: string;
     admissionInfo?: string;
     location?: { lat: number; lng: number };
+    mapEmbedUrl?: string;
     contactInfo?: string;
   };
   foundedYear: number;
@@ -129,6 +130,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       campusInfo: String,
       admissionInfo: String,
       location: { lat: Number, lng: Number },
+      mapEmbedUrl: String,
       contactInfo: String,
     },
     foundedYear: { type: Number, default: 2021 },

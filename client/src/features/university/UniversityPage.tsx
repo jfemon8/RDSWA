@@ -138,8 +138,8 @@ export default function UniversityPage() {
         </FadeIn>
       )}
 
-      {/* Map */}
-      {uni?.location?.lat && uni?.location?.lng && (
+      {/* Google Map */}
+      {uni?.mapEmbedUrl && (
         <FadeIn delay={0.35} direction="up">
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-3 text-foreground">Location</h2>
@@ -147,10 +147,12 @@ export default function UniversityPage() {
               <iframe
                 title="University Location"
                 width="100%"
-                height="350"
+                height="400"
                 style={{ border: 0 }}
                 loading="lazy"
-                src={`https://www.google.com/maps?q=${uni.location.lat},${uni.location.lng}&output=embed`}
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={uni.mapEmbedUrl}
               />
             </div>
           </section>

@@ -131,8 +131,8 @@ router.patch('/academic-config', authenticate(), authorize(UserRole.ADMIN), audi
   ApiResponse.success(res, settings.academicConfig, 'Academic config updated');
 }));
 
-// Update homepage content (Admin+)
-router.patch('/homepage', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_homepage', 'site_settings'), asyncHandler(async (req, res) => {
+// Update homepage content (SuperAdmin)
+router.patch('/homepage', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_homepage', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const update: any = { updatedBy: req.user._id };
   if (req.body.homePageContent !== undefined) update.homePageContent = req.body.homePageContent;
@@ -154,8 +154,8 @@ router.patch('/university', authenticate(), authorize(UserRole.SUPER_ADMIN), aud
   ApiResponse.success(res, settings, 'University info updated');
 }));
 
-// Update about content (Admin+)
-router.patch('/about', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_about', 'site_settings'), asyncHandler(async (req, res) => {
+// Update about content (SuperAdmin)
+router.patch('/about', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_about', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { aboutContent, missionContent, visionContent, objectivesContent, historyContent } = req.body;
   const update: any = { updatedBy: req.user._id };
