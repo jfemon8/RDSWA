@@ -202,7 +202,9 @@ export default function AdminEventsPage() {
               >
                 <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground">{e.title}</h3>
+                    <h3 className="font-medium text-foreground flex items-center gap-1.5">
+                      <FileText className="h-4 w-4 text-primary shrink-0" /> {e.title}
+                    </h3>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="capitalize">{e.type}</span>
                       <span className="capitalize">{e.status}</span>

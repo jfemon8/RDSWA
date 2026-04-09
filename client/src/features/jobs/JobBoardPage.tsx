@@ -185,7 +185,9 @@ export default function JobBoardPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-lg">{job.title}</h3>
+                        <h3 className="font-semibold text-lg flex items-center gap-1.5">
+                          <Briefcase className="h-4 w-4 text-primary shrink-0" /> {job.title}
+                        </h3>
                         <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
                           {job.type?.replace('-', ' ')}
                         </span>

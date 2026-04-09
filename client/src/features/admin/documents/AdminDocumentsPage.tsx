@@ -247,7 +247,9 @@ export default function AdminDocumentsPage() {
                       className="border-t hover:bg-accent/30"
                     >
                       <td className="p-3">
-                        <p className="font-medium text-foreground">{doc.title}</p>
+                        <p className="font-medium text-foreground flex items-center gap-1.5">
+                          <FileText className="h-4 w-4 text-primary shrink-0" /> {doc.title}
+                        </p>
                         {doc.description && <p className="text-xs text-muted-foreground line-clamp-1">{doc.description}</p>}
                       </td>
                       <td className="p-3">

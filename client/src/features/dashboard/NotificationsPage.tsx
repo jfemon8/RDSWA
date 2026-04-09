@@ -67,7 +67,9 @@ export default function NotificationsPage() {
                 }`}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{n.title}</p>
+                  <p className="font-medium text-sm flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatDate(n.createdAt)}

@@ -171,7 +171,9 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {notifications.data.slice(0, 5).map((n: any) => (
                 <div key={n._id} className={`p-3 rounded-md border text-sm ${n.isRead ? 'bg-background' : 'bg-primary/5 border-primary/20'}`}>
-                  <p className="font-medium">{n.title}</p>
+                  <p className="font-medium flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
+                  </p>
                   <p className="text-muted-foreground">{n.message}</p>
                 </div>
               ))}

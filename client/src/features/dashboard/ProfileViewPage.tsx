@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/authStore';
 import { Link } from 'react-router-dom';
-import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle } from 'lucide-react';
+import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle, Users, Heart, Hash, IdCard, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
@@ -136,39 +136,39 @@ export default function ProfileViewPage() {
             <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={u.email} />
             <InfoRow icon={<Phone className="h-4 w-4" />} label="Phone" value={u.phone} />
             <InfoRow icon={<Calendar className="h-4 w-4" />} label="Date of Birth" value={formatDate(u.dateOfBirth)} />
-            <InfoRow label="Gender" value={u.gender ? u.gender.charAt(0).toUpperCase() + u.gender.slice(1) : null} />
+            <InfoRow icon={<Users className="h-4 w-4" />} label="Gender" value={u.gender ? u.gender.charAt(0).toUpperCase() + u.gender.slice(1) : null} />
             <InfoRow icon={<Droplets className="h-4 w-4" />} label="Blood Group" value={u.bloodGroup} />
-            <InfoRow label="Blood Donor" value={u.isBloodDonor ? 'Yes' : 'No'} />
-            {u.lastDonationDate && <InfoRow label="Last Donation" value={formatDate(u.lastDonationDate)} />}
+            <InfoRow icon={<Heart className="h-4 w-4" />} label="Blood Donor" value={u.isBloodDonor ? 'Yes' : 'No'} />
+            {u.lastDonationDate && <InfoRow icon={<Clock className="h-4 w-4" />} label="Last Donation" value={formatDate(u.lastDonationDate)} />}
           </Section>
         </FadeIn>
 
         {/* Academic Info */}
         <FadeIn delay={0.2} direction="up">
           <Section title="Academic Information" icon={<GraduationCap className="h-4 w-4" />}>
-            <InfoRow label="Student ID / Roll Number" value={u.studentId} />
-            <InfoRow label="Registration Number" value={u.registrationNumber} />
-            <InfoRow label="University Batch" value={u.batch ? `${u.batch}${getOrdinal(u.batch)}` : null} />
-            <InfoRow label="Session" value={u.session} />
-            <InfoRow label="Faculty" value={u.faculty} />
-            <InfoRow label="Department" value={u.department} />
+            <InfoRow icon={<IdCard className="h-4 w-4" />} label="Student ID / Roll Number" value={u.studentId} />
+            <InfoRow icon={<Hash className="h-4 w-4" />} label="Registration Number" value={u.registrationNumber} />
+            <InfoRow icon={<Users className="h-4 w-4" />} label="University Batch" value={u.batch ? `${u.batch}${getOrdinal(u.batch)}` : null} />
+            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Session" value={u.session} />
+            <InfoRow icon={<Building2 className="h-4 w-4" />} label="Faculty" value={u.faculty} />
+            <InfoRow icon={<GraduationCap className="h-4 w-4" />} label="Department" value={u.department} />
           </Section>
         </FadeIn>
 
         {/* Address */}
         <FadeIn delay={0.25} direction="up">
           <Section title="Address" icon={<MapPin className="h-4 w-4" />}>
-            <InfoRow label="Present Address" value={formatAddress(u.presentAddress)} />
-            <InfoRow label="Permanent Address" value={formatAddress(u.permanentAddress)} />
-            {u.homeDistrict && <InfoRow label="Home District" value={u.homeDistrict} />}
+            <InfoRow icon={<MapPin className="h-4 w-4" />} label="Present Address" value={formatAddress(u.presentAddress)} />
+            <InfoRow icon={<MapPin className="h-4 w-4" />} label="Permanent Address" value={formatAddress(u.permanentAddress)} />
+            {u.homeDistrict && <InfoRow icon={<MapPin className="h-4 w-4" />} label="Home District" value={u.homeDistrict} />}
           </Section>
         </FadeIn>
 
         {/* Professional Info */}
         <FadeIn delay={0.3} direction="up">
           <Section title="Professional Information" icon={<Briefcase className="h-4 w-4" />}>
-            <InfoRow label="Profession" value={u.profession} />
-            <InfoRow label="Earning Source" value={u.earningSource} />
+            <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Profession" value={u.profession} />
+            <InfoRow icon={<Heart className="h-4 w-4" />} label="Earning Source" value={u.earningSource} />
             {u.skills?.length > 0 && (
               <div className="py-2">
                 <p className="text-xs text-muted-foreground mb-1.5">Skills</p>

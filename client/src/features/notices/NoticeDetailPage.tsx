@@ -82,7 +82,7 @@ export default function NoticeDetailPage() {
       {notice.attachments?.length > 0 && (
         <FadeIn delay={0.3} direction="up">
           <div className="mt-8 border-t pt-6">
-            <h3 className="font-semibold mb-3">Attachments</h3>
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Paperclip className="h-4 w-4 text-primary" /> Attachments</h3>
             <div className="space-y-2">
               {notice.attachments.map((a: any, i: number) => (
                 <a key={i} href={a.url} target="_blank" rel="noreferrer"

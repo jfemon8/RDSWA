@@ -254,7 +254,9 @@ export default function HomePage() {
                         </div>
                       )}
                       <div className="p-5">
-                        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">{e.title}</h3>
+                        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors flex items-center gap-1.5">
+                          <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
+                        </h3>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5" />

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Droplets, Loader2, Phone, MapPin } from 'lucide-react';
+import { Droplets, Loader2, Phone, MapPin, User } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { districts } from '@/data/bdGeo';
@@ -106,7 +106,9 @@ export default function BloodDonorsPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{d.name}</p>
+                    <p className="font-medium truncate flex items-center gap-1">
+                      <User className="h-3.5 w-3.5 text-primary shrink-0" /> {d.name}
+                    </p>
                     <span className="inline-block px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">
                       {d.bloodGroup}
                     </span>

@@ -6,7 +6,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import {
   ArrowLeft, Briefcase, MapPin, Clock, ExternalLink, DollarSign,
-  Loader2,
+  Loader2, FileText, CheckCircle, User,
 } from 'lucide-react';
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/date';
@@ -111,7 +111,7 @@ export default function JobDetailPage() {
       {/* Description */}
       <FadeIn delay={0.1} direction="up">
         <div className="border rounded-xl p-6 bg-card mb-6">
-          <h3 className="font-semibold mb-3">Job Description</h3>
+          <h3 className="font-semibold mb-3 flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Job Description</h3>
           <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
             <RichContent html={job.description} />
           </div>
@@ -122,7 +122,7 @@ export default function JobDetailPage() {
       {job.requirements?.length > 0 && (
         <FadeIn delay={0.15} direction="up">
           <div className="border rounded-xl p-6 bg-card mb-6">
-            <h3 className="font-semibold mb-3">Requirements</h3>
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /> Requirements</h3>
             <ul className="space-y-2">
               {job.requirements.map((req: string, i: number) => (
                 <motion.li
@@ -145,7 +145,7 @@ export default function JobDetailPage() {
       {job.postedBy && (
         <FadeIn delay={0.2} direction="up">
           <div className="border rounded-xl p-5 bg-card">
-            <h3 className="font-semibold mb-3">Posted By</h3>
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><User className="h-4 w-4 text-primary" /> Posted By</h3>
             <Link
               to={`/members/${job.postedBy._id}`}
               className="flex items-center gap-3 hover:bg-accent p-2 -m-2 rounded-lg transition-colors"

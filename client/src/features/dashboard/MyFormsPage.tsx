@@ -60,7 +60,9 @@ export default function MyFormsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium capitalize">{f.type.replace('_', ' ')} Form</p>
+                      <p className="font-medium capitalize flex items-center gap-1.5">
+                        <FileText className="h-4 w-4 text-primary shrink-0" /> {f.type.replace('_', ' ')} Form
+                      </p>
                       <p className="text-sm text-muted-foreground mt-1">
                         Submitted {formatDate(f.createdAt)}
                       </p>

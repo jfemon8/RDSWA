@@ -6,7 +6,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Pencil, Trash2, Archive } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Archive, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
@@ -156,7 +156,9 @@ export default function AdminNoticesPage() {
                 className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
               >
                 <div>
-                  <h3 className="font-medium text-foreground">{n.title}</h3>
+                  <h3 className="font-medium text-foreground flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-primary shrink-0" /> {n.title}
+                  </h3>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                     <span className="capitalize">{n.category}</span>
                     <span className="capitalize">{n.status}</span>

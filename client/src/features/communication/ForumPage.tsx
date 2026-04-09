@@ -137,7 +137,9 @@ export default function ForumPage() {
                         {topic.category || 'General'}
                       </span>
                     </div>
-                    <h3 className="font-medium text-sm truncate">{topic.title}</h3>
+                    <h3 className="font-medium text-sm truncate flex items-center gap-1">
+                      <MessageSquare className="h-3.5 w-3.5 text-primary shrink-0" /> {topic.title}
+                    </h3>
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <UserIcon className="h-3 w-3" />

@@ -192,7 +192,9 @@ export default function EventsPage() {
                               <StatusBadge status={e.status} />
                               {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
                             </div>
-                            <h3 className="font-semibold mb-2 line-clamp-2">{e.title}</h3>
+                            <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
+                              <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
+                            </h3>
                             <div className="space-y-1 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3.5 w-3.5" />

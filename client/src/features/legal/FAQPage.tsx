@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import RichContent from '@/components/ui/RichContent';
 import SEO from '@/components/SEO';
@@ -21,7 +21,9 @@ function FAQItem({ faq, index }: { faq: { question: string; answer: string }; in
           onClick={() => setOpen(!open)}
           className="w-full flex items-center justify-between p-5 text-left"
         >
-          <span className="font-medium pr-4 text-foreground">{faq.question}</span>
+          <span className="font-medium pr-4 text-foreground flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-primary shrink-0" /> {faq.question}
+          </span>
           <motion.div
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}

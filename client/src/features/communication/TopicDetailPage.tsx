@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import {
   ArrowLeft, Pin, Lock, Send, Loader2, Trash2, Pencil,
-  User as UserIcon, Clock,
+  User as UserIcon, Clock, MessageSquare,
 } from 'lucide-react';
 
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -175,8 +175,8 @@ export default function TopicDetailPage() {
 
       {/* Replies */}
       <div className="space-y-2 mb-4">
-        <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-          {replies.length} {replies.length === 1 ? 'Reply' : 'Replies'}
+        <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+          <MessageSquare className="h-3.5 w-3.5" /> {replies.length} {replies.length === 1 ? 'Reply' : 'Replies'}
         </h3>
         {replies.map((reply: any, i: number) => {
           const isOwner = reply.author?._id === user?._id;

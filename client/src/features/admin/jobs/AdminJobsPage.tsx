@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import { Search, Loader2, Trash2, ExternalLink } from 'lucide-react';
+import { Search, Loader2, Trash2, ExternalLink, Briefcase } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 
@@ -81,7 +81,9 @@ export default function AdminJobsPage() {
                 {jobs.map((j: any) => (
                   <tr key={j._id} className="border-t hover:bg-accent/30">
                     <td className="p-3">
-                      <Link to={`/dashboard/jobs/${j._id}`} className="font-medium hover:text-primary transition-colors">{j.title}</Link>
+                      <Link to={`/dashboard/jobs/${j._id}`} className="font-medium hover:text-primary transition-colors flex items-center gap-1.5">
+                        <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" /> {j.title}
+                      </Link>
                     </td>
                     <td className="p-3 text-muted-foreground">{j.company}</td>
                     <td className="p-3">

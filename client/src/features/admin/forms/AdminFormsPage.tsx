@@ -101,7 +101,9 @@ export default function AdminFormsPage() {
                   <div className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex-1">
-                        <p className="font-medium text-foreground capitalize">{f.type?.replace('_', ' ')} Form</p>
+                        <p className="font-medium text-foreground capitalize flex items-center gap-1.5">
+                          <FileText className="h-4 w-4 text-primary shrink-0" /> {f.type?.replace('_', ' ')} Form
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           By {f.submittedBy?.name || 'Unknown'} · {formatDate(f.createdAt)}
                         </p>

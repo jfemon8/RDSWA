@@ -178,7 +178,7 @@ export default function EventDetailPage() {
       {isAuthenticated && event && !['completed', 'cancelled'].includes(event.status) && (
         <FadeIn delay={0.3}>
           <div className="border rounded-xl p-4 bg-card mb-6">
-            <h3 className="font-semibold mb-3">Attendance</h3>
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Attendance</h3>
             {isCheckedIn ? (
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle2 className="h-5 w-5" />
@@ -309,7 +309,7 @@ export default function EventDetailPage() {
       {event.feedbackEnabled && event.status === 'completed' && isAuthenticated && !hasSubmittedFeedback && (
         <FadeIn delay={0.45} direction="up">
           <div className="border rounded-lg p-6 bg-card mb-8">
-            <h3 className="font-semibold mb-4">Submit Feedback</h3>
+            <h3 className="font-semibold mb-4 flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> Submit Feedback</h3>
             <div className="flex gap-1 mb-4">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -348,7 +348,7 @@ export default function EventDetailPage() {
       {event.feedbacks && event.feedbacks.length > 0 && (
         <FadeIn delay={0.5} direction="up">
           <div className="border rounded-lg p-6 bg-card">
-            <h3 className="font-semibold mb-4">Feedback ({event.feedbacks.length})</h3>
+            <h3 className="font-semibold mb-4 flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> Feedback ({event.feedbacks.length})</h3>
             <div className="space-y-3">
               {event.feedbacks.slice(0, 5).map((fb: any, i: number) => (
                 <motion.div

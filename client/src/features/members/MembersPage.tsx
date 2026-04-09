@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star } from 'lucide-react';
+import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
@@ -183,7 +183,9 @@ export default function MembersPage() {
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-medium truncate">{m.name}</p>
+                          <p className="font-medium truncate flex items-center gap-1">
+                            <User className="h-3.5 w-3.5 text-primary shrink-0" /> {m.name}
+                          </p>
                           {m.role && m.role !== UserRole.MEMBER && m.role !== UserRole.USER && (() => {
                             const rc = getRoleConfig(m.role);
                             return (
