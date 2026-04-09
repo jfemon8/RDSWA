@@ -81,8 +81,8 @@ describe('PATCH /api/settings', () => {
 });
 
 describe('PATCH /api/settings/about', () => {
-  it('should allow admin to update about content', async () => {
-    const { token } = await createAdmin();
+  it('should allow super admin to update about content', async () => {
+    const { token } = await createSuperAdmin();
 
     const res = await request(app)
       .patch('/api/settings/about')
@@ -94,6 +94,17 @@ describe('PATCH /api/settings/about', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.aboutContent).toBe('New about content');
+  });
+
+  it('should reject admin from updating about content', async () => {
+    const { token } = await createAdmin();
+
+    const res = await request(app)
+      .patch('/api/settings/about')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ aboutContent: 'Hacked' });
+
+    expect(res.status).toBe(403);
   });
 });
 
