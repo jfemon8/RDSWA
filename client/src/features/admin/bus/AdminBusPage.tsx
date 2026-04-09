@@ -732,30 +732,71 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
   );
 }
 
-// -- Counters (with operator selector) --
+// -- Counters (two-level: select operator first, then CRUD counters for that operator) --
 
 function CountersList() {
+  const [selectedOperator, setSelectedOperator] = useState<any>(null);
+
+  const { data: operatorsData, isLoading: operatorsLoading } = useQuery({
+    queryKey: ['bus', 'operators'],
+    queryFn: async () => { const { data } = await api.get('/bus/operators'); return data; },
+  });
+
+  const operators = operatorsData?.data || [];
+
+  if (selectedOperator) {
+    return <OperatorCounters operator={selectedOperator} onBack={() => setSelectedOperator(null)} />;
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <ExportButtons type="counters" label="Counters" />
+        <p className="text-sm text-muted-foreground">Select an operator to manage counters</p>
+      </div>
+      {operatorsLoading ? <Spinner /> : operators.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">No operators found. Add operators first.</p>
+      ) : (
+        <div className="space-y-2">
+          {operators.map((o: any, index: number) => (
+            <FadeIn key={o._id} direction="up" delay={index * 0.05} duration={0.4}>
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => setSelectedOperator(o)}
+                className="w-full text-left border rounded-lg p-3 bg-card hover:border-primary/40 transition-colors"
+              >
+                <p className="font-medium text-sm text-foreground">{o.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="capitalize">{o.scheduleType}</span>{o.contactNumber ? ` · ${o.contactNumber}` : ''}
+                </p>
+              </motion.button>
+            </FadeIn>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ operator: '', name: '', location: '', phoneNumbers: '', bookingLink: '' });
+  const [form, setForm] = useState({ name: '', location: '', phoneNumbers: '', bookingLink: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
-    queryKey: ['bus', 'counters'],
-    queryFn: async () => { const { data } = await api.get('/bus/counters'); return data; },
-  });
-
-  const { data: operatorsData } = useQuery({
-    queryKey: ['bus', 'operators'],
-    queryFn: async () => { const { data } = await api.get('/bus/operators'); return data; },
+    queryKey: ['bus', 'counters', 'operator', operator._id],
+    queryFn: async () => { const { data } = await api.get(`/bus/counters?operator=${operator._id}`); return data; },
   });
 
   const saveMutation = useMutation({
     mutationFn: () => {
       const payload = {
         ...form,
+        operator: operator._id,
         phoneNumbers: form.phoneNumbers.split(',').map((p) => p.trim()).filter(Boolean),
       };
       return editId ? api.patch(`/bus/counters/${editId}`, payload) : api.post('/bus/counters', payload);
@@ -770,12 +811,11 @@ function CountersList() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete counter'); },
   });
 
-  const resetForm = () => { setShowForm(false); setEditId(null); setForm({ operator: '', name: '', location: '', phoneNumbers: '', bookingLink: '' }); };
+  const resetForm = () => { setShowForm(false); setEditId(null); setForm({ name: '', location: '', phoneNumbers: '', bookingLink: '' }); };
 
   const startEdit = (c: any) => {
     setEditId(c._id);
     setForm({
-      operator: c.operator?._id || c.operator || '',
       name: c.name,
       location: c.location || '',
       phoneNumbers: (c.phoneNumbers || []).join(', '),
@@ -785,31 +825,30 @@ function CountersList() {
   };
 
   const counters = data?.data || [];
-  const operators = operatorsData?.data || [];
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <ExportButtons type="counters" label="Counters" />
+      {/* Operator header + back */}
+      <div className="flex items-center gap-3 mb-4">
+        <button onClick={onBack} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
+          <X className="h-4 w-4" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground">{operator.name}</p>
+          <p className="text-xs text-muted-foreground"><span className="capitalize">{operator.scheduleType}</span>{operator.contactNumber ? ` · ${operator.contactNumber}` : ''}</p>
+        </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm shrink-0">
           <Plus className="h-4 w-4" /> Add Counter
         </button>
       </div>
+
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
-              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.operator) errs.operator = 'Please select an operator'; if (!form.name.trim()) errs.name = 'Counter name is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
-                <div>
-                  <select value={form.operator} onChange={(e) => { setForm({ ...form, operator: e.target.value }); setErrors((prev) => { const { operator, ...rest } = prev; return rest; }); }}
-                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.operator ? 'border-red-500' : ''}`} required>
-                    <option value="">Select Operator *</option>
-                    {operators.map((o: any) => <option key={o._id} value={o._id}>{o.name}</option>)}
-                  </select>
-                  <FieldError message={errors.operator} />
-                </div>
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.name.trim()) errs.name = 'Counter name is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <input placeholder="Counter Name *" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
@@ -835,7 +874,9 @@ function CountersList() {
           </motion.div>
         )}
       </AnimatePresence>
-      {isLoading ? <Spinner /> : (
+      {isLoading ? <Spinner /> : counters.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">No counters for this operator yet.</p>
+      ) : (
         <div className="space-y-2">
           {counters.map((c: any, index: number) => (
             <FadeIn key={c._id} direction="up" delay={index * 0.05} duration={0.4}>
@@ -843,7 +884,7 @@ function CountersList() {
                 <div>
                   <p className="font-medium text-sm text-foreground">{c.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {c.operator?.name || 'N/A'} · {c.location || 'N/A'}
+                    {c.location || 'N/A'}
                     {c.phoneNumbers?.length ? ` · ${c.phoneNumbers.join(', ')}` : ''}
                   </p>
                 </div>
