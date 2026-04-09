@@ -10,22 +10,22 @@ import api from '@/lib/api';
 const publicLinks = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
-  { label: 'Committee', href: '/committee' },
-  { label: 'Members', href: '/members' },
-  { label: 'Events', href: '/events' },
+  { label: 'University', href: '/university' },
+  { label: 'Bus Schedule', href: '/bus-schedule' },
+  { label: 'Job Board', href: '/dashboard/jobs' },
   { label: 'Notices', href: '/notices' },
 ];
 
 const moreLinks = [
+  { label: 'Committee', href: '/committee' },
+  { label: 'Members', href: '/members' },
   { label: 'Alumni', href: '/alumni' },
-  { label: 'University', href: '/university' },
+  { label: 'Events', href: '/events' },
   { label: 'Gallery', href: '/gallery' },
   { label: 'Documents', href: '/documents' },
   { label: 'Donations', href: '/donations' },
-  { label: 'Job Board', href: '/dashboard/jobs' },
   { label: 'Voting', href: '/voting' },
   { label: 'Blood Donors', href: '/blood-donors' },
-  { label: 'Bus Schedule', href: '/bus-schedule' },
 ];
 
 export default function Navbar() {
