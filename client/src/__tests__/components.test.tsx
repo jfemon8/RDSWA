@@ -2,15 +2,20 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
 import ErrorBoundary from '@/components/ErrorBoundary';
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 // Wrap components with necessary providers
 function TestWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <HelmetProvider>
-      <BrowserRouter>{children}</BrowserRouter>
-    </HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </HelmetProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -31,7 +36,7 @@ describe('SEO Component', () => {
         <SEO />
       </TestWrapper>
     );
-    expect(document.title).toBe('RDSWA - Rangpur Divisional Student Welfare Association');
+    expect(document.title).toBe('RDSWA');
   });
 });
 
