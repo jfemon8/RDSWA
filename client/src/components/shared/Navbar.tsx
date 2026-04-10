@@ -190,7 +190,7 @@ export default function Navbar() {
                     className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] bg-background border rounded-xl shadow-xl py-1 z-50"
                   >
                     <div className="px-4 py-3 border-b">
-                      <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{user?.nickName || user?.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                     <Link

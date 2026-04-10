@@ -60,7 +60,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6">
-        Welcome, {user?.name}
+        Welcome, {user?.nickName || user?.name}
       </h1>
 
       {/* Membership Status Tracker */}

@@ -11,6 +11,7 @@ export interface IUserDocument extends Document {
   // Profile — Personal
   name: string;
   nameBn?: string;
+  nickName?: string;
   phone?: string;
   avatar?: string;
   dateOfBirth?: Date;
@@ -150,6 +151,7 @@ const userSchema = new Schema<IUserDocument>(
     // Profile — Personal
     name: { type: String, required: true, trim: true },
     nameBn: { type: String, trim: true },
+    nickName: { type: String, trim: true, maxlength: 50 },
     phone: { type: String, trim: true },
     avatar: String,
     dateOfBirth: Date,

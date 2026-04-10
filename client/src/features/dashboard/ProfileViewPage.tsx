@@ -95,8 +95,9 @@ export default function ProfileViewPage() {
                 {u.name?.[0]}
               </motion.div>
             )}
-            <div className="text-center sm:text-left">
-              <h2 className="text-xl font-bold">{u.name}</h2>
+            <div className="text-center sm:text-left min-w-0">
+              <h2 className="text-xl font-bold truncate">{u.nickName || u.name}</h2>
+              {u.nickName && <p className="text-sm text-muted-foreground truncate">{u.name}</p>}
               {u.nameBn && <p className="text-muted-foreground">{u.nameBn}</p>}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
                 {getEffectiveRoles(u.role).map((r: string, i: number) => {

@@ -52,6 +52,7 @@ export interface IUser {
   email: string;
   name: string;
   nameBn?: string;
+  nickName?: string;
   phone?: string;
   avatar?: string;
   dateOfBirth?: string;
@@ -100,6 +101,6 @@ export interface IUser {
 
 /** Public-facing user profile (for non-admin views) */
 export type PublicUser = Pick<IUser,
-  '_id' | 'name' | 'nameBn' | 'avatar' | 'department' | 'batch' |
+  '_id' | 'name' | 'nameBn' | 'nickName' | 'avatar' | 'department' | 'batch' |
   'session' | 'bloodGroup' | 'isBloodDonor' | 'homeDistrict' | 'role'
 >;

@@ -9,6 +9,7 @@ export const updateProfileSchema = z.object({
   avatar: optionalUrl,
   name: z.string().min(2).max(100).optional(),
   nameBn: optionalString,
+  nickName: z.string().max(50, 'Nick name must be 50 characters or less').optional().transform(emptyToUndefined),
   phone: optionalString,
   dateOfBirth: optionalString,
   gender: z.enum(['male', 'female', 'other']).or(z.literal('')).optional().transform(emptyToUndefined),

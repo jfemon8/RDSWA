@@ -42,6 +42,7 @@ export default function ProfilePage() {
     avatar: user?.avatar || '',
     name: user?.name || '',
     nameBn: user?.nameBn || '',
+    nickName: user?.nickName || '',
     phone: user?.phone || '',
     dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
     gender: user?.gender || '',
@@ -87,7 +88,7 @@ export default function ProfilePage() {
         setErrors(fieldErrors);
         // Auto-switch to the tab containing the first error field
         const firstKey = Object.keys(fieldErrors)[0];
-        const personalFields = ['name', 'nameBn', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'presentAddress', 'permanentAddress'];
+        const personalFields = ['name', 'nameBn', 'nickName', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'presentAddress', 'permanentAddress'];
         const academicFields = ['studentId', 'registrationNumber', 'batch', 'session', 'faculty', 'department'];
         const professionalFields = ['profession', 'earningSource', 'skills'];
         if (personalFields.some((f) => firstKey.startsWith(f))) setActiveTab('personal');
@@ -189,6 +190,7 @@ export default function ProfilePage() {
               />
               <InputField label="Full Name" value={form.name} onChange={(v) => { set('name', v); setErrors((prev) => { const { name, ...rest } = prev; return rest; }); }} required error={errors.name} />
               <InputField label="Name (Bangla)" value={form.nameBn} onChange={(v) => { set('nameBn', v); setErrors((prev) => { const { nameBn, ...rest } = prev; return rest; }); }} placeholder="বাংলায় নাম" error={errors.nameBn} />
+              <InputField label="Nick Name" value={form.nickName} onChange={(v) => { set('nickName', v); setErrors((prev) => { const { nickName, ...rest } = prev; return rest; }); }} placeholder="Casual name shown on dashboard, navbar & profile header" error={errors.nickName} />
               <VisibilityField label="Phone" isPublic={form.profileVisibility.phone ?? false} onToggle={(v) => setVisibility('phone', v)}>
                 <InputField label="Phone" value={form.phone} onChange={(v) => { set('phone', v); setErrors((prev) => { const { phone, ...rest } = prev; return rest; }); }} error={errors.phone} />
               </VisibilityField>
