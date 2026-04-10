@@ -64,6 +64,7 @@ const Groups = lazy(() => import('@/features/communication/GroupsPage'));
 const GroupChat = lazy(() => import('@/features/communication/GroupChatPage'));
 const Announcements = lazy(() => import('@/features/communication/AnnouncementsPage'));
 const StarredMessages = lazy(() => import('@/features/communication/StarredMessagesPage'));
+const ChatHub = lazy(() => import('@/features/communication/ChatHubPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
@@ -162,6 +163,7 @@ export default function AppRouter() {
             <Route path="/dashboard/groups/:id" element={<GroupChat />} />
             <Route path="/dashboard/announcements" element={<Announcements />} />
             <Route path="/dashboard/starred" element={<StarredMessages />} />
+            <Route path="/dashboard/chat" element={<ChatHub />} />
             <Route path="/dashboard/settings" element={<NotificationSettings />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
             <Route path="/dashboard/attendance" element={<AttendanceHistory />} />

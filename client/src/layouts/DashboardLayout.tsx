@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
   Home, User, Bell, FileText, LogOut, Menu, X, Shield,
-  MessageSquare, MessagesSquare, Settings, Briefcase, Users, Megaphone, Star,
+  MessageSquare, MessagesSquare, Settings, Briefcase, Megaphone,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
 import { UserRole } from '@rdswa/shared';
@@ -19,9 +19,7 @@ const sidebarLinks = [
   { label: 'Profile', href: '/dashboard/profile', icon: User },
   { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
   { label: 'Forum', href: '/dashboard/forum', icon: MessageSquare },
-  { label: 'Messages', href: '/dashboard/messages', icon: MessagesSquare },
-  { label: 'Starred', href: '/dashboard/starred', icon: Star },
-  { label: 'Groups', href: '/dashboard/groups', icon: Users },
+  { label: 'Chat', href: '/dashboard/chat', icon: MessagesSquare },
   { label: 'Announcements', href: '/dashboard/announcements', icon: Megaphone },
   { label: 'My Forms', href: '/dashboard/forms', icon: FileText },
   { label: 'Job Board', href: '/dashboard/jobs', icon: Briefcase },

@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -22,6 +23,37 @@ import type { ReplyData } from '@/components/chat/ReplyPreview';
 
 export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const withUserId = searchParams.get('with');
+
+  // Deep-link: when ?with=<userId> is in the URL, auto-open that conversation
+  // by fetching the user's profile. Runs once when the param changes.
+  useEffect(() => {
+    if (!withUserId || selectedUser?._id === withUserId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get(`/users/${withUserId}`);
+        const u = data?.data;
+        if (!cancelled && u) {
+          setSelectedUser({ _id: u._id, name: u.name, avatar: u.avatar });
+        }
+      } catch {
+        /* silent — fall back to list view */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [withUserId, selectedUser?._id]);
+
+  const handleBack = () => {
+    setSelectedUser(null);
+    // Clear the query param so the URL matches the list view.
+    if (withUserId) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('with');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   return (
     <div>
@@ -36,7 +68,7 @@ export default function MessagesPage() {
           >
             <ChatView
               partner={selectedUser}
-              onBack={() => setSelectedUser(null)}
+              onBack={handleBack}
             />
           </motion.div>
         ) : (
