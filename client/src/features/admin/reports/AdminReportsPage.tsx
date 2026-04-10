@@ -195,16 +195,16 @@ function FinanceReport() {
           <div className="flex flex-wrap gap-4">
             <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground">Total Donations</span>
-              <p className="text-lg font-bold text-green-600">৳<CountUp to={d.totalDonations || 0} separator="," duration={1.5} /></p>
+              <p className="text-lg font-bold text-green-600">BDT <CountUp to={d.totalDonations || 0} separator="," duration={1.5} /></p>
             </div>
             <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground">Total Expenses</span>
-              <p className="text-lg font-bold text-red-600">৳<CountUp to={d.totalExpenses || 0} separator="," duration={1.5} /></p>
+              <p className="text-lg font-bold text-red-600">BDT <CountUp to={d.totalExpenses || 0} separator="," duration={1.5} /></p>
             </div>
             <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground">Balance</span>
               <p className={`text-lg font-bold ${(d.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ৳<CountUp to={Math.abs(d.balance || 0)} separator="," duration={1.5} />
+                BDT <CountUp to={Math.abs(d.balance || 0)} separator="," duration={1.5} />
               </p>
             </div>
           </div>
@@ -222,7 +222,7 @@ function FinanceReport() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -241,7 +241,7 @@ function FinanceReport() {
                     <Pie data={(d.donationsByType || []).map((t: any) => ({ name: t._id, value: t.total }))} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
                       {(d.donationsByType || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                    <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-1.5">
@@ -249,7 +249,7 @@ function FinanceReport() {
                     <div key={t._id} className="flex items-center gap-2 text-sm">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="capitalize text-muted-foreground">{t._id?.replace('_', ' ')}</span>
-                      <span className="ml-auto font-medium text-foreground">৳{t.total?.toLocaleString()}</span>
+                      <span className="ml-auto font-medium text-foreground">BDT {t.total?.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -267,7 +267,7 @@ function FinanceReport() {
                 <BarChart data={(d.expensesByCategory || []).map((c: any) => ({ category: c._id, amount: c.total }))}>
                   <XAxis dataKey="category" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   <Bar dataKey="amount" fill="#ef4444" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -366,7 +366,7 @@ function DonationsReport() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                 <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>

@@ -7,7 +7,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import {
-  DollarSign, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
+  Banknote, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
   Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
@@ -58,22 +58,22 @@ export default function AdminFinancePage() {
   const summaryCards = [
     {
       label: 'Total Donations',
-      value: `৳${(report?.totalDonations || 0).toLocaleString()}`,
+      value: `BDT ${(report?.totalDonations || 0).toLocaleString()}`,
       icon: TrendingUp,
       iconColor: 'text-green-600',
       valueColor: 'text-green-600',
     },
     {
       label: 'Total Expenses',
-      value: `৳${(report?.totalExpenses || 0).toLocaleString()}`,
+      value: `BDT ${(report?.totalExpenses || 0).toLocaleString()}`,
       icon: TrendingDown,
       iconColor: 'text-red-600',
       valueColor: 'text-red-600',
     },
     {
       label: 'Balance',
-      value: `৳${(report?.balance || 0).toLocaleString()}`,
-      icon: DollarSign,
+      value: `BDT ${(report?.balance || 0).toLocaleString()}`,
+      icon: Banknote,
       iconColor: 'text-primary',
       valueColor: (report?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600',
     },
@@ -145,7 +145,7 @@ export default function AdminFinancePage() {
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   <Bar dataKey="donations" fill="#2563eb" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -166,7 +166,7 @@ export default function AdminFinancePage() {
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -187,7 +187,7 @@ export default function AdminFinancePage() {
                       <Cell key={i} fill={CHART_COLORS[(i + 3) % CHART_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -303,7 +303,7 @@ function DonationsList() {
                   <p className="text-foreground">{d.donor?.name || d.donorName || 'Anonymous'}</p>
                   <p className="text-xs text-muted-foreground">{d.donor?.email || d.donorEmail || ''}</p>
                 </td>
-                <td className="p-3 font-medium text-foreground">৳{d.amount?.toLocaleString()}</td>
+                <td className="p-3 font-medium text-foreground">BDT {d.amount?.toLocaleString()}</td>
                 <td className="p-3 capitalize text-xs text-muted-foreground">{d.paymentMethod}</td>
                 <td className="p-3 text-xs text-muted-foreground">
                   {d.transactionId && <p>TxID: {d.transactionId}</p>}
@@ -524,7 +524,7 @@ function ExpensesList() {
                   className="border-t hover:bg-accent/30"
                 >
                   <td className="p-3 text-foreground">{e.title}</td>
-                  <td className="p-3 font-medium text-red-600">৳{e.amount?.toLocaleString()}</td>
+                  <td className="p-3 font-medium text-red-600">BDT {e.amount?.toLocaleString()}</td>
                   <td className="p-3 capitalize text-xs text-muted-foreground">{e.category}</td>
                   <td className="p-3 text-xs text-muted-foreground">{formatDate(e.createdAt)}</td>
                 </tr>
@@ -630,7 +630,7 @@ function CampaignsList() {
                     <h3 className="font-medium text-foreground">{c.title}</h3>
                     <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
                   </div>
-                  <p className="font-semibold text-foreground">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</p>
+                  <p className="font-semibold text-foreground">BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</p>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />

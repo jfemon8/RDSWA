@@ -36,7 +36,7 @@ export async function runPaymentReminder(): Promise<void> {
           recipient: donation.donor,
           type: 'system',
           title: 'Payment Pending',
-          message: `Your donation of ৳${donation.amount} (${donation.receiptNumber || ''}) is still pending verification. If you've already paid, please ensure the transaction details are correct.`,
+          message: `Your donation of BDT ${donation.amount} (${donation.receiptNumber || ''}) is still pending verification. If you've already paid, please ensure the transaction details are correct.`,
           link: '/donations',
           metadata: { donationId: donation._id, reminderType: 'overdue' },
         });
@@ -68,7 +68,7 @@ export async function runPaymentReminder(): Promise<void> {
           recipient: donation.donor,
           type: 'system',
           title: 'Recurring Donation Due',
-          message: `Your ${donation.recurringInterval} donation of ৳${donation.amount} is due. Please submit your payment.`,
+          message: `Your ${donation.recurringInterval} donation of BDT ${donation.amount} is due. Please submit your payment.`,
           link: '/donations',
           metadata: { donationId: donation._id, reminderType: 'recurring' },
         });

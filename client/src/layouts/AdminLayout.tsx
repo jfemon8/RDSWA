@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
-  DollarSign, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
+  Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard, Settings2,
   Briefcase, MessageSquare, Heart,
 } from 'lucide-react';
@@ -34,7 +34,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },
   { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
-  { label: 'Finance', href: '/admin/finance', icon: DollarSign, minRole: UserRole.ADMIN },
+  { label: 'Finance', href: '/admin/finance', icon: Banknote, minRole: UserRole.ADMIN },
   { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },
   { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
   { label: 'Alumni Monitor', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.MODERATOR },

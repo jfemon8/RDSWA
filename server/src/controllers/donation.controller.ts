@@ -100,7 +100,7 @@ export const getReceipt = asyncHandler(async (req: Request, res: Response) => {
   </div>
   <div class="receipt-no">Receipt: ${donation.receiptNumber || 'N/A'}</div>
   <h2 style="text-align:center">Donation Receipt</h2>
-  <div class="amount">৳${donation.amount.toLocaleString()} BDT</div>
+  <div class="amount">BDT ${donation.amount.toLocaleString()}</div>
   <table>
     <tr><td>Donor</td><td>${donorName}</td></tr>
     ${donorEmail ? `<tr><td>Email</td><td>${donorEmail}</td></tr>` : ''}

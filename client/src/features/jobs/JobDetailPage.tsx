@@ -5,7 +5,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import {
-  ArrowLeft, Briefcase, MapPin, Clock, ExternalLink, DollarSign,
+  ArrowLeft, Briefcase, MapPin, Clock, ExternalLink, Banknote,
   Loader2, FileText, CheckCircle, User, Users, CalendarX,
 } from 'lucide-react';
 import RichContent from '@/components/ui/RichContent';
@@ -85,7 +85,7 @@ export default function JobDetailPage() {
               )}
               {job.salary && (
                 <span className="flex items-center gap-1.5">
-                  <DollarSign className="h-4 w-4 shrink-0" /> BDT {job.salary}
+                  <Banknote className="h-4 w-4 shrink-0" /> BDT {job.salary}
                 </span>
               )}
               {typeof job.vacancy === 'number' && job.vacancy > 0 && (

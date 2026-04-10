@@ -119,7 +119,7 @@ export default function MyDonationsPage() {
                           <span className="text-xs text-muted-foreground capitalize">{d.type?.replace('-', ' ')}</span>
                         </div>
                         <p className="text-lg font-bold text-foreground flex items-center gap-1.5">
-                          <Receipt className="h-4 w-4 text-primary shrink-0" /> ৳{d.amount?.toLocaleString()}
+                          <Receipt className="h-4 w-4 text-primary shrink-0" /> BDT {d.amount?.toLocaleString()}
                         </p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
                           <span className="capitalize">{d.paymentMethod}</span>

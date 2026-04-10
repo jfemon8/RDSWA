@@ -113,10 +113,10 @@ export class DonationService {
     // Notify the donor
     if (donation.donor) {
       const messages: Record<string, { title: string; message: string }> = {
-        completed: { title: 'Payment Verified', message: `Your donation of ৳${donation.amount} has been verified. Thank you!` },
-        failed: { title: 'Payment Failed', message: `Your donation of ৳${donation.amount} could not be verified. Please contact admin.` },
-        refunded: { title: 'Payment Refunded', message: `Your donation of ৳${donation.amount} has been refunded.` },
-        revision: { title: 'Payment Needs Revision', message: revisionNote || `Your donation of ৳${donation.amount} needs revision. Please check and resubmit.` },
+        completed: { title: 'Payment Verified', message: `Your donation of BDT ${donation.amount} has been verified. Thank you!` },
+        failed: { title: 'Payment Failed', message: `Your donation of BDT ${donation.amount} could not be verified. Please contact admin.` },
+        refunded: { title: 'Payment Refunded', message: `Your donation of BDT ${donation.amount} has been refunded.` },
+        revision: { title: 'Payment Needs Revision', message: revisionNote || `Your donation of BDT ${donation.amount} needs revision. Please check and resubmit.` },
       };
 
       const msg = messages[status];

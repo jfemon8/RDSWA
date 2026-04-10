@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
-import { Users, Calendar, DollarSign, FileText, Clock, UserCheck, Loader2, TrendingUp, Shield, CheckCircle } from 'lucide-react';
+import { Users, Calendar, Banknote, FileText, Clock, UserCheck, Loader2, TrendingUp, Shield, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
     { label: 'Approved Members', value: stats?.approvedMembers || 0, icon: UserCheck, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950/30', isCurrency: false },
     { label: 'Pending Members', value: stats?.pendingMembers || 0, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-950/30', isCurrency: false },
     { label: 'Total Events', value: stats?.totalEvents || 0, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-950/30', isCurrency: false },
-    { label: 'Total Donations', value: stats?.totalDonationsAmount || 0, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30', isCurrency: true },
+    { label: 'Total Donations', value: stats?.totalDonationsAmount || 0, icon: Banknote, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30', isCurrency: true },
     { label: 'Pending Forms', value: stats?.pendingForms || 0, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30', isCurrency: false },
   ];
 
@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <p className="text-lg sm:text-2xl font-bold text-foreground">
                   {card.isCurrency ? (
-                    <>৳<CountUp to={card.value} separator="," duration={1.5} /></>
+                    <>BDT <CountUp to={card.value} separator="," duration={1.5} /></>
                   ) : (
                     <CountUp to={card.value} separator="," duration={1.5} />
                   )}
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
                 <BarChart data={donationMonthly}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `৳${Number(v).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
                   <Bar dataKey="amount" fill="#10b981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

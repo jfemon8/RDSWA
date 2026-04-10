@@ -97,7 +97,7 @@ export default function DonationsPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Raised</span>
-                        <span className="font-medium text-foreground">৳{c.raisedAmount?.toLocaleString()} / ৳{c.targetAmount?.toLocaleString()}</span>
+                        <span className="font-medium text-foreground">BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
@@ -499,7 +499,7 @@ function RecentDonations() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-green-600">৳{d.amount?.toLocaleString()}</p>
+                  <p className="font-semibold text-green-600">BDT {d.amount?.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(d.createdAt, 'short')}
                   </p>
