@@ -8,7 +8,7 @@ import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
   ArrowLeft, Send, Loader2, Users, Trash2, Pencil,
   User as UserIcon, Globe, Building2, Hash, X, Check,
-  UserPlus, UserMinus, Search, LogOut,
+  UserPlus, UserMinus, Search, LogOut, EyeOff,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -16,12 +16,23 @@ import { FieldError } from '@/components/ui/FieldError';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import ChatAttachmentMenu, { type ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
+import ChatAttachmentView from '@/components/chat/ChatAttachmentView';
 
 const TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
   department: Building2,
   custom: Hash,
 };
+
+/** Time windows mirroring the server. Keep these in sync with communication.routes.ts. */
+const EDIT_WINDOW_MS = 6 * 60 * 60 * 1000;
+const DELETE_EVERYONE_WINDOW_MS = 12 * 60 * 60 * 1000;
+const DELETE_FOR_ME_WINDOW_MS = 24 * 60 * 60 * 1000;
+function isWithinMs(windowMs: number, sentAt: string | Date): boolean {
+  const t = typeof sentAt === 'string' ? new Date(sentAt).getTime() : sentAt.getTime();
+  return Date.now() - t <= windowMs;
+}
 
 export default function GroupChatPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +43,7 @@ export default function GroupChatPage() {
   const confirm = useConfirm();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [showMembers, setShowMembers] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -72,15 +84,21 @@ export default function GroupChatPage() {
   }, [messages.length]);
 
   const sendMutation = useMutation({
-    mutationFn: () => api.post(`/communication/groups/${id}/messages`, { content: message }),
+    mutationFn: () => api.post(`/communication/groups/${id}/messages`, {
+      content: message,
+      attachments: pendingAttachments,
+    }),
     onSuccess: () => {
       setMessage('');
+      setPendingAttachments([]);
       queryClient.invalidateQueries({ queryKey: ['group', id] });
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || 'Failed to send message');
     },
   });
+
+  const canSend = (message.trim().length > 0 || pendingAttachments.length > 0) && !sendMutation.isPending;
 
   const editMutation = useMutation({
     mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
@@ -100,6 +118,22 @@ export default function GroupChatPage() {
       api.delete(`/communication/groups/${id}/messages/${messageId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
+      toast.success('Message deleted for everyone');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to delete message');
+    },
+  });
+
+  const deleteForMeMutation = useMutation({
+    mutationFn: (messageId: string) =>
+      api.delete(`/communication/groups/${id}/messages/${messageId}/me`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      toast.success('Message hidden for you');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to hide message');
     },
   });
 
@@ -162,18 +196,28 @@ export default function GroupChatPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (message.trim()) sendMutation.mutate();
+      if (canSend) sendMutation.mutate();
     }
   };
 
   const handleDelete = async (messageId: string) => {
     const ok = await confirm({
-      title: 'Delete Message',
-      message: 'Are you sure you want to delete this message?',
-      confirmLabel: 'Delete',
+      title: 'Delete for everyone?',
+      message: 'This message will be permanently removed for all participants. Any attached files will also be deleted from storage.',
+      confirmLabel: 'Delete for everyone',
       variant: 'danger',
     });
     if (ok) deleteMutation.mutate(messageId);
+  };
+
+  const handleDeleteForMe = async (messageId: string) => {
+    const ok = await confirm({
+      title: 'Delete for me?',
+      message: 'This message will be hidden in your view only. Other participants will still see it.',
+      confirmLabel: 'Hide for me',
+      variant: 'danger',
+    });
+    if (ok) deleteForMeMutation.mutate(messageId);
   };
 
   if (isLoading) {
@@ -246,8 +290,43 @@ export default function GroupChatPage() {
             ) : (
               messages.map((msg: any, i: number) => {
                 const isMine = msg.sender?._id === user?._id;
-                const canEdit = isMine;
-                const canDelete = isMine || isAdmin;
+                // Time-window gates (mirror server). Admin bypasses for moderation.
+                const canEdit = isMine && isWithinMs(EDIT_WINDOW_MS, msg.createdAt);
+                const canDeleteForEveryone = (isMine && isWithinMs(DELETE_EVERYONE_WINDOW_MS, msg.createdAt)) || !!isAdmin;
+                const canDeleteForMe = isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);
+                const hasAnyAction = canEdit || canDeleteForEveryone || canDeleteForMe;
+
+                const actionButtons = (
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {canEdit && (
+                      <button
+                        onClick={() => { setEditingId(msg._id); setEditContent(msg.content); }}
+                        className="p-1 rounded hover:bg-accent"
+                        title="Edit (within 6h)"
+                      >
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    )}
+                    {canDeleteForEveryone && (
+                      <button
+                        onClick={() => handleDelete(msg._id)}
+                        className="p-1 rounded hover:bg-accent"
+                        title={isMine ? 'Delete for everyone (within 12h)' : 'Delete (admin)'}
+                      >
+                        <Trash2 className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    )}
+                    {canDeleteForMe && (
+                      <button
+                        onClick={() => handleDeleteForMe(msg._id)}
+                        className="p-1 rounded hover:bg-accent"
+                        title="Delete for me (within 24h)"
+                      >
+                        <EyeOff className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                );
 
                 return (
                   <motion.div
@@ -265,23 +344,7 @@ export default function GroupChatPage() {
                         </Link>
                       )}
                       <div className="flex items-end gap-1">
-                        {isMine && (canEdit || canDelete) && editingId !== msg._id && (
-                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {canEdit && (
-                              <button
-                                onClick={() => { setEditingId(msg._id); setEditContent(msg.content); }}
-                                className="p-1 rounded hover:bg-accent"
-                              >
-                                <Pencil className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                            )}
-                            {canDelete && (
-                              <button onClick={() => handleDelete(msg._id)} className="p-1 rounded hover:bg-accent">
-                                <Trash2 className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                            )}
-                          </div>
-                        )}
+                        {isMine && hasAnyAction && editingId !== msg._id && actionButtons}
                         {editingId === msg._id ? (
                           <div className="flex items-center gap-1">
                             <input
@@ -315,34 +378,22 @@ export default function GroupChatPage() {
                                 : 'bg-muted rounded-bl-sm'
                             }`}
                           >
-                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                             {msg.attachments && msg.attachments.length > 0 && (
-                              <div className="mt-1 space-y-1">
+                              <div className={`space-y-2 ${msg.content ? 'mb-2' : ''}`}>
                                 {msg.attachments.map((att: any, ai: number) => (
-                                  <a
-                                    key={ai}
-                                    href={att.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs underline opacity-80 hover:opacity-100 block"
-                                  >
-                                    {att.name || 'Attachment'}
-                                  </a>
+                                  <ChatAttachmentView key={ai} attachment={att} isMine={isMine} />
                                 ))}
                               </div>
                             )}
+                            {msg.content && (
+                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            )}
                             <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                              {formatTime(msg.createdAt)}
+                              {formatTime(msg.createdAt)}{msg.isEdited && <span className="ml-1 italic">· edited</span>}
                             </p>
                           </div>
                         )}
-                        {!isMine && canDelete && editingId !== msg._id && (
-                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleDelete(msg._id)} className="p-1 rounded hover:bg-accent">
-                              <Trash2 className="h-3 w-3 text-muted-foreground" />
-                            </button>
-                          </div>
-                        )}
+                        {!isMine && hasAnyAction && editingId !== msg._id && actionButtons}
                       </div>
                     </div>
                   </motion.div>
@@ -357,14 +408,44 @@ export default function GroupChatPage() {
             onSubmit={(e) => {
               e.preventDefault();
               setErrors({});
-              if (!message.trim()) { setErrors({ message: 'Message cannot be empty' }); return; }
+              if (!canSend) {
+                setErrors({ message: 'Message cannot be empty' });
+                return;
+              }
               sendMutation.mutate();
             }}
             noValidate
             className="pt-3 border-t"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
+            {/* Pending attachment previews */}
+            {pendingAttachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {pendingAttachments.map((att, i) => (
+                  <div
+                    key={i}
+                    className="relative flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg text-xs max-w-[220px]"
+                  >
+                    <span className="truncate">
+                      {att.kind === 'contact' ? `Contact: ${att.contact?.name}` : (att.name || att.kind)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="p-0.5 rounded hover:bg-accent shrink-0"
+                      aria-label="Remove attachment"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2">
+              <ChatAttachmentMenu
+                onSelect={(att) => setPendingAttachments((prev) => [...prev, att])}
+                disabled={sendMutation.isPending}
+              />
               <div className="flex-1 min-w-0">
                 <textarea
                   placeholder="Type a message..."
@@ -378,7 +459,7 @@ export default function GroupChatPage() {
               </div>
               <button
                 type="submit"
-                disabled={!message.trim() || sendMutation.isPending}
+                disabled={!canSend}
                 className="h-11 w-11 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 hover:bg-primary/90 transition-colors"
                 aria-label="Send message"
               >

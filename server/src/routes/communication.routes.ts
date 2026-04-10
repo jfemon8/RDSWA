@@ -22,6 +22,103 @@ function canManageGroupMembers(group: { type: string; createdBy?: any }, user: {
   return false;
 }
 
+/** Media retention policy in days, keyed by attachment kind. */
+const RETENTION_DAYS: Record<string, number> = {
+  image: 30,
+  video: 7,
+  audio: 30,
+  pdf: 30,
+  file: 30,
+};
+
+/** Time window (ms) within which the sender can edit their own message. */
+const EDIT_WINDOW_MS = 6 * 60 * 60 * 1000;        // 6 hours
+/** Time window (ms) within which the sender can delete their message for everyone. */
+const DELETE_EVERYONE_WINDOW_MS = 12 * 60 * 60 * 1000; // 12 hours
+/** Time window (ms) within which any participant can delete the message just for themselves. */
+const DELETE_FOR_ME_WINDOW_MS = 24 * 60 * 60 * 1000;   // 24 hours
+
+function isWithin(windowMs: number, sentAt: Date): boolean {
+  return Date.now() - sentAt.getTime() <= windowMs;
+}
+
+/**
+ * Delete a message's attached files from Cloudinary immediately.
+ * Used when a message is hard-deleted (delete-for-everyone) before its
+ * normal retention window has elapsed, so we don't pay for stale storage.
+ */
+async function purgeMessageAttachments(message: { attachments: any[] }): Promise<void> {
+  const { cloudinary } = await import('../config/cloudinary');
+  for (const att of message.attachments || []) {
+    if (att.expired || !att.publicId) continue;
+    try {
+      await cloudinary.uploader.destroy(att.publicId, {
+        resource_type: att.resourceType || 'image',
+        invalidate: true,
+      });
+    } catch (err) {
+      console.error(`[purgeMessageAttachments] destroy failed for ${att.publicId}:`, err);
+    }
+    att.expired = true;
+    att.url = undefined;
+    att.publicId = undefined;
+  }
+}
+
+/**
+ * Validate and normalize the client-supplied attachments[] array for a new message.
+ * - Drops unknown kinds
+ * - Stamps expiresAt on media attachments based on the retention policy
+ * - Contact attachments are passed through without expiry
+ * - Returns a clean array ready to assign to Message.attachments
+ *
+ * Does NOT enforce "at least one of content/attachments" — the caller does that.
+ */
+function buildAttachments(raw: any): any[] {
+  if (!Array.isArray(raw)) return [];
+  const now = Date.now();
+  const out: any[] = [];
+  for (const a of raw) {
+    if (!a || typeof a !== 'object') continue;
+    const kind = a.kind;
+    if (!['image', 'video', 'audio', 'pdf', 'file', 'contact'].includes(kind)) continue;
+
+    if (kind === 'contact') {
+      if (!a.contact?.name) continue; // contact must have a display name
+      out.push({
+        kind: 'contact',
+        contact: {
+          userId: a.contact.userId,
+          name: a.contact.name,
+          phone: a.contact.phone,
+          email: a.contact.email,
+          avatar: a.contact.avatar,
+        },
+      });
+      continue;
+    }
+
+    // Media attachment
+    if (!a.url || !a.publicId) continue; // require a valid Cloudinary upload result
+    const retentionDays = RETENTION_DAYS[kind] ?? 90;
+    out.push({
+      kind,
+      url: a.url,
+      publicId: a.publicId,
+      resourceType: a.resourceType,
+      name: a.name,
+      mimeType: a.mimeType,
+      size: a.size,
+      width: a.width,
+      height: a.height,
+      duration: a.duration,
+      expiresAt: new Date(now + retentionDays * 24 * 60 * 60 * 1000),
+      expired: false,
+    });
+  }
+  return out;
+}
+
 const router = Router();
 
 // ── Chat Groups ──
@@ -109,7 +206,11 @@ router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
     .populate('createdBy', 'name avatar');
   if (!group) throw ApiError.notFound('Group not found');
 
-  const messages = await Message.find({ group: id, isDeleted: false })
+  const messages = await Message.find({
+    group: id,
+    isDeleted: false,
+    deletedFor: { $ne: req.user._id },
+  })
     .populate('sender', 'name avatar')
     .sort({ createdAt: -1 })
     .limit(50);
@@ -128,11 +229,17 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   const group = await ChatGroup.findOne(filter);
   if (!group) throw ApiError.notFound('Group not found');
 
+  const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+  const attachments = buildAttachments(req.body.attachments);
+  if (!content && attachments.length === 0) {
+    throw ApiError.badRequest('Message must have text or at least one attachment');
+  }
+
   const message = await Message.create({
     group: id,
     sender: req.user._id,
-    content: req.body.content,
-    attachments: req.body.attachments,
+    content,
+    attachments,
   });
   await message.populate('sender', 'name avatar');
 
@@ -145,38 +252,74 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   ApiResponse.created(res, message);
 }));
 
-// Edit message (own message or Admin+)
+// Edit message — sender only, within EDIT_WINDOW. Admins bypass the time window for moderation.
 router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
   const message = await Message.findOne({ _id: messageId as string, isDeleted: false });
   if (!message) throw ApiError.notFound('Message not found');
 
-  // Only sender or Admin+ can edit
-  if (message.sender.toString() !== req.user._id.toString() && !isAdminOrAbove(req.user.role)) {
+  const isSender = message.sender.toString() === req.user._id.toString();
+  const isAdmin = isAdminOrAbove(req.user.role);
+  if (!isSender && !isAdmin) {
     throw ApiError.forbidden('Cannot edit this message');
   }
+  if (isSender && !isAdmin && !isWithin(EDIT_WINDOW_MS, message.createdAt)) {
+    throw ApiError.badRequest('Edit window expired. Messages can only be edited within 6 hours of sending.');
+  }
 
-  message.content = req.body.content || message.content;
-  await message.save();
+  const newContent = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+  if (!newContent) {
+    throw ApiError.badRequest('Message content cannot be empty');
+  }
+  if (newContent !== message.content) {
+    message.content = newContent;
+    message.isEdited = true;
+    await message.save();
+  }
   await message.populate('sender', 'name avatar');
   ApiResponse.success(res, message, 'Message updated');
 }));
 
-// Delete message (own message or Admin+)
+// Delete message for everyone — sender within DELETE_EVERYONE_WINDOW, or Admin+ any time.
+// Also immediately purges any attached files from Cloudinary so we don't pay for stale storage.
 router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
   const message = await Message.findOne({ _id: messageId as string, isDeleted: false });
   if (!message) throw ApiError.notFound('Message not found');
 
-  if (message.sender.toString() !== req.user._id.toString() && !isAdminOrAbove(req.user.role)) {
+  const isSender = message.sender.toString() === req.user._id.toString();
+  const isAdmin = isAdminOrAbove(req.user.role);
+  if (!isSender && !isAdmin) {
     throw ApiError.forbidden('Cannot delete this message');
   }
+  if (isSender && !isAdmin && !isWithin(DELETE_EVERYONE_WINDOW_MS, message.createdAt)) {
+    throw ApiError.badRequest('Delete window expired. Messages can only be deleted for everyone within 12 hours of sending.');
+  }
 
+  await purgeMessageAttachments(message);
   message.isDeleted = true;
   await message.save();
   ApiResponse.success(res, null, 'Message deleted');
+}));
+
+// Delete message just for the current user — any participant, within DELETE_FOR_ME_WINDOW.
+// The message remains visible to everyone else; only the requesting user no longer sees it.
+router.delete('/groups/:id/messages/:messageId/me', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  if (!isWithin(DELETE_FOR_ME_WINDOW_MS, message.createdAt)) {
+    throw ApiError.badRequest('Delete window expired. Messages can only be hidden within 24 hours of sending.');
+  }
+
+  await Message.findByIdAndUpdate(messageId, {
+    $addToSet: { deletedFor: req.user._id },
+  });
+  ApiResponse.success(res, null, 'Message hidden for you');
 }));
 
 // Admin+ can delete entire group
@@ -365,6 +508,7 @@ router.get('/dm', authenticate(), asyncHandler(async (req, res) => {
         $or: [{ sender: userId }, { recipient: userId }],
         group: null,
         isDeleted: false,
+        deletedFor: { $ne: userId },
       },
     },
     { $sort: { createdAt: -1 } },
@@ -406,27 +550,22 @@ router.get('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
   const userId = req.params.userId as string;
   const myId = req.user._id;
 
+  const dmFilter: any = {
+    group: null,
+    isDeleted: false,
+    deletedFor: { $ne: myId },
+    $or: [
+      { sender: myId, recipient: userId },
+      { sender: userId, recipient: myId },
+    ],
+  };
   const [messages, total] = await Promise.all([
-    Message.find({
-      group: null,
-      isDeleted: false,
-      $or: [
-        { sender: myId, recipient: userId },
-        { sender: userId, recipient: myId },
-      ],
-    })
+    Message.find(dmFilter)
       .populate('sender', 'name avatar')
       .sort({ createdAt: -1 })
       .skip(getSkip({ page, limit }))
       .limit(limit),
-    Message.countDocuments({
-      group: null,
-      isDeleted: false,
-      $or: [
-        { sender: myId, recipient: userId },
-        { sender: userId, recipient: myId },
-      ],
-    }),
+    Message.countDocuments(dmFilter),
   ]);
 
   // Mark received messages as read
@@ -443,11 +582,17 @@ router.post('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const userId = req.params.userId as string;
 
+  const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+  const attachments = buildAttachments(req.body.attachments);
+  if (!content && attachments.length === 0) {
+    throw ApiError.badRequest('Message must have text or at least one attachment');
+  }
+
   const message = await Message.create({
     sender: req.user._id,
     recipient: userId,
-    content: req.body.content,
-    attachments: req.body.attachments,
+    content,
+    attachments,
   });
   await message.populate('sender', 'name avatar');
 
@@ -455,6 +600,78 @@ router.post('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
   broadcastDM(req.user._id.toString(), userId, message);
 
   ApiResponse.created(res, message);
+}));
+
+// Edit DM — sender only, within EDIT_WINDOW
+router.patch('/dm/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, group: null, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  const isSender = message.sender.toString() === req.user._id.toString();
+  if (!isSender) {
+    throw ApiError.forbidden('Cannot edit this message');
+  }
+  if (!isWithin(EDIT_WINDOW_MS, message.createdAt)) {
+    throw ApiError.badRequest('Edit window expired. Messages can only be edited within 6 hours of sending.');
+  }
+
+  const newContent = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+  if (!newContent) {
+    throw ApiError.badRequest('Message content cannot be empty');
+  }
+  if (newContent !== message.content) {
+    message.content = newContent;
+    message.isEdited = true;
+    await message.save();
+  }
+  await message.populate('sender', 'name avatar');
+  ApiResponse.success(res, message, 'Message updated');
+}));
+
+// Delete DM for everyone — sender within DELETE_EVERYONE_WINDOW
+router.delete('/dm/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, group: null, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  const isSender = message.sender.toString() === req.user._id.toString();
+  if (!isSender) {
+    throw ApiError.forbidden('Cannot delete this message');
+  }
+  if (!isWithin(DELETE_EVERYONE_WINDOW_MS, message.createdAt)) {
+    throw ApiError.badRequest('Delete window expired. Messages can only be deleted for everyone within 12 hours of sending.');
+  }
+
+  await purgeMessageAttachments(message);
+  message.isDeleted = true;
+  await message.save();
+  ApiResponse.success(res, null, 'Message deleted');
+}));
+
+// Delete DM just for the current user — either participant, within DELETE_FOR_ME_WINDOW
+router.delete('/dm/messages/:messageId/me', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, group: null, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  // Must be sender or recipient
+  const isSender = message.sender.toString() === req.user._id.toString();
+  const isRecipient = message.recipient?.toString() === req.user._id.toString();
+  if (!isSender && !isRecipient) {
+    throw ApiError.forbidden('Cannot hide this message');
+  }
+  if (!isWithin(DELETE_FOR_ME_WINDOW_MS, message.createdAt)) {
+    throw ApiError.badRequest('Delete window expired. Messages can only be hidden within 24 hours of sending.');
+  }
+
+  await Message.findByIdAndUpdate(messageId, {
+    $addToSet: { deletedFor: req.user._id },
+  });
+  ApiResponse.success(res, null, 'Message hidden for you');
 }));
 
 // ── Forum ──

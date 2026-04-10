@@ -19,6 +19,7 @@ import { startReminderSender } from './jobs/reminderSender';
 import { startPaymentReminder } from './jobs/paymentReminder';
 import { startNoticePublisher } from './jobs/noticePublisher';
 import { startEmailDigest } from './jobs/emailDigest';
+import { startChatMediaPurge } from './jobs/chatMediaPurge';
 import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
@@ -80,6 +81,7 @@ async function start() {
   startPaymentReminder();
   startNoticePublisher();
   startEmailDigest();
+  startChatMediaPurge();
 
   httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
