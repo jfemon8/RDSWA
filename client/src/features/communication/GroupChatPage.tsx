@@ -159,7 +159,7 @@ export default function GroupChatPage() {
   const TypeIcon = TYPE_ICONS[group.type] || Hash;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)] max-w-screen-lg mx-auto">
+    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)] w-full">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 pb-3 sm:pb-4 border-b">
         <button
