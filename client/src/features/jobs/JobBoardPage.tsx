@@ -8,7 +8,7 @@ import { UserRole } from '@rdswa/shared';
 import { hasMinRole } from '@/lib/roles';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2, Users, CalendarX, Pencil } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2, Users, CalendarX, Pencil, Banknote, UserCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDate } from '@/lib/date';
 import RichTextEditor from '@/components/ui/RichTextEditor';
@@ -281,7 +281,7 @@ export default function JobBoardPage() {
                     <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground mb-3">
                       <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5 shrink-0" /> {job.company}</span>
                       {job.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0" /> {job.location}</span>}
-                      {job.salary && <span className="flex items-center gap-1">BDT {job.salary}</span>}
+                      {job.salary && <span className="flex items-center gap-1"><Banknote className="h-3.5 w-3.5 shrink-0" /> BDT {job.salary}</span>}
                       {typeof job.vacancy === 'number' && job.vacancy > 0 && (
                         <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 shrink-0" /> {job.vacancy} vacancy</span>
                       )}
@@ -305,9 +305,12 @@ export default function JobBoardPage() {
                   {/* Footer — Posted by + Action buttons */}
                   {(job.postedBy || job.applicationLink || canManage(job)) && (
                     <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t">
-                      <p className="text-xs text-muted-foreground truncate min-w-0">
+                      <p className="text-xs text-muted-foreground truncate min-w-0 flex items-center gap-1.5">
                         {job.postedBy ? (
-                          <>Posted by <Link to={`/members/${job.postedBy._id}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">{job.postedBy.name}</Link></>
+                          <>
+                            <UserCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">Posted by <Link to={`/members/${job.postedBy._id}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">{job.postedBy.name}</Link></span>
+                          </>
                         ) : ''}
                       </p>
                       <div className="flex items-center gap-1 shrink-0">

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
-import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw, Landmark, Target } from 'lucide-react';
+import { Heart, Loader2, TrendingUp, Smartphone, Copy, Check, RefreshCw, Landmark, Target, Banknote, CalendarX } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -96,8 +96,8 @@ export default function DonationsPage() {
                     {c.description && <RichContent html={c.description} className="text-sm text-muted-foreground mb-3 line-clamp-2" />}
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Raised</span>
-                        <span className="font-medium text-foreground">BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</span>
+                        <span className="text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5 shrink-0" /> Raised</span>
+                        <span className="font-medium text-foreground flex items-center gap-1"><Banknote className="h-3.5 w-3.5 shrink-0" /> BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
@@ -107,8 +107,8 @@ export default function DonationsPage() {
                       </div>
                     </div>
                     {c.endDate && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Ends {formatDate(c.endDate)}
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <CalendarX className="h-3 w-3 shrink-0" /> Ends {formatDate(c.endDate)}
                       </p>
                     )}
                   </div>
@@ -499,7 +499,7 @@ function RecentDonations() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-green-600">BDT {d.amount?.toLocaleString()}</p>
+                  <p className="font-semibold text-green-600 flex items-center gap-1 justify-end"><Banknote className="h-3.5 w-3.5 shrink-0" /> BDT {d.amount?.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(d.createdAt, 'short')}
                   </p>

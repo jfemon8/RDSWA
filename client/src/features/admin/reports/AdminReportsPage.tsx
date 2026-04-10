@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Users, TrendingUp, Calendar, BarChart3, Vote, Wrench, Download, FileText } from 'lucide-react';
+import { Loader2, Users, TrendingUp, TrendingDown, Calendar, BarChart3, Vote, Wrench, Download, FileText, Banknote, Scale } from 'lucide-react';
 import { motion } from 'motion/react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from 'recharts';
@@ -194,17 +194,17 @@ function FinanceReport() {
           </select>
           <div className="flex flex-wrap gap-4">
             <div className="border rounded-lg px-4 py-3 bg-card">
-              <span className="text-xs text-muted-foreground">Total Donations</span>
-              <p className="text-lg font-bold text-green-600">BDT <CountUp to={d.totalDonations || 0} separator="," duration={1.5} /></p>
+              <span className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3 shrink-0" /> Total Donations</span>
+              <p className="text-lg font-bold text-green-600 flex items-center gap-1"><Banknote className="h-4 w-4 shrink-0" /> BDT <CountUp to={d.totalDonations || 0} separator="," duration={1.5} /></p>
             </div>
             <div className="border rounded-lg px-4 py-3 bg-card">
-              <span className="text-xs text-muted-foreground">Total Expenses</span>
-              <p className="text-lg font-bold text-red-600">BDT <CountUp to={d.totalExpenses || 0} separator="," duration={1.5} /></p>
+              <span className="text-xs text-muted-foreground flex items-center gap-1"><TrendingDown className="h-3 w-3 shrink-0" /> Total Expenses</span>
+              <p className="text-lg font-bold text-red-600 flex items-center gap-1"><Banknote className="h-4 w-4 shrink-0" /> BDT <CountUp to={d.totalExpenses || 0} separator="," duration={1.5} /></p>
             </div>
             <div className="border rounded-lg px-4 py-3 bg-card">
-              <span className="text-xs text-muted-foreground">Balance</span>
-              <p className={`text-lg font-bold ${(d.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                BDT <CountUp to={Math.abs(d.balance || 0)} separator="," duration={1.5} />
+              <span className="text-xs text-muted-foreground flex items-center gap-1"><Scale className="h-3 w-3 shrink-0" /> Balance</span>
+              <p className={`text-lg font-bold flex items-center gap-1 ${(d.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <Banknote className="h-4 w-4 shrink-0" /> BDT <CountUp to={Math.abs(d.balance || 0)} separator="," duration={1.5} />
               </p>
             </div>
           </div>
@@ -249,7 +249,7 @@ function FinanceReport() {
                     <div key={t._id} className="flex items-center gap-2 text-sm">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="capitalize text-muted-foreground">{t._id?.replace('_', ' ')}</span>
-                      <span className="ml-auto font-medium text-foreground">BDT {t.total?.toLocaleString()}</span>
+                      <span className="ml-auto font-medium text-foreground flex items-center gap-1"><Banknote className="h-3.5 w-3.5 shrink-0" /> BDT {t.total?.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>

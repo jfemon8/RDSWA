@@ -630,7 +630,7 @@ function CampaignsList() {
                     <h3 className="font-medium text-foreground">{c.title}</h3>
                     <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
                   </div>
-                  <p className="font-semibold text-foreground">BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</p>
+                  <p className="font-semibold text-foreground flex items-center gap-1"><Banknote className="h-4 w-4 shrink-0" /> BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</p>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />
