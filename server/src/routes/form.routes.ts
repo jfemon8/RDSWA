@@ -89,25 +89,21 @@ router.patch('/:id/review', authenticate(), authorize(UserRole.MODERATOR), valid
   form.reviewedAt = new Date();
   await form.save();
 
-  // For membership forms, sync with user membership status
+  // For membership forms, sync with user membership status by routing through the
+  // user service so the same flow handles role assignment, notification, and group
+  // auto-add (central + department). Direct mutation here would skip group joins.
   if (form.type === 'membership') {
-    const applicant = await User.findById(form.submittedBy);
-    if (applicant) {
-      if (req.body.status === 'approved') {
-        applicant.membershipStatus = 'approved';
-        applicant.role = UserRole.MEMBER;
-        applicant.memberApprovedBy = req.user._id as any;
-        applicant.memberApprovedAt = new Date();
-        await applicant.save();
-
-        await Notification.create({
-          recipient: applicant._id,
-          type: 'member_approved',
-          title: 'Membership Approved',
-          message: 'Your RDSWA membership has been approved!',
-          link: '/dashboard',
-        });
-      } else if (req.body.status === 'rejected') {
+    if (req.body.status === 'approved') {
+      try {
+        await userService.approveMembership(form.submittedBy.toString(), req.user);
+      } catch (err: any) {
+        // approveMembership rejects if user isn't in pending/rejected/suspended state.
+        // Surface a clearer error for the form review case.
+        throw ApiError.badRequest(err?.message || 'Failed to approve membership');
+      }
+    } else if (req.body.status === 'rejected') {
+      const applicant = await User.findById(form.submittedBy);
+      if (applicant) {
         applicant.membershipStatus = 'rejected';
         applicant.memberRejectionReason = req.body.reviewComment || 'Application rejected';
         await applicant.save();

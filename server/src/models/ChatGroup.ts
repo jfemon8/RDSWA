@@ -16,6 +16,8 @@ export interface IChatGroupDocument extends Document {
   department?: string;
   members: mongoose.Types.ObjectId[];
   admins: mongoose.Types.ObjectId[];
+  /** User who created a custom group. Undefined for system-managed central/department groups. */
+  createdBy?: mongoose.Types.ObjectId;
   joinRequests: IJoinRequest[];
   avatar?: string;
   isDeleted: boolean;
@@ -43,6 +45,7 @@ const chatGroupSchema = new Schema<IChatGroupDocument>(
     department: String,
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     joinRequests: [joinRequestSchema],
     avatar: String,
     isDeleted: { type: Boolean, default: false },
@@ -52,5 +55,6 @@ const chatGroupSchema = new Schema<IChatGroupDocument>(
 
 chatGroupSchema.index({ type: 1, department: 1 });
 chatGroupSchema.index({ 'joinRequests.status': 1 });
+chatGroupSchema.index({ createdBy: 1 });
 
 export const ChatGroup = mongoose.model<IChatGroupDocument>('ChatGroup', chatGroupSchema);

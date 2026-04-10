@@ -59,13 +59,17 @@ export class AuthService {
       }),
     });
 
-    // Auto-add to central "RDSWA, BU" group
-    ensureCentralGroup().then(() => {
-      ChatGroup.findOneAndUpdate(
-        { type: 'central', isDeleted: false },
-        { $addToSet: { members: user._id } }
-      ).exec().catch(() => {});
-    }).catch(() => {});
+    // SuperAdmin is auto-approved on registration → add to central group immediately.
+    // Regular users are added to the central group only after their membership is approved
+    // by an admin (handled in userService.approveMembership).
+    if (isSuperAdmin) {
+      ensureCentralGroup().then(() => {
+        ChatGroup.findOneAndUpdate(
+          { type: 'central', isDeleted: false },
+          { $addToSet: { members: user._id, admins: user._id } }
+        ).exec().catch(() => {});
+      }).catch(() => {});
+    }
 
     // Send verification email
     const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${emailVerificationToken}`;

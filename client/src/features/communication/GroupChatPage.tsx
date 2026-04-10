@@ -8,7 +8,7 @@ import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
   ArrowLeft, Send, Loader2, Users, Trash2, Pencil,
   User as UserIcon, Globe, Building2, Hash, X, Check,
-  UserPlus, UserMinus, Search,
+  UserPlus, UserMinus, Search, LogOut,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -56,6 +56,16 @@ export default function GroupChatPage() {
   const group = data?.group;
   const messages = data?.messages || [];
 
+  // Permission to manage members: admin+, OR creator of a custom group.
+  // Mirrors the server-side canManageGroupMembers helper.
+  const isCreator = !!group?.createdBy && (
+    (typeof group.createdBy === 'string' ? group.createdBy : group.createdBy?._id) === user?._id
+  );
+  const canManageMembers = !!isAdmin || (group?.type === 'custom' && isCreator);
+
+  // Leave button: only valid for custom groups (central/department are membership-tied)
+  const canLeave = group?.type === 'custom';
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,14 +103,14 @@ export default function GroupChatPage() {
     },
   });
 
-  // Member search for add (Admin+)
+  // Member search for add (admin+ or custom-group creator)
   const { data: searchResults } = useQuery({
     queryKey: ['member-search', memberSearch],
     queryFn: async () => {
       const { data } = await api.get(`/users/members?search=${encodeURIComponent(memberSearch)}&limit=10`);
       return data.data;
     },
-    enabled: !!isAdmin && showAddMember && memberSearch.length >= 2,
+    enabled: canManageMembers && showAddMember && memberSearch.length >= 2,
   });
 
   const addMemberMutation = useMutation({
@@ -126,6 +136,28 @@ export default function GroupChatPage() {
       toast.error(err?.response?.data?.message || 'Failed to remove member');
     },
   });
+
+  const leaveGroupMutation = useMutation({
+    mutationFn: () => api.delete(`/communication/groups/${id}/leave`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+      toast.success('You left the group');
+      navigate('/dashboard/groups');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to leave group');
+    },
+  });
+
+  const handleLeaveGroup = async () => {
+    const ok = await confirm({
+      title: 'Leave Group',
+      message: `Are you sure you want to leave "${group?.name}"? You can rejoin later via the Browse tab if it's a public group.`,
+      confirmLabel: 'Leave',
+      variant: 'danger',
+    });
+    if (ok) leaveGroupMutation.mutate();
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -182,6 +214,17 @@ export default function GroupChatPage() {
           </h2>
           <p className="text-xs text-muted-foreground">{group.members?.length || 0} members</p>
         </div>
+        {canLeave && (
+          <button
+            onClick={handleLeaveGroup}
+            disabled={leaveGroupMutation.isPending}
+            className="tap-target flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 disabled:opacity-50 shrink-0"
+            title="Leave group"
+            aria-label="Leave group"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
+        )}
         <button
           onClick={() => setShowMembers(!showMembers)}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
@@ -374,7 +417,7 @@ export default function GroupChatPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold">Members ({group.members?.length || 0})</h3>
                   <div className="flex gap-1">
-                    {isAdmin && (
+                    {canManageMembers && (
                       <button
                         onClick={() => setShowAddMember(!showAddMember)}
                         className={`p-1 rounded hover:bg-accent ${showAddMember ? 'text-primary' : ''}`}
@@ -389,9 +432,9 @@ export default function GroupChatPage() {
                   </div>
                 </div>
 
-                {/* Add member search (Admin+) */}
+                {/* Add member search (admin+ or custom-group creator) */}
                 <AnimatePresence>
-                  {isAdmin && showAddMember && (
+                  {canManageMembers && showAddMember && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -449,7 +492,7 @@ export default function GroupChatPage() {
                           )}
                         </div>
                         <Link to={`/members/${member._id}`} className="text-xs truncate flex-1 hover:text-primary transition-colors">{member.name}</Link>
-                        {isAdmin && member._id !== user?._id && (
+                        {canManageMembers && member._id !== user?._id && (
                           <button
                             onClick={() => removeMemberMutation.mutate(member._id)}
                             disabled={removeMemberMutation.isPending}

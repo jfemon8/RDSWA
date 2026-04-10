@@ -6,7 +6,7 @@ import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { SUPER_ADMIN_EMAILS } from '../config/constants';
 import { FilterQuery } from 'mongoose';
 import { notificationService } from './notification.service';
-import { ensureDepartmentGroup } from '../jobs/groupInitializer';
+import { ensureDepartmentGroup, ensureCentralGroup } from '../jobs/groupInitializer';
 
 /** Fields that can be marked private by users */
 const PRIVATE_FIELDS = [
@@ -90,8 +90,10 @@ export class UserService {
     );
     if (!user) throw ApiError.notFound('User not found');
 
-    // Auto-create department group + add user if department was set/changed
-    if (data.department) {
+    // Auto-sync department group membership when user sets/changes their department.
+    // Only approved members participate in department groups — unapproved users get
+    // added later when their membership is approved (handled in approveMembership).
+    if (data.department && user.membershipStatus === 'approved') {
       const newDept = data.department as string;
 
       // Remove from old department group if department changed
@@ -679,32 +681,20 @@ export class UserService {
       force: true, // Important notification — bypass DND
     });
 
-    // Auto-add to central RDSWA group
+    // Auto-add to central RDSWA group (creates it with full seeding if missing)
+    await ensureCentralGroup();
     await ChatGroup.findOneAndUpdate(
       { type: 'central', isDeleted: false },
       { $addToSet: { members: target._id } }
     );
 
-    // Auto-add to department group (create if needed)
+    // Auto-add to department group (creates it with full seeding if missing)
     if (target.department) {
-      let deptGroup = await ChatGroup.findOne({
-        type: 'department',
-        department: target.department,
-        isDeleted: false,
-      });
-      if (!deptGroup) {
-        deptGroup = await ChatGroup.create({
-          name: `${target.department} Group`,
-          type: 'department',
-          department: target.department,
-          members: [target._id],
-          admins: [],
-        });
-      } else {
-        await ChatGroup.findByIdAndUpdate(deptGroup._id, {
-          $addToSet: { members: target._id },
-        });
-      }
+      await ensureDepartmentGroup(target.department);
+      await ChatGroup.findOneAndUpdate(
+        { type: 'department', department: target.department, isDeleted: false },
+        { $addToSet: { members: target._id } }
+      );
     }
 
     return target;

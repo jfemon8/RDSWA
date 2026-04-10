@@ -15,6 +15,13 @@ function isAdminOrAbove(role: string): boolean {
   return ROLE_HIERARCHY.indexOf(role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
 }
 
+/** Permission to add/remove members on a group: admin+, OR creator of a custom group. */
+function canManageGroupMembers(group: { type: string; createdBy?: any }, user: { _id: any; role: string }): boolean {
+  if (isAdminOrAbove(user.role)) return true;
+  if (group.type === 'custom' && group.createdBy?.toString() === user._id.toString()) return true;
+  return false;
+}
+
 const router = Router();
 
 // ── Chat Groups ──
@@ -32,9 +39,14 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, groups);
 }));
 
-// Create group (auto-adds all Admin/SuperAdmin as members+admins)
+// Create custom group (Moderator+). Always creates type='custom' — central and department
+// groups are system-managed and cannot be created via this endpoint.
+// Auto-seeds all Admin/SuperAdmin as members+admins so they can manage the group.
+// The creator is recorded so they can manage members alongside admins.
 router.post('/groups', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+  const { name, description, avatar, members: extraMembers } = req.body;
+  if (!name?.trim()) throw ApiError.badRequest('Group name is required');
 
   // Fetch all admin/superadmin users to auto-add
   const adminUsers = await User.find({
@@ -43,14 +55,18 @@ router.post('/groups', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
   }).select('_id').lean();
   const adminIds = adminUsers.map((u) => u._id.toString());
 
-  const memberSet = new Set([
+  const memberSet = new Set<string>([
     req.user._id.toString(),
-    ...(req.body.members || []).map(String),
+    ...(Array.isArray(extraMembers) ? extraMembers.map(String) : []),
     ...adminIds,
   ]);
 
   const group = await ChatGroup.create({
-    ...req.body,
+    name: name.trim(),
+    description,
+    avatar,
+    type: 'custom',
+    createdBy: req.user._id,
     admins: [...new Set([req.user._id.toString(), ...adminIds])],
     members: [...memberSet],
   });
@@ -88,7 +104,9 @@ router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!isAdminOrAbove(req.user.role)) {
     filter.members = req.user._id;
   }
-  const group = await ChatGroup.findOne(filter).populate('members', 'name avatar');
+  const group = await ChatGroup.findOne(filter)
+    .populate('members', 'name avatar')
+    .populate('createdBy', 'name avatar');
   if (!group) throw ApiError.notFound('Group not found');
 
   const messages = await Message.find({ group: id, isDeleted: false })
@@ -171,16 +189,22 @@ router.delete('/groups/:id', authenticate(), authorize(UserRole.ADMIN), asyncHan
   ApiResponse.success(res, null, 'Group deleted');
 }));
 
-// ── Admin: Add/Remove Members ──
+// ── Add/Remove Members ──
+// Permission: Admin+ for any group, OR creator of a custom group.
 
-// Admin+ add user to any group
-router.post('/groups/:id/members', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+// Add user to a group
+router.post('/groups/:id/members', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
   const { userId } = req.body;
   if (!userId) throw ApiError.badRequest('userId is required');
 
   const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
   if (!group) throw ApiError.notFound('Group not found');
+
+  if (!canManageGroupMembers(group, req.user)) {
+    throw ApiError.forbidden('Not authorized to manage members of this group');
+  }
 
   if (group.members.map(String).includes(userId)) {
     throw ApiError.badRequest('User is already a member');
@@ -190,18 +214,47 @@ router.post('/groups/:id/members', authenticate(), authorize(UserRole.ADMIN), as
   ApiResponse.success(res, null, 'User added to group');
 }));
 
-// Admin+ remove user from any group
-router.delete('/groups/:id/members/:userId', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+// Remove user from a group
+router.delete('/groups/:id/members/:userId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
   const userId = req.params.userId as string;
 
   const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
   if (!group) throw ApiError.notFound('Group not found');
 
+  if (!canManageGroupMembers(group, req.user)) {
+    throw ApiError.forbidden('Not authorized to manage members of this group');
+  }
+
   await ChatGroup.findByIdAndUpdate(id, {
     $pull: { members: userId, admins: userId },
   });
   ApiResponse.success(res, null, 'User removed from group');
+}));
+
+// User leaves a group themselves. Only allowed for custom groups —
+// central and department groups are membership-tied and managed by admins.
+router.delete('/groups/:id/leave', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+
+  if (group.type !== 'custom') {
+    throw ApiError.badRequest('You cannot leave central or department groups. These are managed by administrators.');
+  }
+
+  const userId = req.user._id.toString();
+  if (!group.members.map(String).includes(userId)) {
+    throw ApiError.badRequest('You are not a member of this group');
+  }
+
+  await ChatGroup.findByIdAndUpdate(id, {
+    $pull: { members: req.user._id, admins: req.user._id },
+  });
+  ApiResponse.success(res, null, 'You left the group');
 }));
 
 // ── Join Requests ──

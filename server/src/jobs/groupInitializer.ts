@@ -79,47 +79,69 @@ export async function initializeGroups(): Promise<void> {
 
 /**
  * Ensure the central "RDSWA, BU" group exists. Creates it if missing.
- * Returns the group so the caller can add members.
+ * On creation: seeds with all existing approved members + all admins.
  */
 export async function ensureCentralGroup(): Promise<void> {
   const existing = await ChatGroup.findOne({ type: 'central', isDeleted: false });
   if (existing) return;
 
-  const adminUsers = await User.find({
-    isDeleted: false, isActive: true,
-    role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
-  }).select('_id').lean();
+  const [approvedMembers, adminUsers] = await Promise.all([
+    User.find({
+      isDeleted: false, isActive: true,
+      membershipStatus: 'approved',
+    }).select('_id').lean(),
+    User.find({
+      isDeleted: false, isActive: true,
+      role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+    }).select('_id').lean(),
+  ]);
+
   const adminIds = adminUsers.map((u) => u._id);
+  const memberIds = [
+    ...new Set([...approvedMembers.map((u) => u._id.toString()), ...adminIds.map(String)]),
+  ];
 
   await ChatGroup.create({
     name: 'RDSWA, BU',
     description: 'Central group for all RDSWA members',
     type: 'central',
-    members: adminIds,
+    members: memberIds,
     admins: adminIds,
   });
 }
 
 /**
  * Ensure a department group exists. Called when a user's department is set.
+ * On creation: seeds with all existing approved members of that department + all admins.
  */
 export async function ensureDepartmentGroup(department: string): Promise<void> {
   if (!department) return;
   const existing = await ChatGroup.findOne({ type: 'department', department, isDeleted: false });
   if (existing) return;
 
-  const adminUsers = await User.find({
-    isDeleted: false, isActive: true,
-    role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
-  }).select('_id').lean();
+  const [deptMembers, adminUsers] = await Promise.all([
+    User.find({
+      isDeleted: false, isActive: true,
+      department,
+      membershipStatus: 'approved',
+    }).select('_id').lean(),
+    User.find({
+      isDeleted: false, isActive: true,
+      role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
+    }).select('_id').lean(),
+  ]);
+
   const adminIds = adminUsers.map((u) => u._id);
+  const memberIds = [
+    ...new Set([...deptMembers.map((u) => u._id.toString()), ...adminIds.map(String)]),
+  ];
 
   await ChatGroup.create({
     name: `${department} Group`,
     description: `Group for ${department} department students`,
     type: 'department',
     department,
-    members: adminIds,
+    members: memberIds,
     admins: adminIds,
   });
 }
