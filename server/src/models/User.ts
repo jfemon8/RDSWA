@@ -152,6 +152,8 @@ export interface IUserDocument extends Document {
 
   // Meta
   lastLogin?: Date;
+  /** Most recent socket activity — used for "last seen 5 min ago" presence displays */
+  lastSeenAt?: Date;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: Date;
@@ -331,6 +333,7 @@ const userSchema = new Schema<IUserDocument>(
 
     // Meta
     lastLogin: Date,
+    lastSeenAt: Date,
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     deletedAt: Date,
@@ -379,6 +382,7 @@ userSchema.index({ bloodGroup: 1, isBloodDonor: 1 });
 userSchema.index({ profession: 1 });
 userSchema.index({ 'jobHistory.isCurrent': 1 });
 userSchema.index({ isDeleted: 1 });
+userSchema.index({ lastSeenAt: -1 });
 userSchema.index({ isAlumni: 1 });
 userSchema.index({ isAdvisor: 1 });
 userSchema.index({ isSeniorAdvisor: 1 });

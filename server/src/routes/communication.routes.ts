@@ -8,7 +8,18 @@ import { ChatGroup, Message, ForumTopic, ForumReply, User } from '../models';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
-import { broadcastChatMessage, broadcastDM } from '../socket';
+import {
+  broadcastChatMessage,
+  broadcastChatMessageEdit,
+  broadcastChatMessageDelete,
+  broadcastChatReaction,
+  broadcastChatRead,
+  broadcastDM,
+  broadcastDMEdit,
+  broadcastDMDelete,
+  broadcastDMReaction,
+  broadcastDMRead,
+} from '../socket';
 
 /** Check if role is Admin or above */
 function isAdminOrAbove(role: string): boolean {
@@ -74,6 +85,32 @@ async function purgeMessageAttachments(message: { attachments: any[] }): Promise
  *
  * Does NOT enforce "at least one of content/attachments" — the caller does that.
  */
+/**
+ * Build a denormalized reply snapshot from a replyToId.
+ * Loads just enough of the parent message to render a quoted preview without
+ * a second round trip.
+ */
+async function buildReplySnapshot(replyToId: unknown): Promise<any | undefined> {
+  if (typeof replyToId !== 'string') return undefined;
+  const parent = await Message.findOne({ _id: replyToId, isDeleted: false })
+    .populate('sender', 'name')
+    .select('sender content attachments')
+    .lean();
+  if (!parent) return undefined;
+  const snapContent = (parent.content || '').slice(0, 200);
+  const firstAttachment = parent.attachments?.[0];
+  return {
+    messageId: parent._id,
+    senderId: (parent.sender as any)._id || parent.sender,
+    senderName: (parent.sender as any).name || 'Unknown',
+    content: snapContent,
+    attachmentKind: firstAttachment?.kind,
+  };
+}
+
+/** Allowed emoji reaction set. Anything else is rejected. */
+const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉']);
+
 function buildAttachments(raw: any): any[] {
   if (!Array.isArray(raw)) return [];
   const now = Date.now();
@@ -193,7 +230,8 @@ router.get('/groups/browse', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, result);
 }));
 
-// Get group with recent messages (Admin+ can access any group)
+// Get group with recent messages. Supports cursor pagination via ?before=ISO.
+// Admin+ can access any group.
 router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -202,20 +240,140 @@ router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter)
-    .populate('members', 'name avatar')
+    .populate('members', 'name avatar lastSeenAt')
     .populate('createdBy', 'name avatar');
   if (!group) throw ApiError.notFound('Group not found');
 
-  const messages = await Message.find({
+  const msgFilter: any = {
     group: id,
     isDeleted: false,
     deletedFor: { $ne: req.user._id },
+  };
+  if (typeof req.query.before === 'string') {
+    const beforeDate = new Date(req.query.before);
+    if (!isNaN(beforeDate.getTime())) msgFilter.createdAt = { $lt: beforeDate };
+  }
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+  const messages = await Message.find(msgFilter)
+    .populate('sender', 'name avatar')
+    .populate('reactions.user', 'name avatar')
+    .sort({ createdAt: -1 })
+    .limit(limit + 1);
+
+  const hasMore = messages.length > limit;
+  if (hasMore) messages.pop();
+
+  const isMuted = group.mutedBy?.some((u: any) => u.toString() === req.user!._id.toString()) || false;
+
+  ApiResponse.success(res, {
+    group: { ...group.toObject(), isMuted },
+    messages: messages.reverse(),
+    hasMore,
+  });
+}));
+
+// List pinned messages for a group.
+router.get('/groups/:id/pinned', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const filter: any = { _id: id, isDeleted: false };
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const group = await ChatGroup.findOne(filter).select('_id');
+  if (!group) throw ApiError.notFound('Group not found');
+
+  const pinned = await Message.find({
+    group: id,
+    isDeleted: false,
+    pinnedAt: { $ne: null },
+    deletedFor: { $ne: req.user._id },
+  })
+    .populate('sender', 'name avatar')
+    .populate('pinnedBy', 'name')
+    .sort({ pinnedAt: -1 })
+    .limit(20);
+
+  ApiResponse.success(res, pinned);
+}));
+
+// Search messages in a group by text.
+router.get('/groups/:id/search', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const q = (req.query.q as string || '').trim();
+  if (q.length < 2) throw ApiError.badRequest('Search query must be at least 2 characters');
+
+  const filter: any = { _id: id, isDeleted: false };
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const group = await ChatGroup.findOne(filter).select('_id');
+  if (!group) throw ApiError.notFound('Group not found');
+
+  const results = await Message.find({
+    group: id,
+    isDeleted: false,
+    deletedFor: { $ne: req.user._id },
+    content: { $regex: q, $options: 'i' },
   })
     .populate('sender', 'name avatar')
     .sort({ createdAt: -1 })
     .limit(50);
 
-  ApiResponse.success(res, { group, messages: messages.reverse() });
+  ApiResponse.success(res, results);
+}));
+
+// Mute / unmute notifications for a group (per user).
+router.patch('/groups/:id/mute', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const { mute } = req.body;
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+
+  if (!isAdminOrAbove(req.user.role) && !group.members.map(String).includes(req.user._id.toString())) {
+    throw ApiError.forbidden('Not a member of this group');
+  }
+
+  if (mute) {
+    await ChatGroup.findByIdAndUpdate(id, { $addToSet: { mutedBy: req.user._id } });
+  } else {
+    await ChatGroup.findByIdAndUpdate(id, { $pull: { mutedBy: req.user._id } });
+  }
+  ApiResponse.success(res, { isMuted: !!mute }, mute ? 'Muted' : 'Unmuted');
+}));
+
+// Mark a batch of group messages as read by the current user.
+// Clients call this when the chat window is focused and messages are visible.
+router.post('/groups/:id/messages/read', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const { messageIds } = req.body;
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return ApiResponse.success(res, null, 'Nothing to mark');
+  }
+
+  const filter: any = { _id: id, isDeleted: false };
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const group = await ChatGroup.findOne(filter).select('_id');
+  if (!group) throw ApiError.notFound('Group not found');
+
+  await Message.updateMany(
+    {
+      _id: { $in: messageIds },
+      group: id,
+      'readBy.user': { $ne: req.user._id },
+    },
+    { $addToSet: { readBy: { user: req.user._id, readAt: new Date() } } }
+  );
+
+  broadcastChatRead(id, messageIds.map(String), req.user._id.toString());
+  ApiResponse.success(res, null, 'Marked as read');
 }));
 
 // Send message to group (Admin+ can post to any group)
@@ -235,11 +393,16 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
     throw ApiError.badRequest('Message must have text or at least one attachment');
   }
 
+  const replyTo = await buildReplySnapshot(req.body.replyToId);
+  const forwardedFrom = typeof req.body.forwardedFromId === 'string' ? req.body.forwardedFromId : undefined;
+
   const message = await Message.create({
     group: id,
     sender: req.user._id,
     content,
     attachments,
+    replyTo,
+    forwardedFrom,
   });
   await message.populate('sender', 'name avatar');
 
@@ -250,6 +413,206 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   broadcastChatMessage(id, message);
 
   ApiResponse.created(res, message);
+}));
+
+// Toggle a reaction on a group message. Each user has one slot — sending the
+// same emoji twice removes it; sending a different emoji replaces.
+router.post('/groups/:id/messages/:messageId/react', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { id, messageId } = req.params;
+  const { emoji } = req.body;
+
+  const filter: any = { _id: id, isDeleted: false };
+  if (!isAdminOrAbove(req.user.role)) {
+    filter.members = req.user._id;
+  }
+  const group = await ChatGroup.findOne(filter).select('_id');
+  if (!group) throw ApiError.notFound('Group not found');
+
+  const message = await Message.findOne({ _id: messageId as string, group: id, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  const userId = req.user._id.toString();
+  const existing = message.reactions.find((r: any) => r.user.toString() === userId);
+
+  if (!emoji) {
+    // No emoji = remove the user's reaction.
+    message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
+  } else {
+    if (!ALLOWED_REACTIONS.has(emoji)) throw ApiError.badRequest('Unsupported reaction');
+    if (existing && existing.emoji === emoji) {
+      // Toggle off when re-reacting with the same emoji.
+      message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
+    } else if (existing) {
+      existing.emoji = emoji;
+      existing.reactedAt = new Date();
+    } else {
+      message.reactions.push({ user: req.user._id as any, emoji, reactedAt: new Date() });
+    }
+  }
+  await message.save();
+  await message.populate('reactions.user', 'name avatar');
+
+  const reactionsPayload = message.reactions.map((r: any) => ({
+    user: r.user._id ? { _id: r.user._id, name: r.user.name, avatar: r.user.avatar } : r.user,
+    emoji: r.emoji,
+  }));
+  broadcastChatReaction(id as string, messageId as string, reactionsPayload);
+
+  ApiResponse.success(res, { reactions: reactionsPayload });
+}));
+
+// Toggle pin on a group message. Admin+ or group creator only.
+router.post('/groups/:id/messages/:messageId/pin', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { id, messageId } = req.params;
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
+  if (!group) throw ApiError.notFound('Group not found');
+  if (!canManageGroupMembers(group, req.user)) {
+    throw ApiError.forbidden('Only admins or the group creator can pin messages');
+  }
+
+  const message = await Message.findOne({ _id: messageId as string, group: id, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  if (message.pinnedAt) {
+    message.pinnedAt = undefined;
+    message.pinnedBy = undefined;
+  } else {
+    message.pinnedAt = new Date();
+    message.pinnedBy = req.user._id as any;
+  }
+  await message.save();
+  await message.populate('sender', 'name avatar');
+  await message.populate('pinnedBy', 'name');
+  broadcastChatMessageEdit(id as string, message);
+  ApiResponse.success(res, message, message.pinnedAt ? 'Pinned' : 'Unpinned');
+}));
+
+// Toggle star (personal bookmark) on any message — group or DM.
+router.post('/messages/:messageId/star', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const message = await Message.findOne({ _id: messageId as string, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  // Verify the user can see this message (group member, DM participant, or admin).
+  const userId = req.user._id.toString();
+  let canAccess = isAdminOrAbove(req.user.role);
+  if (!canAccess && message.group) {
+    const group = await ChatGroup.findOne({ _id: message.group, isDeleted: false }).select('members');
+    canAccess = !!group && group.members.map(String).includes(userId);
+  }
+  if (!canAccess && !message.group) {
+    canAccess =
+      message.sender.toString() === userId ||
+      message.recipient?.toString() === userId;
+  }
+  if (!canAccess) throw ApiError.forbidden('Cannot star this message');
+
+  const isStarred = message.starredBy.some((u: any) => u.toString() === userId);
+  if (isStarred) {
+    await Message.findByIdAndUpdate(messageId, { $pull: { starredBy: req.user._id } });
+  } else {
+    await Message.findByIdAndUpdate(messageId, { $addToSet: { starredBy: req.user._id } });
+  }
+  ApiResponse.success(res, { isStarred: !isStarred });
+}));
+
+// List the current user's starred messages across all chats.
+router.get('/messages/starred', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const messages = await Message.find({
+    starredBy: req.user._id,
+    isDeleted: false,
+    deletedFor: { $ne: req.user._id },
+  })
+    .populate('sender', 'name avatar')
+    .populate('group', 'name type')
+    .sort({ createdAt: -1 })
+    .limit(100);
+  ApiResponse.success(res, messages);
+}));
+
+// Forward a message to multiple targets (groups and/or users).
+// Body: { messageId: string, groupIds?: string[], userIds?: string[] }
+router.post('/messages/:messageId/forward', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const groupIds: string[] = Array.isArray(req.body.groupIds) ? req.body.groupIds : [];
+  const userIds: string[] = Array.isArray(req.body.userIds) ? req.body.userIds : [];
+  if (groupIds.length === 0 && userIds.length === 0) {
+    throw ApiError.badRequest('Pick at least one destination');
+  }
+
+  const original = await Message.findOne({ _id: messageId as string, isDeleted: false });
+  if (!original) throw ApiError.notFound('Message not found');
+
+  // Verify the sender can see the original.
+  const userId = req.user._id.toString();
+  let canAccess = isAdminOrAbove(req.user.role);
+  if (!canAccess && original.group) {
+    const group = await ChatGroup.findOne({ _id: original.group, isDeleted: false }).select('members');
+    canAccess = !!group && group.members.map(String).includes(userId);
+  }
+  if (!canAccess && !original.group) {
+    canAccess =
+      original.sender.toString() === userId ||
+      original.recipient?.toString() === userId;
+  }
+  if (!canAccess) throw ApiError.forbidden('Cannot forward this message');
+
+  // Strip retention dates so the forwarded copies get fresh windows from buildAttachments.
+  const forwardAttachments = buildAttachments(
+    (original.attachments || []).map((a: any) => ({
+      kind: a.kind,
+      url: a.url,
+      publicId: a.publicId,
+      resourceType: a.resourceType,
+      name: a.name,
+      mimeType: a.mimeType,
+      size: a.size,
+      width: a.width,
+      height: a.height,
+      duration: a.duration,
+      contact: a.contact,
+    }))
+  );
+
+  const created: any[] = [];
+  for (const gid of groupIds) {
+    const filter: any = { _id: gid, isDeleted: false };
+    if (!isAdminOrAbove(req.user.role)) filter.members = req.user._id;
+    const group = await ChatGroup.findOne(filter);
+    if (!group) continue;
+
+    const msg = await Message.create({
+      group: gid,
+      sender: req.user._id,
+      content: original.content,
+      attachments: forwardAttachments,
+      forwardedFrom: original._id,
+    });
+    await msg.populate('sender', 'name avatar');
+    broadcastChatMessage(gid, msg);
+    created.push(msg);
+  }
+
+  for (const uid of userIds) {
+    const msg = await Message.create({
+      sender: req.user._id,
+      recipient: uid,
+      content: original.content,
+      attachments: forwardAttachments,
+      forwardedFrom: original._id,
+    });
+    await msg.populate('sender', 'name avatar');
+    broadcastDM(req.user._id.toString(), uid, msg);
+    created.push(msg);
+  }
+
+  ApiResponse.success(res, { count: created.length }, `Forwarded to ${created.length} chat${created.length === 1 ? '' : 's'}`);
 }));
 
 // Edit message — sender only, within EDIT_WINDOW. Admins bypass the time window for moderation.
@@ -278,6 +641,7 @@ router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(asy
     await message.save();
   }
   await message.populate('sender', 'name avatar');
+  broadcastChatMessageEdit(req.params.id as string, message);
   ApiResponse.success(res, message, 'Message updated');
 }));
 
@@ -301,6 +665,7 @@ router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(as
   await purgeMessageAttachments(message);
   message.isDeleted = true;
   await message.save();
+  broadcastChatMessageDelete(req.params.id as string, messageId as string);
   ApiResponse.success(res, null, 'Message deleted');
 }));
 
@@ -562,6 +927,7 @@ router.get('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
   const [messages, total] = await Promise.all([
     Message.find(dmFilter)
       .populate('sender', 'name avatar')
+      .populate('reactions.user', 'name avatar')
       .sort({ createdAt: -1 })
       .skip(getSkip({ page, limit }))
       .limit(limit),
@@ -588,11 +954,16 @@ router.post('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Message must have text or at least one attachment');
   }
 
+  const replyTo = await buildReplySnapshot(req.body.replyToId);
+  const forwardedFrom = typeof req.body.forwardedFromId === 'string' ? req.body.forwardedFromId : undefined;
+
   const message = await Message.create({
     sender: req.user._id,
     recipient: userId,
     content,
     attachments,
+    replyTo,
+    forwardedFrom,
   });
   await message.populate('sender', 'name avatar');
 
@@ -600,6 +971,98 @@ router.post('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
   broadcastDM(req.user._id.toString(), userId, message);
 
   ApiResponse.created(res, message);
+}));
+
+// Toggle a reaction on a DM message.
+router.post('/dm/messages/:messageId/react', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageId } = req.params;
+  const { emoji } = req.body;
+
+  const message = await Message.findOne({ _id: messageId as string, group: null, isDeleted: false });
+  if (!message) throw ApiError.notFound('Message not found');
+
+  const userId = req.user._id.toString();
+  const isParticipant =
+    message.sender.toString() === userId || message.recipient?.toString() === userId;
+  if (!isParticipant) throw ApiError.forbidden('Cannot react to this message');
+
+  const existing = message.reactions.find((r: any) => r.user.toString() === userId);
+  if (!emoji) {
+    message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
+  } else {
+    if (!ALLOWED_REACTIONS.has(emoji)) throw ApiError.badRequest('Unsupported reaction');
+    if (existing && existing.emoji === emoji) {
+      message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
+    } else if (existing) {
+      existing.emoji = emoji;
+      existing.reactedAt = new Date();
+    } else {
+      message.reactions.push({ user: req.user._id as any, emoji, reactedAt: new Date() });
+    }
+  }
+  await message.save();
+  await message.populate('reactions.user', 'name avatar');
+
+  const reactionsPayload = message.reactions.map((r: any) => ({
+    user: r.user._id ? { _id: r.user._id, name: r.user.name, avatar: r.user.avatar } : r.user,
+    emoji: r.emoji,
+  }));
+  const otherId = message.sender.toString() === userId
+    ? message.recipient!.toString()
+    : message.sender.toString();
+  broadcastDMReaction(userId, otherId, messageId as string, reactionsPayload);
+
+  ApiResponse.success(res, { reactions: reactionsPayload });
+}));
+
+// Mark a batch of DMs as read by the current user (must be the recipient).
+router.post('/dm/messages/read', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { messageIds, partnerId } = req.body;
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return ApiResponse.success(res, null, 'Nothing to mark');
+  }
+
+  await Message.updateMany(
+    {
+      _id: { $in: messageIds },
+      group: null,
+      recipient: req.user._id,
+      isRead: false,
+    },
+    { isRead: true, $addToSet: { readBy: { user: req.user._id, readAt: new Date() } } }
+  );
+
+  if (typeof partnerId === 'string') {
+    broadcastDMRead(req.user._id.toString(), partnerId, messageIds.map(String));
+  }
+  ApiResponse.success(res, null, 'Marked as read');
+}));
+
+// Search DM history with a specific partner.
+router.get('/dm/:userId/search', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const userId = req.params.userId as string;
+  const q = (req.query.q as string || '').trim();
+  if (q.length < 2) throw ApiError.badRequest('Search query must be at least 2 characters');
+  const myId = req.user._id;
+
+  const results = await Message.find({
+    group: null,
+    isDeleted: false,
+    deletedFor: { $ne: myId },
+    content: { $regex: q, $options: 'i' },
+    $or: [
+      { sender: myId, recipient: userId },
+      { sender: userId, recipient: myId },
+    ],
+  })
+    .populate('sender', 'name avatar')
+    .sort({ createdAt: -1 })
+    .limit(50);
+
+  ApiResponse.success(res, results);
 }));
 
 // Edit DM — sender only, within EDIT_WINDOW
@@ -627,6 +1090,9 @@ router.patch('/dm/messages/:messageId', authenticate(), asyncHandler(async (req,
     await message.save();
   }
   await message.populate('sender', 'name avatar');
+  if (message.recipient) {
+    broadcastDMEdit(message.sender.toString(), message.recipient.toString(), message);
+  }
   ApiResponse.success(res, message, 'Message updated');
 }));
 
@@ -648,6 +1114,9 @@ router.delete('/dm/messages/:messageId', authenticate(), asyncHandler(async (req
   await purgeMessageAttachments(message);
   message.isDeleted = true;
   await message.save();
+  if (message.recipient) {
+    broadcastDMDelete(message.sender.toString(), message.recipient.toString(), messageId as string);
+  }
   ApiResponse.success(res, null, 'Message deleted');
 }));
 

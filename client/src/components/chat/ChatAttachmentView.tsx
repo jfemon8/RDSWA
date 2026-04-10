@@ -23,6 +23,8 @@ interface Props {
   attachment: ChatAttachmentData;
   /** True when rendered inside the sender's own (primary-colored) bubble. */
   isMine?: boolean;
+  /** Click handler for image attachments — typically opens the lightbox. */
+  onImageClick?: (url: string, name?: string) => void;
 }
 
 function formatBytes(bytes?: number): string {
@@ -49,7 +51,7 @@ const EXPIRED_LABEL: Record<string, string> = {
  * The visual scope is intentionally tight — this is meant to live INSIDE a
  * chat bubble (max-w-sm), not as a page-level element.
  */
-export default function ChatAttachmentView({ attachment, isMine }: Props) {
+export default function ChatAttachmentView({ attachment, isMine, onImageClick }: Props) {
   const { kind, url, expired } = attachment;
 
   if (kind === 'contact') {
@@ -61,6 +63,22 @@ export default function ChatAttachmentView({ attachment, isMine }: Props) {
   }
 
   if (kind === 'image') {
+    if (onImageClick) {
+      return (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onImageClick(url, attachment.name); }}
+          className="block p-0 border-0 bg-transparent"
+        >
+          <img
+            src={url}
+            alt={attachment.name || 'Image attachment'}
+            loading="lazy"
+            className="max-w-full max-h-64 rounded-lg object-cover cursor-zoom-in"
+          />
+        </button>
+      );
+    }
     return (
       <a href={url} target="_blank" rel="noopener noreferrer" className="block">
         <img

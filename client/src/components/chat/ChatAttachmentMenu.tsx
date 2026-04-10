@@ -26,8 +26,10 @@ function getContactsManager(): ContactsManager | null {
   return null;
 }
 
+export type MessageAttachmentKind = 'image' | 'video' | 'audio' | 'pdf' | 'file' | 'contact';
+
 export type ChatAttachment = {
-  kind: 'image' | 'video' | 'audio' | 'pdf' | 'file' | 'contact';
+  kind: MessageAttachmentKind;
   url?: string;
   publicId?: string;
   resourceType?: 'image' | 'video' | 'raw';

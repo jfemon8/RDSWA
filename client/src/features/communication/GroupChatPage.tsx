@@ -1,38 +1,30 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
-import { useChatSocket } from '@/hooks/useSocket';
+import { useChatSocket, useTypingState, usePresence } from '@/hooks/useSocket';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
-  ArrowLeft, Send, Loader2, Users, Trash2, Pencil,
-  User as UserIcon, Globe, Building2, Hash, X, Check,
-  UserPlus, UserMinus, Search, LogOut, EyeOff,
+  ArrowLeft, Loader2, Users, User as UserIcon, Globe, Building2, Hash, X,
+  UserPlus, UserMinus, Search, LogOut, Bell, BellOff, Pin,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
-import { FieldError } from '@/components/ui/FieldError';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import { formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
-import ChatAttachmentMenu, { type ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
-import ChatAttachmentView from '@/components/chat/ChatAttachmentView';
+import MessageList from '@/components/chat/MessageList';
+import ChatComposer from '@/components/chat/ChatComposer';
+import ForwardModal from '@/components/chat/ForwardModal';
+import type { ChatMessage } from '@/components/chat/MessageBubble';
+import type { ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
+import type { ReplyData } from '@/components/chat/ReplyPreview';
 
 const TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
   department: Building2,
   custom: Hash,
 };
-
-/** Time windows mirroring the server. Keep these in sync with communication.routes.ts. */
-const EDIT_WINDOW_MS = 6 * 60 * 60 * 1000;
-const DELETE_EVERYONE_WINDOW_MS = 12 * 60 * 60 * 1000;
-const DELETE_FOR_ME_WINDOW_MS = 24 * 60 * 60 * 1000;
-function isWithinMs(windowMs: number, sentAt: string | Date): boolean {
-  const t = typeof sentAt === 'string' ? new Date(sentAt).getTime() : sentAt.getTime();
-  return Date.now() - t <= windowMs;
-}
 
 export default function GroupChatPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,64 +33,82 @@ export default function GroupChatPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [message, setMessage] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
+
   const [showMembers, setShowMembers] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [memberSearch, setMemberSearch] = useState('');
   const [showAddMember, setShowAddMember] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [replyTo, setReplyTo] = useState<ReplyData | null>(null);
+  const [forwardTarget, setForwardTarget] = useState<ChatMessage | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [pagesLoaded, setPagesLoaded] = useState(1);
+  const [showPinned, setShowPinned] = useState(false);
 
-  const isAdmin = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+  const isAdmin = !!user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
 
-  // Real-time chat
   useChatSocket(id);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['group', id],
+    queryKey: ['group', id, pagesLoaded],
     queryFn: async () => {
-      const { data } = await api.get(`/communication/groups/${id}`);
+      const { data } = await api.get(`/communication/groups/${id}?limit=${50 * pagesLoaded}`);
       return data.data;
     },
     enabled: !!id,
   });
 
   const group = data?.group;
-  const messages = data?.messages || [];
+  const messages: ChatMessage[] = useMemo(() => data?.messages || [], [data?.messages]);
+  const hasMore = !!data?.hasMore;
 
-  // Permission to manage members: admin+, OR creator of a custom group.
-  // Mirrors the server-side canManageGroupMembers helper.
+  const memberIds = useMemo(() => {
+    return (group?.members || [])
+      .map((m: any) => m._id || m)
+      .filter((mid: string) => mid !== user?._id);
+  }, [group?.members, user?._id]);
+
+  const { online } = usePresence(memberIds);
+
+  const { typing: typingIds, emitTyping } = useTypingState({ groupId: id });
+  const typingNames = useMemo((): string[] => {
+    const byId = new Map<string, string>();
+    for (const m of (group?.members || []) as any[]) {
+      if (m?._id) byId.set(String(m._id), String(m.name || 'Someone'));
+    }
+    return Array.from(typingIds)
+      .filter((uid) => uid !== user?._id)
+      .map((uid) => byId.get(uid) || 'Someone');
+  }, [typingIds, group?.members, user?._id]);
+
+  const readMessageIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const msg of messages) {
+      if ((msg as any).readBy?.some((r: any) =>
+        (r.user?._id || r.user) !== user?._id,
+      )) {
+        set.add(msg._id);
+      }
+    }
+    return set;
+  }, [messages, user?._id]);
+
   const isCreator = !!group?.createdBy && (
     (typeof group.createdBy === 'string' ? group.createdBy : group.createdBy?._id) === user?._id
   );
-  const canManageMembers = !!isAdmin || (group?.type === 'custom' && isCreator);
-
-  // Leave button: only valid for custom groups (central/department are membership-tied)
+  const canManageMembers = isAdmin || (group?.type === 'custom' && isCreator);
+  const canPin = canManageMembers;
   const canLeave = group?.type === 'custom';
 
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+  // ── Mutations ─────────────────────────────────────────────────────────────
 
   const sendMutation = useMutation({
-    mutationFn: () => api.post(`/communication/groups/${id}/messages`, {
-      content: message,
-      attachments: pendingAttachments,
-    }),
-    onSuccess: () => {
-      setMessage('');
-      setPendingAttachments([]);
-      queryClient.invalidateQueries({ queryKey: ['group', id] });
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to send message');
-    },
+    mutationFn: (body: { content: string; attachments: ChatAttachment[]; replyToId?: string }) =>
+      api.post(`/communication/groups/${id}/messages`, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to send message'),
   });
-
-  const canSend = (message.trim().length > 0 || pendingAttachments.length > 0) && !sendMutation.isPending;
 
   const editMutation = useMutation({
     mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
@@ -108,9 +118,7 @@ export default function GroupChatPage() {
       setEditContent('');
       queryClient.invalidateQueries({ queryKey: ['group', id] });
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to edit message');
-    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to edit'),
   });
 
   const deleteMutation = useMutation({
@@ -118,11 +126,9 @@ export default function GroupChatPage() {
       api.delete(`/communication/groups/${id}/messages/${messageId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
-      toast.success('Message deleted for everyone');
+      toast.success('Deleted for everyone');
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to delete message');
-    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to delete'),
   });
 
   const deleteForMeMutation = useMutation({
@@ -130,14 +136,59 @@ export default function GroupChatPage() {
       api.delete(`/communication/groups/${id}/messages/${messageId}/me`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
-      toast.success('Message hidden for you');
+      toast.success('Hidden for you');
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to hide message');
-    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed'),
   });
 
-  // Member search for add (admin+ or custom-group creator)
+  const reactMutation = useMutation({
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      api.post(`/communication/groups/${id}/messages/${messageId}/react`, { emoji }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to react'),
+  });
+
+  const starMutation = useMutation({
+    mutationFn: (messageId: string) => api.post(`/communication/messages/${messageId}/star`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
+  });
+
+  const pinMutation = useMutation({
+    mutationFn: (messageId: string) =>
+      api.post(`/communication/groups/${id}/messages/${messageId}/pin`),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['group-pinned', id] });
+      toast.success(res?.data?.message || 'Updated');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed'),
+  });
+
+  const muteMutation = useMutation({
+    mutationFn: (mute: boolean) => api.patch(`/communication/groups/${id}/mute`, { mute }),
+    onSuccess: (_res, mute) => {
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      toast.success(mute ? 'Notifications muted' : 'Notifications unmuted');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed'),
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (messageIds: string[]) =>
+      api.post(`/communication/groups/${id}/messages/read`, { messageIds }),
+  });
+
+  const leaveGroupMutation = useMutation({
+    mutationFn: () => api.delete(`/communication/groups/${id}/leave`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+      toast.success('You left the group');
+      navigate('/dashboard/groups');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to leave'),
+  });
+
+  // Member management ─────────────────────────────────────────────────────
   const { data: searchResults } = useQuery({
     queryKey: ['member-search', memberSearch],
     queryFn: async () => {
@@ -153,11 +204,8 @@ export default function GroupChatPage() {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       toast.success('Member added');
       setMemberSearch('');
-      setShowAddMember(false);
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to add member');
-    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed'),
   });
 
   const removeMemberMutation = useMutation({
@@ -166,44 +214,44 @@ export default function GroupChatPage() {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       toast.success('Member removed');
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to remove member');
-    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed'),
   });
 
-  const leaveGroupMutation = useMutation({
-    mutationFn: () => api.delete(`/communication/groups/${id}/leave`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
-      toast.success('You left the group');
-      navigate('/dashboard/groups');
+  // Pinned messages ─────────────────────────────────────────────────────
+  const { data: pinnedMessages } = useQuery({
+    queryKey: ['group-pinned', id],
+    queryFn: async () => {
+      const { data } = await api.get(`/communication/groups/${id}/pinned`);
+      return data.data;
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to leave group');
-    },
+    enabled: !!id && showPinned,
   });
 
-  const handleLeaveGroup = async () => {
-    const ok = await confirm({
-      title: 'Leave Group',
-      message: `Are you sure you want to leave "${group?.name}"? You can rejoin later via the Browse tab if it's a public group.`,
-      confirmLabel: 'Leave',
-      variant: 'danger',
-    });
-    if (ok) leaveGroupMutation.mutate();
-  };
+  // Search ─────────────────────────────────────────────────────
+  const { data: searchMessages, isLoading: searchLoading } = useQuery({
+    queryKey: ['group-search', id, searchQuery],
+    queryFn: async () => {
+      const { data } = await api.get(`/communication/groups/${id}/search?q=${encodeURIComponent(searchQuery)}`);
+      return data.data;
+    },
+    enabled: !!id && showSearch && searchQuery.length >= 2,
+  });
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (canSend) sendMutation.mutate();
-    }
-  };
+  // ── Handlers ─────────────────────────────────────────────────────
 
-  const handleDelete = async (messageId: string) => {
+  const handleSend = useCallback(async (
+    content: string,
+    attachments: ChatAttachment[],
+    replyToId?: string,
+  ) => {
+    await sendMutation.mutateAsync({ content, attachments, replyToId });
+    setReplyTo(null);
+  }, [sendMutation]);
+
+  const handleDeleteEveryone = async (messageId: string) => {
     const ok = await confirm({
       title: 'Delete for everyone?',
-      message: 'This message will be permanently removed for all participants. Any attached files will also be deleted from storage.',
+      message: 'This message will be removed for all participants. Attached files will also be deleted from storage.',
       confirmLabel: 'Delete for everyone',
       variant: 'danger',
     });
@@ -213,12 +261,60 @@ export default function GroupChatPage() {
   const handleDeleteForMe = async (messageId: string) => {
     const ok = await confirm({
       title: 'Delete for me?',
-      message: 'This message will be hidden in your view only. Other participants will still see it.',
+      message: 'This message will be hidden in your view only.',
       confirmLabel: 'Hide for me',
       variant: 'danger',
     });
     if (ok) deleteForMeMutation.mutate(messageId);
   };
+
+  const handleReply = (msg: ChatMessage) => {
+    const senderObj = typeof msg.sender === 'object' ? msg.sender : null;
+    setReplyTo({
+      messageId: msg._id,
+      senderId: senderObj?._id,
+      senderName: senderObj?.name || 'Unknown',
+      content: msg.content,
+      attachmentKind: msg.attachments?.[0]?.kind as any,
+    });
+  };
+
+  const handleEdit = (msg: ChatMessage) => {
+    setEditingId(msg._id);
+    setEditContent(msg.content);
+  };
+
+  const handleJumpTo = (messageId: string) => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-primary', 'rounded-2xl');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-primary', 'rounded-2xl'), 1400);
+    }
+  };
+
+  const handleVisibleMessages = useCallback((messageIds: string[]) => {
+    // Only mark messages I haven't sent and haven't already read
+    const toMark = messageIds.filter((mid) => {
+      const msg = messages.find((m) => m._id === mid);
+      if (!msg) return false;
+      const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender;
+      if (senderId === user?._id) return false;
+      const alreadyRead = (msg as any).readBy?.some((r: any) =>
+        (r.user?._id || r.user) === user?._id,
+      );
+      return !alreadyRead;
+    });
+    if (toMark.length > 0) markReadMutation.mutate(toMark);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, user?._id]);
+
+  useEffect(() => {
+    document.body.classList.add('overflow-hidden');
+    return () => { document.body.classList.remove('overflow-hidden'); };
+  }, []);
+
+  // ── Render ─────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -233,11 +329,12 @@ export default function GroupChatPage() {
   }
 
   const TypeIcon = TYPE_ICONS[group.type] || Hash;
+  const memberCount = group.members?.length || 0;
 
   return (
     <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)] w-full">
       {/* Header */}
-      <div className="flex items-center gap-2 sm:gap-3 pb-3 sm:pb-4 border-b">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card">
         <button
           onClick={() => navigate('/dashboard/groups')}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
@@ -252,232 +349,211 @@ export default function GroupChatPage() {
             <TypeIcon className="h-4 w-4 text-primary" />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-medium text-sm truncate flex items-center gap-1.5">
-            <Hash className="h-3.5 w-3.5 text-primary shrink-0" /> {group.name}
-          </h2>
-          <p className="text-xs text-muted-foreground">{group.members?.length || 0} members</p>
-        </div>
+        <button
+          onClick={() => setShowMembers(true)}
+          className="flex-1 min-w-0 text-left"
+        >
+          <h2 className="font-semibold text-sm truncate">{group.name}</h2>
+          <p className="text-xs text-muted-foreground truncate">
+            {typingNames.length > 0
+              ? `${typingNames[0]}${typingNames.length > 1 ? ` +${typingNames.length - 1}` : ''} typing…`
+              : `${memberCount} members`}
+          </p>
+        </button>
+
+        <button
+          onClick={() => setShowSearch((v) => !v)}
+          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+          title="Search"
+          aria-label="Search messages"
+        >
+          <Search className="h-5 w-5 text-muted-foreground" />
+        </button>
+        <button
+          onClick={() => setShowPinned((v) => !v)}
+          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+          title="Pinned messages"
+          aria-label="Pinned messages"
+        >
+          <Pin className="h-5 w-5 text-muted-foreground" />
+        </button>
+        <button
+          onClick={() => muteMutation.mutate(!group.isMuted)}
+          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+          title={group.isMuted ? 'Unmute' : 'Mute'}
+          aria-label={group.isMuted ? 'Unmute' : 'Mute'}
+        >
+          {group.isMuted ? (
+            <BellOff className="h-5 w-5 text-muted-foreground" />
+          ) : (
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          )}
+        </button>
         {canLeave && (
           <button
-            onClick={handleLeaveGroup}
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Leave Group',
+                message: `Leave "${group.name}"?`,
+                confirmLabel: 'Leave',
+                variant: 'danger',
+              });
+              if (ok) leaveGroupMutation.mutate();
+            }}
             disabled={leaveGroupMutation.isPending}
-            className="tap-target flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 disabled:opacity-50 shrink-0"
-            title="Leave group"
-            aria-label="Leave group"
+            className="tap-target flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 shrink-0"
+            title="Leave"
+            aria-label="Leave"
           >
             <LogOut className="h-5 w-5" />
           </button>
         )}
-        <button
-          onClick={() => setShowMembers(!showMembers)}
-          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
-          title="Members"
-          aria-label="Toggle members sidebar"
-        >
-          <Users className="h-5 w-5 text-muted-foreground" />
-        </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Messages area */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <div className="flex-1 overflow-y-auto scroll-smooth-touch py-4 space-y-3 px-1">
-            {messages.length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                No messages yet. Start the conversation!
-              </div>
-            ) : (
-              messages.map((msg: any, i: number) => {
-                const isMine = msg.sender?._id === user?._id;
-                // Time-window gates (mirror server). Admin bypasses for moderation.
-                const canEdit = isMine && isWithinMs(EDIT_WINDOW_MS, msg.createdAt);
-                const canDeleteForEveryone = (isMine && isWithinMs(DELETE_EVERYONE_WINDOW_MS, msg.createdAt)) || !!isAdmin;
-                const canDeleteForMe = isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);
-                const hasAnyAction = canEdit || canDeleteForEveryone || canDeleteForMe;
-
-                const actionButtons = (
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {canEdit && (
-                      <button
-                        onClick={() => { setEditingId(msg._id); setEditContent(msg.content); }}
-                        className="p-1 rounded hover:bg-accent"
-                        title="Edit (within 6h)"
-                      >
-                        <Pencil className="h-3 w-3 text-muted-foreground" />
-                      </button>
-                    )}
-                    {canDeleteForEveryone && (
-                      <button
-                        onClick={() => handleDelete(msg._id)}
-                        className="p-1 rounded hover:bg-accent"
-                        title={isMine ? 'Delete for everyone (within 12h)' : 'Delete (admin)'}
-                      >
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </button>
-                    )}
-                    {canDeleteForMe && (
-                      <button
-                        onClick={() => handleDeleteForMe(msg._id)}
-                        className="p-1 rounded hover:bg-accent"
-                        title="Delete for me (within 24h)"
-                      >
-                        <EyeOff className="h-3 w-3 text-muted-foreground" />
-                      </button>
-                    )}
-                  </div>
-                );
-
-                return (
-                  <motion.div
-                    key={msg._id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.015 }}
-                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group`}
-                  >
-                    <div className={`max-w-[85%] sm:max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
-                      {/* Sender name (for others) */}
-                      {!isMine && (
-                        <Link to={`/members/${msg.sender?._id}`} className="text-[10px] text-muted-foreground mb-0.5 ml-1 hover:text-primary transition-colors block">
-                          {msg.sender?.name || 'Unknown'}
-                        </Link>
-                      )}
-                      <div className="flex items-end gap-1">
-                        {isMine && hasAnyAction && editingId !== msg._id && actionButtons}
-                        {editingId === msg._id ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              value={editContent}
-                              onChange={(e) => setEditContent(e.target.value)}
-                              className="px-2 py-1 border rounded text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  if (editContent.trim()) editMutation.mutate({ messageId: msg._id, content: editContent });
-                                }
-                                if (e.key === 'Escape') { setEditingId(null); setEditContent(''); }
-                              }}
-                            />
-                            <button
-                              onClick={() => { if (editContent.trim()) editMutation.mutate({ messageId: msg._id, content: editContent }); }}
-                              className="p-1 rounded hover:bg-accent"
-                            >
-                              <Check className="h-3.5 w-3.5 text-green-500" />
-                            </button>
-                            <button onClick={() => { setEditingId(null); setEditContent(''); }} className="p-1 rounded hover:bg-accent">
-                              <X className="h-3.5 w-3.5 text-muted-foreground" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div
-                            className={`px-3 py-2 rounded-2xl text-sm shadow-sm ${
-                              isMine
-                                ? 'bg-primary text-primary-foreground rounded-br-sm'
-                                : 'bg-muted rounded-bl-sm'
-                            }`}
-                          >
-                            {msg.attachments && msg.attachments.length > 0 && (
-                              <div className={`space-y-2 ${msg.content ? 'mb-2' : ''}`}>
-                                {msg.attachments.map((att: any, ai: number) => (
-                                  <ChatAttachmentView key={ai} attachment={att} isMine={isMine} />
-                                ))}
-                              </div>
-                            )}
-                            {msg.content && (
-                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                            )}
-                            <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                              {formatTime(msg.createdAt)}{msg.isEdited && <span className="ml-1 italic">· edited</span>}
-                            </p>
-                          </div>
-                        )}
-                        {!isMine && hasAnyAction && editingId !== msg._id && actionButtons}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setErrors({});
-              if (!canSend) {
-                setErrors({ message: 'Message cannot be empty' });
-                return;
-              }
-              sendMutation.mutate();
-            }}
-            noValidate
-            className="pt-3 border-t"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      {/* Search bar */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-b bg-card overflow-hidden"
           >
-            {/* Pending attachment previews */}
-            {pendingAttachments.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-2">
-                {pendingAttachments.map((att, i) => (
-                  <div
-                    key={i}
-                    className="relative flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg text-xs max-w-[220px]"
-                  >
-                    <span className="truncate">
-                      {att.kind === 'contact' ? `Contact: ${att.contact?.name}` : (att.name || att.kind)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setPendingAttachments((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="p-0.5 rounded hover:bg-accent shrink-0"
-                      aria-label="Remove attachment"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-end gap-2">
-              <ChatAttachmentMenu
-                onSelect={(att) => setPendingAttachments((prev) => [...prev, att])}
-                disabled={sendMutation.isPending}
-              />
-              <div className="flex-1 min-w-0">
-                <textarea
-                  placeholder="Type a message..."
-                  value={message}
-                  onChange={(e) => { setMessage(e.target.value); setErrors((prev) => { const { message, ...rest } = prev; return rest; }); }}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  className={`w-full px-4 py-2.5 border rounded-full bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.message ? 'border-red-500' : ''}`}
+            <div className="p-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  autoFocus
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search messages…"
+                  className="w-full pl-9 pr-9 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <FieldError message={errors.message} />
+                <button
+                  type="button"
+                  onClick={() => { setShowSearch(false); setSearchQuery(''); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-accent"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={!canSend}
-                className="h-11 w-11 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 hover:bg-primary/90 transition-colors"
-                aria-label="Send message"
-              >
-                {sendMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </button>
+              {searchQuery.length >= 2 && (
+                <div className="max-h-64 overflow-y-auto mt-2">
+                  {searchLoading ? (
+                    <div className="flex justify-center py-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (searchMessages || []).length === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-3">No matches</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {searchMessages.map((m: any) => (
+                        <li key={m._id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowSearch(false);
+                              setSearchQuery('');
+                              handleJumpTo(m._id);
+                            }}
+                            className="w-full text-left p-2 rounded hover:bg-accent"
+                          >
+                            <p className="text-xs font-medium truncate">{m.sender?.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{m.content}</p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
-          </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pinned panel */}
+      <AnimatePresence>
+        {showPinned && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-b bg-amber-50/30 dark:bg-amber-900/10 overflow-hidden"
+          >
+            <div className="p-2">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                  <Pin className="h-3 w-3" /> Pinned messages
+                </p>
+                <button type="button" onClick={() => setShowPinned(false)} className="p-1 rounded hover:bg-accent">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              {(!pinnedMessages || pinnedMessages.length === 0) ? (
+                <p className="text-center text-xs text-muted-foreground py-3">No pinned messages</p>
+              ) : (
+                <ul className="space-y-1 max-h-48 overflow-y-auto">
+                  {pinnedMessages.map((m: any) => (
+                    <li key={m._id}>
+                      <button
+                        type="button"
+                        onClick={() => { setShowPinned(false); handleJumpTo(m._id); }}
+                        className="w-full text-left p-2 rounded hover:bg-accent"
+                      >
+                        <p className="text-xs font-medium truncate">{m.sender?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{m.content || '(Attachment)'}</p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Messages + Composer */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <MessageList
+            messages={messages}
+            isGroup
+            currentUserId={user?._id}
+            isAdmin={isAdmin}
+            canPin={canPin}
+            typingNames={typingNames}
+            readMessageIds={readMessageIds}
+            onReply={handleReply}
+            onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
+            onForward={(msg) => setForwardTarget(msg)}
+            onStar={(messageId) => starMutation.mutate(messageId)}
+            onPin={(messageId) => pinMutation.mutate(messageId)}
+            onEdit={handleEdit}
+            onDeleteEveryone={handleDeleteEveryone}
+            onDeleteForMe={handleDeleteForMe}
+            onVisibleMessages={handleVisibleMessages}
+            onLoadOlder={() => setPagesLoaded((p) => p + 1)}
+            hasMore={hasMore}
+            editingId={editingId}
+            editContent={editContent}
+            setEditContent={setEditContent}
+            setEditingId={setEditingId}
+            onSubmitEdit={(mid, content) => editMutation.mutate({ messageId: mid, content })}
+          />
+          <ChatComposer
+            onSend={handleSend}
+            replyTo={replyTo}
+            onCancelReply={() => setReplyTo(null)}
+            onTyping={emitTyping}
+          />
         </div>
 
-        {/* Members sidebar — overlay on mobile, inline on desktop */}
+        {/* Members sidebar */}
         <AnimatePresence>
           {showMembers && (
             <>
-              {/* Mobile backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -487,112 +563,134 @@ export default function GroupChatPage() {
                 onClick={() => setShowMembers(false)}
               />
               <motion.div
-                initial={{ x: '100%', opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: '100%', opacity: 0 }}
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-                className="fixed lg:static top-0 right-0 z-50 h-full lg:h-auto w-[85vw] max-w-[280px] lg:w-60 border-l bg-background overflow-y-auto shrink-0"
+                className="fixed lg:static top-0 right-0 z-50 h-full lg:h-auto w-[85vw] max-w-[300px] lg:w-72 border-l bg-card overflow-y-auto shrink-0"
                 style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
               >
-              <div className="p-3 w-full">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold">Members ({group.members?.length || 0})</h3>
-                  <div className="flex gap-1">
-                    {canManageMembers && (
-                      <button
-                        onClick={() => setShowAddMember(!showAddMember)}
-                        className={`p-1 rounded hover:bg-accent ${showAddMember ? 'text-primary' : ''}`}
-                        title="Add member"
-                      >
-                        <UserPlus className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                    <button onClick={() => setShowMembers(false)} className="p-1 rounded hover:bg-accent">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Add member search (admin+ or custom-group creator) */}
-                <AnimatePresence>
-                  {canManageMembers && showAddMember && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mb-3 overflow-hidden"
-                    >
-                      <div className="relative">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="Search members..."
-                          value={memberSearch}
-                          onChange={(e) => setMemberSearch(e.target.value)}
-                          className="w-full pl-7 pr-2 py-1.5 border rounded-md bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
-                          autoFocus
-                        />
-                      </div>
-                      {searchResults && searchResults.length > 0 && (
-                        <div className="mt-1 space-y-0.5 max-h-32 overflow-y-auto border rounded-md p-1 bg-background">
-                          {searchResults
-                            .filter((u: any) => !group.members?.some((m: any) => m._id === u._id))
-                            .map((u: any) => (
-                              <button
-                                key={u._id}
-                                onClick={() => addMemberMutation.mutate(u._id)}
-                                disabled={addMemberMutation.isPending}
-                                className="w-full flex items-center gap-2 px-2 py-1 rounded text-left hover:bg-accent text-xs disabled:opacity-50"
-                              >
-                                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                                  {u.avatar ? (
-                                    <img src={u.avatar} alt="" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <UserIcon className="h-2.5 w-2.5 text-muted-foreground" />
-                                  )}
-                                </div>
-                                <span className="truncate flex-1">{u.name}</span>
-                                <UserPlus className="h-3 w-3 text-primary shrink-0" />
-                              </button>
-                            ))}
-                        </div>
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                      <Users className="h-4 w-4" /> Members ({memberCount})
+                    </h3>
+                    <div className="flex gap-1">
+                      {canManageMembers && (
+                        <button
+                          onClick={() => setShowAddMember((v) => !v)}
+                          className={`p-1.5 rounded hover:bg-accent ${showAddMember ? 'text-primary' : ''}`}
+                          title="Add member"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </button>
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <button onClick={() => setShowMembers(false)} className="p-1.5 rounded hover:bg-accent">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="space-y-1 max-h-[calc(100vh-20rem)] overflow-y-auto">
-                  {(group.members || []).map((member: any, i: number) => (
-                    <FadeIn key={member._id} delay={i * 0.02} direction="up" distance={8}>
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent group/member">
-                        <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                          {member.avatar ? (
-                            <img src={member.avatar} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  {/* Add member search */}
+                  <AnimatePresence>
+                    {canManageMembers && showAddMember && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mb-3 overflow-hidden"
+                      >
+                        <div className="relative mb-1.5">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="Search members..."
+                            value={memberSearch}
+                            onChange={(e) => setMemberSearch(e.target.value)}
+                            className="w-full pl-7 pr-2 py-1.5 border rounded-md bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            autoFocus
+                          />
+                        </div>
+                        {searchResults && searchResults.length > 0 && (
+                          <div className="space-y-0.5 max-h-40 overflow-y-auto border rounded-md p-1 bg-background">
+                            {searchResults
+                              .filter((u: any) => !group.members?.some((m: any) => m._id === u._id))
+                              .map((u: any) => (
+                                <button
+                                  key={u._id}
+                                  onClick={() => addMemberMutation.mutate(u._id)}
+                                  disabled={addMemberMutation.isPending}
+                                  className="w-full flex items-center gap-2 px-2 py-1 rounded text-left hover:bg-accent text-xs disabled:opacity-50"
+                                >
+                                  {u.avatar ? (
+                                    <img src={u.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                  ) : (
+                                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                                      <UserIcon className="h-3 w-3" />
+                                    </div>
+                                  )}
+                                  <span className="truncate flex-1">{u.name}</span>
+                                  <UserPlus className="h-3 w-3 text-primary" />
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="space-y-1">
+                    {(group.members || []).map((member: any, i: number) => (
+                      <FadeIn key={member._id} delay={i * 0.02} direction="up" distance={8}>
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent group/member">
+                          <div className="relative shrink-0">
+                            {member.avatar ? (
+                              <img src={member.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            {online.has(member._id) && (
+                              <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-card" />
+                            )}
+                          </div>
+                          <Link
+                            to={`/members/${member._id}`}
+                            className="text-xs truncate flex-1 hover:text-primary"
+                          >
+                            {member.name}
+                          </Link>
+                          {canManageMembers && member._id !== user?._id && (
+                            <button
+                              onClick={() => removeMemberMutation.mutate(member._id)}
+                              disabled={removeMemberMutation.isPending}
+                              className="p-0.5 rounded opacity-0 group-hover/member:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-destructive"
+                              title="Remove member"
+                            >
+                              <UserMinus className="h-3 w-3" />
+                            </button>
                           )}
                         </div>
-                        <Link to={`/members/${member._id}`} className="text-xs truncate flex-1 hover:text-primary transition-colors">{member.name}</Link>
-                        {canManageMembers && member._id !== user?._id && (
-                          <button
-                            onClick={() => removeMemberMutation.mutate(member._id)}
-                            disabled={removeMemberMutation.isPending}
-                            className="p-0.5 rounded opacity-0 group-hover/member:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-destructive"
-                            title="Remove member"
-                          >
-                            <UserMinus className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    </FadeIn>
-                  ))}
+                      </FadeIn>
+                    ))}
+                  </div>
                 </div>
-              </div>
               </motion.div>
             </>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Forward modal */}
+      <AnimatePresence>
+        {forwardTarget && (
+          <ForwardModal
+            messageId={forwardTarget._id}
+            onClose={() => setForwardTarget(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

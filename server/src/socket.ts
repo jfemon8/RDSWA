@@ -2,8 +2,28 @@ import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { env } from './config/env';
+import { User } from './models';
 
 let io: Server | null = null;
+
+/**
+ * Track online users across multiple sockets (a user may have N tabs open).
+ * Map<userId, Set<socketId>> — a user is "online" as long as any socket is live.
+ */
+const onlineUsers = new Map<string, Set<string>>();
+
+/** Update the lastSeenAt field on a user (fire-and-forget). */
+function touchLastSeen(userId: string): void {
+  User.findByIdAndUpdate(userId, { lastSeenAt: new Date() })
+    .exec()
+    .catch(() => { /* non-blocking */ });
+}
+
+/** Broadcast presence change to everyone listening on the presence room. */
+function broadcastPresence(userId: string, online: boolean): void {
+  if (!io) return;
+  io.emit('presence:update', { userId, online, lastSeenAt: online ? null : new Date() });
+}
 
 export function initSocket(httpServer: HTTPServer): Server {
   io = new Server(httpServer, {
@@ -30,9 +50,22 @@ export function initSocket(httpServer: HTTPServer): Server {
   });
 
   io.on('connection', (socket: Socket) => {
+    const userId = socket.data.userId as string | undefined;
+
     // Auto-join user's personal room for notifications
-    if (socket.data.userId) {
-      socket.join(`user:${socket.data.userId}`);
+    if (userId) {
+      socket.join(`user:${userId}`);
+
+      // Track presence — add this socket to the user's socket set.
+      // First socket for a user → emit online event.
+      const existing = onlineUsers.get(userId);
+      if (existing) {
+        existing.add(socket.id);
+      } else {
+        onlineUsers.set(userId, new Set([socket.id]));
+        touchLastSeen(userId);
+        broadcastPresence(userId, true);
+      }
     }
 
     // ── Chat group rooms ──
@@ -46,6 +79,35 @@ export function initSocket(httpServer: HTTPServer): Server {
       if (groupId && typeof groupId === 'string') {
         socket.leave(`chat:${groupId}`);
       }
+    });
+
+    // ── Typing indicator (group or DM) ──
+    // Clients emit `chat:typing` with { groupId? , recipientId?, isTyping }.
+    // Server fans out to the corresponding room without hitting the DB.
+    socket.on('chat:typing', (payload: { groupId?: string; recipientId?: string; isTyping: boolean }) => {
+      if (!userId || !payload) return;
+      const evt = {
+        userId,
+        isTyping: !!payload.isTyping,
+        groupId: payload.groupId,
+        recipientId: payload.recipientId,
+      };
+      if (payload.groupId) {
+        socket.to(`chat:${payload.groupId}`).emit('chat:typing', evt);
+      } else if (payload.recipientId) {
+        io?.to(`user:${payload.recipientId}`).emit('chat:typing', evt);
+      }
+      if (payload.isTyping) touchLastSeen(userId);
+    });
+
+    // ── Presence snapshot request (get current state of N users) ──
+    socket.on('presence:query', (userIds: string[], ack?: (states: Record<string, boolean>) => void) => {
+      if (!Array.isArray(userIds)) return;
+      const states: Record<string, boolean> = {};
+      for (const id of userIds) {
+        states[id] = onlineUsers.has(id);
+      }
+      if (typeof ack === 'function') ack(states);
     });
 
     // ── Vote rooms ──
@@ -62,7 +124,15 @@ export function initSocket(httpServer: HTTPServer): Server {
     });
 
     socket.on('disconnect', () => {
-      // Cleanup handled automatically by Socket.IO
+      if (!userId) return;
+      const set = onlineUsers.get(userId);
+      if (!set) return;
+      set.delete(socket.id);
+      if (set.size === 0) {
+        onlineUsers.delete(userId);
+        touchLastSeen(userId);
+        broadcastPresence(userId, false);
+      }
     });
   });
 
@@ -71,6 +141,11 @@ export function initSocket(httpServer: HTTPServer): Server {
 
 export function getIO(): Server | null {
   return io;
+}
+
+/** Check whether a user currently has any live socket. */
+export function isUserOnline(userId: string): boolean {
+  return onlineUsers.has(userId);
 }
 
 /**
@@ -83,6 +158,47 @@ export function broadcastChatMessage(groupId: string, message: any): void {
 }
 
 /**
+ * Broadcast a message edit to the group room.
+ */
+export function broadcastChatMessageEdit(groupId: string, message: any): void {
+  if (io) {
+    io.to(`chat:${groupId}`).emit('chat:message:edit', { groupId, message });
+  }
+}
+
+/**
+ * Broadcast a hard-deleted message (delete-for-everyone) to the group room.
+ */
+export function broadcastChatMessageDelete(groupId: string, messageId: string): void {
+  if (io) {
+    io.to(`chat:${groupId}`).emit('chat:message:delete', { groupId, messageId });
+  }
+}
+
+/**
+ * Broadcast a reaction add/remove to the group room.
+ */
+export function broadcastChatReaction(
+  groupId: string,
+  messageId: string,
+  reactions: Array<{ user: string; emoji: string }>
+): void {
+  if (io) {
+    io.to(`chat:${groupId}`).emit('chat:message:reaction', { groupId, messageId, reactions });
+  }
+}
+
+/**
+ * Broadcast a read-receipt update to the group room so every open client
+ * updates its receipt ticks.
+ */
+export function broadcastChatRead(groupId: string, messageIds: string[], userId: string): void {
+  if (io) {
+    io.to(`chat:${groupId}`).emit('chat:message:read', { groupId, messageIds, userId });
+  }
+}
+
+/**
  * Broadcast a DM to both sender and recipient personal rooms.
  */
 export function broadcastDM(senderId: string, recipientId: string, message: any): void {
@@ -90,6 +206,47 @@ export function broadcastDM(senderId: string, recipientId: string, message: any)
     const data = { senderId, recipientId, message };
     io.to(`user:${senderId}`).emit('dm:message', data);
     io.to(`user:${recipientId}`).emit('dm:message', data);
+  }
+}
+
+/** Broadcast a DM edit to both participants. */
+export function broadcastDMEdit(senderId: string, recipientId: string, message: any): void {
+  if (io) {
+    const data = { senderId, recipientId, message };
+    io.to(`user:${senderId}`).emit('dm:message:edit', data);
+    io.to(`user:${recipientId}`).emit('dm:message:edit', data);
+  }
+}
+
+/** Broadcast a DM delete-for-everyone to both participants. */
+export function broadcastDMDelete(senderId: string, recipientId: string, messageId: string): void {
+  if (io) {
+    const data = { senderId, recipientId, messageId };
+    io.to(`user:${senderId}`).emit('dm:message:delete', data);
+    io.to(`user:${recipientId}`).emit('dm:message:delete', data);
+  }
+}
+
+/** Broadcast a DM reaction to both participants. */
+export function broadcastDMReaction(
+  senderId: string,
+  recipientId: string,
+  messageId: string,
+  reactions: Array<{ user: string; emoji: string }>
+): void {
+  if (io) {
+    const data = { senderId, recipientId, messageId, reactions };
+    io.to(`user:${senderId}`).emit('dm:message:reaction', data);
+    io.to(`user:${recipientId}`).emit('dm:message:reaction', data);
+  }
+}
+
+/** Broadcast a DM read-receipt update so the sender's ticks flip. */
+export function broadcastDMRead(senderId: string, recipientId: string, messageIds: string[]): void {
+  if (io) {
+    const data = { senderId, recipientId, messageIds };
+    io.to(`user:${senderId}`).emit('dm:message:read', data);
+    io.to(`user:${recipientId}`).emit('dm:message:read', data);
   }
 }
 

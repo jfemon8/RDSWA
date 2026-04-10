@@ -18,6 +18,8 @@ export interface IChatGroupDocument extends Document {
   admins: mongoose.Types.ObjectId[];
   /** User who created a custom group. Undefined for system-managed central/department groups. */
   createdBy?: mongoose.Types.ObjectId;
+  /** Users who have muted notifications for this group. Still receive messages. */
+  mutedBy: mongoose.Types.ObjectId[];
   joinRequests: IJoinRequest[];
   avatar?: string;
   isDeleted: boolean;
@@ -46,6 +48,7 @@ const chatGroupSchema = new Schema<IChatGroupDocument>(
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    mutedBy: { type: [{ type: Schema.Types.ObjectId, ref: 'User' }], default: [] },
     joinRequests: [joinRequestSchema],
     avatar: String,
     isDeleted: { type: Boolean, default: false },

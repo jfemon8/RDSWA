@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from 'socket.io-client';
 
@@ -58,7 +58,9 @@ export function useNotificationSocket(
 }
 
 /**
- * Hook for real-time chat messages in a group.
+ * Hook for real-time chat messages in a group. Listens on all the related
+ * events (new message, edit, delete, reaction, read-receipt) and invalidates
+ * the group query so consumers just re-read from cache.
  */
 export function useChatSocket(
   groupId: string | undefined,
@@ -74,24 +76,151 @@ export function useChatSocket(
 
     s.emit('chat:join', groupId);
 
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['group', groupId] });
     const handleMessage = (data: any) => {
       if (data.groupId === groupId) {
-        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        invalidate();
         callbackRef.current?.(data);
       }
     };
+    const handleEdit = (data: any) => { if (data.groupId === groupId) invalidate(); };
+    const handleDelete = (data: any) => { if (data.groupId === groupId) invalidate(); };
+    const handleReaction = (data: any) => { if (data.groupId === groupId) invalidate(); };
+    const handleRead = (data: any) => { if (data.groupId === groupId) invalidate(); };
 
     s.on('chat:message', handleMessage);
+    s.on('chat:message:edit', handleEdit);
+    s.on('chat:message:delete', handleDelete);
+    s.on('chat:message:reaction', handleReaction);
+    s.on('chat:message:read', handleRead);
 
     return () => {
       s.emit('chat:leave', groupId);
       s.off('chat:message', handleMessage);
+      s.off('chat:message:edit', handleEdit);
+      s.off('chat:message:delete', handleDelete);
+      s.off('chat:message:reaction', handleReaction);
+      s.off('chat:message:read', handleRead);
     };
   }, [groupId, queryClient]);
 }
 
+/** Map of userId → typing state, with auto-expire after 4s of no keepalive. */
+export function useTypingState(
+  scope: { groupId?: string; partnerId?: string },
+): { typing: Set<string>; emitTyping: (isTyping: boolean) => void } {
+  const [typing, setTyping] = useState<Set<string>>(new Set());
+  const expireTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastEmitRef = useRef<number>(0);
+
+  useEffect(() => {
+    const s = getSocket();
+    const handler = (evt: any) => {
+      const matches =
+        (scope.groupId && evt.groupId === scope.groupId) ||
+        (scope.partnerId && !evt.groupId && evt.userId === scope.partnerId);
+      if (!matches || !evt.userId) return;
+
+      setTyping((prev) => {
+        const next = new Set(prev);
+        if (evt.isTyping) next.add(evt.userId);
+        else next.delete(evt.userId);
+        return next;
+      });
+
+      // Auto-drop stale typing indicators after 4s with no update.
+      const existing = expireTimers.current.get(evt.userId);
+      if (existing) clearTimeout(existing);
+      if (evt.isTyping) {
+        const t = setTimeout(() => {
+          setTyping((prev) => {
+            const next = new Set(prev);
+            next.delete(evt.userId);
+            return next;
+          });
+          expireTimers.current.delete(evt.userId);
+        }, 4000);
+        expireTimers.current.set(evt.userId, t);
+      }
+    };
+    s.on('chat:typing', handler);
+    return () => {
+      s.off('chat:typing', handler);
+      expireTimers.current.forEach((t) => clearTimeout(t));
+      expireTimers.current.clear();
+    };
+  }, [scope.groupId, scope.partnerId]);
+
+  const emitTyping = useCallback((isTyping: boolean) => {
+    // Throttle to one emit per 2s while typing stays true.
+    const now = Date.now();
+    if (isTyping && now - lastEmitRef.current < 2000) return;
+    lastEmitRef.current = now;
+    getSocket().emit('chat:typing', {
+      groupId: scope.groupId,
+      recipientId: scope.partnerId,
+      isTyping,
+    });
+  }, [scope.groupId, scope.partnerId]);
+
+  return { typing, emitTyping };
+}
+
+/** Subscribe to presence updates for the given user IDs. */
+export function usePresence(userIds: string[]): { online: Set<string>; lastSeen: Map<string, string> } {
+  const [online, setOnline] = useState<Set<string>>(new Set());
+  const [lastSeen, setLastSeen] = useState<Map<string, string>>(new Map());
+  const idsKey = userIds.slice().sort().join(',');
+
+  useEffect(() => {
+    if (userIds.length === 0) return;
+    const s = getSocket();
+
+    // Seed initial state from a presence:query ack.
+    const query = () => {
+      s.emit('presence:query', userIds, (states: Record<string, boolean>) => {
+        setOnline((prev) => {
+          const next = new Set(prev);
+          Object.entries(states).forEach(([id, isOnline]) => {
+            if (isOnline) next.add(id); else next.delete(id);
+          });
+          return next;
+        });
+      });
+    };
+    query();
+    s.on('connect', query);
+
+    const handler = (evt: any) => {
+      if (!userIds.includes(evt.userId)) return;
+      setOnline((prev) => {
+        const next = new Set(prev);
+        if (evt.online) next.add(evt.userId);
+        else next.delete(evt.userId);
+        return next;
+      });
+      if (!evt.online && evt.lastSeenAt) {
+        setLastSeen((prev) => {
+          const next = new Map(prev);
+          next.set(evt.userId, evt.lastSeenAt);
+          return next;
+        });
+      }
+    };
+    s.on('presence:update', handler);
+    return () => {
+      s.off('presence:update', handler);
+      s.off('connect', query);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
+
+  return { online, lastSeen };
+}
+
 /**
- * Hook for real-time DM updates.
+ * Hook for real-time DM updates. Listens on all related events and invalidates
+ * the DM query. Also handles edit/delete/reaction/read receipts.
  */
 export function useDMSocket(
   partnerId: string | undefined,
@@ -104,18 +233,41 @@ export function useDMSocket(
   useEffect(() => {
     const s = getSocket();
 
+    const matches = (data: any) =>
+      partnerId && (data.senderId === partnerId || data.recipientId === partnerId);
+
     const handleDM = (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
-      if (partnerId && (data.senderId === partnerId || data.recipientId === partnerId)) {
+      if (matches(data)) {
         queryClient.invalidateQueries({ queryKey: ['dm', partnerId] });
         callbackRef.current?.(data);
       }
     };
+    const handleEdit = (data: any) => {
+      if (matches(data)) queryClient.invalidateQueries({ queryKey: ['dm', partnerId] });
+    };
+    const handleDelete = (data: any) => {
+      if (matches(data)) queryClient.invalidateQueries({ queryKey: ['dm', partnerId] });
+    };
+    const handleReaction = (data: any) => {
+      if (matches(data)) queryClient.invalidateQueries({ queryKey: ['dm', partnerId] });
+    };
+    const handleRead = (data: any) => {
+      if (matches(data)) queryClient.invalidateQueries({ queryKey: ['dm', partnerId] });
+    };
 
     s.on('dm:message', handleDM);
+    s.on('dm:message:edit', handleEdit);
+    s.on('dm:message:delete', handleDelete);
+    s.on('dm:message:reaction', handleReaction);
+    s.on('dm:message:read', handleRead);
 
     return () => {
       s.off('dm:message', handleDM);
+      s.off('dm:message:edit', handleEdit);
+      s.off('dm:message:delete', handleDelete);
+      s.off('dm:message:reaction', handleReaction);
+      s.off('dm:message:read', handleRead);
     };
   }, [partnerId, queryClient]);
 }
