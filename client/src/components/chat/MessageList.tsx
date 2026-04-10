@@ -157,7 +157,7 @@ export default function MessageList(props: Props) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto scroll-smooth-touch px-2 sm:px-4 pb-2"
+        className="flex-1 overflow-y-auto scroll-smooth-touch chat-scroll px-3 sm:px-4 py-2"
       >
         {isLoadingOlder && (
           <div className="flex justify-center py-3">
@@ -195,8 +195,8 @@ export default function MessageList(props: Props) {
             return (
               <div key={msg._id}>
                 {showDateSeparator && (
-                  <div className="flex justify-center my-4">
-                    <span className="px-3 py-1 rounded-full bg-muted text-[11px] text-muted-foreground font-medium">
+                  <div className="flex justify-center my-3">
+                    <span className="px-3 py-0.5 rounded-full bg-muted/70 text-[11px] text-muted-foreground font-medium">
                       {formatDateLabel(curDate)}
                     </span>
                   </div>

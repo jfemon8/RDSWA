@@ -110,8 +110,8 @@ export default function ChatComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="pt-3 border-t bg-background"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="pt-2 pb-2 border-t bg-card"
+      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       onPaste={handlePaste}
     >
       {/* Reply chip */}
@@ -166,7 +166,7 @@ export default function ChatComposer({
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
-            className="w-full pl-4 pr-10 py-2.5 border rounded-3xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+            className="no-scrollbar w-full pl-4 pr-10 py-2.5 border rounded-3xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 overflow-y-auto"
             style={{ maxHeight: '120px' }}
           />
           <button

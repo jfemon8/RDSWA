@@ -332,9 +332,11 @@ export default function GroupChatPage() {
   const memberCount = group.members?.length || 0;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)] w-full">
+    // Negative margins cancel the DashboardLayout main padding (p-3 sm:p-4 lg:p-6)
+    // so the chat container goes edge-to-edge with no surrounding gap.
+    <div className="flex flex-col h-[calc(100dvh-4rem)] w-full -m-3 sm:-m-4 lg:-m-6 bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">
         <button
           onClick={() => navigate('/dashboard/groups')}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"

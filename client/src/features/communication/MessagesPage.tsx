@@ -391,9 +391,11 @@ function ChatView({
   }, [messages, user?._id]);
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)]">
+    // Negative margins cancel the DashboardLayout main padding so DM chat
+    // goes edge-to-edge with no surrounding gap.
+    <div className="flex flex-col h-[calc(100dvh-4rem)] -m-3 sm:-m-4 lg:-m-6 bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">
         <button
           onClick={onBack}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"

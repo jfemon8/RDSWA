@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import {
@@ -98,13 +98,36 @@ export default function MessageBubble(props: MessageBubbleProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [contextAnchor, setContextAnchor] = useState<{ x: number; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
+  // Only the sender (within the time window) or an admin/superAdmin can delete.
+  // "Delete for me" is hidden for non-sender, non-admin participants.
   const canEdit = isMine && isWithinMs(EDIT_WINDOW_MS, msg.createdAt);
   const canDeleteEveryone = (isMine && isWithinMs(DELETE_EVERYONE_WINDOW_MS, msg.createdAt)) || !!isAdmin;
-  const canDeleteForMe = isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);
+  const canDeleteForMe = (isMine || !!isAdmin) && isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);
   const isStarred = !!currentUserId && msg.starredBy?.includes(currentUserId);
   const isPinned = !!msg.pinnedAt;
   const isEditing = editingId === msg._id;
+
+  // Close the reaction picker when the user clicks/taps anywhere outside it.
+  useEffect(() => {
+    if (!showPicker) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    };
+    // Defer one tick so the click that opened the picker doesn't immediately close it.
+    const t = setTimeout(() => {
+      document.addEventListener('mousedown', handler);
+      document.addEventListener('touchstart', handler);
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [showPicker]);
 
   const openContext = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const target = (e as React.MouseEvent).clientX !== undefined
@@ -144,7 +167,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
   return (
     <div
       id={`msg-${msg._id}`}
-      className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} ${groupedWithPrevious ? 'mt-0.5' : 'mt-3'}`}
+      className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} ${groupedWithPrevious ? 'mt-0.5' : 'mt-2'}`}
       onContextMenu={(e) => { e.preventDefault(); openContext(e); }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -165,7 +188,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
         )}
         {!isMine && isGroup && groupedWithPrevious && <div className="w-8 shrink-0" />}
 
-        <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} min-w-0`}>
+        <div className={`relative flex flex-col ${isMine ? 'items-end' : 'items-start'} min-w-0`}>
           {/* Sender name (group only, first of group) */}
           {!isMine && isGroup && !groupedWithPrevious && (
             <Link to={`/members/${senderId}`} className="text-[11px] font-medium text-primary mb-0.5 ml-1 hover:underline">
@@ -173,10 +196,14 @@ export default function MessageBubble(props: MessageBubbleProps) {
             </Link>
           )}
 
-          {/* Reaction picker pops above the bubble */}
+          {/* Reaction picker — absolutely positioned so it pops ABOVE the bubble
+              without pushing any content. Click outside closes it (see useEffect). */}
           <AnimatePresence>
             {showPicker && (
-              <div className="mb-1">
+              <div
+                ref={pickerRef}
+                className={`absolute z-30 bottom-full mb-1 ${isMine ? 'right-0' : 'left-0'}`}
+              >
                 <ReactionPicker
                   align={isMine ? 'end' : 'start'}
                   onPick={(emoji) => { onReact(msg._id, emoji); setShowPicker(false); }}
