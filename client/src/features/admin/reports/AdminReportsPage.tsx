@@ -1,19 +1,20 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Users, TrendingUp, TrendingDown, Calendar, BarChart3, Vote, Wrench, Download, FileText, Banknote, Scale } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Loader2, Users, TrendingUp, TrendingDown, Calendar, BarChart3, Vote, Wrench, Download, FileText, Banknote, Scale, Send, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { hasMinRole } from '@/lib/roles';
-import { formatDate } from '@/lib/date';
+import { formatDate, formatTime } from '@/lib/date';
+import { useToast } from '@/components/ui/Toast';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
-type Tab = 'members' | 'finance' | 'events' | 'donations' | 'voting' | 'custom';
+type Tab = 'members' | 'finance' | 'events' | 'donations' | 'voting' | 'custom' | 'published';
 
 export default function AdminReportsPage() {
   const { user } = useAuthStore();
@@ -27,6 +28,7 @@ export default function AdminReportsPage() {
     { key: 'donations', label: 'Donations', icon: BarChart3 },
     { key: 'voting', label: 'Voting', icon: Vote },
     { key: 'custom', label: 'Custom Report', icon: Wrench, adminOnly: true },
+    { key: 'published', label: 'Published', icon: Send },
   ];
 
   const tabs = allTabs.filter((t) => !t.adminOnly || isAdmin);
@@ -58,6 +60,7 @@ export default function AdminReportsPage() {
       {tab === 'donations' && <DonationsReport />}
       {tab === 'voting' && <VotingReport />}
       {tab === 'custom' && isAdmin && <CustomReportBuilder />}
+      {tab === 'published' && <PublishedReports isAdmin={isAdmin} />}
     </div>
   );
 }
@@ -822,5 +825,214 @@ function EmptyChart() {
     <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">
       No data available
     </div>
+  );
+}
+
+/** Publish report snapshots + approval workflow. Draft → Admin approves → Published. */
+function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', type: 'finance', fiscalYear: String(new Date().getFullYear()) });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['reports', 'published'],
+    queryFn: async () => {
+      const { data } = await api.get('/reports/published');
+      return data;
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: async () => {
+      // Include a lightweight snapshot of the selected report type so viewers see
+      // what was published at this moment in time.
+      let snapshot: any = {};
+      try {
+        if (form.type === 'finance') {
+          const { data } = await api.get(`/reports/finance?year=${form.fiscalYear}`);
+          snapshot = data.data;
+        } else if (form.type === 'members') {
+          const { data } = await api.get('/reports/members');
+          snapshot = data.data;
+        } else if (form.type === 'events') {
+          const { data } = await api.get('/reports/events');
+          snapshot = data.data;
+        } else if (form.type === 'donations') {
+          const { data } = await api.get('/reports/donations');
+          snapshot = data.data;
+        }
+      } catch {
+        /* snapshot is best-effort — proceed even if fetch fails */
+      }
+      const { data } = await api.post('/reports/publish', {
+        title: form.title.trim(),
+        type: form.type,
+        fiscalYear: form.fiscalYear,
+        data: snapshot,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports', 'published'] });
+      setShowForm(false);
+      setForm({ title: '', type: 'finance', fiscalYear: String(new Date().getFullYear()) });
+      toast.success('Draft report created');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to create draft'),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/reports/publish/${id}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports', 'published'] });
+      toast.success('Report published');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to approve'),
+  });
+
+  const reports = data?.data || [];
+
+  return (
+    <FadeIn delay={0.05} direction="up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Published Reports</p>
+          <p className="text-xs text-muted-foreground">
+            Snapshot reports saved for the record. Drafts require Admin or President/GS approval.
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+          >
+            <Send className="h-3.5 w-3.5" /> New Draft
+          </button>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!form.title.trim()) {
+                  toast.error('Title required');
+                  return;
+                }
+                publishMutation.mutate();
+              }}
+              className="border rounded-lg p-4 bg-card mb-4 space-y-3"
+            >
+              <div>
+                <label className="text-xs text-muted-foreground">Report title</label>
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. Annual Finance Report FY 2026"
+                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Type</label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  >
+                    <option value="finance">Finance</option>
+                    <option value="members">Members</option>
+                    <option value="events">Events</option>
+                    <option value="donations">Donations</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Fiscal year</label>
+                  <input
+                    value={form.fiscalYear}
+                    onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={publishMutation.isPending}
+                  className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+                >
+                  {publishMutation.isPending ? 'Saving...' : 'Save as Draft'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-3 py-1.5 border rounded-md text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : reports.length === 0 ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">
+          <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
+          No published reports yet.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {reports.map((r: any, i: number) => (
+            <motion.div
+              key={r._id}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium text-foreground">{r.title}</p>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full capitalize ${
+                    r.status === 'published'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                  }`}>
+                    {r.status}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
+                    {r.type}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  FY {r.fiscalYear || '—'} · Created {formatDate(r.createdAt)}
+                  {r.publishedAt && ` · Published ${formatDate(r.publishedAt)} ${formatTime(r.publishedAt)}`}
+                </p>
+              </div>
+              {r.status === 'draft' && (
+                <button
+                  onClick={() => approveMutation.mutate(r._id)}
+                  disabled={approveMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-md text-xs hover:bg-green-700 disabled:opacity-50 shrink-0"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Approve & Publish
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </FadeIn>
   );
 }

@@ -63,6 +63,7 @@ const Messages = lazy(() => import('@/features/communication/MessagesPage'));
 const Groups = lazy(() => import('@/features/communication/GroupsPage'));
 const GroupChat = lazy(() => import('@/features/communication/GroupChatPage'));
 const Announcements = lazy(() => import('@/features/communication/AnnouncementsPage'));
+const StarredMessages = lazy(() => import('@/features/communication/StarredMessagesPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
@@ -93,6 +94,7 @@ const AdminJobs = lazy(() => import('@/features/admin/jobs/AdminJobsPage'));
 const AdminMentorship = lazy(() => import('@/features/admin/mentorship/AdminMentorshipPage'));
 const AdminForum = lazy(() => import('@/features/admin/forum/AdminForumPage'));
 const AdminBudget = lazy(() => import('@/features/admin/budget/AdminBudgetPage'));
+const AdminBackup = lazy(() => import('@/features/admin/backup/AdminBackupPage'));
 
 function LoadingFallback() {
   return (
@@ -159,6 +161,7 @@ export default function AppRouter() {
             <Route path="/dashboard/groups" element={<Groups />} />
             <Route path="/dashboard/groups/:id" element={<GroupChat />} />
             <Route path="/dashboard/announcements" element={<Announcements />} />
+            <Route path="/dashboard/starred" element={<StarredMessages />} />
             <Route path="/dashboard/settings" element={<NotificationSettings />} />
             <Route path="/dashboard/mentorship" element={<MentorshipPage />} />
             <Route path="/dashboard/attendance" element={<AttendanceHistory />} />
@@ -196,6 +199,7 @@ export default function AppRouter() {
               <Route path="/admin/moderators" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminModerators /></AdminRoleGuard>} />
               <Route path="/admin/finance" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminFinance /></AdminRoleGuard>} />
               <Route path="/admin/budgets" element={<AdminBudget />} />
+              <Route path="/admin/backup" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBackup /></AdminRoleGuard>} />
               <Route path="/admin/bus" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBus /></AdminRoleGuard>} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/logs" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminLogs /></AdminRoleGuard>} />

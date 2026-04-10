@@ -39,9 +39,11 @@ export default function JobBoardPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [view, setView] = useState<'all' | 'mine'>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newJob, setNewJob] = useState({ ...EMPTY_JOB });
+  const canPost = user && hasMinRole(user.role, UserRole.ALUMNI);
 
   const canManage = (job: any): boolean => {
     if (!user) return false;
@@ -50,14 +52,19 @@ export default function JobBoardPage() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: [...queryKeys.jobs.all, search, typeFilter],
+    queryKey: [...queryKeys.jobs.all, view, search, typeFilter],
     queryFn: async () => {
+      if (view === 'mine') {
+        const { data } = await api.get('/jobs/my/posts?limit=50');
+        return data;
+      }
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (typeFilter) params.set('type', typeFilter);
       const { data } = await api.get(`/jobs?${params}`);
       return data;
     },
+    enabled: view === 'all' || !!user,
   });
 
   const buildPayload = (job: any) => {
@@ -140,40 +147,58 @@ export default function JobBoardPage() {
         </p>
       </FadeIn>
 
-      {/* Filters */}
+      {/* View tabs — All jobs / My posts */}
+      {canPost && (
+        <div className="flex gap-2 mb-4 border-b">
+          {(['all', 'mine'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                view === v ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {v === 'all' ? 'All Jobs' : 'My Posts'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Filters — hidden in "My Posts" view since user wants to see all their posts */}
       <FadeIn delay={0.3}>
         <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="relative flex-1 sm:min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search jobs..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-          </div>
-          <div className="flex gap-2 sm:gap-3">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              <option value="">All Types</option>
-              {JOB_TYPES.map((t) => (
-                <option key={t} value={t}>{formatJobType(t)}</option>
-              ))}
-            </select>
-
-            {user && hasMinRole(user.role, UserRole.ALUMNI) && (
-              <button
-                onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px]"
+          {view === 'all' && (
+            <>
+              <div className="relative flex-1 sm:min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search jobs..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="flex-1 sm:flex-none px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
-                <Plus className="h-4 w-4" /> <span className="whitespace-nowrap">Post Job</span>
-              </button>
-            )}
-          </div>
+                <option value="">All Types</option>
+                {JOB_TYPES.map((t) => (
+                  <option key={t} value={t}>{formatJobType(t)}</option>
+                ))}
+              </select>
+            </>
+          )}
+          {canPost && (
+            <button
+              onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px] sm:ml-auto"
+            >
+              <Plus className="h-4 w-4" /> <span className="whitespace-nowrap">Post Job</span>
+            </button>
+          )}
         </div>
       </FadeIn>
 

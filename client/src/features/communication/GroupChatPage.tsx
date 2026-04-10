@@ -7,7 +7,7 @@ import { useChatSocket, useTypingState, usePresence } from '@/hooks/useSocket';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
   ArrowLeft, Loader2, Users, User as UserIcon, Globe, Building2, Hash, X,
-  UserPlus, UserMinus, Search, LogOut, Bell, BellOff, Pin,
+  UserPlus, UserMinus, Search, LogOut, Bell, BellOff, Pin, Trash2, UserCheck, Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -186,6 +186,38 @@ export default function GroupChatPage() {
       navigate('/dashboard/groups');
     },
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to leave'),
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: () => api.delete(`/communication/groups/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+      toast.success('Group deleted');
+      navigate('/dashboard/groups');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to delete'),
+  });
+
+  // Join requests (custom groups — group admin or platform admin)
+  const { data: joinRequests } = useQuery({
+    queryKey: ['group-join-requests', id],
+    queryFn: async () => {
+      const { data } = await api.get(`/communication/groups/${id}/join-requests`);
+      return data.data;
+    },
+    enabled: !!id && canManageMembers && group?.type === 'custom',
+    refetchInterval: 30_000,
+  });
+
+  const reviewJoinRequestMutation = useMutation({
+    mutationFn: (vars: { requestId: string; status: 'approved' | 'rejected' }) =>
+      api.patch(`/communication/groups/${id}/join-requests/${vars.requestId}`, { status: vars.status }),
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['group-join-requests', id] });
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      toast.success(vars.status === 'approved' ? 'Request approved' : 'Request rejected');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to process request'),
   });
 
   // Member management ─────────────────────────────────────────────────────
@@ -412,6 +444,26 @@ export default function GroupChatPage() {
             aria-label="Leave"
           >
             <LogOut className="h-5 w-5" />
+          </button>
+        )}
+        {/* Delete group — platform admin only (backend authorizes) */}
+        {isAdmin && (
+          <button
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Delete Group',
+                message: `Delete "${group.name}"? All messages and members will be removed. This cannot be undone.`,
+                confirmLabel: 'Delete group',
+                variant: 'danger',
+              });
+              if (ok) deleteGroupMutation.mutate();
+            }}
+            disabled={deleteGroupMutation.isPending}
+            className="tap-target flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 shrink-0"
+            title="Delete group"
+            aria-label="Delete group"
+          >
+            <Trash2 className="h-5 w-5" />
           </button>
         )}
       </div>
@@ -644,6 +696,60 @@ export default function GroupChatPage() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+
+                  {/* Pending join requests — for group admins on custom groups */}
+                  {canManageMembers && group.type === 'custom' && (joinRequests || []).length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Pending join requests ({joinRequests.length})
+                      </p>
+                      <div className="space-y-1">
+                        {joinRequests.map((req: any) => (
+                          <motion.div
+                            key={req._id}
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="p-2 rounded-md border border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/10"
+                          >
+                            <div className="flex items-center gap-2">
+                              {req.user?.avatar ? (
+                                <img src={req.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                              ) : (
+                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                                  <UserIcon className="h-3 w-3 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{req.user?.name || 'Unknown'}</p>
+                                {req.user?.department && (
+                                  <p className="text-[10px] text-muted-foreground truncate">{req.user.department}</p>
+                                )}
+                              </div>
+                            </div>
+                            {req.message && (
+                              <p className="text-[10px] italic text-muted-foreground mt-1">"{req.message}"</p>
+                            )}
+                            <div className="flex gap-1 mt-1.5">
+                              <button
+                                onClick={() => reviewJoinRequestMutation.mutate({ requestId: req._id, status: 'approved' })}
+                                disabled={reviewJoinRequestMutation.isPending}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-[10px] hover:bg-green-700 disabled:opacity-50"
+                              >
+                                <UserCheck className="h-2.5 w-2.5" /> Approve
+                              </button>
+                              <button
+                                onClick={() => reviewJoinRequestMutation.mutate({ requestId: req._id, status: 'rejected' })}
+                                disabled={reviewJoinRequestMutation.isPending}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 border border-destructive/40 text-destructive rounded text-[10px] hover:bg-destructive/10 disabled:opacity-50"
+                              >
+                                <X className="h-2.5 w-2.5" /> Reject
+                              </button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     {(group.members || []).map((member: any, i: number) => (

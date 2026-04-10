@@ -9,9 +9,11 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import {
   Banknote, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
   Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
+  Pencil, Trash2, Calendar,
 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -19,8 +21,10 @@ import {
 
 const CHART_COLORS = ['#2563eb', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
+type FinanceTab = 'donations' | 'expenses' | 'campaigns' | 'events';
+
 export default function AdminFinancePage() {
-  const [tab, setTab] = useState<'donations' | 'expenses' | 'campaigns'>('donations');
+  const [tab, setTab] = useState<FinanceTab>('donations');
   const [yearFilter, setYearFilter] = useState<string>('');
 
   const { data: reportData } = useQuery({
@@ -199,16 +203,16 @@ export default function AdminFinancePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b">
-        {(['donations', 'expenses', 'campaigns'] as const).map((t) => (
+      <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b overflow-x-auto">
+        {(['donations', 'expenses', 'campaigns', 'events'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 capitalize ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 capitalize whitespace-nowrap ${
               tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {t}
+            {t === 'events' ? 'Event P&L' : t}
           </button>
         ))}
       </div>
@@ -217,6 +221,7 @@ export default function AdminFinancePage() {
         {tab === 'donations' && <DonationsList />}
         {tab === 'expenses' && <ExpensesList />}
         {tab === 'campaigns' && <CampaignsList />}
+        {tab === 'events' && <EventFinanceList />}
       </FadeIn>
     </div>
   );
@@ -423,7 +428,9 @@ function DonationsList() {
 function ExpensesList() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -435,17 +442,49 @@ function ExpensesList() {
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: () => api.post('/expenses', { ...form, amount: Number(form.amount) }),
+  const resetForm = () => {
+    setShowForm(false);
+    setEditId(null);
+    setForm({ title: '', amount: '', category: 'other', description: '' });
+    setErrors({});
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = { ...form, amount: Number(form.amount) };
+      if (editId) return (await api.patch(`/expenses/${editId}`, payload)).data;
+      return (await api.post('/expenses', payload)).data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
-      setShowForm(false);
-      setForm({ title: '', amount: '', category: 'other', description: '' });
-      toast.success('Expense added');
+      toast.success(editId ? 'Expense updated' : 'Expense added');
+      resetForm();
     },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to add expense'); } },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save expense'); } },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/expenses/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      toast.success('Expense deleted');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete expense'),
+  });
+
+  const startEdit = (e: any) => {
+    setEditId(e._id);
+    setForm({
+      title: e.title || '',
+      amount: String(e.amount || ''),
+      category: e.category || 'other',
+      description: e.description || '',
+    });
+    setErrors({});
+    setShowForm(true);
+  };
 
   const expenses = data?.data || [];
 
@@ -453,7 +492,7 @@ function ExpensesList() {
     <div>
       <div className="flex justify-end mb-4">
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <Plus className="h-4 w-4" /> Add Expense
@@ -468,7 +507,7 @@ function ExpensesList() {
             exit={{ opacity: 0, height: 0 }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
-            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Expense title is required'; if (!form.amount || Number(form.amount) <= 0) errs.amount = 'Valid amount is required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Expense title is required'; if (!form.amount || Number(form.amount) <= 0) errs.amount = 'Valid amount is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
               <div>
                 <input placeholder="Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                   className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
@@ -494,12 +533,12 @@ function ExpensesList() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={createMutation.isPending}
+                  disabled={saveMutation.isPending}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
                 >
-                  Add
+                  {saveMutation.isPending ? 'Saving...' : editId ? 'Update' : 'Add'}
                 </button>
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
+                <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
               </div>
             </form>
           </motion.div>
@@ -516,6 +555,7 @@ function ExpensesList() {
               <th className="text-left p-3 font-medium text-foreground">Amount</th>
               <th className="text-left p-3 font-medium text-foreground">Category</th>
               <th className="text-left p-3 font-medium text-foreground">Date</th>
+              <th className="text-right p-3 font-medium text-foreground">Actions</th>
             </tr></thead>
             <tbody>
               {expenses.map((e: any) => (
@@ -527,6 +567,32 @@ function ExpensesList() {
                   <td className="p-3 font-medium text-red-600">BDT {e.amount?.toLocaleString()}</td>
                   <td className="p-3 capitalize text-xs text-muted-foreground">{e.category}</td>
                   <td className="p-3 text-xs text-muted-foreground">{formatDate(e.createdAt)}</td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => startEdit(e)}
+                        className="p-1.5 hover:bg-accent rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-foreground" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Delete Expense',
+                            message: `Delete "${e.title}"? This action cannot be undone.`,
+                            confirmLabel: 'Delete',
+                            variant: 'danger',
+                          });
+                          if (ok) deleteMutation.mutate(e._id);
+                        }}
+                        className="p-1.5 hover:bg-destructive/10 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -540,6 +606,7 @@ function ExpensesList() {
 function CampaignsList() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', targetAmount: '', startDate: '', endDate: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -560,6 +627,15 @@ function CampaignsList() {
       toast.success('Campaign created');
     },
     onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create campaign'); } },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/donations/campaigns/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['donations', 'campaigns'] });
+      toast.success('Campaign deleted');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete campaign'),
   });
 
   const campaigns = data?.data || [];
@@ -625,12 +701,29 @@ function CampaignsList() {
               <div
                 className="border rounded-lg p-4 sm:p-6 bg-card"
               >
-                <div className="flex justify-between items-start">
-                  <div>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground">{c.title}</h3>
                     <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
                   </div>
-                  <p className="font-semibold text-foreground flex items-center gap-1"><Banknote className="h-4 w-4 shrink-0" /> BDT {c.raisedAmount?.toLocaleString()} / BDT {c.targetAmount?.toLocaleString()}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="font-semibold text-foreground flex items-center gap-1 text-sm"><Banknote className="h-4 w-4 shrink-0" /> BDT {c.raisedAmount?.toLocaleString()} / {c.targetAmount?.toLocaleString()}</p>
+                    <button
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Delete Campaign',
+                          message: `Delete "${c.title}"? This cannot be undone.`,
+                          confirmLabel: 'Delete',
+                          variant: 'danger',
+                        });
+                        if (ok) deleteMutation.mutate(c._id);
+                      }}
+                      className="p-1.5 hover:bg-destructive/10 rounded"
+                      title="Delete campaign"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </button>
+                  </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />
@@ -640,6 +733,84 @@ function CampaignsList() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Per-event financial report: budget vs actual expense. */
+function EventFinanceList() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['reports', 'finance', 'events'],
+    queryFn: async () => {
+      const { data } = await api.get('/reports/finance/events');
+      return data;
+    },
+  });
+
+  const events: any[] = data?.data || [];
+
+  if (isLoading) {
+    return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="text-center py-12 text-sm text-muted-foreground">
+        <Calendar className="h-10 w-10 mx-auto mb-2 opacity-40" />
+        No event-linked budgets or expenses yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto border rounded-lg">
+      <table className="w-full min-w-[600px] text-sm">
+        <thead>
+          <tr className="bg-muted border-b">
+            <th className="text-left p-3 font-medium text-foreground">Event</th>
+            <th className="text-right p-3 font-medium text-foreground">Budget</th>
+            <th className="text-right p-3 font-medium text-foreground">Actual Expense</th>
+            <th className="text-right p-3 font-medium text-foreground">Variance</th>
+            <th className="text-left p-3 font-medium text-foreground">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.map((e: any, i: number) => {
+            const budget = e.totalBudget || 0;
+            const actual = e.totalExpense || 0;
+            const variance = budget - actual;
+            const overBudget = variance < 0;
+            return (
+              <motion.tr
+                key={e._id || i}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="border-t hover:bg-accent/30"
+              >
+                <td className="p-3 text-foreground">
+                  {e.eventTitle || 'Unknown event'}
+                  {e.eventDate && (
+                    <p className="text-[11px] text-muted-foreground">{formatDate(e.eventDate)}</p>
+                  )}
+                </td>
+                <td className="p-3 text-right text-foreground">BDT {budget.toLocaleString()}</td>
+                <td className="p-3 text-right text-red-600 font-medium">BDT {actual.toLocaleString()}</td>
+                <td className={`p-3 text-right font-medium ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
+                  {overBudget ? '−' : '+'} BDT {Math.abs(variance).toLocaleString()}
+                </td>
+                <td className="p-3 text-xs">
+                  {e.status ? (
+                    <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground">{e.status}</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+              </motion.tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

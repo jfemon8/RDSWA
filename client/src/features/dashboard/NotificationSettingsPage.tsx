@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Loader2, Bell, Mail, Smartphone, BellOff, Clock } from 'lucide-react';
+import { Loader2, Bell, Mail, Smartphone, BellOff, Clock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { useState, useEffect } from 'react';
+import { useWebPush } from '@/hooks/useWebPush';
+import { useToast } from '@/components/ui/Toast';
 
 interface NotifPrefs {
   email: boolean;
@@ -25,8 +27,10 @@ const defaultPrefs: NotifPrefs = {
 
 export default function NotificationSettingsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [prefs, setPrefs] = useState<NotifPrefs>(defaultPrefs);
-  const [pushSupported] = useState(() => 'serviceWorker' in navigator && 'PushManager' in window);
+  const webPush = useWebPush();
+  const pushSupported = webPush.supported;
 
   const { data, isLoading } = useQuery({
     queryKey: ['notification-preferences'],
@@ -51,6 +55,24 @@ export default function NotificationSettingsPage() {
     const newVal = !prefs[field];
     setPrefs((p) => ({ ...p, [field]: newVal }));
     updateMutation.mutate({ [field]: newVal });
+  };
+
+  /** Toggles the actual browser push subscription in addition to the server preference. */
+  const togglePush = async () => {
+    const turningOn = !prefs.push;
+    if (turningOn) {
+      const ok = await webPush.subscribe();
+      if (!ok) {
+        toast.error(webPush.error || 'Could not enable push notifications');
+        return;
+      }
+      toast.success('Push notifications enabled');
+    } else {
+      await webPush.unsubscribe();
+      toast.success('Push notifications disabled');
+    }
+    setPrefs((p) => ({ ...p, push: turningOn }));
+    updateMutation.mutate({ push: turningOn });
   };
 
   const setDigest = (freq: NotifPrefs['digestFrequency']) => {
@@ -90,14 +112,33 @@ export default function NotificationSettingsPage() {
                 checked={prefs.email}
                 onChange={() => toggleField('email')}
               />
-              {pushSupported && (
-                <ToggleRow
-                  icon={<Smartphone className="h-4 w-4" />}
-                  label="Push Notifications"
-                  description="Browser push notifications"
-                  checked={prefs.push}
-                  onChange={() => toggleField('push')}
-                />
+              {pushSupported ? (
+                <>
+                  <ToggleRow
+                    icon={<Smartphone className="h-4 w-4" />}
+                    label="Push Notifications"
+                    description={
+                      webPush.subscribed
+                        ? 'This device is subscribed to web push'
+                        : webPush.permission === 'denied'
+                          ? 'Blocked by browser — re-enable in site settings'
+                          : 'Receive push notifications in this browser'
+                    }
+                    checked={prefs.push && webPush.subscribed}
+                    onChange={togglePush}
+                    disabled={webPush.busy}
+                  />
+                  {webPush.error && (
+                    <div className="flex items-start gap-2 text-[11px] text-amber-600 dark:text-amber-400 ml-7">
+                      <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                      <span>{webPush.error}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-[11px] text-muted-foreground ml-7">
+                  This browser does not support push notifications.
+                </p>
               )}
             </div>
           </div>
@@ -182,12 +223,14 @@ function ToggleRow({
   description,
   checked,
   onChange,
+  disabled,
 }: {
   icon: React.ReactNode;
   label: string;
   description: string;
   checked: boolean;
   onChange: () => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between py-2">
@@ -200,7 +243,8 @@ function ToggleRow({
       </div>
       <button
         onClick={onChange}
-        className={`relative w-11 h-6 rounded-full transition-colors ${
+        disabled={disabled}
+        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
           checked ? 'bg-primary' : 'bg-muted-foreground/30'
         }`}
       >

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard, Settings2,
-  Briefcase, MessageSquare, Heart, Award, Star, Wallet,
+  Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -52,6 +52,7 @@ const adminLinks: AdminLink[] = [
   { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },
+  { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.ADMIN },
 ];
 
 export default function AdminLayout() {

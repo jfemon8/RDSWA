@@ -1,15 +1,33 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { FileText, Download, Loader2, Search } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
+import { useToast } from '@/components/ui/Toast';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  /** Hit the counter endpoint then open the real file URL in a new tab. */
+  const handleDownload = async (docId: string, fileUrl: string) => {
+    try {
+      await api.get(`/documents/${docId}/download`);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    } catch {
+      /* non-fatal — still open the file */
+    }
+    if (!fileUrl) {
+      toast.error('File URL is missing');
+      return;
+    }
+    window.open(fileUrl, '_blank', 'noopener');
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['documents', category, search],
@@ -98,10 +116,14 @@ export default function DocumentsPage() {
                     <span>{formatDate(doc.createdAt)}</span>
                   </div>
                 </div>
-                <a href={doc.fileUrl} target="_blank" rel="noreferrer"
-                  className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md" title="Download">
+                <button
+                  type="button"
+                  onClick={() => handleDownload(doc._id, doc.fileUrl)}
+                  className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md"
+                  title="Download"
+                >
                   <Download className="h-5 w-5" />
-                </a>
+                </button>
               </div>
             </FadeIn>
           ))}

@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Loader2, Trash2 } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
+import { useToast } from '@/components/ui/Toast';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -24,6 +26,16 @@ export default function NotificationsPage() {
   const markAllReadMutation = useMutation({
     mutationFn: () => api.patch('/notifications/read-all'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/notifications/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+      toast.success('Notification removed');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete'),
   });
 
   const notifications = data?.data || [];
@@ -77,15 +89,25 @@ export default function NotificationsPage() {
                     {formatTime(n.createdAt)}
                   </p>
                 </div>
-                {!n.isRead && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {!n.isRead && (
+                    <button
+                      onClick={() => markReadMutation.mutate(n._id)}
+                      className="p-2 text-muted-foreground hover:text-primary rounded-md hover:bg-accent"
+                      title="Mark as read"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => markReadMutation.mutate(n._id)}
-                    className="p-2 text-muted-foreground hover:text-primary rounded-md hover:bg-accent shrink-0"
-                    title="Mark as read"
+                    onClick={() => deleteMutation.mutate(n._id)}
+                    disabled={deleteMutation.isPending}
+                    className="p-2 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 disabled:opacity-50"
+                    title="Delete"
                   >
-                    <Check className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
-                )}
+                </div>
               </div>
             </FadeIn>
           ))}
