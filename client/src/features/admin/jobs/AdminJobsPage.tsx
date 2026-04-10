@@ -37,18 +37,18 @@ export default function AdminJobsPage() {
   const pagination = data?.pagination;
 
   return (
-    <div className="container mx-auto py-4 sm:py-6">
-      <h1 className="text-xl sm:text-2xl font-bold mb-6 text-foreground">Job Board Management</h1>
+    <div className="container mx-auto px-4 py-4 sm:py-6">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-foreground">Job Board Management</h1>
 
       <FadeIn direction="up">
-        <div className="flex flex-col sm:flex-row gap-2 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4 sm:mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search jobs..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-sm" />
+              placeholder="Search jobs..." className="w-full pl-10 pr-3 py-2.5 border rounded-md bg-card text-sm" />
           </div>
           <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-card text-sm">
+            className="px-3 py-2.5 border rounded-md bg-card text-sm">
             <option value="">All Types</option>
             <option value="full-time">Full Time</option>
             <option value="part-time">Part Time</option>
