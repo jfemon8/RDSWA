@@ -23,16 +23,33 @@ export function getPrimaryRoleLabel(role: string): string {
 }
 
 /**
- * Get all effective roles for a user based on hierarchy.
- * A SuperAdmin effectively holds all roles; an Admin holds admin, moderator, member, etc.
- * Only returns "meaningful" roles (skips guest/user for higher roles).
+ * Tier-only roles that represent privilege level. Alumni / Advisor / Senior Advisor
+ * are orthogonal tags (stored as booleans) and must NOT appear here — they render
+ * via the isAlumni / isAdvisor / isSeniorAdvisor flag badges instead.
+ */
+const TIER_ROLES: UserRole[] = [
+  UserRole.GUEST,
+  UserRole.USER,
+  UserRole.MEMBER,
+  UserRole.MODERATOR,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
+
+/**
+ * Get all effective tier-level roles for a user based on hierarchy.
+ * A SuperAdmin effectively holds all lower tiers; an Admin holds admin, moderator, member.
+ * Skips guest/user for anyone member+. Excludes tag roles (alumni/advisor/senior_advisor)
+ * — those render separately from the persisted isAlumni/isAdvisor/isSeniorAdvisor flags.
  */
 export function getEffectiveRoles(role: string): string[] {
   const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
   if (idx < 0) return [role];
 
-  // All roles at and below the user's level
-  const effective = ROLE_HIERARCHY.slice(0, idx + 1).reverse();
+  // All tiers at or below the user's hierarchy level
+  const effective = TIER_ROLES.filter(
+    (r) => ROLE_HIERARCHY.indexOf(r) <= idx
+  ).reverse();
 
   // Skip guest and user for anyone who is member+
   if (idx >= ROLE_HIERARCHY.indexOf(UserRole.MEMBER)) {

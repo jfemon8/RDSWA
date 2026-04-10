@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/authStore';
 import { Link } from 'react-router-dom';
-import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle, Users, Heart, Hash, IdCard, Clock } from 'lucide-react';
+import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle, Users, Heart, Hash, IdCard, Clock, Award, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
@@ -114,7 +114,7 @@ export default function ProfileViewPage() {
                     </motion.span>
                   );
                 })}
-                {u.isAlumni && !getEffectiveRoles(u.role).includes('alumni') && (
+                {u.isAlumni && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -122,6 +122,26 @@ export default function ProfileViewPage() {
                     className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full"
                   >
                     <GraduationCap className="h-3 w-3" /> Alumni
+                  </motion.span>
+                )}
+                {u.isAdvisor && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.32 }}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-full"
+                  >
+                    <Award className="h-3 w-3" /> Advisor
+                  </motion.span>
+                )}
+                {u.isSeniorAdvisor && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.34 }}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full"
+                  >
+                    <Star className="h-3 w-3" /> Senior Advisor
                   </motion.span>
                 )}
               </div>
