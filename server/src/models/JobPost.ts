@@ -8,8 +8,11 @@ export interface IJobPostDocument extends Document {
   description: string;
   requirements: string[];
   salary?: string;
+  vacancy?: number;
   applicationLink?: string;
   postedBy: mongoose.Types.ObjectId;
+  /** Application deadline — after this date the job is considered expired */
+  deadline?: Date;
   expiresAt?: Date;
   isActive: boolean;
   isDeleted: boolean;
@@ -26,8 +29,10 @@ const jobPostSchema = new Schema<IJobPostDocument>(
     description: { type: String, required: true },
     requirements: [String],
     salary: String,
+    vacancy: { type: Number, min: 1 },
     applicationLink: String,
     postedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    deadline: Date,
     expiresAt: Date,
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },

@@ -6,7 +6,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import {
   ArrowLeft, Briefcase, MapPin, Clock, ExternalLink, DollarSign,
-  Loader2, FileText, CheckCircle, User,
+  Loader2, FileText, CheckCircle, User, Users, CalendarX,
 } from 'lucide-react';
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/date';
@@ -46,6 +46,7 @@ export default function JobDetailPage() {
   }
 
   const job = data;
+  const expired = !!(job.deadline && new Date(job.deadline).getTime() < Date.now());
 
   return (
     <div className="container mx-auto py-6 md:py-12">
@@ -59,11 +60,18 @@ export default function JobDetailPage() {
 
       {/* Header */}
       <FadeIn delay={0.05} direction="up">
-        <div className="border rounded-xl p-6 bg-card mb-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+        <div className={`relative border rounded-xl p-6 bg-card mb-6 overflow-hidden ${expired ? 'opacity-90' : ''}`}>
+          {expired && (
+            <div className="absolute top-0 right-0 pointer-events-none">
+              <div className="bg-red-500 text-white text-xs font-bold px-10 py-1 rotate-45 translate-x-8 translate-y-4 shadow-md">
+                Expired
+              </div>
+            </div>
+          )}
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
               <BlurText text={job.title} className="text-2xl font-bold mb-2" delay={40} />
-              <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Briefcase className="h-4 w-4" /> {job.company}
                 </span>
@@ -77,6 +85,11 @@ export default function JobDetailPage() {
                     <DollarSign className="h-4 w-4" /> BDT {job.salary}
                   </span>
                 )}
+                {typeof job.vacancy === 'number' && job.vacancy > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4" /> {job.vacancy} vacancy
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 <span className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary font-medium">
@@ -85,24 +98,34 @@ export default function JobDetailPage() {
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" /> Posted {formatDate(job.createdAt)}
                 </span>
-                {job.expiresAt && (
-                  <span className="text-xs text-muted-foreground">
-                    Expires {formatDate(job.expiresAt)}
+                {job.deadline && (
+                  <span className={`flex items-center gap-1 text-xs ${expired ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                    <CalendarX className="h-3.5 w-3.5" /> Deadline {formatDate(job.deadline)}
                   </span>
                 )}
               </div>
             </div>
             {job.applicationLink && (
-              <motion.a
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                href={job.applicationLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium shrink-0"
-              >
-                <ExternalLink className="h-4 w-4" /> Apply
-              </motion.a>
+              expired ? (
+                <button
+                  disabled
+                  className="flex items-center gap-2 px-5 py-2.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium shrink-0 cursor-not-allowed"
+                  title="Application deadline has passed"
+                >
+                  <ExternalLink className="h-4 w-4" /> Expired
+                </button>
+              ) : (
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href={job.applicationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium shrink-0"
+                >
+                  <ExternalLink className="h-4 w-4" /> Apply
+                </motion.a>
+              )
             )}
           </div>
         </div>
@@ -172,16 +195,26 @@ export default function JobDetailPage() {
       {job.applicationLink && (
         <FadeIn delay={0.25} direction="up">
           <div className="mt-6 text-center">
-            <motion.a
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              href={job.applicationLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-3 bg-primary text-primary-foreground rounded-lg font-medium"
-            >
-              <ExternalLink className="h-4 w-4" /> Apply for this Position
-            </motion.a>
+            {expired ? (
+              <button
+                disabled
+                className="inline-flex items-center gap-2 px-8 py-3 bg-muted text-muted-foreground rounded-lg font-medium cursor-not-allowed"
+                title="Application deadline has passed"
+              >
+                <CalendarX className="h-4 w-4" /> Application Closed
+              </button>
+            ) : (
+              <motion.a
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                href={job.applicationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-primary text-primary-foreground rounded-lg font-medium"
+              >
+                <ExternalLink className="h-4 w-4" /> Apply for this Position
+              </motion.a>
+            )}
           </div>
         </FadeIn>
       )}

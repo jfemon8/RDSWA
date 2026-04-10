@@ -65,10 +65,27 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // Create job post (Alumni+ only)
 router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { title, company, location, type, description, requirements, salary, applicationLink, expiresAt } = req.body;
+  const { title, company, location, type, description, requirements, salary, vacancy, applicationLink, deadline, expiresAt } = req.body;
 
   if (!title || !company || !type || !description) {
     throw ApiError.badRequest('Title, company, type, and description are required');
+  }
+
+  // Validate vacancy if provided
+  if (vacancy !== undefined && vacancy !== null && vacancy !== '') {
+    const v = Number(vacancy);
+    if (!Number.isInteger(v) || v < 1) {
+      throw ApiError.badRequest('Vacancy must be a positive integer');
+    }
+  }
+
+  // Validate deadline if provided
+  let parsedDeadline: Date | undefined;
+  if (deadline) {
+    parsedDeadline = new Date(deadline);
+    if (isNaN(parsedDeadline.getTime())) {
+      throw ApiError.badRequest('Deadline must be a valid date');
+    }
   }
 
   const job = await JobPost.create({
@@ -79,7 +96,9 @@ router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async 
     description,
     requirements: requirements || [],
     salary,
+    vacancy: vacancy ? Number(vacancy) : undefined,
     applicationLink,
+    deadline: parsedDeadline,
     expiresAt,
     postedBy: req.user._id,
   });
@@ -97,9 +116,16 @@ router.patch('/:id', authenticate(), asyncHandler(async (req, res) => {
   const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
   if (!isOwner && !isAdmin) throw ApiError.forbidden('Not authorized');
 
-  const allowed = ['title', 'company', 'location', 'type', 'description', 'requirements', 'salary', 'applicationLink', 'expiresAt', 'isActive'];
+  const allowed = ['title', 'company', 'location', 'type', 'description', 'requirements', 'salary', 'vacancy', 'applicationLink', 'deadline', 'expiresAt', 'isActive'];
   for (const key of allowed) {
-    if (req.body[key] !== undefined) (job as any)[key] = req.body[key];
+    if (req.body[key] !== undefined) {
+      let value = req.body[key];
+      if (key === 'vacancy' && value !== null && value !== '') value = Number(value);
+      if (key === 'vacancy' && (value === null || value === '')) value = undefined;
+      if (key === 'deadline' && value) value = new Date(value);
+      if (key === 'deadline' && !value) value = undefined;
+      (job as any)[key] = value;
+    }
   }
   await job.save();
 

@@ -66,19 +66,24 @@ export default function AdminJobsPage() {
       ) : (
         <FadeIn direction="up" delay={0.1}>
           <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm min-w-[700px]">
+            <table className="w-full text-sm min-w-[1000px]">
               <thead>
                 <tr className="bg-muted border-b">
                   <th className="text-left p-3 font-medium">Title</th>
                   <th className="text-left p-3 font-medium">Company</th>
                   <th className="text-left p-3 font-medium">Type</th>
+                  <th className="text-left p-3 font-medium">Vacancy</th>
+                  <th className="text-left p-3 font-medium">Deadline</th>
+                  <th className="text-left p-3 font-medium">Status</th>
                   <th className="text-left p-3 font-medium">Posted By</th>
                   <th className="text-left p-3 font-medium">Date</th>
                   <th className="text-left p-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {jobs.map((j: any) => (
+                {jobs.map((j: any) => {
+                  const expired = !!(j.deadline && new Date(j.deadline).getTime() < Date.now());
+                  return (
                   <tr key={j._id} className="border-t hover:bg-accent/30">
                     <td className="p-3">
                       <Link to={`/dashboard/jobs/${j._id}`} className="font-medium hover:text-primary transition-colors flex items-center gap-1.5">
@@ -88,6 +93,19 @@ export default function AdminJobsPage() {
                     <td className="p-3 text-muted-foreground">{j.company}</td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">{j.type?.replace('-', ' ')}</span>
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">
+                      {typeof j.vacancy === 'number' && j.vacancy > 0 ? j.vacancy : '-'}
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">
+                      {j.deadline ? formatDate(j.deadline) : '-'}
+                    </td>
+                    <td className="p-3">
+                      {expired ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Expired</span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                      )}
                     </td>
                     <td className="p-3">
                       {j.postedBy?._id ? (
@@ -112,7 +130,8 @@ export default function AdminJobsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
