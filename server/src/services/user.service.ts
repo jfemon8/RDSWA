@@ -452,82 +452,85 @@ export class UserService {
   }
 
   /**
-   * Revoke the sticky alumniApproved flag. The pre-save hook will recompute
-   * isAlumni — if the user still has a current job/business, they remain alumni.
+   * Manually grant or revoke the sticky alumniApproved flag.
+   * Gate: target must be an approved member when granting.
+   *
+   * When revoking, the pre-save hook recomputes isAlumni — if the user still has
+   * a current job/business, they remain alumni automatically (the business rule
+   * supersedes the admin's override).
    */
-  async revokeAlumniApproved(
+  async setAlumni(
     targetUserId: string,
-    adminUser: IUserDocument
+    grant: boolean,
+    adminUser: IUserDocument,
+    reason?: string,
+    source: 'form' | 'manual' = 'manual'
   ): Promise<IUserDocument> {
     const target = await User.findById(targetUserId);
     if (!target) throw ApiError.notFound('User not found');
 
-    if (!target.alumniApproved) {
-      throw ApiError.badRequest('User does not have an approved alumni form');
+    if (grant && target.membershipStatus !== 'approved') {
+      throw ApiError.badRequest('User must be an approved member before becoming an alumni');
     }
 
-    target.alumniApproved = false;
-    target.alumniAssignment = undefined;
-    await target.save();
+    if (target.alumniApproved === grant) return target; // no-op
+
+    const wasAlumni = target.isAlumni;
+    target.alumniApproved = grant;
+    if (grant) {
+      target.alumniAssignment = {
+        type: source,
+        reason: reason || (source === 'form' ? 'alumni_form_approved' : 'manual_alumni_grant'),
+        assignedBy: adminUser._id as any,
+        assignedAt: new Date(),
+      };
+    } else {
+      target.alumniAssignment = undefined;
+    }
+    await target.save(); // pre-save hook recomputes isAlumni
 
     await RoleAssignment.create({
       user: target._id,
       role: target.isAlumni ? UserRole.ALUMNI : UserRole.MEMBER,
-      previousRole: UserRole.ALUMNI,
+      previousRole: wasAlumni ? UserRole.ALUMNI : UserRole.MEMBER,
       assignmentType: 'manual',
-      reason: 'alumni_approved_revoked',
+      reason: reason || (grant ? 'manual_alumni_grant' : 'manual_alumni_revoke'),
       assignedBy: adminUser._id,
     });
+
+    // Only notify on actual state change (e.g. grant when wasn't alumni, or revoke that actually
+    // flipped isAlumni false — i.e. user has no current employment)
+    const nowAlumni = target.isAlumni;
+    if (grant && !wasAlumni && nowAlumni) {
+      await Notification.create({
+        recipient: target._id,
+        type: 'role_changed',
+        title: 'Alumni Status Approved',
+        message: 'You have been classified as an Alumni.',
+        link: '/dashboard',
+      });
+    } else if (!grant && wasAlumni && !nowAlumni) {
+      await Notification.create({
+        recipient: target._id,
+        type: 'role_changed',
+        title: 'Alumni Status Revoked',
+        message: 'Your Alumni status has been revoked by an administrator.',
+        link: '/dashboard',
+      });
+    }
 
     return target;
   }
 
   /**
-   * Approve an alumni form submission — sets the sticky alumniApproved flag.
-   * Gate: target must be an approved member.
+   * Approve an alumni form submission — delegates to setAlumni with 'form' source.
    */
   async approveAlumniForm(
     targetUserId: string,
     approvedBy: IUserDocument,
     reason = 'alumni_form_approved'
   ): Promise<IUserDocument> {
-    const target = await User.findById(targetUserId);
-    if (!target) throw ApiError.notFound('User not found');
-
-    if (target.membershipStatus !== 'approved') {
-      throw ApiError.badRequest('User must be an approved member before becoming an alumni');
-    }
-
-    const wasAlumni = target.isAlumni;
-    target.alumniApproved = true;
-    target.alumniAssignment = {
-      type: 'form',
-      reason,
-      assignedBy: approvedBy._id as any,
-      assignedAt: new Date(),
-    };
-    await target.save(); // pre-save hook flips isAlumni → true
-
-    if (!wasAlumni) {
-      await RoleAssignment.create({
-        user: target._id,
-        role: UserRole.ALUMNI,
-        previousRole: target.role,
-        assignmentType: 'manual',
-        reason,
-        assignedBy: approvedBy._id,
-      });
-
-      await Notification.create({
-        recipient: target._id,
-        type: 'role_changed',
-        title: 'Alumni Status Approved',
-        message: 'Your alumni application has been approved.',
-        link: '/dashboard',
-      });
-    }
-
-    return target;
+    return this.setAlumni(targetUserId, true, approvedBy, reason, 'form');
   }
 
   /**

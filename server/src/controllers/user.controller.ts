@@ -56,11 +56,12 @@ export const changeRole = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.success(res, user, 'Role updated');
 });
 
-export const revokeAlumniApproved = asyncHandler(async (req: Request, res: Response) => {
+export const setAlumni = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
-  const user = await userService.revokeAlumniApproved(id, req.user);
-  ApiResponse.success(res, user, 'Alumni approval revoked');
+  const grant = req.body.grant === true;
+  const user = await userService.setAlumni(id, grant, req.user, req.body.reason);
+  ApiResponse.success(res, user, grant ? 'Alumni granted' : 'Alumni revoked');
 });
 
 export const setAdvisor = asyncHandler(async (req: Request, res: Response) => {

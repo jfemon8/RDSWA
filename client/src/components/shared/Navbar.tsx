@@ -22,6 +22,8 @@ const moreLinks = [
   { label: 'Committee', href: '/committee' },
   { label: 'Members', href: '/members' },
   { label: 'Alumni', href: '/alumni' },
+  { label: 'Advisors', href: '/advisors' },
+  { label: 'Senior Advisors', href: '/senior-advisors' },
   { label: 'Events', href: '/events' },
   { label: 'Gallery', href: '/gallery' },
   { label: 'Documents', href: '/documents' },

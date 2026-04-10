@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard, Settings2,
-  Briefcase, MessageSquare, Heart,
+  Briefcase, MessageSquare, Heart, Award, Star,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -37,7 +37,9 @@ const adminLinks: AdminLink[] = [
   { label: 'Finance', href: '/admin/finance', icon: Banknote, minRole: UserRole.ADMIN },
   { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },
   { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
-  { label: 'Alumni Monitor', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.MODERATOR },
+  { label: 'Alumni', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.MODERATOR },
+  { label: 'Advisors', href: '/admin/advisors', icon: Award, minRole: UserRole.ADMIN },
+  { label: 'Senior Advisors', href: '/admin/senior-advisors', icon: Star, minRole: UserRole.ADMIN },
   { label: 'Donations', href: '/admin/donations', icon: Heart, minRole: UserRole.MODERATOR },
   { label: 'Jobs', href: '/admin/jobs', icon: Briefcase, minRole: UserRole.ADMIN },
   { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.ADMIN },

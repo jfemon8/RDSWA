@@ -41,6 +41,8 @@ const JobBoard = lazy(() => import('@/features/jobs/JobBoardPage'));
 const JobDetail = lazy(() => import('@/features/jobs/JobDetailPage'));
 const MentorshipPage = lazy(() => import('@/features/mentorship/MentorshipPage'));
 const Alumni = lazy(() => import('@/features/members/AlumniPage'));
+const Advisors = lazy(() => import('@/features/members/AdvisorsPage'));
+const SeniorAdvisors = lazy(() => import('@/features/members/SeniorAdvisorsPage'));
 const NotFound = lazy(() => import('@/features/NotFoundPage'));
 
 // Dashboard pages
@@ -84,6 +86,8 @@ const AdminSettings = lazy(() => import('@/features/admin/settings/AdminSettings
 const AdminSystemConfig = lazy(() => import('@/features/admin/settings/AdminSystemConfigPage'));
 const AdminLogs = lazy(() => import('@/features/admin/logs/AdminLogsPage'));
 const AdminAlumniMonitor = lazy(() => import('@/features/admin/alumni/AdminAlumniMonitorPage'));
+const AdminAdvisors = lazy(() => import('@/features/admin/advisors/AdminAdvisorsPage'));
+const AdminSeniorAdvisors = lazy(() => import('@/features/admin/advisors/AdminSeniorAdvisorsPage'));
 const AdminDonations = lazy(() => import('@/features/admin/donations/AdminDonationsPage'));
 const AdminJobs = lazy(() => import('@/features/admin/jobs/AdminJobsPage'));
 const AdminMentorship = lazy(() => import('@/features/admin/mentorship/AdminMentorshipPage'));
@@ -120,6 +124,8 @@ export default function AppRouter() {
           <Route path="/members/:id" element={<UserProfile />} />
           <Route path="/blood-donors" element={<BloodDonors />} />
           <Route path="/alumni" element={<Alumni />} />
+          <Route path="/advisors" element={<Advisors />} />
+          <Route path="/senior-advisors" element={<SeniorAdvisors />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/meetings" element={<MeetingRecords />} />
@@ -175,6 +181,8 @@ export default function AppRouter() {
               <Route path="/admin/voting" element={<AdminVoting />} />
               <Route path="/admin/forms" element={<AdminForms />} />
               <Route path="/admin/alumni-monitor" element={<AdminAlumniMonitor />} />
+              <Route path="/admin/advisors" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminAdvisors /></AdminRoleGuard>} />
+              <Route path="/admin/senior-advisors" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminSeniorAdvisors /></AdminRoleGuard>} />
               <Route path="/admin/donations" element={<AdminDonations />} />
               <Route path="/admin/jobs" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminJobs /></AdminRoleGuard>} />
               <Route path="/admin/mentorship" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminMentorship /></AdminRoleGuard>} />

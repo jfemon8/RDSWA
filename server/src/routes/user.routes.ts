@@ -42,12 +42,10 @@ router.patch('/:id/profile', authenticate(), authorize(UserRole.ADMIN), auditLog
 // Role management
 router.patch('/:id/role', authenticate(), authorize(UserRole.ADMIN), validate({ body: changeRoleSchema }), auditLog('user.role_change', 'users'), userController.changeRole);
 
-// Advisor & Senior Advisor flag management (Admin+)
+// Alumni / Advisor / Senior Advisor tag management (Admin+)
+router.patch('/:id/alumni', authenticate(), authorize(UserRole.ADMIN), auditLog('user.alumni_set', 'users'), userController.setAlumni);
 router.patch('/:id/advisor', authenticate(), authorize(UserRole.ADMIN), auditLog('user.advisor_set', 'users'), userController.setAdvisor);
 router.patch('/:id/senior-advisor', authenticate(), authorize(UserRole.ADMIN), auditLog('user.senior_advisor_set', 'users'), userController.setSeniorAdvisor);
-
-// Revoke sticky alumni approval (Moderator+) — user may remain alumni via current job/business
-router.patch('/:id/alumni/revoke', authenticate(), authorize(UserRole.MODERATOR), auditLog('user.alumni_revoked', 'users'), userController.revokeAlumniApproved);
 
 router.patch('/:id/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('user.approve', 'users'), userController.approveMembership);
 router.patch('/:id/reject', authenticate(), authorize(UserRole.MODERATOR), validate({ body: memberActionSchema }), auditLog('user.reject', 'users'), userController.rejectMembership);
