@@ -6,7 +6,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText, Search } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText, Search, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -334,6 +334,20 @@ function EventDetailPanel({ event }: { event: any }) {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove photo'); },
   });
 
+  const tagPhotoMutation = useMutation({
+    mutationFn: (vars: { photoIndex: number; userIds: string[] }) =>
+      api.post(`/events/${event._id}/photos/${vars.photoIndex}/tag`, { userIds: vars.userIds }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Users tagged'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to tag users'); },
+  });
+
+  const untagPhotoMutation = useMutation({
+    mutationFn: (vars: { photoIndex: number; userId: string }) =>
+      api.delete(`/events/${event._id}/photos/${vars.photoIndex}/tag`, { data: { userId: vars.userId } }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Tag removed'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to remove tag'); },
+  });
+
   const removeAttendanceMutation = useMutation({
     mutationFn: (userId: string) => api.delete(`/events/${event._id}/attendance/${userId}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) }); toast.success('Attendance removed'); },
@@ -574,26 +588,16 @@ function EventDetailPanel({ event }: { event: any }) {
         </div>
 
         {photos.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {photos.map((photo: any, i: number) => (
-              <motion.div
+              <PhotoCard
                 key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="relative group"
-              >
-                <img src={photo.url} alt={photo.caption || ''} className="w-full h-24 object-cover rounded" />
-                <button
-                  onClick={() => removePhotoMutation.mutate(i)}
-                  className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-                {photo.caption && (
-                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{photo.caption}</p>
-                )}
-              </motion.div>
+                photo={photo}
+                index={i}
+                onRemove={() => removePhotoMutation.mutate(i)}
+                onTag={(userIds) => tagPhotoMutation.mutate({ photoIndex: i, userIds })}
+                onUntag={(userId) => untagPhotoMutation.mutate({ photoIndex: i, userId })}
+              />
             ))}
           </div>
         )}
@@ -730,5 +734,148 @@ function EventDetailPanel({ event }: { event: any }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** A single photo tile with hover-actions for tagging users + removing. */
+function PhotoCard({
+  photo, index, onRemove, onTag, onUntag,
+}: {
+  photo: any;
+  index: number;
+  onRemove: () => void;
+  onTag: (userIds: string[]) => void;
+  onUntag: (userId: string) => void;
+}) {
+  const [showTagPanel, setShowTagPanel] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const taggedUsers: any[] = photo.taggedUsers || [];
+  const taggedIds = new Set(taggedUsers.map((u) => (typeof u === 'object' ? u._id : u)));
+
+  const { data: searchData } = useQuery({
+    queryKey: ['users', 'members', 'tag-search', search],
+    queryFn: async () => {
+      const { data } = await api.get(`/users/members?search=${encodeURIComponent(search)}&limit=8`);
+      return data;
+    },
+    enabled: showTagPanel && search.length >= 2,
+  });
+
+  const candidates: any[] = (searchData?.data || []).filter((u: any) => !taggedIds.has(u._id));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.04 }}
+      className="relative group border rounded-md overflow-hidden bg-background"
+    >
+      <div className="relative">
+        <img src={photo.url} alt={photo.caption || ''} className="w-full h-28 object-cover" />
+        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => setShowTagPanel((v) => !v)}
+            title="Tag users"
+            className={`p-1 rounded-full text-white ${showTagPanel ? 'bg-primary' : 'bg-black/60 hover:bg-black/80'}`}
+          >
+            <Tag className="h-3 w-3" />
+          </button>
+          <button
+            onClick={onRemove}
+            title="Remove photo"
+            className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+        {taggedUsers.length > 0 && (
+          <div className="absolute bottom-1 left-1 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/60 text-white text-[10px]">
+            <Users className="h-2.5 w-2.5" /> {taggedUsers.length}
+          </div>
+        )}
+      </div>
+
+      <div className="p-1.5 space-y-1">
+        {photo.caption && (
+          <p className="text-[10px] text-muted-foreground truncate">{photo.caption}</p>
+        )}
+
+        {/* Tagged users pills */}
+        {taggedUsers.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {taggedUsers.map((u: any, i: number) => {
+              const id = typeof u === 'object' ? u._id : u;
+              const name = typeof u === 'object' ? u.name : id;
+              return (
+                <motion.span
+                  key={id || i}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded-full bg-primary/10 text-primary"
+                >
+                  {name}
+                  <button
+                    onClick={() => onUntag(id)}
+                    className="hover:text-destructive"
+                    title="Remove tag"
+                  >
+                    <X className="h-2 w-2" />
+                  </button>
+                </motion.span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {showTagPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t bg-muted/30"
+          >
+            <div className="p-2 space-y-1.5">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search members..."
+                  className="w-full pl-7 pr-2 py-1 border rounded bg-card text-foreground text-[11px] focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+              </div>
+              {search.length >= 2 && candidates.length === 0 && (
+                <p className="text-[10px] text-muted-foreground text-center py-1">No matches</p>
+              )}
+              {candidates.length > 0 && (
+                <div className="max-h-32 overflow-y-auto space-y-0.5">
+                  {candidates.map((m: any) => (
+                    <button
+                      key={m._id}
+                      onClick={() => { onTag([m._id]); setSearch(''); }}
+                      className="w-full flex items-center gap-1.5 px-1.5 py-1 text-[11px] text-left text-foreground hover:bg-accent rounded"
+                    >
+                      {m.avatar ? (
+                        <img src={m.avatar} alt="" className="h-4 w-4 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[8px] font-semibold">
+                          {m.name?.[0]}
+                        </div>
+                      )}
+                      <span className="truncate">{m.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

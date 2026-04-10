@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard, Settings2,
-  Briefcase, MessageSquare, Heart, Award, Star,
+  Briefcase, MessageSquare, Heart, Award, Star, Wallet,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,6 +35,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
   { label: 'Finance', href: '/admin/finance', icon: Banknote, minRole: UserRole.ADMIN },
+  { label: 'Budgets', href: '/admin/budgets', icon: Wallet, minRole: UserRole.MODERATOR },
   { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },
   { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
   { label: 'Alumni', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.MODERATOR },

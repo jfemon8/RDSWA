@@ -47,7 +47,8 @@ export class EventService {
       .populate('committee', 'name')
       .populate('registeredUsers', 'name avatar department batch')
       .populate('attendance.user', 'name avatar department batch studentId')
-      .populate('attendance.verifiedBy', 'name');
+      .populate('attendance.verifiedBy', 'name')
+      .populate('photos.taggedUsers', 'name avatar');
     if (!event) throw ApiError.notFound('Event not found');
     return event;
   }
