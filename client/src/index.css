@@ -53,14 +53,78 @@
   * {
     @apply border-border;
   }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Prevent iOS auto-zoom on input focus (fires when font-size < 16px) */
+  @media (max-width: 640px) {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer utilities {
   .font-bangla {
     font-family: 'Noto Sans Bengali', sans-serif;
+  }
+
+  /* Safe-area insets for notched phones (iPhone X+) */
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-left { padding-left: env(safe-area-inset-left); }
+  .safe-right { padding-right: env(safe-area-inset-right); }
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .safe-y {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Minimum touch target (44x44) — iOS HIG guideline */
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Hide scrollbar but keep scrolling */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Smooth momentum scrolling on iOS */
+  .scroll-smooth-touch {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text from being selected (for UI chrome) */
+  .select-none-touch {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 

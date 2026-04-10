@@ -10,11 +10,11 @@ export default function Footer() {
   const siteName = settings?.siteName || 'RDSWA';
 
   return (
-    <footer role="contentinfo" className="border-t bg-background">
-      <div className="container mx-auto py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer role="contentinfo" className="border-t bg-background" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="container mx-auto py-10 sm:py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           <FadeIn delay={0}>
-            <div>
+            <div className="col-span-2 md:col-span-1">
               {fLogo ? (
                 <img src={fLogo} alt={siteName} className="h-10 object-contain mb-3" />
               ) : (
@@ -67,7 +67,7 @@ export default function Footer() {
           </FadeIn>
         </div>
         <FadeIn>
-          <div className="mt-10 pt-6 border-t flex items-center justify-between text-sm text-muted-foreground">
+          <div className="mt-8 sm:mt-10 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground text-center sm:text-left">
             <span>&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</span>
             <span className="text-xs">Developed by <a href="https://github.com/jfemon8" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline underline-offset-2">Emon</a></span>
           </div>

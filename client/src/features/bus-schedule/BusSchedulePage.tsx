@@ -262,28 +262,28 @@ export default function BusSchedulePage() {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-wrap gap-3 mb-4 p-4 border rounded-lg bg-card">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-3 mb-4 p-4 border rounded-lg bg-card">
+              <div className="min-w-0">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Category</label>
                 <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                  className="px-3 py-1.5 border rounded-md text-sm bg-background min-w-[140px]">
+                  className="w-full lg:w-auto lg:min-w-[140px] px-3 py-2 border rounded-md text-sm bg-background">
                   <option value="">All Categories</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>{cat.replace('_', ' ').replace(/^\w/, (c) => c.toUpperCase())}</option>
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Departure After</label>
                 <input type="time" value={departureAfter}
                   onChange={(e) => { setDepartureAfter(e.target.value); setPage(1); }}
-                  className="px-3 py-1.5 border rounded-md text-sm bg-background min-w-[130px]" />
+                  className="w-full lg:w-auto lg:min-w-[130px] px-3 py-2 border rounded-md text-sm bg-background" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Departure Before</label>
                 <input type="time" value={departureBefore}
                   onChange={(e) => { setDepartureBefore(e.target.value); setPage(1); }}
-                  className="px-3 py-1.5 border rounded-md text-sm bg-background min-w-[130px]" />
+                  className="w-full lg:w-auto lg:min-w-[130px] px-3 py-2 border rounded-md text-sm bg-background" />
               </div>
               {hasActiveFilters && (
                 <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -379,8 +379,8 @@ export default function BusSchedulePage() {
               ) : (
                 <>
                   <FadeIn direction="up" duration={0.4}>
-                    <div className="overflow-x-auto border rounded-lg">
-                      <table className="w-full text-sm">
+                    <div className="overflow-x-auto border rounded-lg -mx-3 sm:mx-0 scroll-smooth-touch">
+                      <table className="w-full text-sm min-w-[520px]">
                         <thead>
                           <tr className="bg-muted border-b">
                             <th className="p-3 font-medium text-center text-foreground">Time</th>

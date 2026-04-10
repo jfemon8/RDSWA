@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
   const sections: Array<{ title: string; content: string }> = data?.data?.privacyPolicy || [];
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       <SEO title="Privacy Policy" description="RDSWA privacy policy — how we collect, use, and protect your personal information." />
       <BlurText
         text="Privacy Policy"

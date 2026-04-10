@@ -70,7 +70,7 @@ export default function RichTextEditor({
       <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted/30">
         {tools.map((tool, i) => {
           if ('type' in tool && tool.type === 'divider') {
-            return <div key={i} className="w-px h-5 bg-border mx-1" />;
+            return <div key={i} className="w-px h-5 bg-border mx-1 hidden sm:block" />;
           }
           const Icon = (tool as any).icon;
           return (
@@ -79,13 +79,14 @@ export default function RichTextEditor({
               type="button"
               onClick={(tool as any).action}
               title={(tool as any).label}
-              className={`p-1.5 rounded transition-colors ${
+              aria-label={(tool as any).label}
+              className={`p-2 sm:p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded transition-colors ${
                 (tool as any).active
                   ? 'bg-primary/15 text-primary'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             </button>
           );
         })}

@@ -72,11 +72,11 @@ export default function HomePage() {
     <div className="overflow-x-hidden">
       <SEO description="Official platform of RDSWA — connecting students from Rangpur Division at University of Barishal. Events, notices, committees, and more." />
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center py-20 md:py-32">
-        <div className="absolute inset-0 overflow-hidden -z-10">
-          <div className="absolute top-1/4 -left-20 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
-          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[80px]" />
+      <section className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center py-16 sm:py-20 md:py-32">
+        <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute top-1/4 -left-20 w-48 sm:w-72 h-48 sm:h-72 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute bottom-1/4 -right-20 w-56 sm:w-96 h-56 sm:h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-primary/5 rounded-full blur-[80px]" />
         </div>
 
         <div className="container mx-auto text-center">
@@ -98,7 +98,7 @@ export default function HomePage() {
 
           <BlurText
             text={hp?.heroTitle || 'Rangpur Divisional Student'}
-            className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2 justify-center"
+            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2 justify-center"
             delay={100}
             animateBy="words"
             direction="bottom"
@@ -108,7 +108,7 @@ export default function HomePage() {
             <GradientText
               colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
               animationSpeed={4}
-              className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight"
+              className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight"
             >
               {hp?.heroTitleGradient || 'Welfare Association'}
             </GradientText>

@@ -79,7 +79,7 @@ export default function EventsPage() {
   const nextMonth = () => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       <SEO title="Events" description="Browse upcoming and past RDSWA events, workshops, seminars, and social gatherings." />
       <BlurText
         text="Events"

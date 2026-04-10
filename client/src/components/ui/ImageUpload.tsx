@@ -119,29 +119,28 @@ export default function ImageUpload({
               alt=""
               className={`object-cover ${circular ? 'h-24 w-24 rounded-full' : 'h-32 w-full max-w-xs'}`}
             />
-            <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-              <div className="flex gap-2">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => fileRef.current?.click()}
-                  className="p-1.5 bg-white/90 rounded-full text-foreground"
-                  title="Change"
-                >
-                  <Upload className="h-4 w-4" />
-                </motion.button>
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => onChange('')}
-                  className="p-1.5 bg-white/90 rounded-full text-destructive"
-                  title="Remove"
-                >
-                  <X className="h-4 w-4" />
-                </motion.button>
-              </div>
+            {/* Always-visible action buttons on mobile, hover-only on desktop */}
+            <div className="absolute top-1 right-1 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => fileRef.current?.click()}
+                className="p-2 bg-white/95 dark:bg-black/80 backdrop-blur-sm rounded-full text-foreground shadow-md"
+                title="Change"
+                aria-label="Change image"
+              >
+                <Upload className="h-3.5 w-3.5" />
+              </motion.button>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onChange('')}
+                className="p-2 bg-white/95 dark:bg-black/80 backdrop-blur-sm rounded-full text-destructive shadow-md"
+                title="Remove"
+                aria-label="Remove image"
+              >
+                <X className="h-3.5 w-3.5" />
+              </motion.button>
             </div>
           </motion.div>
         ) : (

@@ -22,7 +22,7 @@ export default function CommitteePage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-12 space-y-8">
+      <div className="container mx-auto py-6 md:py-12 space-y-8">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="border rounded-xl bg-card overflow-hidden">
             <div className="p-6 border-b bg-muted/30 space-y-2">
@@ -47,7 +47,7 @@ export default function CommitteePage() {
   }
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       <SEO title="Committee" description="Meet the RDSWA committee members and leadership team." />
       <BlurText
         text="Committees"

@@ -151,29 +151,31 @@ export default function AdminUsersPage() {
 
       <FadeIn direction="up" delay={0}>
         <div className="flex flex-col sm:flex-row gap-2 mb-6">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search users..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
           </div>
-          <select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
-            <option value="">All Roles</option>
-            <option value="user">User</option>
-            <option value="member">Member</option>
-            <option value="alumni">Alumni</option>
-            <option value="moderator">Moderator</option>
-            <option value="admin">Admin</option>
-          </select>
-          <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
-            <option value="">All Status</option>
-            <option value="none">No Application</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="suspended">Suspended</option>
-          </select>
+          <div className="grid grid-cols-2 sm:flex gap-2">
+            <select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}
+              className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">
+              <option value="">All Roles</option>
+              <option value="user">User</option>
+              <option value="member">Member</option>
+              <option value="alumni">Alumni</option>
+              <option value="moderator">Moderator</option>
+              <option value="admin">Admin</option>
+            </select>
+            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+              className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">
+              <option value="">All Status</option>
+              <option value="none">No Application</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
         </div>
       </FadeIn>
 

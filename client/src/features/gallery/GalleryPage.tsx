@@ -7,10 +7,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  useBodyScrollLock(!!lightbox);
 
   const { data: albumsData, isLoading } = useQuery({
     queryKey: ['gallery', 'albums'],
@@ -114,7 +116,12 @@ export default function GalleryPage() {
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
             onClick={() => setLightbox(null)}
           >
-            <button className="absolute top-4 right-4 text-white hover:text-white/70" onClick={() => setLightbox(null)}>
+            <button
+              className="absolute tap-target flex items-center justify-center text-white hover:text-white/70 bg-black/40 rounded-full"
+              style={{ top: 'max(1rem, env(safe-area-inset-top))', right: 'max(1rem, env(safe-area-inset-right))' }}
+              onClick={() => setLightbox(null)}
+              aria-label="Close"
+            >
               <X className="h-6 w-6" />
             </button>
             <motion.img

@@ -25,7 +25,7 @@ export default function AboutPage() {
   ].filter((c) => c.content);
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       <SEO title="About Us" description="Learn about RDSWA — our mission, vision, objectives, and history at University of Barishal." />
       <BlurText
         text="About RDSWA"

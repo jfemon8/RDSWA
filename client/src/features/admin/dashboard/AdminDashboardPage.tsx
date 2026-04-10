@@ -94,21 +94,21 @@ export default function AdminDashboardPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-equal grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {cards.map((card, i) => {
           const Icon = card.icon;
           return (
             <FadeIn key={card.label} direction="up" delay={i * 0.06}>
               <div
-                className="border rounded-lg p-4 sm:p-5 bg-card"
+                className="border rounded-lg p-3 sm:p-5 bg-card"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">{card.label}</span>
-                  <div className={`p-2 rounded-lg ${card.bg}`}>
-                    <Icon className={`h-5 w-5 ${card.color}`} />
+                <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate">{card.label}</span>
+                  <div className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${card.bg}`}>
+                    <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-lg sm:text-2xl font-bold text-foreground">
                   {card.isCurrency ? (
                     <>৳<CountUp to={card.value} separator="," duration={1.5} /></>
                   ) : (
@@ -154,22 +154,24 @@ export default function AdminDashboardPage() {
             </div>
             {memberByRole.length > 0 ? (
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <ResponsiveContainer width="60%" height={250}>
-                  <PieChart>
-                    <Pie data={memberByRole} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
-                      {memberByRole.map((_: any, i: number) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex-1 space-y-1.5">
+                <div className="w-full sm:w-3/5 h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={memberByRole} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                        {memberByRole.map((_: any, i: number) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-1.5 w-full">
                   {memberByRole.map((r: any, i: number) => (
                     <div key={r.name} className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="capitalize text-muted-foreground">{r.name}</span>
-                      <span className="ml-auto font-medium text-foreground">{r.value}</span>
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="capitalize text-muted-foreground truncate">{r.name}</span>
+                      <span className="ml-auto font-medium text-foreground shrink-0">{r.value}</span>
                     </div>
                   ))}
                 </div>

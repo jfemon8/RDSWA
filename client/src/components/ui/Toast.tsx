@@ -53,11 +53,11 @@ function ToastItem({ toast: t, onRemove }: { toast: Toast; onRemove: (id: string
     >
       <motion.li
         layout
-        initial={{ opacity: 0, x: 80, scale: 0.95 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: 80, scale: 0.95 }}
+        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -20, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-        className={`bg-card border border-l-4 ${borderColors[t.type]} rounded-lg shadow-lg p-4 flex items-start gap-3 w-[360px] max-w-[calc(100vw-2rem)] pointer-events-auto`}
+        className={`bg-card border border-l-4 ${borderColors[t.type]} rounded-lg shadow-lg p-3 sm:p-4 flex items-start gap-2.5 sm:gap-3 w-full sm:w-[360px] pointer-events-auto`}
       >
         {icons[t.type]}
         <div className="flex-1 min-w-0">
@@ -103,7 +103,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <ToastPrimitive.Provider swipeDirection="right">
         {children}
         <ToastPrimitive.Viewport asChild>
-          <ol className="fixed top-4 right-4 z-[100] flex flex-col gap-2 list-none m-0 p-0 outline-none">
+          <ol
+            className="fixed left-3 right-3 top-3 sm:left-auto sm:right-4 sm:top-4 z-[100] flex flex-col gap-2 list-none m-0 p-0 outline-none"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
             <AnimatePresence mode="popLayout">
               {toasts.map((t) => (
                 <ToastItem key={t.id} toast={t} onRemove={removeToast} />

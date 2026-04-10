@@ -6,6 +6,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import api from '@/lib/api';
 
 const publicLinks = [
@@ -55,18 +56,18 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  useBodyScrollLock(mobileOpen);
+
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   const isActive = (href: string) => location.pathname === href;
 
   return (
-    <motion.header
+    <>
+    <header
       role="banner"
       className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60"
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      <div className="container mx-auto flex h-16 items-center justify-between">
+      <div className="container mx-auto px-4 flex h-16 items-center justify-between gap-2">
         <Link to="/" className="flex items-center space-x-2">
           {navLogo ? (
             <img src={navLogo} alt={settings?.siteName || 'RDSWA'} className="h-9 object-contain" />
@@ -149,7 +150,7 @@ export default function Navbar() {
         <div className="flex items-center space-x-2">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-accent transition-colors"
+            className="tap-target flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
             aria-label="Toggle theme"
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -186,37 +187,37 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-xl shadow-xl py-1 z-50"
+                    className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] bg-background border rounded-xl shadow-xl py-1 z-50"
                   >
-                    <div className="px-4 py-2 border-b">
+                    <div className="px-4 py-3 border-b">
                       <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                     <Link
                       to="/dashboard"
                       onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="block px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     >
                       Dashboard
                     </Link>
                     <Link
                       to="/dashboard/profile"
                       onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="block px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     >
                       Profile
                     </Link>
                     <Link
                       to="/dashboard/notifications"
                       onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="block px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     >
                       Notifications
                     </Link>
                     <Link
                       to="/dashboard/messages"
                       onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="block px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     >
                       Messages
                     </Link>
@@ -227,7 +228,7 @@ export default function Navbar() {
                         logout();
                         navigate('/');
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                      className="w-full flex items-center gap-2 px-4 py-3 sm:py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                     >
                       <LogOut className="h-4 w-4" /> Logout
                     </button>
@@ -253,7 +254,7 @@ export default function Navbar() {
           )}
 
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-accent"
+            className="lg:hidden tap-target flex items-center justify-center rounded-lg hover:bg-accent"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
@@ -272,55 +273,58 @@ export default function Navbar() {
           </button>
         </div>
       </div>
+    </header>
 
-      {/* Mobile navigation */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="lg:hidden border-t bg-background overflow-hidden"
-          >
-            <nav aria-label="Mobile navigation" className="container mx-auto py-4 space-y-1">
-              {[...publicLinks, ...moreLinks].map((link, i) => (
-                <motion.div
-                  key={link.href}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03 }}
+    {/* Mobile navigation — rendered OUTSIDE <header> so it is not constrained
+        by any parent transform/containing-block and fills the viewport */}
+    <AnimatePresence>
+      {mobileOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="lg:hidden fixed inset-x-0 top-16 bottom-0 border-t bg-background overflow-y-auto z-[45]"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <nav aria-label="Mobile navigation" className="container mx-auto px-4 py-4 space-y-1">
+            {[...publicLinks, ...moreLinks].map((link, i) => (
+              <motion.div
+                key={link.href}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03 }}
+              >
+                <Link
+                  to={link.href}
+                  aria-current={isActive(link.href) ? 'page' : undefined}
+                  className={`flex items-center text-base font-medium py-3 px-3 rounded-lg transition-colors ${
+                    isActive(link.href) ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
                 >
-                  <Link
-                    to={link.href}
-                    aria-current={isActive(link.href) ? 'page' : undefined}
-                    className={`block text-sm font-medium py-2 px-3 rounded-lg transition-colors ${
-                      isActive(link.href) ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              ))}
-              {!isAuthenticated && (
-                <motion.div
-                  className="flex space-x-2 pt-3 border-t mt-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-2">
-                    Login
-                  </Link>
-                  <Link to="/register" className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg">
-                    Register
-                  </Link>
-                </motion.div>
-              )}
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.header>
+                  {link.label}
+                </Link>
+              </motion.div>
+            ))}
+            {!isAuthenticated && (
+              <motion.div
+                className="grid grid-cols-2 gap-2 pt-4 border-t mt-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Link to="/login" className="flex items-center justify-center text-base font-medium border rounded-lg py-3 text-foreground hover:bg-accent transition-colors">
+                  Login
+                </Link>
+                <Link to="/register" className="flex items-center justify-center text-base font-medium bg-primary text-primary-foreground rounded-lg py-3 hover:bg-primary/90 transition-colors">
+                  Register
+                </Link>
+              </motion.div>
+            )}
+          </nav>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

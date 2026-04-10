@@ -138,7 +138,7 @@ export default function ResetPasswordPage() {
     <div className="container mx-auto min-h-[60vh] flex items-center justify-center">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
-          <div className="bg-card border rounded-2xl p-8 shadow-lg">
+          <div className="bg-card border rounded-2xl p-5 sm:p-8 shadow-lg">
             <div className="mb-6">
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                 <GradientText

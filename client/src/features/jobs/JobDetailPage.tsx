@@ -48,7 +48,7 @@ export default function JobDetailPage() {
   const job = data;
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       {/* Back */}
       <button
         onClick={() => navigate(-1)}

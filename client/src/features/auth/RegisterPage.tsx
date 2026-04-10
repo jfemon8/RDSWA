@@ -71,7 +71,7 @@ export default function RegisterPage() {
     <div className="container mx-auto min-h-[80vh] flex items-center justify-center py-8">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
-          <div className="bg-card border rounded-2xl p-8 shadow-lg">
+          <div className="bg-card border rounded-2xl p-5 sm:p-8 shadow-lg">
             <div className="text-center mb-6">
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">Create account</h1>
               <div className="text-muted-foreground">

@@ -159,11 +159,15 @@ export default function GroupChatPage() {
   const TypeIcon = TYPE_ICONS[group.type] || Hash;
 
   return (
-    <div className="container mx-auto flex flex-col h-[calc(100vh-10rem)]">
+    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)] max-w-screen-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b">
-        <button onClick={() => navigate('/dashboard/groups')} className="p-2 rounded-md hover:bg-accent">
-          <ArrowLeft className="h-4 w-4" />
+      <div className="flex items-center gap-2 sm:gap-3 pb-3 sm:pb-4 border-b">
+        <button
+          onClick={() => navigate('/dashboard/groups')}
+          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+          aria-label="Back"
+        >
+          <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           {group.avatar ? (
@@ -173,22 +177,25 @@ export default function GroupChatPage() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-medium text-sm truncate">{group.name}</h2>
+          <h2 className="font-medium text-sm truncate flex items-center gap-1.5">
+            <Hash className="h-3.5 w-3.5 text-primary shrink-0" /> {group.name}
+          </h2>
           <p className="text-xs text-muted-foreground">{group.members?.length || 0} members</p>
         </div>
         <button
           onClick={() => setShowMembers(!showMembers)}
-          className="p-2 rounded-md hover:bg-accent"
+          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
           title="Members"
+          aria-label="Toggle members sidebar"
         >
-          <Users className="h-4 w-4 text-muted-foreground" />
+          <Users className="h-5 w-5 text-muted-foreground" />
         </button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Messages area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto py-4 space-y-3">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 overflow-y-auto scroll-smooth-touch py-4 space-y-3 px-1">
             {messages.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">
                 No messages yet. Start the conversation!
@@ -207,7 +214,7 @@ export default function GroupChatPage() {
                     transition={{ delay: i * 0.015 }}
                     className={`flex ${isMine ? 'justify-end' : 'justify-start'} group`}
                   >
-                    <div className={`max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
+                    <div className={`max-w-[85%] sm:max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
                       {/* Sender name (for others) */}
                       {!isMine && (
                         <Link to={`/members/${msg.sender?._id}`} className="text-[10px] text-muted-foreground mb-0.5 ml-1 hover:text-primary transition-colors block">
@@ -259,10 +266,10 @@ export default function GroupChatPage() {
                           </div>
                         ) : (
                           <div
-                            className={`px-3 py-2 rounded-lg text-sm ${
+                            className={`px-3 py-2 rounded-2xl text-sm shadow-sm ${
                               isMine
-                                ? 'bg-primary text-primary-foreground rounded-br-none'
-                                : 'bg-muted rounded-bl-none'
+                                ? 'bg-primary text-primary-foreground rounded-br-sm'
+                                : 'bg-muted rounded-bl-sm'
                             }`}
                           >
                             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -311,46 +318,59 @@ export default function GroupChatPage() {
               sendMutation.mutate();
             }}
             noValidate
-            className="pt-3 border-t space-y-1"
+            className="pt-3 border-t"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
-            <div className="flex gap-2">
-              <div className="flex-1">
+            <div className="flex items-end gap-2">
+              <div className="flex-1 min-w-0">
                 <textarea
                   placeholder="Type a message..."
                   value={message}
                   onChange={(e) => { setMessage(e.target.value); setErrors((prev) => { const { message, ...rest } = prev; return rest; }); }}
                   onKeyDown={handleKeyDown}
                   rows={1}
-                  className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.message ? 'border-red-500' : ''}`}
+                  className={`w-full px-4 py-2.5 border rounded-full bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.message ? 'border-red-500' : ''}`}
                 />
                 <FieldError message={errors.message} />
               </div>
               <button
                 type="submit"
                 disabled={!message.trim() || sendMutation.isPending}
-                className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
+                className="h-11 w-11 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                aria-label="Send message"
               >
                 {sendMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 )}
               </button>
             </div>
           </form>
         </div>
 
-        {/* Members sidebar */}
+        {/* Members sidebar — overlay on mobile, inline on desktop */}
         <AnimatePresence>
           {showMembers && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 240, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-l overflow-hidden shrink-0"
-            >
-              <div className="p-3 w-60">
+            <>
+              {/* Mobile backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+                onClick={() => setShowMembers(false)}
+              />
+              <motion.div
+                initial={{ x: '100%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 36 }}
+                className="fixed lg:static top-0 right-0 z-50 h-full lg:h-auto w-[85vw] max-w-[280px] lg:w-60 border-l bg-background overflow-y-auto shrink-0"
+                style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+              >
+              <div className="p-3 w-full">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold">Members ({group.members?.length || 0})</h3>
                   <div className="flex gap-1">
@@ -444,7 +464,8 @@ export default function GroupChatPage() {
                   ))}
                 </div>
               </div>
-            </motion.div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

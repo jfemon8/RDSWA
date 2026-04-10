@@ -154,13 +154,13 @@ export default function ProfilePage() {
         <h1 className="text-2xl sm:text-3xl font-bold">Edit Profile</h1>
       </div>
 
-      <div className="flex gap-2 mb-6 border-b relative overflow-x-auto">
+      <div className="flex gap-1 sm:gap-2 mb-6 border-b relative overflow-x-auto no-scrollbar -mx-3 sm:mx-0 px-3 sm:px-0">
         {tabs.map((tab) => (
           <motion.button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`relative px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`relative px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.key ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >

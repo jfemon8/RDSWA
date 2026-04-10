@@ -63,7 +63,7 @@ export default function FAQPage() {
   const faqs: Array<{ question: string; answer: string }> = data?.data?.faq || [];
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       <SEO title="FAQ" description="Frequently asked questions about RDSWA membership and the platform." />
       <BlurText
         text="Frequently Asked Questions"

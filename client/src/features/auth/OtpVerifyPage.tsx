@@ -114,7 +114,7 @@ export default function OtpVerifyPage() {
     <div className="container mx-auto min-h-[80vh] flex items-center justify-center">
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
-          <div className="bg-card border rounded-2xl p-8 shadow-lg">
+          <div className="bg-card border rounded-2xl p-5 sm:p-8 shadow-lg">
             <AnimatePresence mode="wait">
               {/* Step 1: Enter email */}
               {step === 'email' && (

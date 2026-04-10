@@ -18,7 +18,7 @@ export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
 
   return (
-    <div className="container mx-auto">
+    <div>
       <AnimatePresence mode="wait">
         {selectedUser ? (
           <motion.div
@@ -238,21 +238,22 @@ function ChatView({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)]">
+    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-10rem)]">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b">
+      <div className="flex items-center gap-2 sm:gap-3 pb-3 sm:pb-4 border-b">
         <button
           onClick={onBack}
-          className="p-2 rounded-md hover:bg-accent"
+          className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+          aria-label="Back"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
         <Avatar src={partner.avatar} name={partner.name} />
-        <span className="font-medium">{partner.name}</span>
+        <span className="font-medium truncate">{partner.name}</span>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto scroll-smooth-touch py-4 space-y-3 px-1">
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -273,10 +274,10 @@ function ChatView({
                 className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${
+                  className={`max-w-[85%] sm:max-w-[75%] px-3 py-2 rounded-2xl text-sm shadow-sm ${
                     isMine
-                      ? 'bg-primary text-primary-foreground rounded-br-none'
-                      : 'bg-muted rounded-bl-none'
+                      ? 'bg-primary text-primary-foreground rounded-br-sm'
+                      : 'bg-muted rounded-bl-sm'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -291,35 +292,41 @@ function ChatView({
       </div>
 
       {/* Input */}
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        setErrors({});
-        if (!message.trim()) { setErrors({ message: 'Message cannot be empty' }); return; }
-        sendMutation.mutate();
-      }} noValidate className="pt-3 border-t space-y-1">
-        <div className="flex gap-2">
-        <div className="flex-1">
-          <textarea
-            placeholder="Type a message..."
-            value={message}
-            onChange={(e) => { setMessage(e.target.value); setErrors((prev) => { const { message, ...rest } = prev; return rest; }); }}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.message ? 'border-red-500' : ''}`}
-          />
-          <FieldError message={errors.message} />
-        </div>
-        <button
-          type="submit"
-          disabled={!message.trim() || sendMutation.isPending}
-          className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
-        >
-          {sendMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </button>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setErrors({});
+          if (!message.trim()) { setErrors({ message: 'Message cannot be empty' }); return; }
+          sendMutation.mutate();
+        }}
+        noValidate
+        className="pt-3 border-t"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-end gap-2">
+          <div className="flex-1 min-w-0">
+            <textarea
+              placeholder="Type a message..."
+              value={message}
+              onChange={(e) => { setMessage(e.target.value); setErrors((prev) => { const { message, ...rest } = prev; return rest; }); }}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              className={`w-full px-4 py-2.5 border rounded-full bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.message ? 'border-red-500' : ''}`}
+            />
+            <FieldError message={errors.message} />
+          </div>
+          <button
+            type="submit"
+            disabled={!message.trim() || sendMutation.isPending}
+            className="h-11 w-11 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            aria-label="Send message"
+          >
+            {sendMutation.isPending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </button>
         </div>
       </form>
     </div>

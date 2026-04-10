@@ -56,12 +56,12 @@ export default function AdminBusPage() {
       <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Bus Schedules</h1>
 
-        <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b overflow-x-auto">
+        <div className="flex gap-1 sm:gap-2 mb-6 border-b overflow-x-auto no-scrollbar -mx-3 sm:mx-0 px-3 sm:px-0">
           {(['operators', 'routes', 'schedules', 'counters', 'import'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 capitalize whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 capitalize whitespace-nowrap shrink-0 ${
                 tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}>
               {t}

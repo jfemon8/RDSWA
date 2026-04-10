@@ -132,7 +132,7 @@ export default function DashboardPage() {
       </AnimatePresence>
 
       {/* Status cards */}
-      <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-equal grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {statusCards.map((card, i) => (
           <FadeIn key={card.label} delay={i * 0.08} direction="up">
             <StatusCard
@@ -187,12 +187,12 @@ export default function DashboardPage() {
 
 function StatusCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div className="bg-background border rounded-lg p-4">
-      <div className="flex items-center gap-2 text-muted-foreground mb-2">
+    <div className="bg-background border rounded-lg p-3 sm:p-4">
+      <div className="flex items-center gap-2 text-muted-foreground mb-1.5 sm:mb-2">
         {icon}
-        <span className="text-sm">{label}</span>
+        <span className="text-xs sm:text-sm truncate">{label}</span>
       </div>
-      <p className={`text-lg font-semibold capitalize ${color}`}>{value}</p>
+      <p className={`text-sm sm:text-lg font-semibold capitalize truncate ${color}`}>{value}</p>
     </div>
   );
 }

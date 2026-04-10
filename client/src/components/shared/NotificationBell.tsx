@@ -72,7 +72,7 @@ export default function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-md hover:bg-accent transition-colors"
+        className="relative tap-target flex items-center justify-center rounded-md hover:bg-accent transition-colors"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         aria-expanded={open}
       >
@@ -102,7 +102,7 @@ export default function NotificationBell() {
             transition={{ duration: 0.15 }}
             role="menu"
             aria-label="Notifications"
-            className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-popover border rounded-lg shadow-lg z-50 overflow-hidden"
+            className="fixed sm:absolute left-2 right-2 top-[4.5rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 max-w-[calc(100vw-1rem)] bg-popover border rounded-lg shadow-xl z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b">

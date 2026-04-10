@@ -61,7 +61,7 @@ export default function JobBoardPage() {
   const jobs = data?.data || [];
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-6 md:py-12">
       <BlurText
         text="Job Board"
         className="text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"
