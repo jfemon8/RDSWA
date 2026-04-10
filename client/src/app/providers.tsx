@@ -5,6 +5,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmModal';
+import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,13 @@ function AuthInitializer({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Null-rendering component that keeps <head> (favicon, title, meta description) in
+ *  sync with dynamic SiteSettings on every page. See useDynamicSiteMeta for rationale. */
+function DynamicSiteMeta() {
+  useDynamicSiteMeta();
+  return null;
+}
+
 interface ProvidersProps {
   children: ReactNode;
 }
@@ -44,6 +52,7 @@ export default function Providers({ children }: ProvidersProps) {
           <ToastProvider>
             <ConfirmProvider>
               <AuthInitializer>
+                <DynamicSiteMeta />
                 {children}
               </AuthInitializer>
             </ConfirmProvider>

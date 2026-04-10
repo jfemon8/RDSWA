@@ -49,6 +49,7 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       faq: settings.faq,
       privacyPolicy: settings.privacyPolicy,
       termsConditions: settings.termsConditions,
+      updatedAt: settings.updatedAt,
     };
     return ApiResponse.success(res, publicFields);
   }

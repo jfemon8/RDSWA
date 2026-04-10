@@ -21,13 +21,14 @@ export default function SEO({
   const fullSiteName = settings?.siteNameFull ? `${siteName} - ${settings.siteNameFull}` : siteName;
   const pageTitle = title ? `${title} | ${siteName}` : fullSiteName;
   const desc = description || `Official platform of ${settings?.siteNameFull || siteName}. Member directory, events, notices, committees, and more.`;
-  const favicon = settings?.favicon;
+
+  // Note: favicon is managed globally by useDynamicSiteMeta at the app root so it works
+  // on every page, not just pages that mount <SEO />. Don't set it here.
 
   return (
     <Helmet>
       <title>{pageTitle}</title>
       <meta name="description" content={desc} />
-      {favicon && <link rel="icon" href={favicon} />}
 
       {/* Open Graph */}
       <meta property="og:type" content={type} />
