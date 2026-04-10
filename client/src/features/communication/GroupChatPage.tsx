@@ -333,8 +333,12 @@ export default function GroupChatPage() {
 
   return (
     // Negative margins cancel the DashboardLayout main padding (p-3 sm:p-4 lg:p-6)
-    // so the chat container goes edge-to-edge with no surrounding gap.
-    <div className="flex flex-col h-[calc(100dvh-4rem)] w-full -m-3 sm:-m-4 lg:-m-6 bg-background">
+    // so the chat container goes edge-to-edge. The matching calc() widths are
+    // critical: without them, the chat's *computed* width would still be the
+    // parent's content-box width (= main width − padding), so children would
+    // lay out within the smaller box and leave empty space on the right even
+    // though the background extends to the visual edges.
+    <div className="flex flex-col h-[calc(100dvh-4rem)] -m-3 sm:-m-4 lg:-m-6 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2rem)] lg:w-[calc(100%+3rem)] bg-background">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">
         <button
