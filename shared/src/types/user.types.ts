@@ -92,7 +92,9 @@ export interface IUser {
   isModerator: boolean;
   /** Sticky flag set true when an alumni form is approved (independent of job/business) */
   alumniApproved: boolean;
-  /** Derived flag: approved member AND (alumniApproved OR has current job/business) */
+  /** Admin override that blocks isAlumni auto-detection from current job/business */
+  alumniManuallyRevoked: boolean;
+  /** Derived flag: approved member AND NOT alumniManuallyRevoked AND (alumniApproved OR current job/business) */
   isAlumni: boolean;
   /** Advisor flag — auto-set for ex-president/GS on committee archive, or manually by admin */
   isAdvisor: boolean;

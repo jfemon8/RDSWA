@@ -37,12 +37,11 @@ export interface AdminRoleTagManagerPageProps {
   /** Short pluralized label, e.g. "alumni" / "advisors" / "senior advisors" */
   roleLabelPlural: string;
   /**
-   * Alumni has a "sticky approved" flag that can coexist with an auto-tag from current employment.
-   * When true, the revoke button is only shown for users whose `alumniApproved === true`.
-   * Auto-tagged users (from current job/business) show an italic "Auto-tagged" label instead.
-   * Advisors and Senior Advisors have no auto-tag path, so this is false for them.
+   * For Alumni pages only — show the user's current employment (job/business) inline on each
+   * card so the admin can see *why* they were auto-tagged. Does not affect revoke behavior;
+   * any user holding the tag can be revoked from any of these management pages.
    */
-  showAutoTagDistinction?: boolean;
+  showEmploymentInfo?: boolean;
 }
 
 /**
@@ -65,7 +64,7 @@ export default function AdminRoleTagManagerPage({
   avatarText,
   roleLabel,
   roleLabelPlural,
-  showAutoTagDistinction = false,
+  showEmploymentInfo = false,
 }: AdminRoleTagManagerPageProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -237,8 +236,10 @@ export default function AdminRoleTagManagerPage({
               {users.map((u: any, i: number) => {
                 const currentJob = u.jobHistory?.find((j: any) => j.isCurrent);
                 const currentBiz = u.businessInfo?.find((b: any) => b.isCurrent);
-                // For alumni: distinguish auto-tagged (from current employment) vs manually approved
-                const isAutoTagged = showAutoTagDistinction && !u.alumniApproved;
+                // For alumni: label the source so admin understands why they're tagged
+                const sourceLabel = showEmploymentInfo
+                  ? (u.alumniApproved ? 'Manually approved' : 'Auto-tagged from employment')
+                  : null;
 
                 return (
                   <FadeIn key={u._id} delay={i * 0.04} direction="up">
@@ -261,27 +262,23 @@ export default function AdminRoleTagManagerPage({
                             <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
                               {u.batch && <span>Batch {u.batch}</span>}
                               {u.department && <span>· {u.department}</span>}
+                              {sourceLabel && <span className="italic">· {sourceLabel}</span>}
                             </div>
                           </div>
                         </Link>
 
-                        {isAutoTagged ? (
-                          <span className="text-xs text-muted-foreground italic shrink-0">Auto-tagged</span>
-                        ) : (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleRevoke(u)}
-                            disabled={revokeMutation.isPending}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 shrink-0"
-                          >
-                            <UserMinus className="h-3 w-3" /> Revoke
-                          </motion.button>
-                        )}
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleRevoke(u)}
+                          disabled={revokeMutation.isPending}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 shrink-0"
+                        >
+                          <UserMinus className="h-3 w-3" /> Revoke
+                        </motion.button>
                       </div>
 
-                      {/* Show current employment (alumni only gets benefit) */}
-                      {showAutoTagDistinction && (currentJob || currentBiz) && (
+                      {showEmploymentInfo && (currentJob || currentBiz) && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {currentJob && (
                             <span className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded">

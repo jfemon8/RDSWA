@@ -114,8 +114,10 @@ export class UserService {
     // Instant alumni detection — when an approved member adds current job/business,
     // the pre-save hook flips isAlumni. We trigger a save here (findByIdAndUpdate bypasses hooks)
     // and emit a notification + audit log on the 0 → 1 transition.
+    // Skip entirely if the user has been manually revoked by an admin — their override sticks.
     if (
       user.membershipStatus === 'approved' &&
+      !user.alumniManuallyRevoked &&
       (data.jobHistory || data.businessInfo)
     ) {
       const hasCurrentJob = user.jobHistory?.some((j: any) => j.isCurrent);
@@ -452,12 +454,15 @@ export class UserService {
   }
 
   /**
-   * Manually grant or revoke the sticky alumniApproved flag.
-   * Gate: target must be an approved member when granting.
+   * Manually grant or revoke alumni status.
    *
-   * When revoking, the pre-save hook recomputes isAlumni — if the user still has
-   * a current job/business, they remain alumni automatically (the business rule
-   * supersedes the admin's override).
+   * Grant: sets alumniApproved=true and clears the manual-revoke override.
+   * Revoke: sets alumniApproved=false and sets alumniManuallyRevoked=true, so the
+   *         user is removed from alumni even if they have a current job/business.
+   *         The override is sticky — subsequent profile saves won't auto-re-tag them.
+   *         To put them back, the admin must explicitly grant again.
+   *
+   * Gate: target must be an approved member when granting.
    */
   async setAlumni(
     targetUserId: string,
@@ -473,11 +478,14 @@ export class UserService {
       throw ApiError.badRequest('User must be an approved member before becoming an alumni');
     }
 
-    if (target.alumniApproved === grant) return target; // no-op
+    // No-op detection: already in the desired state?
+    if (grant && target.isAlumni && target.alumniApproved && !target.alumniManuallyRevoked) return target;
+    if (!grant && !target.isAlumni && target.alumniManuallyRevoked) return target;
 
     const wasAlumni = target.isAlumni;
-    target.alumniApproved = grant;
     if (grant) {
+      target.alumniApproved = true;
+      target.alumniManuallyRevoked = false;
       target.alumniAssignment = {
         type: source,
         reason: reason || (source === 'form' ? 'alumni_form_approved' : 'manual_alumni_grant'),
@@ -485,7 +493,14 @@ export class UserService {
         assignedAt: new Date(),
       };
     } else {
-      target.alumniAssignment = undefined;
+      target.alumniApproved = false;
+      target.alumniManuallyRevoked = true;
+      target.alumniAssignment = {
+        type: 'manual',
+        reason: reason || 'manual_alumni_revoke',
+        assignedBy: adminUser._id as any,
+        assignedAt: new Date(),
+      };
     }
     await target.save(); // pre-save hook recomputes isAlumni
 
@@ -498,8 +513,6 @@ export class UserService {
       assignedBy: adminUser._id,
     });
 
-    // Only notify on actual state change (e.g. grant when wasn't alumni, or revoke that actually
-    // flipped isAlumni false — i.e. user has no current employment)
     const nowAlumni = target.isAlumni;
     if (grant && !wasAlumni && nowAlumni) {
       await Notification.create({

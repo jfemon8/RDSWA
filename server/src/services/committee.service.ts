@@ -45,9 +45,17 @@ export class CommitteeService {
   }
 
   async create(input: CreateCommitteeInput, createdBy: string): Promise<ICommitteeDocument> {
-    // If marking as current, unset any existing current committee
+    // If marking as current, archive any existing current committees — this runs the
+    // archive transitions so old presidents/GS auto-become advisors and OS/treasurer
+    // lose moderator. Using updateMany here would skip the transition logic entirely.
     if (input.isCurrent) {
-      await Committee.updateMany({ isCurrent: true }, { isCurrent: false });
+      const existingCurrent = await Committee.find({ isCurrent: true, isDeleted: false });
+      for (const c of existingCurrent) {
+        c.isCurrent = false;
+        if (!c.tenure.endDate) c.tenure.endDate = new Date();
+        await c.save();
+        await this.applyArchiveTransitions(c);
+      }
     }
 
     const committee = await Committee.create({
@@ -64,9 +72,16 @@ export class CommitteeService {
       createdBy: new mongoose.Types.ObjectId(createdBy),
     });
 
-    // Auto-assign moderator roles to qualifying positions
     if (committee.members.length > 0) {
-      await this.assignModeratorRoles(committee);
+      if (committee.isCurrent) {
+        // Current committee: grant moderator tag to qualifying positions.
+        // Do NOT grant the advisor tag here — current president/GS should not be advisors.
+        await this.assignModeratorRoles(committee);
+      } else {
+        // Historical committee added retroactively: its members are ex-officers.
+        // Grant advisor to president/GS, skip moderator (they're not current).
+        await this.applyArchiveTransitions(committee);
+      }
     }
 
     return committee;
@@ -76,9 +91,22 @@ export class CommitteeService {
     const committee = await Committee.findOne({ _id: id, isDeleted: false });
     if (!committee) throw ApiError.notFound('Committee not found');
 
+    // If making this committee current, archive any OTHER current committees (with transitions)
     if (input.isCurrent) {
-      await Committee.updateMany({ isCurrent: true, _id: { $ne: id } }, { isCurrent: false });
+      const existingCurrent = await Committee.find({
+        isCurrent: true,
+        _id: { $ne: id },
+        isDeleted: false,
+      });
+      for (const c of existingCurrent) {
+        c.isCurrent = false;
+        if (!c.tenure.endDate) c.tenure.endDate = new Date();
+        await c.save();
+        await this.applyArchiveTransitions(c);
+      }
     }
+
+    const wasCurrent = committee.isCurrent;
 
     if (input.name !== undefined) committee.name = input.name;
     if (input.description !== undefined) committee.description = input.description;
@@ -89,6 +117,12 @@ export class CommitteeService {
     }
 
     await committee.save();
+
+    // If this committee just transitioned from current → not current, apply transitions
+    if (wasCurrent && !committee.isCurrent) {
+      await this.applyArchiveTransitions(committee);
+    }
+
     return committee;
   }
 
@@ -154,11 +188,23 @@ export class CommitteeService {
     committee.tenure.endDate = new Date();
     await committee.save();
 
-    // Handle role transitions on archive
+    await this.applyArchiveTransitions(committee);
+
+    return committee;
+  }
+
+  /**
+   * Apply role transitions for a committee transitioning to archived state.
+   * Runs on explicit archive OR when a committee becomes non-current because
+   * a new current committee was created/promoted.
+   *
+   *  - Ex-president / ex-GS → granted the Advisor tag (auto)
+   *  - OS / Treasurer → lose Moderator tag (President/GS retain per MODERATOR_RETAIN_POSITIONS)
+   */
+  private async applyArchiveTransitions(committee: ICommitteeDocument): Promise<void> {
     for (const member of committee.members) {
       if (member.leftAt) continue;
 
-      // Ex-president / ex-GS automatically become advisors
       if (ADVISOR_AUTO_POSITIONS.includes(member.position)) {
         await this.grantAdvisorTag(
           member.user.toString(),
@@ -166,20 +212,18 @@ export class CommitteeService {
         );
       }
 
-      // Moderator transitions: OS/Treasurer lose moderator; President/GS retain per existing rule
-      if (MODERATOR_AUTO_POSITIONS.includes(member.position)) {
-        if (!MODERATOR_RETAIN_POSITIONS.includes(member.position)) {
-          await this.setModeratorRole(
-            member.user.toString(),
-            false,
-            'auto',
-            `committee_archived_${member.position}`
-          );
-        }
+      if (
+        MODERATOR_AUTO_POSITIONS.includes(member.position) &&
+        !MODERATOR_RETAIN_POSITIONS.includes(member.position)
+      ) {
+        await this.setModeratorRole(
+          member.user.toString(),
+          false,
+          'auto',
+          `committee_archived_${member.position}`
+        );
       }
     }
-
-    return committee;
   }
 
   /**

@@ -84,7 +84,13 @@ export interface IUserDocument extends Document {
 
   // Alumni tracking — sticky flag set when alumni form is approved (persists even if user removes job)
   alumniApproved: boolean;
-  // Alumni flag — derived in pre-save hook: approved member AND (alumniApproved OR current job/business)
+  /**
+   * Admin override that blocks isAlumni from being auto-computed to true.
+   * Set when an admin explicitly revokes alumni status — prevents the pre-save hook
+   * from re-flipping isAlumni based on current job/business. Cleared when admin grants again.
+   */
+  alumniManuallyRevoked: boolean;
+  // Alumni flag — derived in pre-save hook: approved member AND NOT alumniManuallyRevoked AND (alumniApproved OR current job/business)
   isAlumni: boolean;
   alumniAssignment?: {
     type: 'auto' | 'manual' | 'form';
@@ -263,6 +269,7 @@ const userSchema = new Schema<IUserDocument>(
 
     // Alumni tracking — recomputed in pre-save hook
     alumniApproved: { type: Boolean, default: false },
+    alumniManuallyRevoked: { type: Boolean, default: false },
     isAlumni: { type: Boolean, default: false },
     alumniAssignment: {
       type: { type: String, enum: ['auto', 'manual', 'form'] },
@@ -342,13 +349,18 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Pre-save: recompute isAlumni from (approved member) AND (alumniApproved sticky flag OR current job/business)
+// Pre-save: recompute isAlumni.
 // Business rule: to be an alumni, the user must first be an approved member.
+// An admin manual revoke (`alumniManuallyRevoked`) blocks auto-detection from current job/business.
 userSchema.pre('save', function (next) {
   const isApprovedMember = this.membershipStatus === 'approved';
   const hasCurrentJob = Array.isArray(this.jobHistory) && this.jobHistory.some((j) => j.isCurrent);
   const hasCurrentBusiness = Array.isArray(this.businessInfo) && this.businessInfo.some((b) => b.isCurrent);
-  this.isAlumni = !!(isApprovedMember && (this.alumniApproved || hasCurrentJob || hasCurrentBusiness));
+  this.isAlumni = !!(
+    isApprovedMember &&
+    !this.alumniManuallyRevoked &&
+    (this.alumniApproved || hasCurrentJob || hasCurrentBusiness)
+  );
   next();
 });
 

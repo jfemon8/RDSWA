@@ -14,11 +14,13 @@ import { UserRole } from '@rdswa/shared';
  */
 export async function runAlumniTagger(): Promise<void> {
   try {
-    // Find approved members who qualify for alumni (current job/business) but isAlumni is false
+    // Find approved members who qualify for alumni (current job/business) but isAlumni is false.
+    // Skip users an admin has explicitly revoked — the manual override sticks until admin re-grants.
     const candidates = await User.find({
       isDeleted: false,
       membershipStatus: 'approved',
       isAlumni: false,
+      alumniManuallyRevoked: { $ne: true },
       $or: [
         { 'jobHistory.isCurrent': true },
         { 'businessInfo.isCurrent': true },
