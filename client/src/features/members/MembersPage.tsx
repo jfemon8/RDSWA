@@ -13,12 +13,14 @@ import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 
-const MEMBER_CATEGORIES = [
+type CategoryKey = '' | 'alumni' | 'advisor' | 'senior_advisor';
+
+const MEMBER_CATEGORIES: ReadonlyArray<{ key: CategoryKey; label: string; icon: typeof Users }> = [
   { key: '', label: 'All Members', icon: Users },
-  { key: UserRole.ALUMNI, label: 'Alumni', icon: GraduationCap },
-  { key: UserRole.ADVISOR, label: 'Advisors', icon: Award },
-  { key: UserRole.SENIOR_ADVISOR, label: 'Senior Advisors', icon: Star },
-] as const;
+  { key: 'alumni', label: 'Alumni', icon: GraduationCap },
+  { key: 'advisor', label: 'Advisors', icon: Award },
+  { key: 'senior_advisor', label: 'Senior Advisors', icon: Star },
+];
 
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -28,7 +30,7 @@ export default function MembersPage() {
   const [session, setSession] = useState('');
   const [homeDistrict, setHomeDistrict] = useState('');
   const [profession, setProfession] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryKey>('');
   const [page, setPage] = useState(1);
 
   const filters: Record<string, string> = { page: String(page), limit: '20' };
@@ -38,7 +40,10 @@ export default function MembersPage() {
   if (session) filters.session = session;
   if (homeDistrict) filters.homeDistrict = homeDistrict;
   if (profession) filters.profession = profession;
-  if (roleFilter) filters.role = roleFilter;
+  // Use persisted flag filters for alumni/advisor/senior advisor tabs
+  if (categoryFilter === 'alumni') filters.isAlumni = 'true';
+  else if (categoryFilter === 'advisor') filters.isAdvisor = 'true';
+  else if (categoryFilter === 'senior_advisor') filters.isSeniorAdvisor = 'true';
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.users.members(filters),
@@ -58,7 +63,7 @@ export default function MembersPage() {
   }, []);
 
   const showBecomeMember = isAuthenticated && user?.membershipStatus === 'none';
-  const activeCategory = MEMBER_CATEGORIES.find((c) => c.key === roleFilter) || MEMBER_CATEGORIES[0];
+  const activeCategory = MEMBER_CATEGORIES.find((c) => c.key === categoryFilter) || MEMBER_CATEGORIES[0];
 
   return (
     <div className="container mx-auto py-8">
@@ -86,9 +91,9 @@ export default function MembersPage() {
               key={cat.key}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => { setRoleFilter(cat.key); setPage(1); }}
+              onClick={() => { setCategoryFilter(cat.key); setPage(1); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                roleFilter === cat.key
+                categoryFilter === cat.key
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
@@ -163,10 +168,6 @@ export default function MembersPage() {
         <>
           <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {members.map((m: any, i: number) => {
-              const isAlumni = m.isAlumni || m.role === 'alumni' ||
-                m.jobHistory?.some((j: any) => j.isCurrent) ||
-                m.businessInfo?.some((b: any) => b.isCurrent);
-
               return (
                 <FadeIn key={m._id} delay={i * 0.04} direction="up">
                   <Link
@@ -184,9 +185,9 @@ export default function MembersPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="font-medium truncate flex items-center gap-1">
-                            <User className="h-3.5 w-3.5 text-primary shrink-0" /> {m.name}
+                            <User className="h-3.5 w-3.5 text-primary shrink-0" /> {m.nickName || m.name}
                           </p>
-                          {m.role && m.role !== UserRole.MEMBER && m.role !== UserRole.USER && (() => {
+                          {m.role && m.role !== UserRole.MEMBER && m.role !== UserRole.USER && m.role !== UserRole.ALUMNI && m.role !== UserRole.ADVISOR && m.role !== UserRole.SENIOR_ADVISOR && (() => {
                             const rc = getRoleConfig(m.role);
                             return (
                               <motion.span
@@ -199,14 +200,34 @@ export default function MembersPage() {
                               </motion.span>
                             );
                           })()}
-                          {isAlumni && (
+                          {m.isAlumni && (
                             <motion.span
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.25 + i * 0.04 }}
+                              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.22 + i * 0.04 }}
                               className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full shrink-0"
                             >
                               <GraduationCap className="h-3 w-3" /> Alumni
+                            </motion.span>
+                          )}
+                          {m.isAdvisor && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.24 + i * 0.04 }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-full shrink-0"
+                            >
+                              <Award className="h-3 w-3" /> Advisor
+                            </motion.span>
+                          )}
+                          {m.isSeniorAdvisor && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.26 + i * 0.04 }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full shrink-0"
+                            >
+                              <Star className="h-3 w-3" /> Senior Advisor
                             </motion.span>
                           )}
                         </div>

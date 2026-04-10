@@ -63,6 +63,9 @@ interface ListUsersQuery {
   role?: string;
   membershipStatus?: string;
   search?: string;
+  isAlumni?: string;
+  isAdvisor?: string;
+  isSeniorAdvisor?: string;
 }
 
 export class UserService {
@@ -108,34 +111,47 @@ export class UserService {
       }).catch(() => {});
     }
 
-    // Instant alumni detection — if member adds current job/business, tag immediately
+    // Instant alumni detection — when an approved member adds current job/business,
+    // the pre-save hook flips isAlumni. We trigger a save here (findByIdAndUpdate bypasses hooks)
+    // and emit a notification + audit log on the 0 → 1 transition.
     if (
-      user.role === UserRole.MEMBER &&
       user.membershipStatus === 'approved' &&
       (data.jobHistory || data.businessInfo)
     ) {
       const hasCurrentJob = user.jobHistory?.some((j: any) => j.isCurrent);
       const hasCurrentBusiness = user.businessInfo?.some((b: any) => b.isCurrent);
+      const wasAlumni = user.isAlumni;
+
       if (hasCurrentJob || hasCurrentBusiness) {
-        const previousRole = user.role;
-        user.role = UserRole.ALUMNI;
+        // Trigger pre-save hook to recompute isAlumni
+        user.alumniAssignment = {
+          type: 'auto',
+          reason: 'alumni_auto_detected_current_employment',
+          assignedAt: new Date(),
+        };
         await user.save();
 
-        await RoleAssignment.create({
-          user: user._id,
-          role: UserRole.ALUMNI,
-          previousRole,
-          assignmentType: 'auto',
-          reason: 'alumni_auto_detected',
-        });
+        if (!wasAlumni && user.isAlumni) {
+          await RoleAssignment.create({
+            user: user._id,
+            role: UserRole.ALUMNI,
+            previousRole: user.role,
+            assignmentType: 'auto',
+            reason: 'alumni_auto_detected',
+          });
 
-        await Notification.create({
-          recipient: user._id,
-          type: 'role_changed',
-          title: 'Alumni Status Assigned',
-          message: 'You have been classified as an Alumni based on your current employment or business.',
-          link: '/dashboard',
-        });
+          await Notification.create({
+            recipient: user._id,
+            type: 'role_changed',
+            title: 'Alumni Status Assigned',
+            message: 'You have been classified as an Alumni based on your current employment or business.',
+            link: '/dashboard',
+          });
+        }
+      } else if (wasAlumni && !user.alumniApproved) {
+        // User removed their current job/business — recompute (pre-save will clear isAlumni
+        // unless alumniApproved sticky flag is set via form approval)
+        await user.save();
       }
     }
 
@@ -185,17 +201,20 @@ export class UserService {
     if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
     if (query.profession) filter.profession = { $regex: query.profession, $options: 'i' };
+
+    // Flag-based filters (alumni/advisor/senior_advisor are tags, not role tiers)
+    if (query.isAlumni === 'true') filter.isAlumni = true;
+    if (query.isAdvisor === 'true') filter.isAdvisor = true;
+    if (query.isSeniorAdvisor === 'true') filter.isSeniorAdvisor = true;
+
     if (query.role) {
+      // Backward compatibility: map legacy role=alumni/advisor/senior_advisor to flag filters
       if (query.role === UserRole.ALUMNI) {
-        // Alumni: match role='alumni' OR users with current job/business
-        const alumniCondition = {
-          $or: [
-            { role: UserRole.ALUMNI },
-            { 'jobHistory.isCurrent': true },
-            { 'businessInfo.isCurrent': true },
-          ],
-        };
-        filter.$and = [...(filter.$and || []), alumniCondition];
+        filter.isAlumni = true;
+      } else if (query.role === UserRole.ADVISOR) {
+        filter.isAdvisor = true;
+      } else if (query.role === UserRole.SENIOR_ADVISOR) {
+        filter.isSeniorAdvisor = true;
       } else {
         filter.role = query.role;
       }
@@ -426,6 +445,192 @@ export class UserService {
       type: 'role_changed',
       title: 'Role Updated',
       message: `Your role has been changed from ${previousRole} to ${newRole}`,
+      link: '/dashboard',
+    });
+
+    return target;
+  }
+
+  /**
+   * Revoke the sticky alumniApproved flag. The pre-save hook will recompute
+   * isAlumni — if the user still has a current job/business, they remain alumni.
+   */
+  async revokeAlumniApproved(
+    targetUserId: string,
+    adminUser: IUserDocument
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    if (!target.alumniApproved) {
+      throw ApiError.badRequest('User does not have an approved alumni form');
+    }
+
+    target.alumniApproved = false;
+    target.alumniAssignment = undefined;
+    await target.save();
+
+    await RoleAssignment.create({
+      user: target._id,
+      role: target.isAlumni ? UserRole.ALUMNI : UserRole.MEMBER,
+      previousRole: UserRole.ALUMNI,
+      assignmentType: 'manual',
+      reason: 'alumni_approved_revoked',
+      assignedBy: adminUser._id,
+    });
+
+    return target;
+  }
+
+  /**
+   * Approve an alumni form submission — sets the sticky alumniApproved flag.
+   * Gate: target must be an approved member.
+   */
+  async approveAlumniForm(
+    targetUserId: string,
+    approvedBy: IUserDocument,
+    reason = 'alumni_form_approved'
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    if (target.membershipStatus !== 'approved') {
+      throw ApiError.badRequest('User must be an approved member before becoming an alumni');
+    }
+
+    const wasAlumni = target.isAlumni;
+    target.alumniApproved = true;
+    target.alumniAssignment = {
+      type: 'form',
+      reason,
+      assignedBy: approvedBy._id as any,
+      assignedAt: new Date(),
+    };
+    await target.save(); // pre-save hook flips isAlumni → true
+
+    if (!wasAlumni) {
+      await RoleAssignment.create({
+        user: target._id,
+        role: UserRole.ALUMNI,
+        previousRole: target.role,
+        assignmentType: 'manual',
+        reason,
+        assignedBy: approvedBy._id,
+      });
+
+      await Notification.create({
+        recipient: target._id,
+        type: 'role_changed',
+        title: 'Alumni Status Approved',
+        message: 'Your alumni application has been approved.',
+        link: '/dashboard',
+      });
+    }
+
+    return target;
+  }
+
+  /**
+   * Manually grant or revoke the Advisor flag.
+   * Gate: target must be an approved member.
+   */
+  async setAdvisor(
+    targetUserId: string,
+    grant: boolean,
+    adminUser: IUserDocument,
+    reason = grant ? 'manual_advisor_grant' : 'manual_advisor_revoke'
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    if (grant && target.membershipStatus !== 'approved') {
+      throw ApiError.badRequest('User must be an approved member before becoming an advisor');
+    }
+
+    if (target.isAdvisor === grant) return target; // no-op
+
+    target.isAdvisor = grant;
+    if (grant) {
+      target.advisorAssignment = {
+        type: 'manual',
+        reason,
+        assignedBy: adminUser._id as any,
+        assignedAt: new Date(),
+      };
+    } else {
+      target.advisorAssignment = undefined;
+    }
+    await target.save();
+
+    await RoleAssignment.create({
+      user: target._id,
+      role: grant ? UserRole.ADVISOR : target.role,
+      previousRole: grant ? target.role : UserRole.ADVISOR,
+      assignmentType: 'manual',
+      reason,
+      assignedBy: adminUser._id,
+    });
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'role_changed',
+      title: grant ? 'Advisor Role Granted' : 'Advisor Role Revoked',
+      message: grant
+        ? 'You have been granted the Advisor tag by an administrator.'
+        : 'Your Advisor tag has been removed by an administrator.',
+      link: '/dashboard',
+    });
+
+    return target;
+  }
+
+  /**
+   * Manually grant or revoke the Senior Advisor flag.
+   * Gate: target must be an approved member. Senior Advisor is manual-only.
+   */
+  async setSeniorAdvisor(
+    targetUserId: string,
+    grant: boolean,
+    adminUser: IUserDocument,
+    reason = grant ? 'manual_senior_advisor_grant' : 'manual_senior_advisor_revoke'
+  ): Promise<IUserDocument> {
+    const target = await User.findById(targetUserId);
+    if (!target) throw ApiError.notFound('User not found');
+
+    if (grant && target.membershipStatus !== 'approved') {
+      throw ApiError.badRequest('User must be an approved member before becoming a senior advisor');
+    }
+
+    if (target.isSeniorAdvisor === grant) return target; // no-op
+
+    target.isSeniorAdvisor = grant;
+    if (grant) {
+      target.seniorAdvisorAssignment = {
+        reason,
+        assignedBy: adminUser._id as any,
+        assignedAt: new Date(),
+      };
+    } else {
+      target.seniorAdvisorAssignment = undefined;
+    }
+    await target.save();
+
+    await RoleAssignment.create({
+      user: target._id,
+      role: grant ? UserRole.SENIOR_ADVISOR : target.role,
+      previousRole: grant ? target.role : UserRole.SENIOR_ADVISOR,
+      assignmentType: 'manual',
+      reason,
+      assignedBy: adminUser._id,
+    });
+
+    await Notification.create({
+      recipient: target._id,
+      type: 'role_changed',
+      title: grant ? 'Senior Advisor Role Granted' : 'Senior Advisor Role Revoked',
+      message: grant
+        ? 'You have been granted the Senior Advisor tag by an administrator.'
+        : 'Your Senior Advisor tag has been removed by an administrator.',
       link: '/dashboard',
     });
 

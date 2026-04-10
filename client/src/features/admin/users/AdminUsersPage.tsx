@@ -6,7 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
-import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2 } from 'lucide-react';
+import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -68,6 +68,18 @@ export default function AdminUsersPage() {
     mutationFn: ({ id, role }: { id: string; role: string }) => api.patch(`/users/${id}/role`, { role }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('Role updated'); },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to change role'); },
+  });
+
+  const setAdvisorMutation = useMutation({
+    mutationFn: ({ id, grant }: { id: string; grant: boolean }) => api.patch(`/users/${id}/advisor`, { grant }),
+    onSuccess: (_d, vars) => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success(vars.grant ? 'Advisor granted' : 'Advisor revoked'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
+  });
+
+  const setSeniorAdvisorMutation = useMutation({
+    mutationFn: ({ id, grant }: { id: string; grant: boolean }) => api.patch(`/users/${id}/senior-advisor`, { grant }),
+    onSuccess: (_d, vars) => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success(vars.grant ? 'Senior Advisor granted' : 'Senior Advisor revoked'); },
+    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
   });
 
   const bulkApproveMutation = useMutation({
@@ -347,6 +359,24 @@ export default function AdminUsersPage() {
                               className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
                             >
                               <Ban className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isAdmin && u.membershipStatus === 'approved' && (
+                            <button
+                              onClick={() => setAdvisorMutation.mutate({ id: u._id, grant: !u.isAdvisor })}
+                              title={u.isAdvisor ? 'Revoke Advisor' : 'Grant Advisor'}
+                              className={`p-1.5 rounded ${u.isAdvisor ? 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20' : 'text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'}`}
+                            >
+                              <Award className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isAdmin && u.membershipStatus === 'approved' && (
+                            <button
+                              onClick={() => setSeniorAdvisorMutation.mutate({ id: u._id, grant: !u.isSeniorAdvisor })}
+                              title={u.isSeniorAdvisor ? 'Revoke Senior Advisor' : 'Grant Senior Advisor'}
+                              className={`p-1.5 rounded ${u.isSeniorAdvisor ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                            >
+                              <Star className="h-4 w-4" />
                             </button>
                           )}
                           {isSuperAdmin && u.role !== 'super_admin' && (

@@ -113,4 +113,8 @@ export const listUsersQuerySchema = z.object({
   role: z.string().optional(),
   profession: z.string().optional(),
   search: z.string().optional(),
+  membershipStatus: z.string().optional(),
+  isAlumni: z.enum(['true', 'false']).optional(),
+  isAdvisor: z.enum(['true', 'false']).optional(),
+  isSeniorAdvisor: z.enum(['true', 'false']).optional(),
 });

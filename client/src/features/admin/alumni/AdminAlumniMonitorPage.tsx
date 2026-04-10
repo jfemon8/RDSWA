@@ -14,14 +14,14 @@ export default function AdminAlumniMonitorPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['users', 'alumni-monitor', page],
     queryFn: async () => {
-      const { data } = await api.get(`/users?role=alumni&limit=20&page=${page}`);
+      const { data } = await api.get(`/users?isAlumni=true&limit=20&page=${page}`);
       return data;
     },
   });
 
-  const demoteMutation = useMutation({
-    mutationFn: (id: string) => api.patch(`/users/${id}/role`, { role: 'member' }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User reverted to Member'); },
+  const revokeMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/users/${id}/alumni/revoke`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('Alumni approval revoked'); },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
   });
 
@@ -38,8 +38,8 @@ export default function AdminAlumniMonitorPage() {
 
         <FadeIn delay={0.1}>
           <div className="mb-4 p-3 rounded-lg border bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300">
-            Members are auto-classified as Alumni when they add a current job or business to their profile.
-            You can manually revert any alumni back to Member status.
+            Members are auto-tagged as Alumni when they add a current job or business, or when an admin approves their alumni form.
+            You can revoke the sticky alumni form approval here — if the user still has a current job/business, they will remain alumni automatically.
           </div>
         </FadeIn>
 
@@ -79,15 +79,19 @@ export default function AdminAlumniMonitorPage() {
                           </div>
                         </div>
 
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => demoteMutation.mutate(u._id)}
-                          disabled={demoteMutation.isPending}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 shrink-0"
-                        >
-                          <UserMinus className="h-3 w-3" /> Revert to Member
-                        </motion.button>
+                        {u.alumniApproved ? (
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => revokeMutation.mutate(u._id)}
+                            disabled={revokeMutation.isPending}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 shrink-0"
+                          >
+                            <UserMinus className="h-3 w-3" /> Revoke Alumni Approval
+                          </motion.button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic shrink-0">Auto-tagged</span>
+                        )}
                       </div>
 
                       {/* Classification reason */}

@@ -1,8 +1,14 @@
 import { Committee, ICommitteeDocument, User, RoleAssignment, Notification } from '../models';
 import { ApiError } from '../utils/ApiError';
 import { resolveBaseRole } from '../utils/resolveBaseRole';
-import { UserRole, MODERATOR_AUTO_POSITIONS, MODERATOR_RETAIN_POSITIONS } from '@rdswa/shared';
+import { UserRole, MODERATOR_AUTO_POSITIONS, MODERATOR_RETAIN_POSITIONS, CommitteePosition } from '@rdswa/shared';
 import mongoose from 'mongoose';
+
+/** Positions that auto-grant the Advisor tag on committee archive */
+const ADVISOR_AUTO_POSITIONS: string[] = [
+  CommitteePosition.PRESIDENT,
+  CommitteePosition.GENERAL_SECRETARY,
+];
 
 interface CreateCommitteeInput {
   name: string;
@@ -148,13 +154,21 @@ export class CommitteeService {
     committee.tenure.endDate = new Date();
     await committee.save();
 
-    // Handle moderator role transitions on archive
+    // Handle role transitions on archive
     for (const member of committee.members) {
-      if (!member.leftAt && MODERATOR_AUTO_POSITIONS.includes(member.position)) {
-        if (MODERATOR_RETAIN_POSITIONS.includes(member.position)) {
-          // President & GS retain moderator permanently — no action needed
-        } else {
-          // OS & Treasurer lose moderator
+      if (member.leftAt) continue;
+
+      // Ex-president / ex-GS automatically become advisors
+      if (ADVISOR_AUTO_POSITIONS.includes(member.position)) {
+        await this.grantAdvisorTag(
+          member.user.toString(),
+          `committee_archived_${member.position}`
+        );
+      }
+
+      // Moderator transitions: OS/Treasurer lose moderator; President/GS retain per existing rule
+      if (MODERATOR_AUTO_POSITIONS.includes(member.position)) {
+        if (!MODERATOR_RETAIN_POSITIONS.includes(member.position)) {
           await this.setModeratorRole(
             member.user.toString(),
             false,
@@ -166,6 +180,40 @@ export class CommitteeService {
     }
 
     return committee;
+  }
+
+  /**
+   * Auto-grant the Advisor tag to a user (used on committee archive for ex-president/GS).
+   * Idempotent — does nothing if already an advisor.
+   */
+  private async grantAdvisorTag(userId: string, reason: string): Promise<void> {
+    const user = await User.findById(userId);
+    if (!user) return;
+    if (user.isAdvisor) return;
+
+    user.isAdvisor = true;
+    user.advisorAssignment = {
+      type: 'auto',
+      reason,
+      assignedAt: new Date(),
+    };
+    await user.save();
+
+    await RoleAssignment.create({
+      user: user._id,
+      role: UserRole.ADVISOR,
+      previousRole: user.role,
+      assignmentType: 'auto',
+      reason,
+    });
+
+    await Notification.create({
+      recipient: user._id,
+      type: 'role_changed',
+      title: 'Advisor Role Assigned',
+      message: 'You have been classified as an Advisor based on your past committee leadership.',
+      link: '/dashboard',
+    });
   }
 
   async delete(id: string): Promise<void> {

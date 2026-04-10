@@ -90,6 +90,14 @@ export interface IUser {
   role: UserRole;
   membershipStatus: MembershipStatus;
   isModerator: boolean;
+  /** Sticky flag set true when an alumni form is approved (independent of job/business) */
+  alumniApproved: boolean;
+  /** Derived flag: approved member AND (alumniApproved OR has current job/business) */
+  isAlumni: boolean;
+  /** Advisor flag — auto-set for ex-president/GS on committee archive, or manually by admin */
+  isAdvisor: boolean;
+  /** Senior Advisor flag — only manually assigned by admin */
+  isSeniorAdvisor: boolean;
 
   // Meta
   isEmailVerified: boolean;
@@ -102,5 +110,6 @@ export interface IUser {
 /** Public-facing user profile (for non-admin views) */
 export type PublicUser = Pick<IUser,
   '_id' | 'name' | 'nameBn' | 'nickName' | 'avatar' | 'department' | 'batch' |
-  'session' | 'bloodGroup' | 'isBloodDonor' | 'homeDistrict' | 'role'
+  'session' | 'bloodGroup' | 'isBloodDonor' | 'homeDistrict' | 'role' |
+  'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor'
 >;

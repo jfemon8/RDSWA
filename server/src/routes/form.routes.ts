@@ -10,6 +10,7 @@ import { Form, User, Notification } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { submitFormSchema, reviewFormSchema } from '../validators/form.validator';
+import { userService } from '../services/user.service';
 
 const router = Router();
 
@@ -119,6 +120,22 @@ router.patch('/:id/review', authenticate(), authorize(UserRole.MODERATOR), valid
           link: '/dashboard',
         });
       }
+    }
+  }
+
+  // For alumni forms, flip the sticky alumniApproved flag on approval
+  if (form.type === 'alumni' && req.body.status === 'approved') {
+    try {
+      await userService.approveAlumniForm(
+        form.submittedBy.toString(),
+        req.user,
+        'alumni_form_approved'
+      );
+    } catch (err: any) {
+      // If applicant is no longer an approved member, surface a clear error
+      throw ApiError.badRequest(
+        err?.message || 'Failed to apply alumni status to user'
+      );
     }
   }
 

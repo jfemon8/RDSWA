@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, GraduationCap, Briefcase, MapPin, User } from 'lucide-react';
+import { Search, Users, GraduationCap, Briefcase, MapPin, User, Award, Star } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
@@ -20,7 +20,9 @@ export default function AlumniPage() {
   const [profession, setProfession] = useState('');
   const [page, setPage] = useState(1);
 
-  const filters: Record<string, string> = { page: String(page), limit: '20', role: UserRole.ALUMNI };
+  // Filter by the persisted isAlumni flag (set when an alumni form is approved
+  // or when a member adds a current job/business)
+  const filters: Record<string, string> = { page: String(page), limit: '20', isAlumni: 'true' };
   if (search) filters.search = search;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
@@ -122,17 +124,39 @@ export default function AlumniPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="font-medium truncate flex items-center gap-1">
-                          <User className="h-3.5 w-3.5 text-primary shrink-0" /> {m.name}
+                          <User className="h-3.5 w-3.5 text-primary shrink-0" /> {m.nickName || m.name}
                         </p>
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 + i * 0.04 }}
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full shrink-0"
-                        >
-                          <GraduationCap className="h-3 w-3" /> Alumni
-                        </motion.span>
-                        {m.role && m.role !== UserRole.ALUMNI && m.role !== UserRole.MEMBER && m.role !== UserRole.USER && (() => {
+                        {m.isAlumni && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 + i * 0.04 }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full shrink-0"
+                          >
+                            <GraduationCap className="h-3 w-3" /> Alumni
+                          </motion.span>
+                        )}
+                        {m.isAdvisor && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.22 + i * 0.04 }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-full shrink-0"
+                          >
+                            <Award className="h-3 w-3" /> Advisor
+                          </motion.span>
+                        )}
+                        {m.isSeniorAdvisor && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.24 + i * 0.04 }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full shrink-0"
+                          >
+                            <Star className="h-3 w-3" /> Senior Advisor
+                          </motion.span>
+                        )}
+                        {m.role && m.role !== UserRole.ALUMNI && m.role !== UserRole.MEMBER && m.role !== UserRole.USER && m.role !== UserRole.ADVISOR && m.role !== UserRole.SENIOR_ADVISOR && (() => {
                           const rc = getRoleConfig(m.role);
                           return (
                             <motion.span

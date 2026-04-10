@@ -82,6 +82,34 @@ export interface IUserDocument extends Document {
     assignedAt: Date;
   };
 
+  // Alumni tracking — sticky flag set when alumni form is approved (persists even if user removes job)
+  alumniApproved: boolean;
+  // Alumni flag — derived in pre-save hook: approved member AND (alumniApproved OR current job/business)
+  isAlumni: boolean;
+  alumniAssignment?: {
+    type: 'auto' | 'manual' | 'form';
+    reason: string;
+    assignedBy?: mongoose.Types.ObjectId;
+    assignedAt: Date;
+  };
+
+  // Advisor tracking — auto-set for ex-president/GS on committee archive, or manually by admin
+  isAdvisor: boolean;
+  advisorAssignment?: {
+    type: 'auto' | 'manual';
+    reason: string;
+    assignedBy?: mongoose.Types.ObjectId;
+    assignedAt: Date;
+  };
+
+  // Senior Advisor tracking — only manually assigned by admin
+  isSeniorAdvisor: boolean;
+  seniorAdvisorAssignment?: {
+    reason?: string;
+    assignedBy: mongoose.Types.ObjectId;
+    assignedAt: Date;
+  };
+
   // Profile visibility (fields the user marks as private)
   profileVisibility: {
     phone: boolean;
@@ -123,9 +151,6 @@ export interface IUserDocument extends Document {
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-
-  // Virtuals
-  isAlumni: boolean;
 
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -236,6 +261,33 @@ const userSchema = new Schema<IUserDocument>(
       assignedAt: Date,
     },
 
+    // Alumni tracking — recomputed in pre-save hook
+    alumniApproved: { type: Boolean, default: false },
+    isAlumni: { type: Boolean, default: false },
+    alumniAssignment: {
+      type: { type: String, enum: ['auto', 'manual', 'form'] },
+      reason: String,
+      assignedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      assignedAt: Date,
+    },
+
+    // Advisor tracking — auto for ex-president/GS on archive, manual by admin
+    isAdvisor: { type: Boolean, default: false },
+    advisorAssignment: {
+      type: { type: String, enum: ['auto', 'manual'] },
+      reason: String,
+      assignedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      assignedAt: Date,
+    },
+
+    // Senior Advisor tracking — manual only
+    isSeniorAdvisor: { type: Boolean, default: false },
+    seniorAdvisorAssignment: {
+      reason: String,
+      assignedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      assignedAt: Date,
+    },
+
     // Profile visibility (true = public, false = private)
     profileVisibility: {
       phone: { type: Boolean, default: false },
@@ -283,17 +335,20 @@ const userSchema = new Schema<IUserDocument>(
   }
 );
 
-// Virtual: isAlumni
-userSchema.virtual('isAlumni').get(function (this: IUserDocument) {
-  const hasCurrentJob = this.jobHistory?.some((j) => j.isCurrent);
-  const hasCurrentBusiness = this.businessInfo?.some((b) => b.isCurrent);
-  return hasCurrentJob || hasCurrentBusiness || false;
-});
-
 // Pre-save: hash password
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// Pre-save: recompute isAlumni from (approved member) AND (alumniApproved sticky flag OR current job/business)
+// Business rule: to be an alumni, the user must first be an approved member.
+userSchema.pre('save', function (next) {
+  const isApprovedMember = this.membershipStatus === 'approved';
+  const hasCurrentJob = Array.isArray(this.jobHistory) && this.jobHistory.some((j) => j.isCurrent);
+  const hasCurrentBusiness = Array.isArray(this.businessInfo) && this.businessInfo.some((b) => b.isCurrent);
+  this.isAlumni = !!(isApprovedMember && (this.alumniApproved || hasCurrentJob || hasCurrentBusiness));
   next();
 });
 
@@ -312,5 +367,8 @@ userSchema.index({ bloodGroup: 1, isBloodDonor: 1 });
 userSchema.index({ profession: 1 });
 userSchema.index({ 'jobHistory.isCurrent': 1 });
 userSchema.index({ isDeleted: 1 });
+userSchema.index({ isAlumni: 1 });
+userSchema.index({ isAdvisor: 1 });
+userSchema.index({ isSeniorAdvisor: 1 });
 
 export const User = mongoose.model<IUserDocument>('User', userSchema);

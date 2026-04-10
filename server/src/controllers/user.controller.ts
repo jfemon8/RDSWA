@@ -56,6 +56,29 @@ export const changeRole = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.success(res, user, 'Role updated');
 });
 
+export const revokeAlumniApproved = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const user = await userService.revokeAlumniApproved(id, req.user);
+  ApiResponse.success(res, user, 'Alumni approval revoked');
+});
+
+export const setAdvisor = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const grant = req.body.grant === true;
+  const user = await userService.setAdvisor(id, grant, req.user, req.body.reason);
+  ApiResponse.success(res, user, grant ? 'Advisor granted' : 'Advisor revoked');
+});
+
+export const setSeniorAdvisor = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const id = req.params.id as string;
+  const grant = req.body.grant === true;
+  const user = await userService.setSeniorAdvisor(id, grant, req.user, req.body.reason);
+  ApiResponse.success(res, user, grant ? 'Senior Advisor granted' : 'Senior Advisor revoked');
+});
+
 export const approveMembership = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
