@@ -112,7 +112,7 @@ export default function JobDetailPage() {
                 {expired ? (
                   <button
                     disabled
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-muted text-muted-foreground rounded-lg text-sm font-medium cursor-not-allowed"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-muted text-muted-foreground rounded-lg text-sm font-medium cursor-not-allowed"
                     title="Application deadline has passed"
                   >
                     <ExternalLink className="h-4 w-4" /> Expired
@@ -124,7 +124,7 @@ export default function JobDetailPage() {
                     href={job.applicationLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
                   >
                     <ExternalLink className="h-4 w-4" /> Apply Now
                   </motion.a>
@@ -198,28 +198,26 @@ export default function JobDetailPage() {
       {/* Bottom Apply Button */}
       {job.applicationLink && (
         <FadeIn delay={0.25} direction="up">
-          <div className="mt-6">
+          <div className="mt-6 flex sm:justify-center">
             {expired ? (
               <button
                 disabled
-                className="w-full sm:w-auto sm:mx-auto sm:flex inline-flex items-center justify-center gap-2 px-8 py-3 bg-muted text-muted-foreground rounded-lg font-medium cursor-not-allowed"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-muted text-muted-foreground rounded-lg font-medium cursor-not-allowed"
                 title="Application deadline has passed"
               >
                 <CalendarX className="h-4 w-4" /> Application Closed
               </button>
             ) : (
-              <div className="flex justify-center">
-                <motion.a
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  href={job.applicationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary text-primary-foreground rounded-lg font-medium"
-                >
-                  <ExternalLink className="h-4 w-4" /> Apply for this Position
-                </motion.a>
-              </div>
+              <motion.a
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                href={job.applicationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary text-primary-foreground rounded-lg font-medium"
+              >
+                <ExternalLink className="h-4 w-4" /> Apply for this Position
+              </motion.a>
             )}
           </div>
         </FadeIn>
