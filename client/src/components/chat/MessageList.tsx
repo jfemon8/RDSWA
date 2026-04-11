@@ -128,16 +128,47 @@ export default function MessageList(props: Props) {
   }, []);
 
   // Initial jump-to-bottom: runs synchronously after DOM commit (useLayoutEffect)
-  // so the user never sees the list at the top. Uses instant scroll, not smooth,
-  // because animating from top to bottom of 50+ messages takes ~1s and looks
-  // exactly like "page opened at the top".
+  // so the user never sees the list at the top. Uses instant scroll because
+  // smooth-scrolling 50+ messages would look like "the page just opened at
+  // the top" even though it's actually animating.
+  //
+  // The tricky part: avatars / images / link previews load asynchronously
+  // after the initial render, growing the container's scrollHeight. A single
+  // scrollTop = scrollHeight call leaves the user halfway up the list once
+  // those images decode. To fix this we attach a ResizeObserver for ~1.5s
+  // after mount and re-pin to the bottom every time the content grows.
   useLayoutEffect(() => {
-    if (isLoading || messages.length === 0 || initialScrollDoneRef.current) return;
-    jumpToBottom(false);
-    initialScrollDoneRef.current = true;
-    lastCountRef.current = messages.length;
+    const el = scrollRef.current;
+    if (!el || isLoading || messages.length === 0 || initialScrollDoneRef.current) return;
+
+    // Immediate jump — runs before paint so the user never sees the top.
+    el.scrollTop = el.scrollHeight;
     setStickToBottom(true);
-  }, [isLoading, messages.length, jumpToBottom]);
+
+    // Re-pin to bottom whenever content height changes during the
+    // stabilization window (covers late-loading avatars / images).
+    const observer = new ResizeObserver(() => {
+      if (!initialScrollDoneRef.current && scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
+    observer.observe(el);
+    Array.from(el.children).forEach((child) => observer.observe(child as Element));
+
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+      initialScrollDoneRef.current = true;
+      lastCountRef.current = messages.length;
+      observer.disconnect();
+    }, 1500);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [isLoading, messages.length, currentFirstId]);
 
   // Auto-scroll when a new message arrives, but only if we're already near the bottom.
   useEffect(() => {
