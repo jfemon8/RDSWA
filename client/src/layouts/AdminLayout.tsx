@@ -52,7 +52,7 @@ const adminLinks: AdminLink[] = [
   { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },
-  { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.ADMIN },
+  { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.SUPER_ADMIN },
 ];
 
 export default function AdminLayout() {

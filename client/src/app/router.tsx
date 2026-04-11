@@ -201,7 +201,7 @@ export default function AppRouter() {
               <Route path="/admin/moderators" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminModerators /></AdminRoleGuard>} />
               <Route path="/admin/finance" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminFinance /></AdminRoleGuard>} />
               <Route path="/admin/budgets" element={<AdminBudget />} />
-              <Route path="/admin/backup" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBackup /></AdminRoleGuard>} />
+              <Route path="/admin/backup" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminBackup /></AdminRoleGuard>} />
               <Route path="/admin/bus" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBus /></AdminRoleGuard>} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/logs" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminLogs /></AdminRoleGuard>} />
