@@ -26,16 +26,22 @@ export function getApiErrorMessage(err: any, fallback = 'Something went wrong'):
   const data = err?.response?.data;
   if (!data) return err?.message || fallback;
 
-  // If there are field-level errors, show the first one
+  // Mongoose error handler in middleware sometimes returns `errors` as a
+  // plain string (e.g. "Notice validation failed: attachments.0: ..."). Show
+  // that instead of the generic top-level message when present.
+  if (typeof data.errors === 'string' && data.errors.trim()) {
+    return data.errors;
+  }
+
+  // Field-level Zod errors: pick the first messages array we find.
   if (data.errors && typeof data.errors === 'object') {
     for (const messages of Object.values(data.errors)) {
       if (Array.isArray(messages) && messages.length > 0) {
         return messages[0];
       }
-    }
-    // Mongoose validation error returns errors as string
-    if (typeof data.errors === 'string') {
-      return data.errors;
+      if (typeof messages === 'string' && messages.trim()) {
+        return messages;
+      }
     }
   }
 

@@ -1,25 +1,47 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
-import { extractFieldErrors } from '@/lib/formErrors';
+import { extractFieldErrors, getApiErrorMessage } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Pencil, Trash2, Archive, FileText } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Archive, FileText, Paperclip, Image as ImageIcon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+
+interface NoticeAttachment {
+  name: string;
+  url: string;
+  type: string;
+}
+
+interface NoticeForm {
+  title: string;
+  content: string;
+  category: string;
+  priority: string;
+  status: string;
+  isHighlighted: boolean;
+  attachment: NoticeAttachment | null;
+}
+
+const ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const ATTACHMENT_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,application/pdf';
 
 export default function AdminNoticesPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<NoticeForm>({
     title: '', content: '', category: 'general', priority: 'normal', status: 'draft', isHighlighted: false,
+    attachment: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.notices.all,
@@ -29,17 +51,72 @@ export default function AdminNoticesPage() {
     },
   });
 
+  /**
+   * Build the notice payload explicitly. We pick each field by name (rather
+   * than spreading `form`) so any future extra UI-only state can't leak into
+   * the request body and trip the backend validator.
+   */
+  const buildPayload = () => {
+    const attachments = form.attachment
+      ? [{
+          name: String(form.attachment.name || 'attachment'),
+          url: String(form.attachment.url || ''),
+          type: String(form.attachment.type || 'application/octet-stream'),
+        }]
+      : [];
+    return {
+      title: form.title.trim(),
+      content: form.content,
+      category: form.category,
+      priority: form.priority,
+      status: form.status,
+      isHighlighted: !!form.isHighlighted,
+      attachments,
+    };
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (editId) return (await api.patch(`/notices/${editId}`, form)).data;
-      return (await api.post('/notices', form)).data;
+      const payload = buildPayload();
+      if (editId) return (await api.patch(`/notices/${editId}`, payload)).data;
+      return (await api.post('/notices', payload)).data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notices'] });
       resetForm();
       toast.success(editId ? 'Notice updated' : 'Notice created');
     },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save notice'); } },
+    onError: (err: any) => {
+      // Always log the full response so the actual server-side validation
+      // problem is visible in the DevTools console.
+      console.error('[Notice save failed]', {
+        status: err?.response?.status,
+        message: err?.response?.data?.message,
+        errors: err?.response?.data?.errors,
+        payload: buildPayload(),
+      });
+
+      const fieldErrors = extractFieldErrors(err);
+      // Map server-side dotted error keys (e.g. `attachments.0.url`) to the
+      // closest form-level field name so the inline FieldError renders.
+      if (fieldErrors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msg] of Object.entries(fieldErrors)) {
+          if (key.startsWith('attachments')) mapped.attachment = msg;
+          else mapped[key] = msg;
+        }
+        setErrors(mapped);
+      }
+
+      // Build the toast message: prefer the most specific error.
+      const message = getApiErrorMessage(err, 'Failed to save notice');
+      // If multiple field errors exist, list them all in the description so
+      // the user immediately sees what's wrong without hunting in the form.
+      const description = fieldErrors && Object.keys(fieldErrors).length > 1
+        ? Object.entries(fieldErrors).map(([k, m]) => `• ${k}: ${m}`).join('\n')
+        : undefined;
+      toast.error(message, description);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -57,16 +134,81 @@ export default function AdminNoticesPage() {
   const resetForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ title: '', content: '', category: 'general', priority: 'normal', status: 'draft', isHighlighted: false });
+    setForm({ title: '', content: '', category: 'general', priority: 'normal', status: 'draft', isHighlighted: false, attachment: null });
+    setErrors({});
   };
 
   const startEdit = (n: any) => {
     setEditId(n._id);
+    // Notices can have at most one attachment — pull the first if present.
+    // Older notices may store attachments without the `type` field; default
+    // those to a sensible MIME based on the URL extension so the server-side
+    // validator (which requires a non-empty type string) accepts them.
+    const first = Array.isArray(n.attachments) && n.attachments.length > 0 ? n.attachments[0] : null;
+    const attachment = first
+      ? {
+          name: first.name || 'attachment',
+          url: first.url,
+          type: first.type || (/(\.pdf)(\?|$)/i.test(first.url || '') ? 'application/pdf' : 'application/octet-stream'),
+        }
+      : null;
+    // Validator only allows status='draft' or 'published' on update — clamp
+    // 'archived' (or anything else) to 'draft' so editing an archived notice
+    // doesn't blow up. Use the dedicated archive button to set archived state.
+    const safeStatus: 'draft' | 'published' = n.status === 'published' ? 'published' : 'draft';
     setForm({
-      title: n.title || '', content: n.content || '', category: n.category || 'general',
-      priority: n.priority || 'normal', status: n.status || 'draft', isHighlighted: n.isHighlighted || false,
+      title: n.title || '',
+      content: n.content || '',
+      category: n.category || 'general',
+      priority: n.priority || 'normal',
+      status: safeStatus,
+      isHighlighted: n.isHighlighted || false,
+      attachment,
     });
+    setErrors({});
     setShowForm(true);
+  };
+
+  /** Upload the chosen file to /upload/document and store the metadata in form state. */
+  const handleAttachmentSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+
+    if (file.size > ATTACHMENT_MAX_BYTES) {
+      toast.error('Attachment must be 5 MB or smaller');
+      return;
+    }
+    if (!ATTACHMENT_ACCEPT.split(',').includes(file.type)) {
+      toast.error('Only JPEG, PNG, GIF, WebP images or PDF are allowed');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const { data } = await api.post('/upload/document', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setForm((f) => ({
+        ...f,
+        attachment: {
+          name: file.name,
+          url: data.data.url,
+          type: file.type,
+        },
+      }));
+      setErrors((p) => { const { attachment, ...r } = p; return r; });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to upload attachment');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = () => {
+    setForm((f) => ({ ...f, attachment: null }));
   };
 
   const notices = data?.data || [];
@@ -130,10 +272,71 @@ export default function AdminNoticesPage() {
                   <input type="checkbox" checked={form.isHighlighted} onChange={(e) => setForm({ ...form, isHighlighted: e.target.checked })} />
                   Highlight on homepage
                 </label>
+
+                {/* Attachment — single image or PDF, up to 5 MB, optional */}
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium block mb-1.5">
+                    Attachment <span className="opacity-70">(optional — image or PDF, max 5 MB)</span>
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ATTACHMENT_ACCEPT}
+                    onChange={handleAttachmentSelect}
+                    className="hidden"
+                  />
+                  {form.attachment ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 p-2.5 border rounded-md bg-muted/40"
+                    >
+                      {form.attachment.type === 'application/pdf' ? (
+                        <FileText className="h-5 w-5 text-red-600 shrink-0" />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-primary shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{form.attachment.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {form.attachment.type === 'application/pdf' ? 'PDF document' : 'Image'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeAttachment}
+                        className="p-1 hover:bg-destructive/10 text-destructive rounded"
+                        title="Remove attachment"
+                        aria-label="Remove attachment"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed rounded-md text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" /> Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Paperclip className="h-4 w-4" /> Attach image or PDF
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <FieldError message={errors.attachment} />
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    disabled={saveMutation.isPending}
+                    disabled={saveMutation.isPending || uploading}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
                   >
                     {saveMutation.isPending ? 'Saving...' : editId ? 'Update' : 'Create'}

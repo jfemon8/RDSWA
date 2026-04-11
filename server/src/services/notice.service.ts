@@ -82,22 +82,36 @@ export class NoticeService {
   }
 
   async update(id: string, data: any, userId: string, isAdmin: boolean): Promise<INoticeDocument> {
-    const notice = await Notice.findOne({ _id: id, isDeleted: false });
-    if (!notice) throw ApiError.notFound('Notice not found');
+    // Load just the auth-relevant fields. We deliberately avoid touching the
+    // full document instance via Object.assign because legacy notices may
+    // have malformed values stored under `attachments` (e.g. stringified
+    // inspect output from an older bug) which causes Mongoose CastError on
+    // .save() — even though the new payload is perfectly valid.
+    const existing = await Notice.findOne({ _id: id, isDeleted: false }).select('createdBy publishedAt');
+    if (!existing) throw ApiError.notFound('Notice not found');
 
-    if (!isAdmin && notice.createdBy.toString() !== userId) {
+    if (!isAdmin && existing.createdBy.toString() !== userId) {
       throw ApiError.forbidden('You can only edit your own notices');
     }
 
-    Object.assign(notice, data);
-    if (data.status === 'published' && !notice.publishedAt) {
-      notice.publishedAt = new Date();
+    const updates: Record<string, any> = { ...data };
+    if (data.status === 'published' && !existing.publishedAt) {
+      updates.publishedAt = new Date();
     }
     if (data.status === 'archived') {
-      notice.archivedAt = new Date();
+      updates.archivedAt = new Date();
     }
-    await notice.save();
-    return notice;
+
+    // findByIdAndUpdate with $set + runValidators applies the new values
+    // atomically without round-tripping through the document instance, so
+    // any corrupted fields in the existing document are simply overwritten.
+    const updated = await Notice.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    );
+    if (!updated) throw ApiError.notFound('Notice not found');
+    return updated;
   }
 
   async delete(id: string): Promise<void> {

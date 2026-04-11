@@ -18,6 +18,21 @@ export interface INoticeDocument extends Document {
   updatedAt: Date;
 }
 
+/**
+ * Sub-schema for notice attachments. Defined as a real Schema (not an inline
+ * object) because the field has a `type` property which would otherwise be
+ * interpreted by Mongoose as a SchemaType descriptor — collapsing the whole
+ * subdocument into `[String]`. Using `new Schema()` disambiguates the intent.
+ */
+const noticeAttachmentSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const noticeSchema = new Schema<INoticeDocument>(
   {
     title: { type: String, required: true, trim: true },
@@ -30,7 +45,7 @@ const noticeSchema = new Schema<INoticeDocument>(
     publishedAt: Date,
     scheduledPublishAt: Date,
     archivedAt: Date,
-    attachments: [{ name: String, url: String, type: String }],
+    attachments: { type: [noticeAttachmentSchema], default: [] },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     isDeleted: { type: Boolean, default: false },
   },

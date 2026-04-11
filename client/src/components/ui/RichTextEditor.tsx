@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
@@ -25,11 +24,12 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
+      // StarterKit (v3) already bundles the Underline extension, so we don't
+      // need to register @tiptap/extension-underline separately.
       StarterKit.configure({
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
       }),
-      Underline,
       Placeholder.configure({ placeholder }),
     ],
     content: value,
