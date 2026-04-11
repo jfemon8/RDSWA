@@ -14,8 +14,12 @@ export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  /** Hit the counter endpoint then open the real file URL in a new tab. */
-  const handleDownload = async (docId: string, fileUrl: string) => {
+  /**
+   * Hit the counter endpoint then open the file via our proxy so the browser
+   * sees the proper Content-Type (PDFs preview inline instead of downloading
+   * as opaque binary blobs).
+   */
+  const handleDownload = async (docId: string, fileUrl: string, title?: string) => {
     try {
       await api.get(`/documents/${docId}/download`);
       queryClient.invalidateQueries({ queryKey: ['documents'] });
@@ -26,7 +30,9 @@ export default function DocumentsPage() {
       toast.error('File URL is missing');
       return;
     }
-    window.open(fileUrl, '_blank', 'noopener');
+    const params = new URLSearchParams({ url: fileUrl, inline: 'true' });
+    if (title) params.set('name', title);
+    window.open(`/api/upload/proxy?${params.toString()}`, '_blank', 'noopener');
   };
 
   const { data, isLoading } = useQuery({
@@ -118,7 +124,7 @@ export default function DocumentsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleDownload(doc._id, doc.fileUrl)}
+                  onClick={() => handleDownload(doc._id, doc.fileUrl, doc.title)}
                   className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md"
                   title="Download"
                 >

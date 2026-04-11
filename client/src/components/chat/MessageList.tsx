@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import MessageBubble, { type ChatMessage } from './MessageBubble';
@@ -80,6 +80,11 @@ export default function MessageList(props: Props) {
   const [stickToBottom, setStickToBottom] = useState(true);
   const [lightbox, setLightbox] = useState<{ images: ListImage[]; index: number } | null>(null);
   const lastCountRef = useRef(0);
+  // Track whether we've already done the initial jump-to-bottom for the
+  // current conversation. Resets when the first message ID changes (i.e. the
+  // user switches to a different chat).
+  const initialScrollDoneRef = useRef(false);
+  const firstMessageIdRef = useRef<string | null>(null);
 
   // Collect all images in order — used to power the lightbox "carousel".
   const allImages: ListImage[] = useMemo(() => {
@@ -99,16 +104,56 @@ export default function MessageList(props: Props) {
     if (idx >= 0) setLightbox({ images: allImages, index: idx });
   }, [allImages]);
 
-  // Auto-scroll when a new message arrives, but only if we're already near the bottom.
-  useEffect(() => {
-    if (messages.length > lastCountRef.current && stickToBottom) {
+  // Detect conversation switch (first message ID changes) and reset scroll state.
+  const currentFirstId = messages[0]?._id || null;
+  if (currentFirstId !== firstMessageIdRef.current) {
+    firstMessageIdRef.current = currentFirstId;
+    initialScrollDoneRef.current = false;
+    lastCountRef.current = 0;
+  }
+
+  /** Imperative jump to the bottom — works even with images that load later. */
+  const jumpToBottom = useCallback((smooth = false) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    // Run again on next frame in case images / lazy content shifted layout.
+    if (!smooth) {
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      });
+    } else {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
+  }, []);
+
+  // Initial jump-to-bottom: runs synchronously after DOM commit (useLayoutEffect)
+  // so the user never sees the list at the top. Uses instant scroll, not smooth,
+  // because animating from top to bottom of 50+ messages takes ~1s and looks
+  // exactly like "page opened at the top".
+  useLayoutEffect(() => {
+    if (isLoading || messages.length === 0 || initialScrollDoneRef.current) return;
+    jumpToBottom(false);
+    initialScrollDoneRef.current = true;
     lastCountRef.current = messages.length;
-  }, [messages.length, stickToBottom]);
+    setStickToBottom(true);
+  }, [isLoading, messages.length, jumpToBottom]);
+
+  // Auto-scroll when a new message arrives, but only if we're already near the bottom.
+  useEffect(() => {
+    if (!initialScrollDoneRef.current) return;
+    if (messages.length > lastCountRef.current && stickToBottom) {
+      jumpToBottom(true);
+    }
+    lastCountRef.current = messages.length;
+  }, [messages.length, stickToBottom, jumpToBottom]);
 
   // Track whether the user is at the bottom so we can freeze auto-scroll when they scroll up.
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    // Ignore the synthetic scroll fired by our own jumpToBottom before the
+    // initial scroll has completed — otherwise it can flip stickToBottom to
+    // false on first paint when scrollHeight is still being computed.
+    if (!initialScrollDoneRef.current) return;
     const el = e.currentTarget;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setStickToBottom(distanceFromBottom < 80);

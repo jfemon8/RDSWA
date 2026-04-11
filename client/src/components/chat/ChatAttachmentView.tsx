@@ -121,31 +121,73 @@ export default function ChatAttachmentView({ attachment, isMine, onImageClick }:
   return <FileCard attachment={attachment} isMine={isMine} />;
 }
 
+/**
+ * Build a proxy URL that re-serves the Cloudinary file with proper Content-Type
+ * and filename headers. This is what enables PDFs to preview inline in the
+ * browser instead of downloading as opaque binary blobs (Cloudinary serves
+ * `raw` resources as application/octet-stream regardless of extension).
+ */
+function buildProxyUrl(rawUrl: string, name?: string, inline = true): string {
+  const params = new URLSearchParams({ url: rawUrl, inline: String(inline) });
+  if (name) params.set('name', name);
+  return `/api/upload/proxy?${params.toString()}`;
+}
+
 function FileCard({ attachment, isMine }: Props) {
   const isPdf = attachment.kind === 'pdf';
   const Icon = isPdf ? FileText : FileIcon;
+  // Route through the proxy so PDFs/Office docs preview inline and downloads
+  // arrive with the original filename instead of a Cloudinary hash.
+  const viewUrl = attachment.url ? buildProxyUrl(attachment.url, attachment.name, true) : undefined;
+  const downloadUrl = attachment.url ? buildProxyUrl(attachment.url, attachment.name, false) : undefined;
   return (
-    <a
-      href={attachment.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
       className={`flex items-center gap-3 min-w-[220px] max-w-sm px-3 py-2.5 rounded-lg transition-colors ${
         isMine
           ? 'bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground'
           : 'bg-background hover:bg-accent text-foreground border'
       }`}
     >
-      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMine ? 'bg-primary-foreground/20' : 'bg-primary/10'}`}>
-        <Icon className={`h-5 w-5 ${isMine ? 'text-primary-foreground' : 'text-primary'}`} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{attachment.name || 'Attachment'}</p>
-        <p className={`text-[11px] truncate ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-          {formatBytes(attachment.size)}
-        </p>
-      </div>
-      <Download className={`h-4 w-4 shrink-0 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`} />
-    </a>
+      <a
+        href={viewUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 flex-1 min-w-0"
+        title="Open in new tab"
+      >
+        <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
+          isMine
+            ? 'bg-primary-foreground/20'
+            : isPdf ? 'bg-red-50 dark:bg-red-950/30' : 'bg-primary/10'
+        }`}>
+          <Icon className={`h-5 w-5 ${
+            isMine
+              ? 'text-primary-foreground'
+              : isPdf ? 'text-red-600' : 'text-primary'
+          }`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{attachment.name || 'Attachment'}</p>
+          <p className={`text-[11px] truncate ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+            {isPdf && <span className="font-semibold uppercase mr-1">PDF</span>}
+            {formatBytes(attachment.size)}
+          </p>
+        </div>
+      </a>
+      {downloadUrl && (
+        <a
+          href={downloadUrl}
+          download={attachment.name || 'download'}
+          className={`p-1.5 rounded-md shrink-0 ${
+            isMine ? 'hover:bg-primary-foreground/20 text-primary-foreground/80' : 'hover:bg-accent text-muted-foreground'
+          }`}
+          title="Download"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Download className="h-4 w-4" />
+        </a>
+      )}
+    </div>
   );
 }
 
