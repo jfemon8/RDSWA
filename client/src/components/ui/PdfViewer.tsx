@@ -1,7 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Loader2, Maximize2, Minimize2, FileX } from 'lucide-react';
 import { motion } from 'motion/react';
+import { proxyFileUrl } from '@/lib/fileProxy';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -46,6 +47,13 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
   const [containerWidth, setContainerWidth] = useState<number>(800);
   const [error, setError] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
+
+  // Cloudinary serves `raw` resources with Content-Type: application/octet-stream,
+  // which makes pdfjs treat the response as opaque binary AND causes browser
+  // downloads to land as extension-less hash files. Routing through our proxy
+  // re-serves the file with proper Content-Type and Content-Disposition.
+  const viewUrl = useMemo(() => proxyFileUrl(url, fileName, true), [url, fileName]);
+  const downloadUrl = useMemo(() => proxyFileUrl(url, fileName, false), [url, fileName]);
 
   // Track container width so PDF pages stay responsive on resize.
   useEffect(() => {
@@ -152,7 +160,7 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
             </button>
           )}
           <a
-            href={url}
+            href={downloadUrl}
             download={fileName || 'document.pdf'}
             className="p-1.5 rounded hover:bg-accent text-foreground"
             title="Download PDF"
@@ -175,7 +183,7 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
             <p className="font-medium">Could not load PDF</p>
             <p className="text-xs text-center max-w-md">{error}</p>
             <a
-              href={url}
+              href={viewUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-primary hover:underline mt-1"
@@ -185,7 +193,7 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
           </div>
         ) : (
           <Document
-            file={url}
+            file={viewUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             loading={
