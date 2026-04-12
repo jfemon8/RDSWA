@@ -1,73 +1,105 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Loader2, Maximize2, Minimize2, FileX } from 'lucide-react';
-import { motion } from 'motion/react';
+import {
+  ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Loader2,
+  Maximize2, Minimize2, FileX, RotateCw,
+} from 'lucide-react';
+import { motion, useAnimation, type PanInfo } from 'motion/react';
 import { proxyFileUrl } from '@/lib/fileProxy';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Use the bundled worker via Vite's URL import — this avoids relying on a CDN
-// (which would break offline / restrictive networks) and matches our pdfjs
-// version exactly.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — Vite handles the ?url suffix at build time
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface PdfViewerProps {
-  /** Direct URL to the PDF — should be served with Content-Type: application/pdf */
   url: string;
-  /** Optional filename used for the download button */
   fileName?: string;
-  /** Default container height (px). The viewer is scrollable when content exceeds this. */
+  /** Container height. On mobile (<640px) this is overridden to 70vh for
+   *  better usability with soft keyboards and smaller screens. */
   height?: number;
-  /** When true, exposes a fullscreen toggle button */
   allowFullscreen?: boolean;
 }
 
 /**
- * Inline PDF viewer powered by Mozilla's pdfjs (via react-pdf).
+ * Mobile-first PDF viewer.
  *
- * Features:
- *  - Page navigation (prev / next + counter)
- *  - Zoom in/out (50% — 250%)
- *  - Download button
- *  - Optional fullscreen toggle
- *  - Responsive width — re-renders pages when the container resizes
- *
- * The component does NOT use an `<iframe>`, which means PDFs render natively
- * in the React tree without triggering Chrome's auto-download heuristics.
+ *  - Swipe left/right to navigate pages (touch + mouse drag)
+ *  - Pinch-to-zoom on touch devices
+ *  - Tap page counter to type a page number directly
+ *  - Responsive toolbar that stacks neatly on small screens
+ *  - Fullscreen mode uses 100dvh for proper mobile viewport handling
+ *  - All buttons are ≥44px tap targets for thumb-friendly interaction
  */
 export default function PdfViewer({ url, fileName, height = 720, allowFullscreen = true }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1);
-  const [containerWidth, setContainerWidth] = useState<number>(800);
+  const [numPages, setNumPages] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1);
+  const [containerWidth, setContainerWidth] = useState(800);
   const [error, setError] = useState<string | null>(null);
-  const [fullscreen, setFullscreen] = useState<boolean>(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showPageInput, setShowPageInput] = useState(false);
+  const [pageInput, setPageInput] = useState('');
+  const pageInputRef = useRef<HTMLInputElement>(null);
 
-  // Cloudinary serves `raw` resources with Content-Type: application/octet-stream,
-  // which makes pdfjs treat the response as opaque binary AND causes browser
-  // downloads to land as extension-less hash files. Routing through our proxy
-  // re-serves the file with proper Content-Type and Content-Disposition.
+  // Swipe animation controller
+  const controls = useAnimation();
+
+  // Proxy URLs
   const viewUrl = useMemo(() => proxyFileUrl(url, fileName, true), [url, fileName]);
   const downloadUrl = useMemo(() => proxyFileUrl(url, fileName, false), [url, fileName]);
 
-  // Track container width so PDF pages stay responsive on resize.
+  // Responsive container width
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const width = entry.contentRect.width;
-        if (width > 0) setContainerWidth(width);
+        const w = entry.contentRect.width;
+        if (w > 0) setContainerWidth(w);
       }
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Pinch-to-zoom on touch devices
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let initialDistance = 0;
+    let initialScale = 1;
+
+    const getDistance = (t1: Touch, t2: Touch) =>
+      Math.sqrt((t1.clientX - t2.clientX) ** 2 + (t1.clientY - t2.clientY) ** 2);
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        initialDistance = getDistance(e.touches[0], e.touches[1]);
+        initialScale = scale;
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dist = getDistance(e.touches[0], e.touches[1]);
+        const ratio = dist / initialDistance;
+        const next = Math.max(0.5, Math.min(2.5, +(initialScale * ratio).toFixed(2)));
+        setScale(next);
+        e.preventDefault(); // prevent browser native zoom
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [scale]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages: total }: { numPages: number }) => {
     setNumPages(total);
@@ -79,116 +111,186 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
     setError(err.message || 'Failed to load PDF');
   }, []);
 
-  const goPrev = () => setPageNumber((p) => Math.max(1, p - 1));
-  const goNext = () => setPageNumber((p) => Math.min(numPages, p + 1));
+  const goToPage = (p: number) => setPageNumber(Math.max(1, Math.min(numPages, p)));
+  const goPrev = () => goToPage(pageNumber - 1);
+  const goNext = () => goToPage(pageNumber + 1);
   const zoomIn = () => setScale((s) => Math.min(2.5, +(s + 0.25).toFixed(2)));
   const zoomOut = () => setScale((s) => Math.max(0.5, +(s - 0.25).toFixed(2)));
+  const resetZoom = () => setScale(1);
 
-  // Compute the page width: respect zoom but cap to the available container.
-  const pageWidth = Math.min(containerWidth, 1200) * scale;
+  // Swipe to navigate pages
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    const threshold = 60;
+    if (info.offset.x < -threshold && pageNumber < numPages) {
+      goNext();
+    } else if (info.offset.x > threshold && pageNumber > 1) {
+      goPrev();
+    }
+    controls.start({ x: 0 });
+  };
+
+  // Page number input submit
+  const submitPageInput = () => {
+    const n = parseInt(pageInput, 10);
+    if (n >= 1 && n <= numPages) goToPage(n);
+    setShowPageInput(false);
+    setPageInput('');
+  };
+
+  // Focus page input when shown
+  useEffect(() => {
+    if (showPageInput) pageInputRef.current?.focus();
+  }, [showPageInput]);
+
+  const pageWidth = Math.min(containerWidth - 16, 1200) * scale;
+
+  // Responsive height: on small screens use vh-based height
+  const containerHeight = fullscreen
+    ? 'calc(100dvh - 52px)'
+    : typeof window !== 'undefined' && window.innerWidth < 640
+      ? '70dvh'
+      : `${height}px`;
 
   return (
     <div
-      className={`border rounded-xl bg-card overflow-hidden ${
+      className={`border rounded-xl bg-card overflow-hidden select-none ${
         fullscreen ? 'fixed inset-0 z-[100] rounded-none border-0' : ''
       }`}
     >
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/40">
-        <div className="flex items-center gap-1">
+      {/* Toolbar — responsive layout */}
+      <div className="flex items-center justify-between gap-1 px-2 sm:px-3 py-1.5 sm:py-2 border-b bg-muted/40">
+        {/* Page navigation */}
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={goPrev}
             disabled={pageNumber <= 1}
-            className="p-1.5 rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed text-foreground"
-            title="Previous page"
+            className="tap-target p-2 rounded-lg hover:bg-accent disabled:opacity-30 text-foreground"
             aria-label="Previous page"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5 sm:h-4 sm:w-4" />
           </button>
-          <span className="text-xs text-muted-foreground tabular-nums px-1 min-w-[60px] text-center">
-            {numPages > 0 ? `${pageNumber} / ${numPages}` : '— / —'}
-          </span>
+
+          {showPageInput ? (
+            <form
+              onSubmit={(e) => { e.preventDefault(); submitPageInput(); }}
+              className="flex items-center gap-1"
+            >
+              <input
+                ref={pageInputRef}
+                type="number"
+                min={1}
+                max={numPages}
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+                onBlur={submitPageInput}
+                className="w-12 px-1.5 py-1 text-xs text-center border rounded bg-background text-foreground"
+              />
+              <span className="text-xs text-muted-foreground">/ {numPages}</span>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { setShowPageInput(true); setPageInput(String(pageNumber)); }}
+              className="text-xs text-muted-foreground tabular-nums px-1.5 py-1 rounded hover:bg-accent min-w-[52px] text-center"
+              title="Tap to go to a page"
+            >
+              {numPages > 0 ? `${pageNumber} / ${numPages}` : '—'}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={goNext}
             disabled={pageNumber >= numPages}
-            className="p-1.5 rounded hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed text-foreground"
-            title="Next page"
+            className="tap-target p-2 rounded-lg hover:bg-accent disabled:opacity-30 text-foreground"
             aria-label="Next page"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5 sm:h-4 sm:w-4" />
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
+        {/* Zoom controls */}
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={zoomOut}
             disabled={scale <= 0.5}
-            className="p-1.5 rounded hover:bg-accent disabled:opacity-40 text-foreground"
-            title="Zoom out"
+            className="tap-target p-2 rounded-lg hover:bg-accent disabled:opacity-30 text-foreground"
             aria-label="Zoom out"
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut className="h-5 w-5 sm:h-4 sm:w-4" />
           </button>
-          <span className="text-xs text-muted-foreground tabular-nums px-1 min-w-[44px] text-center">
+          <button
+            type="button"
+            onClick={resetZoom}
+            className="text-[11px] text-muted-foreground tabular-nums px-1 py-1 rounded hover:bg-accent min-w-[36px] text-center"
+            title="Reset zoom"
+          >
             {Math.round(scale * 100)}%
-          </span>
+          </button>
           <button
             type="button"
             onClick={zoomIn}
             disabled={scale >= 2.5}
-            className="p-1.5 rounded hover:bg-accent disabled:opacity-40 text-foreground"
-            title="Zoom in"
+            className="tap-target p-2 rounded-lg hover:bg-accent disabled:opacity-30 text-foreground"
             aria-label="Zoom in"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn className="h-5 w-5 sm:h-4 sm:w-4" />
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
+        {/* Actions */}
+        <div className="flex items-center gap-0.5">
+          {scale !== 1 && (
+            <button
+              type="button"
+              onClick={resetZoom}
+              className="tap-target p-2 rounded-lg hover:bg-accent text-foreground sm:hidden"
+              aria-label="Reset zoom"
+            >
+              <RotateCw className="h-5 w-5" />
+            </button>
+          )}
           {allowFullscreen && (
             <button
               type="button"
               onClick={() => setFullscreen((v) => !v)}
-              className="p-1.5 rounded hover:bg-accent text-foreground"
-              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              className="tap-target p-2 rounded-lg hover:bg-accent text-foreground"
               aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
             >
-              {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {fullscreen ? <Minimize2 className="h-5 w-5 sm:h-4 sm:w-4" /> : <Maximize2 className="h-5 w-5 sm:h-4 sm:w-4" />}
             </button>
           )}
           <a
             href={downloadUrl}
             download={fileName || 'document.pdf'}
-            className="p-1.5 rounded hover:bg-accent text-foreground"
-            title="Download PDF"
+            className="tap-target p-2 rounded-lg hover:bg-accent text-foreground"
             aria-label="Download PDF"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-5 w-5 sm:h-4 sm:w-4" />
           </a>
         </div>
       </div>
 
-      {/* Document area */}
+      {/* Document area — swipeable on touch */}
       <div
         ref={containerRef}
-        className="overflow-auto bg-muted/30 chat-scroll"
-        style={{ height: fullscreen ? 'calc(100vh - 49px)' : `${height}px` }}
+        className="overflow-auto bg-muted/20 chat-scroll overscroll-contain"
+        style={{ height: containerHeight }}
       >
         {error ? (
-          <div className="flex flex-col items-center justify-center h-full text-sm text-muted-foreground gap-2 p-6">
-            <FileX className="h-10 w-10 opacity-40" />
-            <p className="font-medium">Could not load PDF</p>
+          <div className="flex flex-col items-center justify-center h-full text-sm text-muted-foreground gap-3 p-6">
+            <FileX className="h-12 w-12 opacity-40" />
+            <p className="font-medium text-base">Could not load PDF</p>
             <p className="text-xs text-center max-w-md">{error}</p>
             <a
               href={viewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline mt-1"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90"
             >
-              Open in new tab instead
+              Open in new tab
             </a>
           </div>
         ) : (
@@ -197,8 +299,9 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             loading={
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center h-full gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Loading PDF...</p>
               </div>
             }
             error={
@@ -210,10 +313,15 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
           >
             <motion.div
               key={pageNumber}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.18 }}
-              className="shadow-md"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.15}
+              onDragEnd={handleDragEnd}
+              animate={controls}
+              initial={{ opacity: 0, x: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="shadow-lg rounded-sm cursor-grab active:cursor-grabbing touch-pan-y"
             >
               <Page
                 pageNumber={pageNumber}
@@ -222,6 +330,13 @@ export default function PdfViewer({ url, fileName, height = 720, allowFullscreen
                 renderTextLayer={true}
               />
             </motion.div>
+
+            {/* Swipe hint — only on first visit */}
+            {numPages > 1 && pageNumber === 1 && (
+              <p className="text-[10px] text-muted-foreground/60 mt-3 sm:hidden animate-pulse">
+                Swipe left/right to navigate pages
+              </p>
+            )}
           </Document>
         )}
       </div>

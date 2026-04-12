@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -6,10 +6,12 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors, getApiErrorMessage } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Pencil, Trash2, Archive, FileText, Paperclip, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, Archive, FileText, Paperclip, Image as ImageIcon, X, Eye, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import RichContent from '@/components/ui/RichContent';
+import { Link } from 'react-router-dom';
 
 interface NoticeAttachment {
   name: string;
@@ -41,6 +43,7 @@ export default function AdminNoticesPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
+  const [viewId, setViewId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -353,49 +356,146 @@ export default function AdminNoticesPage() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <div className="space-y-2">
-          {notices.map((n: any, i: number) => (
-            <FadeIn key={n._id} direction="up" delay={i * 0.06}>
-              <div
-                className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
-              >
-                <div>
-                  <h3 className="font-medium text-foreground flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-primary shrink-0" /> {n.title}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
-                    <span className="capitalize">{n.category}</span>
-                    <span className="capitalize">{n.status}</span>
-                    <span className="capitalize">{n.priority}</span>
-                    <span>{formatDate(n.createdAt)}</span>
+          {notices.map((n: any, i: number) => {
+            const isViewing = viewId === n._id;
+            const att = Array.isArray(n.attachments) && n.attachments.length > 0 ? n.attachments[0] : null;
+            const attIsImage = att?.type?.startsWith('image/');
+            const attIsPdf = att?.type === 'application/pdf' || /\.pdf($|\?)/i.test(att?.url || '');
+
+            return (
+              <FadeIn key={n._id} direction="up" delay={i * 0.06}>
+                <div className="border rounded-lg bg-card">
+                  <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground flex items-center gap-1.5">
+                        <FileText className="h-4 w-4 text-primary shrink-0" /> {n.title}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                        <span className="capitalize">{n.category}</span>
+                        <span className="capitalize">{n.status}</span>
+                        <span className="capitalize">{n.priority}</span>
+                        {att && (
+                          <span className="flex items-center gap-1">
+                            <Paperclip className="h-3 w-3" />
+                            {attIsPdf ? 'PDF' : attIsImage ? 'Image' : 'File'}
+                          </span>
+                        )}
+                        <span>{formatDate(n.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setViewId(isViewing ? null : n._id)}
+                        className={`p-2 rounded ${isViewing ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-foreground'}`}
+                        title="View notice"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <Link
+                        to={`/notices/${n._id}`}
+                        className="p-2 hover:bg-accent rounded text-foreground"
+                        title="Open public page"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                      <button
+                        onClick={() => startEdit(n)}
+                        className="p-2 hover:bg-accent rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4 text-foreground" />
+                      </button>
+                      {n.status === 'published' && (
+                        <button
+                          onClick={() => archiveMutation.mutate(n._id)}
+                          className="p-2 hover:bg-accent rounded"
+                          title="Archive"
+                        >
+                          <Archive className="h-4 w-4 text-foreground" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteMutation.mutate(n._id)}
+                        className="p-2 hover:bg-destructive/10 text-destructive rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Inline view panel */}
+                  <AnimatePresence>
+                    {isViewing && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t p-4 sm:p-5 space-y-4">
+                          {n.titleBn && (
+                            <p className="text-lg text-muted-foreground">{n.titleBn}</p>
+                          )}
+                          <RichContent html={n.content} />
+
+                          {att && attIsImage && (
+                            <a href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                              <img
+                                src={att.url}
+                                alt={att.name || 'Notice attachment'}
+                                loading="lazy"
+                                className="max-w-full max-h-[480px] rounded-lg object-contain border bg-muted/30"
+                              />
+                              {att.name && (
+                                <p className="text-xs text-muted-foreground mt-1">{att.name}</p>
+                              )}
+                            </a>
+                          )}
+
+                          {att && attIsPdf && (
+                            <div className="max-w-3xl">
+                              <NoticeInlinePdf url={att.url} name={att.name} />
+                            </div>
+                          )}
+
+                          {att && !attIsImage && !attIsPdf && (
+                            <a
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-primary hover:underline"
+                            >
+                              <Paperclip className="h-4 w-4" /> {att.name || 'Attachment'}
+                            </a>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => startEdit(n)}
-                    className="p-2 hover:bg-accent rounded"
-                  >
-                    <Pencil className="h-4 w-4 text-foreground" />
-                  </button>
-                  {n.status === 'published' && (
-                    <button
-                      onClick={() => archiveMutation.mutate(n._id)}
-                      className="p-2 hover:bg-accent rounded"
-                    >
-                      <Archive className="h-4 w-4 text-foreground" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteMutation.mutate(n._id)}
-                    className="p-2 hover:bg-destructive/10 text-destructive rounded"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </FadeIn>
-          ))}
+              </FadeIn>
+            );
+          })}
         </div>
       )}
     </div>
+  );
+}
+
+const PdfViewer = lazy(() => import('@/components/ui/PdfViewer'));
+
+function NoticeInlinePdf({ url, name }: { url: string; name?: string }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-[300px] border rounded-xl bg-card">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <PdfViewer url={url} fileName={name} height={500} />
+    </Suspense>
   );
 }
