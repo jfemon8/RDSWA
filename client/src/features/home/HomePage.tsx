@@ -362,18 +362,21 @@ export default function HomePage() {
         <div className="container mx-auto text-center">
           <FadeIn scale blur>
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-6">
-              Ready to{' '}
+              {isAuthenticated ? 'Welcome Back to' : 'Ready to'}{' '}
               <GradientText
                 colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
                 animationSpeed={3}
                 className="text-2xl sm:text-3xl md:text-5xl font-bold"
               >
-                {hp?.ctaTitle || 'Join Us'}
+                {isAuthenticated ? 'RDSWA' : (hp?.ctaTitle || 'Join Us')}
               </GradientText>
-              ?
+              {isAuthenticated ? '!' : '?'}
             </h2>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto mb-10">
-              {hp?.introText || 'Become a part of the largest Rangpur Division student community at University of Barishal.'}
+              {isAuthenticated
+                ? 'Explore your dashboard, connect with members, and stay updated with the community.'
+                : (hp?.introText || 'Become a part of the largest Rangpur Division student community at University of Barishal.')
+              }
             </p>
             <Link
               to={isAuthenticated ? '/dashboard' : '/register'}
