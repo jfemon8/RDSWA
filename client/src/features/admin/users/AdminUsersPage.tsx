@@ -6,7 +6,8 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
-import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star } from 'lucide-react';
+import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star, ExternalLink, Pencil } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -299,7 +300,9 @@ export default function AdminUsersPage() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium text-foreground">{u.name}</p>
+                            <Link to={`/members/${u._id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                              {u.name}
+                            </Link>
                             <p className="text-xs text-muted-foreground">{u.email}</p>
                           </div>
                         </div>
@@ -334,6 +337,16 @@ export default function AdminUsersPage() {
                       <td className="p-3 text-muted-foreground">{u.batch || '-'}</td>
                       <td className="p-3">
                         <div className="flex gap-1">
+                          <Link to={`/members/${u._id}`} title="View Profile"
+                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded">
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                          {isSuperAdmin && (
+                            <Link to={`/members/${u._id}?edit=true`} title="Edit Profile"
+                              className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded">
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          )}
                           {['pending', 'rejected', 'suspended'].includes(u.membershipStatus) && (
                             <button
                               onClick={() => approveMutation.mutate(u._id)}

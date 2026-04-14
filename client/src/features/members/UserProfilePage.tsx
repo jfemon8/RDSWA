@@ -1,15 +1,17 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import {
   User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap,
   Briefcase, Globe, Facebook, Linkedin, Building2, ArrowLeft, MessageSquare, ThumbsUp,
-  Users, Heart, Hash, IdCard, Clock, Award, Star,
+  Users, Heart, Hash, IdCard, Clock, Award, Star, Pencil, Save, X, Loader2 as Loader2Icon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
+import { UserRole } from '@rdswa/shared';
 import { useToast } from '@/components/ui/Toast';
 import { formatDate as formatDateBST } from '@/lib/date';
 
@@ -21,9 +23,13 @@ function getOrdinal(n: number): string {
 
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user: currentUser } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
+  const [editing, setEditing] = useState(searchParams.get('edit') === 'true' && isSuperAdmin);
+  const [editForm, setEditForm] = useState<Record<string, any>>({});
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['user-profile', id],
@@ -45,6 +51,42 @@ export default function UserProfilePage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['user-profile', id] }); toast.success('Endorsement removed'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to remove endorsement'),
   });
+
+  const editMutation = useMutation({
+    mutationFn: (updates: Record<string, any>) => api.patch(`/users/${id}/profile`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile', id] });
+      toast.success('Profile updated');
+      setEditing(false);
+      setSearchParams({});
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to update profile'),
+  });
+
+  const startEdit = (user: any) => {
+    setEditForm({
+      name: user.name || '',
+      nameBn: user.nameBn || '',
+      nickName: user.nickName || '',
+      phone: user.phone || '',
+      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+      gender: user.gender || '',
+      bloodGroup: user.bloodGroup || '',
+      studentId: user.studentId || '',
+      registrationNumber: user.registrationNumber || '',
+      batch: user.batch || '',
+      session: user.session || '',
+      faculty: user.faculty || '',
+      department: user.department || '',
+      profession: user.profession || '',
+      earningSource: user.earningSource || '',
+      homeDistrict: user.homeDistrict || '',
+      facebook: user.facebook || '',
+      linkedin: user.linkedin || '',
+      website: user.website || '',
+    });
+    setEditing(true);
+  };
 
   if (isLoading) {
     return (
@@ -69,6 +111,11 @@ export default function UserProfilePage() {
 
   const u = data;
   const isSelf = currentUser?._id === id;
+
+  // Auto-start edit if arrived via ?edit=true
+  if (u && editing && Object.keys(editForm).length === 0) {
+    startEdit(u);
+  }
 
   const formatDate = (d: string | Date | undefined) => {
     if (!d) return null;
@@ -109,9 +156,101 @@ export default function UserProfilePage() {
                 <MessageSquare className="h-4 w-4" /> Message
               </Link>
             )}
+            {!isSelf && isSuperAdmin && !editing && (
+              <button
+                onClick={() => startEdit(u)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+              >
+                <Pencil className="h-4 w-4" /> Edit Profile
+              </button>
+            )}
           </div>
         </FadeIn>
       </div>
+
+      {/* SuperAdmin Edit Panel */}
+      <AnimatePresence>
+        {editing && isSuperAdmin && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6 overflow-hidden"
+          >
+            <div className="border-2 border-purple-500/30 rounded-xl p-5 bg-card">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Pencil className="h-4 w-4 text-purple-500" /> Edit User Profile
+                </h3>
+                <button onClick={() => { setEditing(false); setSearchParams({}); }} className="p-1.5 hover:bg-accent rounded">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { key: 'name', label: 'Name' },
+                  { key: 'nameBn', label: 'Name (Bangla)' },
+                  { key: 'nickName', label: 'Nick Name' },
+                  { key: 'phone', label: 'Phone' },
+                  { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
+                  { key: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'] },
+                  { key: 'bloodGroup', label: 'Blood Group', type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] },
+                  { key: 'studentId', label: 'Student ID' },
+                  { key: 'registrationNumber', label: 'Registration No.' },
+                  { key: 'batch', label: 'Batch', type: 'number' },
+                  { key: 'session', label: 'Session' },
+                  { key: 'faculty', label: 'Faculty' },
+                  { key: 'department', label: 'Department' },
+                  { key: 'profession', label: 'Profession' },
+                  { key: 'earningSource', label: 'Earning Source' },
+                  { key: 'homeDistrict', label: 'Home District' },
+                  { key: 'facebook', label: 'Facebook URL' },
+                  { key: 'linkedin', label: 'LinkedIn URL' },
+                  { key: 'website', label: 'Website' },
+                ].map((f) => (
+                  <div key={f.key}>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{f.label}</label>
+                    {f.type === 'select' ? (
+                      <select
+                        value={editForm[f.key] || ''}
+                        onChange={(e) => setEditForm((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                      >
+                        <option value="">—</option>
+                        {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type={f.type || 'text'}
+                        value={editForm[f.key] || ''}
+                        onChange={(e) => setEditForm((p: any) => ({ ...p, [f.key]: f.type === 'number' ? (e.target.value ? Number(e.target.value) : '') : e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-4 pt-4 border-t">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => editMutation.mutate(editForm)}
+                  disabled={editMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {editMutation.isPending ? <Loader2Icon className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save Changes
+                </motion.button>
+                <button
+                  onClick={() => { setEditing(false); setSearchParams({}); }}
+                  className="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Avatar & Basic Info */}
       <FadeIn delay={0.1} direction="up">
