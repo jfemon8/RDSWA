@@ -29,8 +29,8 @@ router.get('/members', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
       { $sort: { count: -1 } },
     ]),
     User.aggregate([
-      { $match: { isDeleted: false, homeDistrict: { $exists: true, $ne: '' } } },
-      { $group: { _id: '$homeDistrict', count: { $sum: 1 } } },
+      { $match: { isDeleted: false, 'permanentAddress.district': { $exists: true, $ne: '' } } },
+      { $group: { _id: '$permanentAddress.district', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]),
   ]);
