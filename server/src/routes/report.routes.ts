@@ -351,30 +351,9 @@ router.post('/publish', authenticate(), authorize(UserRole.ADMIN), auditLog('rep
   ApiResponse.created(res, { _id: result.insertedId }, 'Report draft created');
 }));
 
-// Approve and publish a report (Admin, SuperAdmin, or committee President/GS)
-router.patch('/publish/:id/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('report.approve', 'reports'), asyncHandler(async (req, res) => {
+// Approve and publish a report (Admin+)
+router.patch('/publish/:id/approve', authenticate(), authorize(UserRole.ADMIN), auditLog('report.approve', 'reports'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-
-  // Allow: SuperAdmin, Admin, or Moderator who is current President/GS
-  const isAdminLevel = [UserRole.SUPER_ADMIN, UserRole.ADMIN].includes(req.user.role as any);
-  if (!isAdminLevel) {
-    const db = mongoose.connection.db;
-    if (!db) throw ApiError.internal('Database not connected');
-    const qualifying = await db.collection('committees').findOne({
-      isCurrent: true,
-      isDeleted: { $ne: true },
-      members: {
-        $elemMatch: {
-          user: req.user._id,
-          position: { $in: ['president', 'general_secretary'] },
-          leftAt: null,
-        },
-      },
-    });
-    if (!qualifying) {
-      throw ApiError.forbidden('Only Admin, President, or General Secretary can approve reports');
-    }
-  }
 
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');

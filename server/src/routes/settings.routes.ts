@@ -170,7 +170,7 @@ router.patch('/about', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRest
   ApiResponse.success(res, settings, 'Content updated');
 }));
 
-// Update general info (SuperAdmin) — name, branding, contact
+// Update general info (Admin+) — name, branding, contact
 router.patch('/general', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_general', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const allowed = ['siteName', 'siteNameFull', 'siteNameBn', 'siteNameBnFull', 'contactEmail', 'contactPhone', 'address', 'logo', 'logoDark', 'footerLogo', 'footerLogoDark', 'favicon', 'foundedYear'];
