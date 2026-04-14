@@ -24,37 +24,45 @@ interface AdminLink {
 }
 
 const adminLinks: AdminLink[] = [
-  // Moderator+
+  // ── Overview ──
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: UserRole.MODERATOR },
   { label: 'Users', href: '/admin/users', icon: Users, minRole: UserRole.MODERATOR },
-  { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
+
+  // ── Content Management (Moderator+) ──
   { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },
+  { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
   { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
+  { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
+
+  // ── Operations (Moderator+) ──
+  { label: 'Donations', href: '/admin/donations', icon: Heart, minRole: UserRole.MODERATOR },
   { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.MODERATOR },
   { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.MODERATOR },
-  { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
-  { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
-  { label: 'Donations', href: '/admin/donations', icon: Heart, minRole: UserRole.MODERATOR },
-  // Admin+
-  { label: 'Roles', href: '/admin/roles', icon: KeyRound, minRole: UserRole.ADMIN },
-  { label: 'Moderators', href: '/admin/moderators', icon: UserCog, minRole: UserRole.ADMIN },
+
+  // ── Organization (Admin+) ──
   { label: 'Committees', href: '/admin/committees', icon: Building2, minRole: UserRole.ADMIN },
+  { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.ADMIN },
   { label: 'Finance', href: '/admin/finance', icon: Banknote, minRole: UserRole.ADMIN },
   { label: 'Budgets', href: '/admin/budgets', icon: Wallet, minRole: UserRole.ADMIN },
-  { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.ADMIN },
+  { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
+  { label: 'Jobs', href: '/admin/jobs', icon: Briefcase, minRole: UserRole.ADMIN },
+  { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.ADMIN },
+
+  // ── Role & User Management (Admin+) ──
+  { label: 'Roles', href: '/admin/roles', icon: KeyRound, minRole: UserRole.ADMIN },
+  { label: 'Moderators', href: '/admin/moderators', icon: UserCog, minRole: UserRole.ADMIN },
   { label: 'Alumni', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.ADMIN },
   { label: 'Advisors', href: '/admin/advisors', icon: Award, minRole: UserRole.ADMIN },
   { label: 'Senior Advisors', href: '/admin/senior-advisors', icon: Star, minRole: UserRole.ADMIN },
-  { label: 'Jobs', href: '/admin/jobs', icon: Briefcase, minRole: UserRole.ADMIN },
-  { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.ADMIN },
-  { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
   { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
-  // SuperAdmin only
-  { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.SUPER_ADMIN },
+
+  // ── SuperAdmin Only ──
   { label: 'Admins', href: '/admin/admins', icon: Crown, minRole: UserRole.SUPER_ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
+  { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.SUPER_ADMIN },
   { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.SUPER_ADMIN },
 ];
 
