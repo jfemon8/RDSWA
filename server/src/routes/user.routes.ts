@@ -21,6 +21,28 @@ const router = Router();
 router.get('/me', authenticate(), userController.getMe);
 router.patch('/me', authenticate(), validate({ body: updateProfileSchema }), userController.updateMe);
 
+// Self-delete account (requires password confirmation)
+router.delete('/me', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { password } = req.body;
+  if (!password) throw ApiError.badRequest('Password is required to delete your account');
+
+  const { User } = await import('../models');
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) throw ApiError.notFound('User not found');
+  if (user.role === UserRole.SUPER_ADMIN) throw ApiError.forbidden('SuperAdmin accounts cannot be self-deleted');
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) throw ApiError.badRequest('Incorrect password');
+
+  user.isDeleted = true;
+  user.isActive = false;
+  await user.save();
+
+  res.clearCookie('refreshToken');
+  ApiResponse.success(res, null, 'Account deleted successfully');
+}));
+
 // Public member directory (optional auth for visibility filtering)
 router.get('/members', authenticate(true), validate({ query: listUsersQuerySchema }), userController.listMembers);
 router.get('/blood-donors', authenticate(true), userController.listBloodDonors);

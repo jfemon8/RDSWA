@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
-import { Loader2, Bell, Mail, Smartphone, BellOff, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, Bell, Mail, Smartphone, BellOff, Clock, AlertCircle, Trash2, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { useState, useEffect } from 'react';
 import { useWebPush } from '@/hooks/useWebPush';
 import { useToast } from '@/components/ui/Toast';
+import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
 
 interface NotifPrefs {
   email: boolean;
@@ -212,8 +215,98 @@ export default function NotificationSettingsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Delete Account */}
+        <DeleteAccountSection />
       </div>
     </div>
+  );
+}
+
+function DeleteAccountSection() {
+  const { user, logout } = useAuthStore();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [password, setPassword] = useState('');
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete('/users/me', { data: { password } }),
+    onSuccess: () => {
+      toast.success('Account deleted successfully');
+      logout();
+      navigate('/');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete account'),
+  });
+
+  if (isSuperAdmin) return null;
+
+  return (
+    <FadeIn delay={0.15} direction="up" distance={20}>
+      <div className="bg-card border border-red-200 dark:border-red-900/40 rounded-lg p-5">
+        <h2 className="font-semibold mb-2 flex items-center gap-2 text-red-600 dark:text-red-400">
+          <ShieldAlert className="h-4 w-4" /> Danger Zone
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+
+        <AnimatePresence mode="wait">
+          {!showConfirm ? (
+            <motion.button
+              key="trigger"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" /> Delete My Account
+            </motion.button>
+          ) : (
+            <motion.div
+              key="confirm"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3"
+            >
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-700 dark:text-red-400">
+                This will permanently delete your account, profile, messages, and all data. Enter your password to confirm.
+              </div>
+              <input
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-red-300 dark:border-red-800 rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={!password || deleteMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Permanently Delete
+                </motion.button>
+                <button
+                  onClick={() => { setShowConfirm(false); setPassword(''); }}
+                  className="px-4 py-2 text-sm border rounded-md hover:bg-accent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </FadeIn>
   );
 }
 
