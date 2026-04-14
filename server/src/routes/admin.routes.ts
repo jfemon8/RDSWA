@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { authorize } from '../middlewares/rbac.middleware';
+import { authorize, denyRestricted } from '../middlewares/rbac.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
@@ -216,7 +216,7 @@ const RESOURCE_NAME_FIELDS: Record<string, { collection: string; field: string }
 };
 
 // Audit logs
-router.get('/logs', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+router.get('/logs', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = {};
   if (req.query.action) filter.action = { $regex: req.query.action, $options: 'i' };
@@ -255,7 +255,7 @@ router.get('/logs', authenticate(), authorize(UserRole.ADMIN), asyncHandler(asyn
 }));
 
 // Login history
-router.get('/login-history', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+router.get('/login-history', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = {};
   if (req.query.userId) filter.user = req.query.userId;
@@ -269,7 +269,7 @@ router.get('/login-history', authenticate(), authorize(UserRole.ADMIN), asyncHan
 }));
 
 // Suspicious activity alerts
-router.get('/suspicious-activity', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+router.get('/suspicious-activity', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (_req, res) => {
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Failed login attempts grouped by IP (more than 5 in 24h)
@@ -313,7 +313,7 @@ router.get('/suspicious-activity', authenticate(), authorize(UserRole.ADMIN), as
 }));
 
 // Role assignment history
-router.get('/role-history', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+router.get('/role-history', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = {};
   if (req.query.userId) filter.user = req.query.userId;
@@ -402,7 +402,7 @@ router.post('/bulk/reject', authenticate(), authorize(UserRole.MODERATOR), audit
 }));
 
 // Bulk email
-router.post('/bulk/email', authenticate(), authorize(UserRole.ADMIN), auditLog('admin.bulk_email', 'users'), asyncHandler(async (req, res) => {
+router.post('/bulk/email', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.bulk_email', 'users'), asyncHandler(async (req, res) => {
   const { userIds, subject, body } = req.body;
   if (!subject || !body) throw ApiError.badRequest('subject and body are required');
   if (!Array.isArray(userIds) || userIds.length === 0) {
@@ -431,7 +431,7 @@ router.post('/bulk/email', authenticate(), authorize(UserRole.ADMIN), auditLog('
 // ─── Backup & Restore ───
 
 // List all collections and their document counts
-router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (_req, res) => {
+router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), asyncHandler(async (_req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
 
@@ -452,7 +452,7 @@ router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), asyn
 }));
 
 // Export a collection as JSON
-router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.backup_export', 'system'), asyncHandler(async (req, res) => {
+router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('admin.backup_export', 'system'), asyncHandler(async (req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
 
@@ -468,7 +468,7 @@ router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPE
 }));
 
 // Restore a collection from JSON
-router.post('/backup/restore/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('admin.backup_restore', 'system'), asyncHandler(async (req, res) => {
+router.post('/backup/restore/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('admin.backup_restore', 'system'), asyncHandler(async (req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
 

@@ -20,7 +20,7 @@ export enum CommitteePosition {
   MEMBER = 'member',
 }
 
-/** Roles ordered by privilege level (higher index = more privilege) */
+/** Full role ordering including tag roles — used by RBAC middleware for legacy DB compat */
 export const ROLE_HIERARCHY: UserRole[] = [
   UserRole.GUEST,
   UserRole.USER,
@@ -33,18 +33,43 @@ export const ROLE_HIERARCHY: UserRole[] = [
   UserRole.SUPER_ADMIN,
 ];
 
-/** Committee positions that auto-assign Moderator role */
-export const MODERATOR_AUTO_POSITIONS: string[] = [
+/**
+ * Tier-only hierarchy (privilege levels). Alumni / Advisor / Senior Advisor
+ * are orthogonal boolean tags, NOT privilege tiers — they don't appear here.
+ * Use this for display, role hierarchy visualization, and tier comparisons.
+ */
+export const TIER_HIERARCHY: UserRole[] = [
+  UserRole.GUEST,
+  UserRole.USER,
+  UserRole.MEMBER,
+  UserRole.MODERATOR,
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+];
+
+/** Tag roles — orthogonal boolean flags, not privilege tiers */
+export const TAG_ROLES: UserRole[] = [
+  UserRole.ALUMNI,
+  UserRole.ADVISOR,
+  UserRole.SENIOR_ADVISOR,
+];
+
+/** Committee positions that auto-assign Admin role (current committee only) */
+export const ADMIN_AUTO_POSITIONS: string[] = [
   CommitteePosition.PRESIDENT,
   CommitteePosition.GENERAL_SECRETARY,
+];
+
+/** Committee positions that auto-assign Moderator role (current committee only) */
+export const MODERATOR_AUTO_POSITIONS: string[] = [
   CommitteePosition.ORGANIZING_SECRETARY,
   CommitteePosition.TREASURER,
 ];
 
-/** Positions that retain Moderator after committee archive */
-export const MODERATOR_RETAIN_POSITIONS: string[] = [
-  CommitteePosition.PRESIDENT,
-  CommitteePosition.GENERAL_SECRETARY,
+/** All positions that receive any auto-role assignment */
+export const ALL_AUTO_POSITIONS: string[] = [
+  ...ADMIN_AUTO_POSITIONS,
+  ...MODERATOR_AUTO_POSITIONS,
 ];
 
 /** Hardcoded SuperAdmin emails */
@@ -52,4 +77,10 @@ export const SUPER_ADMIN_EMAILS: string[] = [
   'jfemon8@gmail.com',
   'emon.cse6.bu@gmail.com',
   'emon.onnorokom@gmail.com',
+  'manikmia.phy@gmail.com',
+];
+
+/** SuperAdmins who cannot access Settings and Backup pages */
+export const RESTRICTED_SUPER_ADMINS: string[] = [
+  'manikmia.phy@gmail.com',
 ];

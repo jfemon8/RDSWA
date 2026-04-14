@@ -33,8 +33,11 @@ export enum Action {
 type PermissionMap = Record<string, UserRole[]>;
 
 /**
- * Maps "module:action" to the minimum roles allowed.
- * A user with ANY of the listed roles can perform the action.
+ * Maps "module:action" to the roles allowed.
+ *
+ * Moderator — basic CRUD, content moderation, user approval, reports viewing
+ * Admin     — all Moderator + full management, finance, votes, bus, logs
+ * SuperAdmin — all Admin + settings, admin management, backup, broadcast
  */
 export const PERMISSIONS: PermissionMap = {
   // Users
@@ -108,7 +111,7 @@ export const PERMISSIONS: PermissionMap = {
 
   // Notifications
   'notifications:create': [UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],
-  'notifications:manage': [UserRole.SUPER_ADMIN],
+  'notifications:manage': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 
   // Reports
   'reports:read': [UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],

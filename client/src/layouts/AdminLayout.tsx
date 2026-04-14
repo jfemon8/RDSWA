@@ -10,7 +10,7 @@ import {
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -24,34 +24,37 @@ interface AdminLink {
 }
 
 const adminLinks: AdminLink[] = [
+  // Moderator+
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: UserRole.MODERATOR },
   { label: 'Users', href: '/admin/users', icon: Users, minRole: UserRole.MODERATOR },
-  { label: 'Roles', href: '/admin/roles', icon: KeyRound, minRole: UserRole.ADMIN },
-  { label: 'Moderators', href: '/admin/moderators', icon: UserCog, minRole: UserRole.ADMIN },
-  { label: 'Admins', href: '/admin/admins', icon: Crown, minRole: UserRole.SUPER_ADMIN },
-  { label: 'Committees', href: '/admin/committees', icon: Building2, minRole: UserRole.MODERATOR },
   { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
   { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },
   { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
-  { label: 'Finance', href: '/admin/finance', icon: Banknote, minRole: UserRole.ADMIN },
-  { label: 'Budgets', href: '/admin/budgets', icon: Wallet, minRole: UserRole.MODERATOR },
-  { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.MODERATOR },
   { label: 'Forms', href: '/admin/forms', icon: ScrollText, minRole: UserRole.MODERATOR },
-  { label: 'Alumni', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.MODERATOR },
-  { label: 'Advisors', href: '/admin/advisors', icon: Award, minRole: UserRole.ADMIN },
-  { label: 'Senior Advisors', href: '/admin/senior-advisors', icon: Star, minRole: UserRole.ADMIN },
-  { label: 'Donations', href: '/admin/donations', icon: Heart, minRole: UserRole.MODERATOR },
-  { label: 'Jobs', href: '/admin/jobs', icon: Briefcase, minRole: UserRole.ADMIN },
-  { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.ADMIN },
-  { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
-  { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3, minRole: UserRole.MODERATOR },
   { label: 'Payment Config', href: '/admin/payment', icon: CreditCard, minRole: UserRole.MODERATOR },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
+  { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
+  { label: 'Donations', href: '/admin/donations', icon: Heart, minRole: UserRole.MODERATOR },
+  // Admin+
+  { label: 'Roles', href: '/admin/roles', icon: KeyRound, minRole: UserRole.ADMIN },
+  { label: 'Moderators', href: '/admin/moderators', icon: UserCog, minRole: UserRole.ADMIN },
+  { label: 'Committees', href: '/admin/committees', icon: Building2, minRole: UserRole.ADMIN },
+  { label: 'Finance', href: '/admin/finance', icon: Banknote, minRole: UserRole.ADMIN },
+  { label: 'Budgets', href: '/admin/budgets', icon: Wallet, minRole: UserRole.ADMIN },
+  { label: 'Voting', href: '/admin/voting', icon: Vote, minRole: UserRole.ADMIN },
+  { label: 'Alumni', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.ADMIN },
+  { label: 'Advisors', href: '/admin/advisors', icon: Award, minRole: UserRole.ADMIN },
+  { label: 'Senior Advisors', href: '/admin/senior-advisors', icon: Star, minRole: UserRole.ADMIN },
+  { label: 'Jobs', href: '/admin/jobs', icon: Briefcase, minRole: UserRole.ADMIN },
+  { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.ADMIN },
+  { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
   { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
+  // SuperAdmin only
+  { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.SUPER_ADMIN },
+  { label: 'Admins', href: '/admin/admins', icon: Crown, minRole: UserRole.SUPER_ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
-  { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.ADMIN },
   { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.SUPER_ADMIN },
 ];
 
@@ -68,9 +71,13 @@ export default function AdminLayout() {
   };
 
   const { settings: siteSettings } = useSiteSettings();
-  const visibleLinks = adminLinks.filter((link) =>
-    user?.role ? hasMinRole(user.role, link.minRole) : false
-  );
+  const isRestricted = user?.email ? RESTRICTED_SUPER_ADMINS.includes(user.email) : false;
+  const restrictedPaths = ['/admin/settings', '/admin/backup'];
+  const visibleLinks = adminLinks.filter((link) => {
+    if (!user?.role || !hasMinRole(user.role, link.minRole)) return false;
+    if (isRestricted && restrictedPaths.includes(link.href)) return false;
+    return true;
+  });
 
   useBodyScrollLock(sidebarOpen);
 

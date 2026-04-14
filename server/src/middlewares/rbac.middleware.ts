@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserRole, ROLE_HIERARCHY, PERMISSIONS } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY, PERMISSIONS, RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { ApiError } from '../utils/ApiError';
 
 /**
@@ -40,6 +40,21 @@ export function authorize(...allowedRoles: UserRole[]) {
     }
 
     next(ApiError.forbidden('You do not have permission to perform this action'));
+  };
+}
+
+/**
+ * Deny restricted SuperAdmins from accessing specific routes (e.g. Settings, Backup).
+ * Place after authenticate() + authorize(). Returns 403 if the user's email is
+ * in the RESTRICTED_SUPER_ADMINS list.
+ */
+export function denyRestricted() {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) return next(ApiError.unauthorized());
+    if (RESTRICTED_SUPER_ADMINS.includes((req.user as any).email)) {
+      return next(ApiError.forbidden('Your account does not have access to this resource'));
+    }
+    next();
   };
 }
 

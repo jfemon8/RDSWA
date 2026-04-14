@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { authorize } from '../middlewares/rbac.middleware';
+import { authorize, denyRestricted } from '../middlewares/rbac.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
@@ -73,7 +73,7 @@ router.get('/public-stats', asyncHandler(async (_req, res) => {
 }));
 
 // Update site settings (SuperAdmin)
-router.patch('/', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
 
   // Recursively strip _id and __v from any object/array
@@ -133,7 +133,7 @@ router.patch('/academic-config', authenticate(), authorize(UserRole.ADMIN), audi
 }));
 
 // Update homepage content (SuperAdmin)
-router.patch('/homepage', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_homepage', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/homepage', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update_homepage', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const update: any = { updatedBy: req.user._id };
   if (req.body.homePageContent !== undefined) update.homePageContent = req.body.homePageContent;
@@ -142,7 +142,7 @@ router.patch('/homepage', authenticate(), authorize(UserRole.SUPER_ADMIN), audit
 }));
 
 // Update university info (SuperAdmin)
-router.patch('/university', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_university', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/university', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update_university', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const uni = req.body.universityInfo || {};
   // Strip _id
@@ -156,7 +156,7 @@ router.patch('/university', authenticate(), authorize(UserRole.SUPER_ADMIN), aud
 }));
 
 // Update about content (SuperAdmin)
-router.patch('/about', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_about', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/about', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update_about', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { aboutContent, missionContent, visionContent, objectivesContent, historyContent } = req.body;
   const update: any = { updatedBy: req.user._id };
@@ -171,7 +171,7 @@ router.patch('/about', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog
 }));
 
 // Update general info (SuperAdmin) — name, branding, contact
-router.patch('/general', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_general', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/general', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_general', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const allowed = ['siteName', 'siteNameFull', 'siteNameBn', 'siteNameBnFull', 'contactEmail', 'contactPhone', 'address', 'logo', 'logoDark', 'footerLogo', 'footerLogoDark', 'favicon', 'foundedYear'];
   const update: any = { updatedBy: req.user._id };
@@ -183,7 +183,7 @@ router.patch('/general', authenticate(), authorize(UserRole.SUPER_ADMIN), auditL
 }));
 
 // Update organizations (SuperAdmin)
-router.patch('/organizations', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_organizations', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/organizations', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update_organizations', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const orgs = (req.body.otherOrganizations || []).map(({ _id, ...rest }: any) => rest);
   const settings = await SiteSettings.findOneAndUpdate(
@@ -195,7 +195,7 @@ router.patch('/organizations', authenticate(), authorize(UserRole.SUPER_ADMIN), 
 }));
 
 // Update legal content (SuperAdmin) — FAQ, Privacy, Terms
-router.patch('/legal', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_legal', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/legal', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update_legal', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const update: any = { updatedBy: req.user._id };
   if (req.body.faq !== undefined) update.faq = (req.body.faq as any[]).map(({ _id, ...rest }: any) => rest);
@@ -206,7 +206,7 @@ router.patch('/legal', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog
 }));
 
 // Update social links (SuperAdmin)
-router.patch('/social', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_social', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/social', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_social', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const settings = await SiteSettings.findOneAndUpdate(
     {},
@@ -270,7 +270,7 @@ router.get('/membership-criteria', asyncHandler(async (_req, res) => {
 }));
 
 // Update auto-role assignment config (SuperAdmin only)
-router.patch('/auto-role-config', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('settings.update_auto_role', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/auto-role-config', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('settings.update_auto_role', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { moderatorPositions, retainPositions } = req.body;
   const update: any = { updatedBy: req.user._id };

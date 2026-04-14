@@ -309,6 +309,7 @@ export class AuthService {
       failureReason,
     }).catch((err) => console.error('Login history error:', err));
   }
+
 }
 
 export const authService = new AuthService();

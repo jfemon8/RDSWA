@@ -33,7 +33,7 @@ router.delete('/:id/endorse', authenticate(), userController.removeEndorsement);
 router.get('/export/directory', authenticate(), authorize(UserRole.ADMIN), userController.exportDirectory);
 
 // Admin routes
-router.get('/', authenticate(), authorize(UserRole.ADMIN), validate({ query: listUsersQuerySchema }), userController.listUsers);
+router.get('/', authenticate(), authorize(UserRole.MODERATOR), validate({ query: listUsersQuerySchema }), userController.listUsers);
 router.get('/:id', authenticate(true), userController.getUserById);
 
 // Admin+ can edit any user's profile

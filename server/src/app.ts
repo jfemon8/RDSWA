@@ -23,6 +23,7 @@ import { startChatMediaPurge } from './jobs/chatMediaPurge';
 import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
+import { syncRolesOnStart } from './jobs/roleSyncOnStart';
 
 // Initialize Sentry before anything else (skip in test mode)
 if (env.NODE_ENV !== 'test') {
@@ -72,6 +73,9 @@ async function start() {
 
   // Initialize central + department groups
   initializeGroups();
+
+  // One-time role sync — ensures DB matches new auto-assignment rules
+  syncRolesOnStart();
 
   // Start scheduled jobs
   startAlumniTagger();

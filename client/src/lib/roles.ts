@@ -1,4 +1,4 @@
-import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY, TIER_HIERARCHY } from '@rdswa/shared';
 
 /** Role display config: label, color classes */
 const ROLE_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -23,20 +23,6 @@ export function getPrimaryRoleLabel(role: string): string {
 }
 
 /**
- * Tier-only roles that represent privilege level. Alumni / Advisor / Senior Advisor
- * are orthogonal tags (stored as booleans) and must NOT appear here — they render
- * via the isAlumni / isAdvisor / isSeniorAdvisor flag badges instead.
- */
-const TIER_ROLES: UserRole[] = [
-  UserRole.GUEST,
-  UserRole.USER,
-  UserRole.MEMBER,
-  UserRole.MODERATOR,
-  UserRole.ADMIN,
-  UserRole.SUPER_ADMIN,
-];
-
-/**
  * Get all effective tier-level roles for a user based on hierarchy.
  * A SuperAdmin effectively holds all lower tiers; an Admin holds admin, moderator, member.
  * Skips guest/user for anyone member+. Excludes tag roles (alumni/advisor/senior_advisor)
@@ -46,8 +32,8 @@ export function getEffectiveRoles(role: string): string[] {
   const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
   if (idx < 0) return [role];
 
-  // All tiers at or below the user's hierarchy level
-  const effective = TIER_ROLES.filter(
+  // Only include tier roles at or below the user's hierarchy level
+  const effective = TIER_HIERARCHY.filter(
     (r) => ROLE_HIERARCHY.indexOf(r) <= idx
   ).reverse();
 
