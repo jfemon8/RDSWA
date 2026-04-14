@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
+import UserEventQr from '@/components/ui/UserEventQr';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -153,8 +154,8 @@ export default function EventDetailPage() {
         </FadeIn>
       )}
 
-      {/* QR Code for check-in */}
-      {event.qrCode && event.status !== 'completed' && isRegistered && (
+      {/* Per-user QR Code for check-in */}
+      {event.status !== 'completed' && isRegistered && user && (
         <FadeIn delay={0.25} direction="up">
           <div className="mb-6 p-4 border rounded-lg bg-card">
             <div className="flex items-center gap-2 mb-3">
@@ -162,14 +163,9 @@ export default function EventDetailPage() {
               <h3 className="font-semibold text-sm">Check-in QR Code</h3>
             </div>
             <p className="text-xs text-muted-foreground mb-3">Show this QR code at the venue for check-in</p>
-            <motion.img
-              src={event.qrCode}
-              alt="Check-in QR Code"
-              className="w-48 h-48 mx-auto border rounded-lg"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            />
+            <div className="flex justify-center">
+              <UserEventQr eventId={id!} userId={user._id} size={192} />
+            </div>
           </div>
         </FadeIn>
       )}

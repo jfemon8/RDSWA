@@ -57,11 +57,6 @@ export default function AdminEventsPage() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete event'); },
   });
 
-  const qrMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/events/${id}/qr`),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['events'] }); toast.success('QR code generated'); },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to generate QR code'); },
-  });
 
   const resetForm = () => {
     setShowForm(false);
@@ -211,7 +206,7 @@ export default function AdminEventsPage() {
                       <span>{formatDate(e.startDate)}</span>
                       {e.registeredUsers && <span>{e.registeredUsers.length} registered</span>}
                       {e.attendance && <span>{e.attendance.length} attended</span>}
-                      {e.qrCode && <span className="text-green-600">QR ✓</span>}
+                      {e.registeredUsers?.length > 0 && <span className="text-green-600">QR ready</span>}
                     </div>
                   </div>
                   <div className="flex gap-1 items-center">
@@ -223,14 +218,6 @@ export default function AdminEventsPage() {
                         <ScanLine className="h-4 w-4 text-foreground" />
                       </div>
                     </Link>
-                    <button
-                      onClick={() => qrMutation.mutate(e._id)}
-                      disabled={qrMutation.isPending}
-                      className="p-2 hover:bg-accent rounded"
-                      title="Generate QR Code"
-                    >
-                      <QrCode className="h-4 w-4 text-foreground" />
-                    </button>
                     <button
                       onClick={() => setExpandedId(expandedId === e._id ? null : e._id)}
                       className="p-2 hover:bg-accent rounded"
@@ -404,20 +391,15 @@ function EventDetailPanel({ event }: { event: any }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
-            <QrCode className="h-4 w-4 text-primary" /> QR Code
+            <QrCode className="h-4 w-4 text-primary" /> QR Check-in
           </h4>
-          {fullEvent.qrCode ? (
-            <motion.img
-              src={fullEvent.qrCode}
-              alt="QR Code"
-              className="w-40 h-40 border rounded-lg"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            />
-          ) : (
-            <p className="text-xs text-muted-foreground">No QR code generated. Click the QR icon above to generate one.</p>
-          )}
+          <p className="text-xs text-muted-foreground">Each registered user gets a unique QR code on the event page. Use the scanner to check them in.</p>
+          <Link
+            to={`/events/${fullEvent._id}/checkin`}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90"
+          >
+            <ScanLine className="h-3.5 w-3.5" /> Open Scanner
+          </Link>
         </div>
 
         {/* Attendance Section */}

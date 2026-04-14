@@ -96,16 +96,24 @@ export default function CheckInScannerPage() {
           const barcodes = await detector.detect(canvas);
           if (barcodes.length > 0) {
             const qrData = barcodes[0].rawValue;
-            // Extract userId from QR data (URL format: .../checkin?userId=xxx)
-            const url = new URL(qrData);
-            const userId = url.searchParams.get('userId');
-            if (userId && !checkinMutation.isPending) {
-              checkinMutation.mutate(userId);
-              // Pause scanning briefly
-              setTimeout(() => {
-                animFrame = requestAnimationFrame(scan);
-              }, 3000);
-              return;
+            // Parse RDSWA:CHECKIN:{eventId}:{userId} format
+            const parts = qrData.split(':');
+            if (parts.length === 4 && parts[0] === 'RDSWA' && parts[1] === 'CHECKIN') {
+              const qrEventId = parts[2];
+              const userId = parts[3];
+              if (userId && qrEventId === id && !checkinMutation.isPending) {
+                checkinMutation.mutate(userId);
+                // Pause scanning briefly
+                setTimeout(() => {
+                  animFrame = requestAnimationFrame(scan);
+                }, 3000);
+                return;
+              } else if (qrEventId !== id) {
+                setResult({ success: false, message: 'This QR code is for a different event' });
+                setTimeout(() => setResult(null), 3000);
+                setTimeout(() => { animFrame = requestAnimationFrame(scan); }, 3000);
+                return;
+              }
             }
           }
         } catch {
