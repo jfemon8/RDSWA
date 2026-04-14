@@ -245,7 +245,7 @@ export default function ProfilePage() {
                 label="University Batch"
                 value={form.batch}
                 onChange={(v) => set('batch', v)}
-                options={ac.batches.map((b) => ({ label: b, value: String(ac.batches.indexOf(b) + 1) }))}
+                options={ac.batches.map((b) => ({ label: b, value: String(parseInt(b, 10) || b) }))}
               />
               <SelectField
                 label="Session"
