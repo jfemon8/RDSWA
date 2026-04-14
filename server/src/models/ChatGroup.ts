@@ -12,8 +12,10 @@ export interface IJoinRequest {
 export interface IChatGroupDocument extends Document {
   name: string;
   description?: string;
-  type: 'central' | 'department' | 'custom';
+  type: 'central' | 'department' | 'custom' | 'consultation';
   department?: string;
+  /** For consultation groups: the mentor who owns this group */
+  mentorUser?: mongoose.Types.ObjectId;
   members: mongoose.Types.ObjectId[];
   admins: mongoose.Types.ObjectId[];
   /** User who created a custom group. Undefined for system-managed central/department groups. */
@@ -43,8 +45,9 @@ const chatGroupSchema = new Schema<IChatGroupDocument>(
   {
     name: { type: String, required: true },
     description: String,
-    type: { type: String, enum: ['central', 'department', 'custom'], default: 'custom' },
+    type: { type: String, enum: ['central', 'department', 'custom', 'consultation'], default: 'custom' },
     department: String,
+    mentorUser: { type: Schema.Types.ObjectId, ref: 'User' },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -57,6 +60,7 @@ const chatGroupSchema = new Schema<IChatGroupDocument>(
 );
 
 chatGroupSchema.index({ type: 1, department: 1 });
+chatGroupSchema.index({ type: 1, mentorUser: 1 });
 chatGroupSchema.index({ 'joinRequests.status': 1 });
 chatGroupSchema.index({ createdBy: 1 });
 

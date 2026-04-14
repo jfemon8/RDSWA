@@ -750,7 +750,7 @@ router.delete('/groups/:id/leave', authenticate(), asyncHandler(async (req, res)
   const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
   if (!group) throw ApiError.notFound('Group not found');
 
-  if (group.type !== 'custom') {
+  if (group.type !== 'custom' && group.type !== 'consultation') {
     throw ApiError.badRequest('You cannot leave central or department groups. These are managed by administrators.');
   }
 

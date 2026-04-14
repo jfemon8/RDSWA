@@ -36,6 +36,8 @@ export interface AuthUser {
   membershipStatus: string;
   isModerator?: boolean;
   isAlumni?: boolean;
+  isAdvisor?: boolean;
+  isSeniorAdvisor?: boolean;
   profileVisibility?: {
     phone?: boolean;
     email?: boolean;
