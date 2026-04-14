@@ -14,7 +14,7 @@ router.get('/my-attendance', authenticate(), eventController.myAttendance);
 router.get('/:id', eventController.getById);
 router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createEventSchema }), auditLog('event.create', 'events'), eventController.create);
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateEventSchema }), auditLog('event.update', 'events'), eventController.update);
-router.delete('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('event.delete', 'events'), eventController.remove);
+router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('event.delete', 'events'), eventController.remove);
 router.post('/:id/register', authenticate(), authorize(UserRole.MEMBER), eventController.register);
 router.post('/:id/checkin', authenticate(), authorize(UserRole.MODERATOR), eventController.checkin);
 router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.submitAttendance);

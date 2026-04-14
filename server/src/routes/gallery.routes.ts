@@ -30,8 +30,8 @@ router.get('/albums/:id', asyncHandler(async (req, res) => {
   ApiResponse.success(res, { album, photos });
 }));
 
-// Create album (Admin+ only)
-router.post('/albums', authenticate(), authorize(UserRole.ADMIN), auditLog('album.create', 'albums'), asyncHandler(async (req, res) => {
+// Create album (Moderator+)
+router.post('/albums', authenticate(), authorize(UserRole.MODERATOR), auditLog('album.create', 'albums'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const album = await Album.create({ ...req.body, createdBy: req.user._id });
   ApiResponse.created(res, album, 'Album created');

@@ -13,7 +13,7 @@ router.get('/', authenticate(true), noticeController.list);
 router.get('/:id', noticeController.getById);
 router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createNoticeSchema }), auditLog('notice.create', 'notices'), noticeController.create);
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateNoticeSchema }), auditLog('notice.update', 'notices'), noticeController.update);
-router.delete('/:id', authenticate(), authorize(UserRole.MODERATOR), auditLog('notice.delete', 'notices'), noticeController.remove);
+router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('notice.delete', 'notices'), noticeController.remove);
 router.patch('/:id/archive', authenticate(), authorize(UserRole.MODERATOR), auditLog('notice.archive', 'notices'), noticeController.archive);
 
 export default router;
