@@ -61,7 +61,15 @@ export default function Footer() {
                 <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
                 <li><Link to="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</Link></li>
                 <li><Link to="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
-                {settings?.universityInfo?.name && <li className="pt-1 text-xs">{settings.universityInfo.name}</li>}
+                {settings?.universityInfo?.name && (
+                  <li className="pt-1 text-xs">
+                    {settings.universityInfo?.website ? (
+                      <a href={settings.universityInfo.website} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                        {settings.universityInfo.name}
+                      </a>
+                    ) : settings.universityInfo.name}
+                  </li>
+                )}
               </ul>
             </div>
           </FadeIn>
