@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
+import { useAuthStore } from '@/stores/authStore';
 import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapPin, Vote, FileText, AlertTriangle, Image, Bus } from 'lucide-react';
 import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, ShinyText } from '@/components/reactbits';
 import type { LucideIcon } from 'lucide-react';
@@ -21,6 +22,7 @@ const featureColorMap: Record<string, string> = {
 };
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuthStore();
   const { data: settingsData } = useQuery({
     queryKey: queryKeys.settings.all,
     queryFn: async () => {
@@ -137,10 +139,10 @@ export default function HomePage() {
           <FadeIn delay={1.0} scale>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to="/register"
+                to={isAuthenticated ? '/dashboard' : '/register'}
                 className="inline-flex items-center bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
               >
-                {hp?.ctaButtonText || 'Get Started'} <ArrowRight className="ml-2 h-4 w-4" />
+                {isAuthenticated ? 'Go to Dashboard' : (hp?.ctaButtonText || 'Get Started')} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 to="/about"
@@ -374,10 +376,10 @@ export default function HomePage() {
               {hp?.introText || 'Become a part of the largest Rangpur Division student community at University of Barishal.'}
             </p>
             <Link
-              to="/register"
+              to={isAuthenticated ? '/dashboard' : '/register'}
               className="inline-flex items-center bg-primary text-primary-foreground px-10 py-4 rounded-xl font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
             >
-              {hp?.ctaButtonText || 'Get Started'} <ArrowRight className="ml-2 h-5 w-5" />
+              {isAuthenticated ? 'Go to Dashboard' : (hp?.ctaButtonText || 'Get Started')} <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </FadeIn>
         </div>
