@@ -28,6 +28,9 @@ export default function TopicDetailPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editReplyContent, setEditReplyContent] = useState('');
+  const [editingTopic, setEditingTopic] = useState(false);
+  const [editTopicTitle, setEditTopicTitle] = useState('');
+  const [editTopicContent, setEditTopicContent] = useState('');
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
 
@@ -70,6 +73,16 @@ export default function TopicDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/communication/forum/${id}`),
     onSuccess: () => navigate('/dashboard/forum'),
+  });
+
+  const editTopicMutation = useMutation({
+    mutationFn: () => api.patch(`/communication/forum/${id}`, { title: editTopicTitle, content: editTopicContent }),
+    onSuccess: () => {
+      setEditingTopic(false);
+      queryClient.invalidateQueries({ queryKey: ['forum-topic', id] });
+      toast.success('Topic updated!');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to update topic'),
   });
 
   const editReplyMutation = useMutation({
@@ -130,35 +143,79 @@ export default function TopicDetailPage() {
               <BlurText text={topic.title} className="text-xl font-bold" delay={30} />
             </div>
 
-            {/* Mod actions */}
-            {isMod && (
-              <div className="flex gap-1 shrink-0">
+            {/* Topic actions — author can edit, moderator can pin/lock/delete */}
+            <div className="flex gap-1 shrink-0">
+              {(user?._id === topic.author?._id || isMod) && !editingTopic && (
                 <button
-                  onClick={() => pinMutation.mutate(!topic.isPinned)}
-                  className={`p-2 rounded-md ${topic.isPinned ? 'text-amber-500' : 'text-muted-foreground'} hover:bg-accent`}
-                  title={topic.isPinned ? 'Unpin' : 'Pin'}
+                  onClick={() => { setEditingTopic(true); setEditTopicTitle(topic.title); setEditTopicContent(topic.content); }}
+                  className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-accent"
+                  title="Edit topic"
                 >
-                  <Pin className="h-4 w-4" />
+                  <Pencil className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => lockMutation.mutate(!topic.isLocked)}
-                  className={`p-2 rounded-md ${topic.isLocked ? 'text-red-500' : 'text-muted-foreground'} hover:bg-accent`}
-                  title={topic.isLocked ? 'Unlock' : 'Lock'}
-                >
-                  <Lock className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={async () => { const ok = await confirm({ title: 'Delete Topic', message: 'Are you sure you want to delete this topic? This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(); }}
-                  className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-accent"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+              )}
+              {isMod && (
+                <>
+                  <button
+                    onClick={() => pinMutation.mutate(!topic.isPinned)}
+                    className={`p-2 rounded-md ${topic.isPinned ? 'text-amber-500' : 'text-muted-foreground'} hover:bg-accent`}
+                    title={topic.isPinned ? 'Unpin' : 'Pin'}
+                  >
+                    <Pin className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => lockMutation.mutate(!topic.isLocked)}
+                    className={`p-2 rounded-md ${topic.isLocked ? 'text-red-500' : 'text-muted-foreground'} hover:bg-accent`}
+                    title={topic.isLocked ? 'Unlock' : 'Lock'}
+                  >
+                    <Lock className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={async () => { const ok = await confirm({ title: 'Delete Topic', message: 'Are you sure you want to delete this topic? This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(); }}
+                    className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-accent"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
-          <RichContent html={topic.content} className="mt-4 text-sm" />
+          {editingTopic ? (
+            <div className="mt-4 space-y-3">
+              <input
+                value={editTopicTitle}
+                onChange={(e) => setEditTopicTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Topic title"
+              />
+              <textarea
+                value={editTopicContent}
+                onChange={(e) => setEditTopicContent(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Topic content..."
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => editTopicMutation.mutate()}
+                  disabled={!editTopicTitle.trim() || !editTopicContent.trim() || editTopicMutation.isPending}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {editTopicMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />} Save
+                </button>
+                <button
+                  onClick={() => setEditingTopic(false)}
+                  className="px-4 py-1.5 text-sm border rounded-md hover:bg-accent"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <RichContent html={topic.content} className="mt-4 text-sm" />
+          )}
 
           <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground pt-3 border-t">
             <Link to={`/members/${topic.author?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors">

@@ -1251,16 +1251,32 @@ router.delete('/forum/:id/reply/:replyId', authenticate(), asyncHandler(async (r
   ApiResponse.success(res, null, 'Reply deleted');
 }));
 
-// Pin/lock topic (moderator+)
-router.patch('/forum/:id', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
+// Edit topic — author can edit title/content, moderator+ can pin/lock
+router.patch('/forum/:id', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
   const topic = await ForumTopic.findOne({ _id: id, isDeleted: false });
   if (!topic) throw ApiError.notFound('Topic not found');
 
-  if (req.body.isPinned !== undefined) topic.isPinned = req.body.isPinned;
-  if (req.body.isLocked !== undefined) topic.isLocked = req.body.isLocked;
-  await topic.save();
+  const isAuthor = topic.author.toString() === (req.user._id as any).toString();
+  const isMod = [UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
 
+  // Author can edit title + content
+  if (req.body.title !== undefined || req.body.content !== undefined) {
+    if (!isAuthor && !isMod) throw ApiError.forbidden('Only the author can edit this topic');
+    if (topic.isLocked && !isMod) throw ApiError.forbidden('This topic is locked');
+    if (req.body.title) topic.title = req.body.title;
+    if (req.body.content) topic.content = req.body.content;
+  }
+
+  // Moderator+ can pin/lock
+  if (req.body.isPinned !== undefined || req.body.isLocked !== undefined) {
+    if (!isMod) throw ApiError.forbidden('Only moderators can pin/lock topics');
+    if (req.body.isPinned !== undefined) topic.isPinned = req.body.isPinned;
+    if (req.body.isLocked !== undefined) topic.isLocked = req.body.isLocked;
+  }
+
+  await topic.save();
   ApiResponse.success(res, topic);
 }));
 
