@@ -166,7 +166,7 @@ export default function ProfileViewPage() {
 
         {/* Academic Info */}
         <FadeIn delay={0.2} direction="up">
-          <Section title="Academic Information" icon={<GraduationCap className="h-4 w-4" />}>
+          <Section title="Academic Information" icon={<GraduationCap className="h-4 w-4" />} isEmpty={!u.studentId && !u.registrationNumber && !u.batch && !u.session && !u.faculty && !u.department}>
             <InfoRow icon={<IdCard className="h-4 w-4" />} label="Student ID / Roll Number" value={u.studentId} />
             <InfoRow icon={<Hash className="h-4 w-4" />} label="Registration Number" value={u.registrationNumber} />
             <InfoRow icon={<Users className="h-4 w-4" />} label="University Batch" value={u.batch ? `${u.batch}${getOrdinal(u.batch)}` : null} />
@@ -178,7 +178,7 @@ export default function ProfileViewPage() {
 
         {/* Address */}
         <FadeIn delay={0.25} direction="up">
-          <Section title="Address" icon={<MapPin className="h-4 w-4" />}>
+          <Section title="Address" icon={<MapPin className="h-4 w-4" />} isEmpty={!formatAddress(u.presentAddress) && !formatAddress(u.permanentAddress) && !u.homeDistrict}>
             <InfoRow icon={<MapPin className="h-4 w-4" />} label="Present Address" value={formatAddress(u.presentAddress)} />
             <InfoRow icon={<MapPin className="h-4 w-4" />} label="Permanent Address" value={formatAddress(u.permanentAddress)} />
             {u.homeDistrict && <InfoRow icon={<MapPin className="h-4 w-4" />} label="Home District" value={u.homeDistrict} />}
@@ -187,7 +187,7 @@ export default function ProfileViewPage() {
 
         {/* Professional Info */}
         <FadeIn delay={0.3} direction="up">
-          <Section title="Professional Information" icon={<Briefcase className="h-4 w-4" />}>
+          <Section title="Professional Information" icon={<Briefcase className="h-4 w-4" />} isEmpty={!u.profession && !u.earningSource && (!u.skills || u.skills.length === 0)}>
             <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Profession" value={u.profession} />
             <InfoRow icon={<Heart className="h-4 w-4" />} label="Earning Source" value={u.earningSource} />
             {u.skills?.length > 0 && (
@@ -317,14 +317,18 @@ export default function ProfileViewPage() {
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children, isEmpty }: { title: string; icon: React.ReactNode; children: React.ReactNode; isEmpty?: boolean }) {
   return (
     <div className="border rounded-xl p-5 bg-card h-full">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-primary">{icon}</span>
         <h3 className="font-semibold text-sm">{title}</h3>
       </div>
-      <div className="divide-y">{children}</div>
+      {isEmpty ? (
+        <p className="text-sm text-muted-foreground/60 italic">Not filled yet. Edit your profile to add info.</p>
+      ) : (
+        <div className="divide-y">{children}</div>
+      )}
     </div>
   );
 }
