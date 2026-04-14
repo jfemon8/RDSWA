@@ -69,6 +69,11 @@ interface ListUsersQuery {
 }
 
 export class UserService {
+  /** Strip private fields based on profileVisibility. Public method for controllers. */
+  filterVisibility(user: any, viewerRole?: string): any {
+    return applyVisibilityFilter(user, viewerRole);
+  }
+
   async getById(id: string, viewerRole?: string): Promise<any> {
     const user = await User.findOne({ _id: id, isDeleted: false });
     if (!user) throw ApiError.notFound('User not found');

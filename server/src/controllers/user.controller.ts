@@ -41,7 +41,10 @@ export const listUsers = asyncHandler(async (req: Request, res: Response) => {
 export const listMembers = asyncHandler(async (req: Request, res: Response) => {
   const query = { ...req.query as any, membershipStatus: 'approved' };
   const { users, total, page, limit } = await userService.listUsers(query);
-  ApiResponse.paginated(res, users, total, page, limit);
+  // Apply privacy filter — public/unauthenticated viewers only see visible fields
+  const viewerRole = req.user?.role;
+  const filtered = users.map((u: any) => userService.filterVisibility(u, viewerRole));
+  ApiResponse.paginated(res, filtered, total, page, limit);
 });
 
 export const listBloodDonors = asyncHandler(async (req: Request, res: Response) => {
