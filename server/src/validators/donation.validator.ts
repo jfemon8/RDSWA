@@ -25,7 +25,7 @@ export const verifyDonationSchema = z.object({
   revisionNote: z.string().optional(),
 });
 
-export const createCampaignSchema = z.object({
+const campaignFields = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   targetAmount: z.number().positive(),
@@ -33,6 +33,13 @@ export const createCampaignSchema = z.object({
   endDate: z.string().optional(),
 });
 
-export const updateCampaignSchema = createCampaignSchema.partial().extend({
-  status: z.enum(['active', 'completed', 'cancelled']).optional(),
-});
+const campaignDateRefine = (schema: any) => schema.refine(
+  (d: any) => !d.startDate || !d.endDate || new Date(d.endDate) > new Date(d.startDate),
+  { message: 'End date must be after start date', path: ['endDate'] },
+);
+
+export const createCampaignSchema = campaignDateRefine(campaignFields);
+
+export const updateCampaignSchema = campaignDateRefine(
+  campaignFields.partial().extend({ status: z.enum(['active', 'completed', 'cancelled']).optional() })
+);
