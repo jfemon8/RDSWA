@@ -10,6 +10,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2, Users, CalendarX, Pencil, Banknote, UserCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
@@ -37,6 +38,7 @@ const JOB_TYPES = ['full-time', 'part-time', 'internship', 'remote', 'contract']
 export default function JobBoardPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [view, setView] = useState<'all' | 'mine'>('all');
@@ -99,8 +101,10 @@ export default function JobBoardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+      toast.success(editingId ? 'Job updated' : 'Job posted successfully');
       resetForm();
     },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save job'),
   });
 
   const deleteMutation = useMutation({
@@ -243,7 +247,7 @@ export default function JobBoardPage() {
               <RichTextEditor value={newJob.description} onChange={(v) => setNewJob({ ...newJob, description: v })} placeholder="Job description..." minHeight="100px" />
               <input placeholder="Requirements (comma separated)" value={newJob.requirements} onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
                 className="w-full px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start">
                 <button
                   disabled={saveMutation.isPending || !newJob.title || !newJob.company || !newJob.description}
                   onClick={() => saveMutation.mutate(newJob)}
@@ -257,6 +261,15 @@ export default function JobBoardPage() {
                   Cancel
                 </button>
               </div>
+              {(!newJob.title || !newJob.company || !newJob.description) && (
+                <p className="text-xs text-destructive mt-1">
+                  {[
+                    !newJob.title && 'Job Title',
+                    !newJob.company && 'Company',
+                    !newJob.description && 'Description',
+                  ].filter(Boolean).join(', ')} {(!newJob.title && !newJob.company) || (!newJob.title && !newJob.description) || (!newJob.company && !newJob.description) ? 'are' : 'is'} required
+                </p>
+              )}
             </div>
           </motion.div>
         )}
