@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationSocket } from '@/hooks/useSocket';
 import { formatDate } from '@/lib/date';
+import { stripHtml } from '@/lib/stripHtml';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -142,7 +143,7 @@ export default function NotificationBell() {
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{n.title}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{stripHtml(n.message)}</p>
                       <p className="text-[11px] text-muted-foreground/70 mt-1">
                         {formatTimeAgo(n.createdAt)}
                       </p>

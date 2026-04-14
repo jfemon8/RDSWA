@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { Loader2, CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
+import { stripHtml } from '@/lib/stripHtml';
 
 export default function AdminFormsPage() {
   const queryClient = useQueryClient();
@@ -129,7 +130,7 @@ export default function AdminFormsPage() {
                       </div>
                     </div>
 
-                    {f.data?.reason && <p className="text-sm text-muted-foreground mb-2">{f.data.reason}</p>}
+                    {f.data?.reason && <p className="text-sm text-muted-foreground mb-2">{stripHtml(f.data.reason)}</p>}
 
                     {/* Review comment display */}
                     {f.reviewComment && (
@@ -162,7 +163,7 @@ export default function AdminFormsPage() {
                                 {Object.entries(f.data).map(([key, val]) => (
                                   <div key={key} className="flex gap-2">
                                     <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                                    <span className="font-medium text-foreground">{String(val)}</span>
+                                    <span className="font-medium text-foreground">{stripHtml(val)}</span>
                                   </div>
                                 ))}
                               </div>
@@ -210,7 +211,7 @@ export default function AdminFormsPage() {
                               {Object.entries(f.data).map(([key, val]) => (
                                 <div key={key} className="flex gap-2">
                                   <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                                  <span className="font-medium text-foreground">{String(val)}</span>
+                                  <span className="font-medium text-foreground">{stripHtml(val)}</span>
                                 </div>
                               ))}
                             </div>

@@ -6,6 +6,7 @@ import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCir
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { stripHtml } from '@/lib/stripHtml';
 
 const membershipStatusConfig: Record<string, { icon: typeof Clock; color: string; bgColor: string; label: string; description: string }> = {
   none: { icon: AlertCircle, color: 'text-muted-foreground', bgColor: 'bg-muted', label: 'Not Applied', description: 'You haven\'t applied for membership yet.' },
@@ -174,7 +175,7 @@ export default function DashboardPage() {
                   <p className="font-medium flex items-center gap-1.5">
                     <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
                   </p>
-                  <p className="text-muted-foreground">{n.message}</p>
+                  <p className="text-muted-foreground">{stripHtml(n.message)}</p>
                 </div>
               ))}
             </div>

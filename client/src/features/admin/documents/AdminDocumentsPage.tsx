@@ -8,6 +8,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Trash2, Edit2, FileText, Download, X, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { stripHtml } from '@/lib/stripHtml';
 
 const CATEGORIES = ['policy', 'resolution', 'report', 'form', 'other'] as const;
 const ROLES = ['user', 'member', 'alumni', 'advisor', 'senior_advisor', 'moderator', 'admin'] as const;
@@ -250,7 +251,7 @@ export default function AdminDocumentsPage() {
                         <p className="font-medium text-foreground flex items-center gap-1.5">
                           <FileText className="h-4 w-4 text-primary shrink-0" /> {doc.title}
                         </p>
-                        {doc.description && <p className="text-xs text-muted-foreground line-clamp-1">{doc.description}</p>}
+                        {doc.description && <p className="text-xs text-muted-foreground line-clamp-1">{stripHtml(doc.description)}</p>}
                       </td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary capitalize">{doc.category}</span>

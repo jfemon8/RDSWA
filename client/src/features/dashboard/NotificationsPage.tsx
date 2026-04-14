@@ -5,6 +5,7 @@ import { Bell, Check, CheckCheck, Loader2, Trash2 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import { stripHtml } from '@/lib/stripHtml';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -82,7 +83,7 @@ export default function NotificationsPage() {
                   <p className="font-medium text-sm flex items-center gap-1.5">
                     <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{stripHtml(n.message)}</p>
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatDate(n.createdAt)}
                     {' '}

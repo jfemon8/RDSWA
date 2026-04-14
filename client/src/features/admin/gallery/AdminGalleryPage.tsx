@@ -9,6 +9,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
+import { stripHtml } from '@/lib/stripHtml';
 
 export default function AdminGalleryPage() {
   const queryClient = useQueryClient();
@@ -208,7 +209,7 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
           </motion.button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{album?.title || 'Album'}</h1>
-            {album?.description && <p className="text-sm text-muted-foreground">{album.description}</p>}
+            {album?.description && <p className="text-sm text-muted-foreground">{stripHtml(album.description)}</p>}
           </div>
         </div>
         <motion.button

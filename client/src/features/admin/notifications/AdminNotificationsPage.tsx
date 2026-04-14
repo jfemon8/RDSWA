@@ -9,6 +9,7 @@ import { Send, Loader2, Bell, Radio, History, Trash2, CheckSquare, Square } from
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { formatDate, formatTime } from '@/lib/date';
+import { stripHtml } from '@/lib/stripHtml';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 
@@ -276,7 +277,7 @@ function HistoryPanel() {
                       <span className="text-[10px] text-primary font-semibold">unread</span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{stripHtml(n.message)}</p>
                   <p className="text-[11px] text-muted-foreground/80 mt-1">
                     To: {n.recipient?.name || 'Unknown'} ({n.recipient?.email || '—'})
                     {' · '}

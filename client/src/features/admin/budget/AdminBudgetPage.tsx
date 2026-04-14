@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import { formatDate } from '@/lib/date';
+import { stripHtml } from '@/lib/stripHtml';
 import {
   Plus, Loader2, Pencil, Trash2, CheckCircle2, XCircle, PlayCircle, Wallet,
   ChevronDown, ChevronUp, FileText, AlertCircle,
@@ -520,7 +521,7 @@ function BudgetRow({
           >
             <div className="border-t p-4 space-y-3">
               {budget.description && (
-                <p className="text-sm text-muted-foreground">{budget.description}</p>
+                <p className="text-sm text-muted-foreground">{stripHtml(budget.description)}</p>
               )}
               {status === 'rejected' && budget.rejectionReason && (
                 <div className="flex items-start gap-2 p-3 rounded-md bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-xs">
