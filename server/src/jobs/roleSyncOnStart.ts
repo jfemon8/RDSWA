@@ -1,11 +1,11 @@
 import { Committee, User, RoleAssignment } from '../models';
+import { resolveBaseRole } from '../utils/resolveBaseRole';
 import {
   UserRole,
   SUPER_ADMIN_EMAILS,
   ADMIN_AUTO_POSITIONS,
   MODERATOR_AUTO_POSITIONS,
 } from '@rdswa/shared';
-import { resolveBaseRole } from '../utils/resolveBaseRole';
 
 /**
  * One-time role sync on server start.
@@ -103,6 +103,33 @@ export async function syncRolesOnStart(): Promise<void> {
           }
         }
       }
+    }
+
+    // ── 3. Fix legacy role='alumni'/'advisor'/'senior_advisor' users ──
+    // Old system used role enum for these; new system uses boolean flags.
+    const legacyAlumni = await User.find({ role: 'alumni' as any, isDeleted: false });
+    for (const u of legacyAlumni) {
+      u.isAlumni = true;
+      u.alumniApproved = true;
+      u.role = resolveBaseRole(u);
+      await u.save();
+      console.log(`[RoleSync] Legacy alumni fixed: ${u.email} → member + isAlumni flag`);
+    }
+
+    const legacyAdvisors = await User.find({ role: 'advisor' as any, isDeleted: false });
+    for (const u of legacyAdvisors) {
+      u.isAdvisor = true;
+      u.role = resolveBaseRole(u);
+      await u.save();
+      console.log(`[RoleSync] Legacy advisor fixed: ${u.email} → ${u.role} + isAdvisor flag`);
+    }
+
+    const legacySeniorAdvisors = await User.find({ role: 'senior_advisor' as any, isDeleted: false });
+    for (const u of legacySeniorAdvisors) {
+      u.isSeniorAdvisor = true;
+      u.role = resolveBaseRole(u);
+      await u.save();
+      console.log(`[RoleSync] Legacy senior advisor fixed: ${u.email} → ${u.role} + isSeniorAdvisor flag`);
     }
 
     console.log('[RoleSync] Role sync completed');
