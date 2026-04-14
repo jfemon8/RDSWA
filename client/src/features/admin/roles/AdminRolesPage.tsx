@@ -105,22 +105,22 @@ export default function AdminRolesPage() {
           <p className="text-sm text-muted-foreground mb-4">
             Each user has exactly one tier role that determines their privilege level.
           </p>
-          <div className="grid grid-equal grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {TIER_HIERARCHY.map((role, i) => (
               <motion.div
                 key={role}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.06 }}
-                className="border rounded-lg p-4"
+                className="border rounded-lg p-4 flex flex-col"
               >
-                <div className={`inline-block px-2.5 py-1 rounded text-xs font-semibold capitalize mb-2 ${ROLE_COLORS[role]}`}>
-                  {role.replace('_', ' ')}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`inline-block px-2.5 py-1 rounded text-xs font-semibold capitalize ${ROLE_COLORS[role]}`}>
+                    {role.replace('_', ' ')}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/60">Level {i + 1}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</p>
-                <div className="mt-3 text-xs text-muted-foreground">
-                  Level {i + 1} of {TIER_HIERARCHY.length}
-                </div>
+                <p className="text-sm text-muted-foreground flex-1">{ROLE_DESCRIPTIONS[role]}</p>
               </motion.div>
             ))}
           </div>
@@ -134,7 +134,7 @@ export default function AdminRolesPage() {
           <p className="text-sm text-muted-foreground mb-4">
             Orthogonal boolean flags that can be assigned alongside any tier role. These do not affect privilege level.
           </p>
-          <div className="grid grid-equal grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {TAG_ROLES.map((role, i) => {
               const info = TAG_DESCRIPTIONS[role];
               if (!info) return null;

@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +50,7 @@ export default function Providers({ children }: ProvidersProps) {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <ScrollToTop />
           <ToastProvider>
             <ConfirmProvider>
               <AuthInitializer>
