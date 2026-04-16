@@ -164,7 +164,7 @@ export default function AdminCommitteesPage() {
                     <p className="text-sm text-muted-foreground">
                       {c.tenure?.startDate && new Date(c.tenure.startDate).getFullYear()}
                       {c.tenure?.endDate ? ` - ${new Date(c.tenure.endDate).getFullYear()}` : ' - Present'}
-                      {c.members && ` · ${c.members.length} members`}
+                      {c.members && ` · ${c.members.filter((m: any) => !m.leftAt).length} members`}
                     </p>
                   </div>
                   <div className="flex gap-1">
@@ -338,11 +338,11 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
         )}
       </AnimatePresence>
 
-      {members.length === 0 ? (
+      {members.filter((m: any) => !m.leftAt).length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">No members in this committee</p>
       ) : (
         <div className="space-y-1.5">
-          {members.map((m: any, i: number) => (
+          {members.filter((m: any) => !m.leftAt).map((m: any, i: number) => (
             <motion.div
               key={m.user?._id || i}
               initial={{ opacity: 0, x: -10 }}

@@ -94,7 +94,7 @@ export default function CommitteePage() {
 
                 <div className="p-6">
                   <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {c.members?.map((m: any, i: number) => (
+                    {c.members?.filter((m: any) => !m.leftAt).map((m: any, i: number) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 10 }}
