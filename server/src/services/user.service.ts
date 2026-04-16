@@ -405,6 +405,17 @@ export class UserService {
     const target = await User.findById(targetUserId);
     if (!target) throw ApiError.notFound('User not found');
 
+    // Tier-only roles: alumni/advisor/senior_advisor are TAGS (managed via separate endpoints)
+    const ALLOWED_TIER_ROLES = [
+      UserRole.GUEST, UserRole.USER, UserRole.MEMBER,
+      UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN,
+    ];
+    if (!ALLOWED_TIER_ROLES.includes(newRole as UserRole)) {
+      throw ApiError.badRequest(
+        'Alumni, Advisor, and Senior Advisor are tags — not tier roles. Use the grant endpoints.'
+      );
+    }
+
     // Cannot change SuperAdmin role
     if (SUPER_ADMIN_EMAILS.includes(target.email)) {
       throw ApiError.forbidden('Cannot change SuperAdmin role');
@@ -436,7 +447,47 @@ export class UserService {
       target.moderatorAssignment = undefined;
     }
 
+    // Sync membership status with the new tier role
+    const newRoleIdx = ROLE_HIERARCHY.indexOf(newRole as UserRole);
+    const memberIdx = ROLE_HIERARCHY.indexOf(UserRole.MEMBER);
+    const becomesMemberOrAbove = newRoleIdx >= memberIdx;
+    const wasApproved = target.membershipStatus === 'approved';
+    let justApproved = false;
+
+    if (becomesMemberOrAbove && !wasApproved) {
+      // Promote — mark membership approved
+      target.membershipStatus = 'approved';
+      target.memberApprovedBy = assignedBy._id as any;
+      target.memberApprovedAt = new Date();
+      target.memberRejectionReason = undefined;
+      target.suspensionReason = undefined;
+      target.suspendedAt = undefined;
+      target.suspendedBy = undefined;
+      justApproved = true;
+    } else if (!becomesMemberOrAbove && wasApproved) {
+      // Demote below member — revert membership
+      target.membershipStatus = 'none';
+      target.memberApprovedBy = undefined;
+      target.memberApprovedAt = undefined;
+    }
+
     await target.save();
+
+    // When promoted to member via role change, auto-add to central + department groups
+    if (justApproved) {
+      await ensureCentralGroup();
+      await ChatGroup.findOneAndUpdate(
+        { type: 'central', isDeleted: false },
+        { $addToSet: { members: target._id } }
+      );
+      if (target.department) {
+        await ensureDepartmentGroup(target.department);
+        await ChatGroup.findOneAndUpdate(
+          { type: 'department', department: target.department, isDeleted: false },
+          { $addToSet: { members: target._id } }
+        );
+      }
+    }
 
     // Record role assignment history
     await RoleAssignment.create({

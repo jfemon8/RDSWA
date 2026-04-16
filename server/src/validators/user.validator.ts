@@ -92,10 +92,8 @@ export const updateProfileSchema = z.object({
 });
 
 export const changeRoleSchema = z.object({
-  role: z.enum([
-    'guest', 'user', 'member', 'alumni', 'advisor',
-    'senior_advisor', 'moderator', 'admin', 'super_admin',
-  ]),
+  // Tier roles only — alumni/advisor/senior_advisor are tags managed via separate grant endpoints
+  role: z.enum(['guest', 'user', 'member', 'moderator', 'admin', 'super_admin']),
 });
 
 export const memberActionSchema = z.object({

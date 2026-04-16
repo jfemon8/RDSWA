@@ -177,9 +177,9 @@ export default function AdminUsersPage() {
               <option value="">All Roles</option>
               <option value="user">User</option>
               <option value="member">Member</option>
-              <option value="alumni">Alumni</option>
               <option value="moderator">Moderator</option>
               <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
             </select>
             <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">
@@ -313,14 +313,13 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="p-3">
-                        {isAdmin ? (
+                        {isAdmin && u.role !== 'super_admin' ? (
                           <select value={u.role} onChange={(e) => changeRoleMutation.mutate({ id: u._id, role: e.target.value })}
                             className="px-2 py-1 border rounded text-xs bg-card text-foreground">
                             <option value="user">User</option>
                             <option value="member">Member</option>
-                            <option value="alumni">Alumni</option>
                             <option value="moderator">Moderator</option>
-                            <option value="admin">Admin</option>
+                            {isSuperAdmin && <option value="admin">Admin</option>}
                           </select>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-muted text-muted-foreground">
