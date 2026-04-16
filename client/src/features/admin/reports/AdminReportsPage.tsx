@@ -11,6 +11,7 @@ import { UserRole } from '@rdswa/shared';
 import { hasMinRole } from '@/lib/roles';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/ui/Spinner';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
@@ -74,7 +75,7 @@ function MembersReport() {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoading) return <Spinner size="md" />;
 
   const { byRole = [], byBatch = [], byDepartment = [], byDistrict = [] } = data?.data || {};
 
@@ -175,7 +176,7 @@ function FinanceReport() {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoading) return <Spinner size="md" />;
 
   const d = data?.data || {};
 
@@ -291,7 +292,7 @@ function EventsReport() {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoading) return <Spinner size="md" />;
 
   const stats = data?.data || [];
 
@@ -350,7 +351,7 @@ function DonationsReport() {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoading) return <Spinner size="md" />;
 
   const trends = (data?.data || []).map((t: any) => ({
     name: `${t._id.month}/${t._id.year}`,
@@ -405,7 +406,7 @@ function VotingReport() {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoading) return <Spinner size="md" />;
 
   const { byStatus = [], byEligibility = [] } = data?.data || {};
 
@@ -985,7 +986,7 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <Spinner size="sm" />
       ) : reports.length === 0 ? (
         <div className="text-center py-12 text-sm text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />

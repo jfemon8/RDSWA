@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
-import { Loader2, Shield, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDateTime } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 type Tab = 'audit' | 'login' | 'suspicious';
 
@@ -94,7 +95,7 @@ function AuditLogsTab() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : logs.length === 0 ? (
         <div className="text-center py-12">
           <Shield className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -257,7 +258,7 @@ function LoginHistoryTab() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : history.length === 0 ? (
         <div className="text-center py-12">
           <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -266,8 +267,17 @@ function LoginHistoryTab() {
       ) : (
         <>
           <FadeIn direction="up" delay={0.1}>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full min-w-[600px] text-sm">
+            {/* Desktop table */}
+            <div className="hidden lg:block border rounded-lg overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[26%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[20%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted border-b">
                     <th className="text-left p-3 font-medium text-foreground">User</th>
@@ -282,17 +292,15 @@ function LoginHistoryTab() {
                   {history.map((h: any) => (
                     <tr key={h._id} className="border-t hover:bg-accent/30">
                       <td className="p-3">
-                        <div>
-                          <p className="font-medium text-sm text-foreground">{h.user?.name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{h.user?.email || ''}</p>
-                        </div>
+                        <p className="font-medium text-sm text-foreground truncate" title={h.user?.name || 'Unknown'}>{h.user?.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground truncate" title={h.user?.email || ''}>{h.user?.email || ''}</p>
                       </td>
-                      <td className="p-3 text-xs font-mono text-muted-foreground">{h.ip || '-'}</td>
-                      <td className="p-3 text-xs text-muted-foreground max-w-[180px] truncate" title={h.userAgent || ''}>
+                      <td className="p-3 text-xs font-mono text-muted-foreground truncate" title={h.ip || ''}>{h.ip || '-'}</td>
+                      <td className="p-3 text-xs text-muted-foreground truncate" title={h.userAgent || ''}>
                         {h.userAgent ? parseUserAgent(h.userAgent) : '-'}
                       </td>
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                           h.success !== false
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                             : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -300,12 +308,53 @@ function LoginHistoryTab() {
                           {h.success !== false ? 'Success' : 'Failed'}
                         </span>
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground">{h.failureReason || '-'}</td>
+                      <td className="p-3 text-xs text-muted-foreground truncate" title={h.failureReason || ''}>{h.failureReason || '-'}</td>
                       <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(h.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="lg:hidden space-y-3">
+              {history.map((h: any) => (
+                <div key={h._id} className="border rounded-lg p-4 bg-card">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-foreground break-words">{h.user?.name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground break-all">{h.user?.email || ''}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                      h.success !== false
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {h.success !== false ? 'Success' : 'Failed'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs pt-2 border-t">
+                    <div className="flex gap-2 min-w-0">
+                      <span className="text-muted-foreground shrink-0">IP:</span>
+                      <span className="font-mono text-foreground break-all">{h.ip || '-'}</span>
+                    </div>
+                    <div className="flex gap-2 min-w-0">
+                      <span className="text-muted-foreground shrink-0">Device:</span>
+                      <span className="text-foreground break-words">{h.userAgent ? parseUserAgent(h.userAgent) : '-'}</span>
+                    </div>
+                    <div className="flex gap-2 min-w-0">
+                      <span className="text-muted-foreground shrink-0">Date:</span>
+                      <span className="text-foreground break-words">{formatDateTime(h.createdAt)}</span>
+                    </div>
+                    {h.failureReason && (
+                      <div className="flex gap-2 min-w-0">
+                        <span className="text-muted-foreground shrink-0">Reason:</span>
+                        <span className="text-foreground break-words">{h.failureReason}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </FadeIn>
 
@@ -343,7 +392,7 @@ function SuspiciousActivityTab() {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (isLoading) return <Spinner size="md" />;
 
   const { failedByIp = [], failedByUser = [], multipleIps = [] } = data?.data || {};
 
@@ -370,8 +419,14 @@ function SuspiciousActivityTab() {
                 Failed Logins by IP (5+ in 24h)
               </h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px] text-sm">
+            {/* Desktop */}
+            <div className="hidden sm:block">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[40%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[40%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted border-b">
                     <th className="text-left p-3 font-medium text-foreground">IP Address</th>
@@ -382,17 +437,32 @@ function SuspiciousActivityTab() {
                 <tbody>
                   {failedByIp.map((item: any) => (
                     <tr key={item._id} className="border-t hover:bg-accent/30">
-                      <td className="p-3 font-mono text-xs text-muted-foreground">{item._id || '-'}</td>
+                      <td className="p-3 font-mono text-xs text-muted-foreground truncate" title={item._id || ''}>{item._id || '-'}</td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                           {item.count}
                         </span>
                       </td>
-                      <td className="p-3 text-muted-foreground text-xs">{formatDateTime(item.lastAttempt)}</td>
+                      <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(item.lastAttempt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y">
+              {failedByIp.map((item: any) => (
+                <div key={item._id} className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <p className="font-mono text-xs text-foreground break-all flex-1 min-w-0">{item._id || '-'}</p>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                      {item.count} attempts
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Last attempt: {formatDateTime(item.lastAttempt)}</p>
+                </div>
+              ))}
             </div>
           </div>
         </FadeIn>
@@ -408,8 +478,15 @@ function SuspiciousActivityTab() {
                 Failed Logins by User (3+ in 24h)
               </h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px] text-sm">
+            {/* Desktop */}
+            <div className="hidden sm:block">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[28%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[34%]" />
+                  <col className="w-[24%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted border-b">
                     <th className="text-left p-3 font-medium text-foreground">User</th>
@@ -422,24 +499,43 @@ function SuspiciousActivityTab() {
                   {failedByUser.map((item: any) => (
                     <tr key={item._id} className="border-t hover:bg-accent/30">
                       <td className="p-3">
-                        <div>
-                          <p className="font-medium text-sm text-foreground">{item.userInfo?.name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{item.userInfo?.email || ''}</p>
-                        </div>
+                        <p className="font-medium text-sm text-foreground truncate" title={item.userInfo?.name || 'Unknown'}>{item.userInfo?.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground truncate" title={item.userInfo?.email || ''}>{item.userInfo?.email || ''}</p>
                       </td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                           {item.count}
                         </span>
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground font-mono">
+                      <td className="p-3 text-xs text-muted-foreground font-mono truncate" title={(item.ips || []).join(', ')}>
                         {(item.ips || []).join(', ')}
                       </td>
-                      <td className="p-3 text-muted-foreground text-xs">{formatDateTime(item.lastAttempt)}</td>
+                      <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(item.lastAttempt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y">
+              {failedByUser.map((item: any) => (
+                <div key={item._id} className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-foreground break-words">{item.userInfo?.name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground break-all">{item.userInfo?.email || ''}</p>
+                    </div>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                      {item.count} attempts
+                    </span>
+                  </div>
+                  {(item.ips || []).length > 0 && (
+                    <p className="text-xs text-muted-foreground font-mono break-all mb-1">IPs: {(item.ips || []).join(', ')}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Last: {formatDateTime(item.lastAttempt)}</p>
+                </div>
+              ))}
             </div>
           </div>
         </FadeIn>
@@ -455,8 +551,14 @@ function SuspiciousActivityTab() {
                 Multiple IP Logins (3+ IPs in 24h)
               </h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px] text-sm">
+            {/* Desktop */}
+            <div className="hidden sm:block">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[32%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[54%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted border-b">
                     <th className="text-left p-3 font-medium text-foreground">User</th>
@@ -468,23 +570,41 @@ function SuspiciousActivityTab() {
                   {multipleIps.map((item: any) => (
                     <tr key={item._id} className="border-t hover:bg-accent/30">
                       <td className="p-3">
-                        <div>
-                          <p className="font-medium text-sm text-foreground">{item.userInfo?.name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{item.userInfo?.email || ''}</p>
-                        </div>
+                        <p className="font-medium text-sm text-foreground truncate" title={item.userInfo?.name || 'Unknown'}>{item.userInfo?.name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground truncate" title={item.userInfo?.email || ''}>{item.userInfo?.email || ''}</p>
                       </td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
                           {(item.ips || []).length}
                         </span>
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground font-mono">
+                      <td className="p-3 text-xs text-muted-foreground font-mono truncate" title={(item.ips || []).join(', ')}>
                         {(item.ips || []).join(', ')}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y">
+              {multipleIps.map((item: any) => (
+                <div key={item._id} className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-foreground break-words">{item.userInfo?.name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground break-all">{item.userInfo?.email || ''}</p>
+                    </div>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                      {(item.ips || []).length} IPs
+                    </span>
+                  </div>
+                  {(item.ips || []).length > 0 && (
+                    <p className="text-xs text-muted-foreground font-mono break-all">{(item.ips || []).join(', ')}</p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </FadeIn>

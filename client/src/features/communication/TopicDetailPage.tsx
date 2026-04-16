@@ -7,6 +7,7 @@ import {
   ArrowLeft, Pin, Lock, Send, Loader2, Trash2, Pencil,
   User as UserIcon, Clock, MessageSquare,
 } from 'lucide-react';
+import Spinner from '@/components/ui/Spinner';
 
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
@@ -111,7 +112,7 @@ export default function TopicDetailPage() {
   const replies = data?.replies || [];
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   if (!topic) {

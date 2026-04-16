@@ -12,11 +12,12 @@ import { UserRole } from '@rdswa/shared';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import {
-  Plus, Loader2, Pencil, Trash2, CheckCircle2, XCircle, PlayCircle, Wallet,
+  Plus, Pencil, Trash2, CheckCircle2, XCircle, PlayCircle, Wallet,
   ChevronDown, ChevronUp, FileText, AlertCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import Spinner from '@/components/ui/Spinner';
 
 interface BudgetItem {
   category: string;
@@ -375,9 +376,7 @@ export default function AdminBudgetPage() {
 
       {/* List */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : budgets.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />

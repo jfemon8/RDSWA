@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Calendar, MapPin, Users, FileText, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Users, FileText } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
+import Spinner from '@/components/ui/Spinner';
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
@@ -56,9 +57,7 @@ export default function MeetingRecordsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : meetings.length === 0 ? (
         <FadeIn>
           <div className="text-center py-12">

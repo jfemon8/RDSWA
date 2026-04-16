@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 const CATEGORIES = ['policy', 'resolution', 'report', 'form', 'other'] as const;
 const ROLES = ['user', 'member', 'alumni', 'advisor', 'senior_advisor', 'moderator', 'admin'] as const;
@@ -219,7 +220,7 @@ export default function AdminDocumentsPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : docs.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -228,8 +229,17 @@ export default function AdminDocumentsPage() {
       ) : (
         <>
           <FadeIn direction="up" delay={0.1}>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm min-w-[600px]">
+            {/* Desktop table */}
+            <div className="hidden lg:block border rounded-lg overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[36%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[10%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted border-b">
                     <th className="text-left p-3 font-medium text-foreground">Title</th>
@@ -250,24 +260,25 @@ export default function AdminDocumentsPage() {
                       className="border-t hover:bg-accent/30"
                     >
                       <td className="p-3">
-                        <p className="font-medium text-foreground flex items-center gap-1.5">
-                          <FileText className="h-4 w-4 text-primary shrink-0" /> {doc.title}
+                        <p className="font-medium text-foreground flex items-start gap-1.5 min-w-0">
+                          <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <span className="truncate" title={doc.title}>{doc.title}</span>
                         </p>
                         {doc.description && <p className="text-xs text-muted-foreground line-clamp-1">{stripHtml(doc.description)}</p>}
                       </td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary capitalize">{doc.category}</span>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary capitalize whitespace-nowrap">{doc.category}</span>
                       </td>
-                      <td className="p-3 text-muted-foreground">{doc.fileType || '-'}</td>
-                      <td className="p-3">
+                      <td className="p-3 text-muted-foreground truncate" title={doc.fileType || undefined}>{doc.fileType || '-'}</td>
+                      <td className="p-3 truncate" title={doc.isPublic ? 'Public' : (doc.accessRoles?.join(', ') || 'Restricted')}>
                         {doc.isPublic ? (
                           <span className="text-xs text-green-600">Public</span>
                         ) : (
-                          <span className="text-xs text-amber-600">{doc.accessRoles?.join(', ') || 'Restricted'}</span>
+                          <span className="text-xs text-amber-600 truncate block">{doc.accessRoles?.join(', ') || 'Restricted'}</span>
                         )}
                       </td>
                       <td className="p-3 text-muted-foreground">
-                        <span className="flex items-center gap-1"><Download className="h-3 w-3" /> {doc.downloadCount || 0}</span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap"><Download className="h-3 w-3" /> {doc.downloadCount || 0}</span>
                       </td>
                       <td className="p-3">
                         <div className="flex gap-1">
@@ -288,6 +299,56 @@ export default function AdminDocumentsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="lg:hidden space-y-3">
+              {docs.map((doc: any, i: number) => (
+                <motion.div
+                  key={doc._id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border rounded-lg p-4 bg-card"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    <FileText className="h-4 w-4 text-primary shrink-0 mt-1" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground break-words">{doc.title}</p>
+                      {doc.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{stripHtml(doc.description)}</p>}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize whitespace-nowrap">{doc.category}</span>
+                    {doc.fileType && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground break-all">{doc.fileType}</span>}
+                    {doc.isPublic ? (
+                      <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Public</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 break-words">
+                        {doc.accessRoles?.join(', ') || 'Restricted'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Download className="h-3 w-3" /> {doc.downloadCount || 0} downloads
+                    </span>
+                    <div className="flex gap-1">
+                      <button onClick={() => startEdit(doc)} title="Edit"
+                        className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground">
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button onClick={async () => {
+                          const ok = await confirm({ title: 'Delete Document', message: `Delete "${doc.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                          if (ok) deleteMutation.mutate(doc._id);
+                        }} title="Delete"
+                        className="p-1.5 hover:bg-destructive/10 text-destructive rounded">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </FadeIn>
 

@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import Spinner from '@/components/ui/Spinner';
 
 const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social'] as const;
 type Tab = typeof TABS[number];
@@ -25,7 +26,7 @@ export default function AdminSettingsPage() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   const settings = data?.data || {};

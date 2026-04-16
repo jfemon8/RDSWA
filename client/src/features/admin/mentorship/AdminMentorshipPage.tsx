@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminMentorshipPage() {
   const queryClient = useQueryClient();
@@ -59,52 +60,99 @@ export default function AdminMentorshipPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : mentorships.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No mentorships found.</p></FadeIn>
       ) : (
         <FadeIn direction="up" delay={0.1}>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm min-w-[600px]">
-              <thead>
-                <tr className="bg-muted border-b">
-                  <th className="text-left p-3 font-medium">Mentor</th>
-                  <th className="text-left p-3 font-medium">Mentee</th>
-                  <th className="text-left p-3 font-medium">Area</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-left p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mentorships.map((m: any) => (
-                  <tr key={m._id} className="border-t hover:bg-accent/30">
-                    <td className="p-3">
-                      <Link to={`/members/${m.mentor?._id}`} className="font-medium hover:text-primary transition-colors">{m.mentor?.name || '-'}</Link>
-                    </td>
-                    <td className="p-3">
-                      <Link to={`/members/${m.mentee?._id}`} className="hover:text-primary transition-colors">{m.mentee?.name || '-'}</Link>
-                    </td>
-                    <td className="p-3 text-muted-foreground">{m.area || '-'}</td>
-                    <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[m.status] || 'bg-muted text-muted-foreground'}`}>
-                        {m.status}
-                      </span>
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">{formatDate(m.createdAt)}</td>
-                    <td className="p-3">
-                      <button onClick={async () => {
-                        const ok = await confirm({ title: 'Delete Mentorship', message: `Delete this mentorship record? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
-                        if (ok) deleteMutation.mutate(m._id);
-                      }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {(() => {
+            const renderDeleteBtn = (m: any) => (
+              <button onClick={async () => {
+                const ok = await confirm({ title: 'Delete Mentorship', message: `Delete this mentorship record? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                if (ok) deleteMutation.mutate(m._id);
+              }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            );
+            const renderStatusBadge = (m: any) => (
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap ${statusColors[m.status] || 'bg-muted text-muted-foreground'}`}>
+                {m.status}
+              </span>
+            );
+
+            return (
+              <>
+                {/* Desktop table */}
+                <div className="hidden lg:block border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col className="w-[22%]" />
+                      <col className="w-[22%]" />
+                      <col className="w-[20%]" />
+                      <col className="w-[12%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[10%]" />
+                    </colgroup>
+                    <thead>
+                      <tr className="bg-muted border-b">
+                        <th className="text-left p-3 font-medium">Mentor</th>
+                        <th className="text-left p-3 font-medium">Mentee</th>
+                        <th className="text-left p-3 font-medium">Area</th>
+                        <th className="text-left p-3 font-medium">Status</th>
+                        <th className="text-left p-3 font-medium">Date</th>
+                        <th className="text-left p-3 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mentorships.map((m: any) => (
+                        <tr key={m._id} className="border-t hover:bg-accent/30">
+                          <td className="p-3 truncate">
+                            <Link to={`/members/${m.mentor?._id}`} className="font-medium hover:text-primary transition-colors truncate block" title={m.mentor?.name}>{m.mentor?.name || '-'}</Link>
+                          </td>
+                          <td className="p-3 truncate">
+                            <Link to={`/members/${m.mentee?._id}`} className="hover:text-primary transition-colors truncate block" title={m.mentee?.name}>{m.mentee?.name || '-'}</Link>
+                          </td>
+                          <td className="p-3 text-muted-foreground truncate" title={m.area || ''}>{m.area || '-'}</td>
+                          <td className="p-3">{renderStatusBadge(m)}</td>
+                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(m.createdAt)}</td>
+                          <td className="p-3">{renderDeleteBtn(m)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card list */}
+                <div className="lg:hidden space-y-3">
+                  {mentorships.map((m: any) => (
+                    <div key={m._id} className="border rounded-lg p-4 bg-card">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-0.5">Mentor</div>
+                          <Link to={`/members/${m.mentor?._id}`} className="font-medium hover:text-primary transition-colors break-words">{m.mentor?.name || '-'}</Link>
+                        </div>
+                        {renderStatusBadge(m)}
+                      </div>
+                      <div className="mb-3">
+                        <div className="text-xs text-muted-foreground">Mentee</div>
+                        <Link to={`/members/${m.mentee?._id}`} className="hover:text-primary transition-colors break-words">{m.mentee?.name || '-'}</Link>
+                      </div>
+                      {m.area && (
+                        <div className="mb-3">
+                          <div className="text-xs text-muted-foreground">Area</div>
+                          <p className="text-sm break-words">{m.area}</p>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">{formatDate(m.createdAt)}</span>
+                        {renderDeleteBtn(m)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </FadeIn>
       )}
 

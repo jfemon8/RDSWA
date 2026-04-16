@@ -2,12 +2,13 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
-  Database, Loader2, Download, Upload, RefreshCw, AlertTriangle, FileJson, HardDrive, Search,
+  Database, Download, Upload, RefreshCw, AlertTriangle, FileJson, HardDrive, Search,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 interface CollectionInfo {
   name: string;
@@ -190,9 +191,7 @@ export default function AdminBackupPage() {
 
       {/* Collection list */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : filteredCollections.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">
           No collections match your search.

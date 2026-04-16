@@ -19,6 +19,7 @@ import ForwardModal from '@/components/chat/ForwardModal';
 import type { ChatMessage } from '@/components/chat/MessageBubble';
 import type { ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
 import type { ReplyData } from '@/components/chat/ReplyPreview';
+import Spinner from '@/components/ui/Spinner';
 
 const TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
@@ -350,9 +351,7 @@ export default function GroupChatPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <Spinner size="md" />
     );
   }
 

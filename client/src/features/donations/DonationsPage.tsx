@@ -12,6 +12,7 @@ import SEO from '@/components/SEO';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import RichContent from '@/components/ui/RichContent';
+import Spinner from '@/components/ui/Spinner';
 
 interface PaymentMethod {
   provider: string;
@@ -477,7 +478,7 @@ function RecentDonations() {
         <TrendingUp className="h-5 w-5" /> Recent Donations
       </h2>
       {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <Spinner size="sm" />
       ) : donations.length === 0 ? (
         <p className="text-muted-foreground text-sm">No donations yet</p>
       ) : (

@@ -8,6 +8,7 @@ import { FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2, UserMinus, Search, Plus, X, Briefcase, Building2 } from 'lucide-react';
+import Spinner from '@/components/ui/Spinner';
 
 /** Which boolean flag this page manages */
 type TagFlag = 'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor';
@@ -234,7 +235,7 @@ export default function AdminRoleTagManagerPage({
 
         {/* Main list */}
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          <Spinner size="md" />
         ) : users.length === 0 ? (
           <div className="text-center py-12">
             <Icon className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />

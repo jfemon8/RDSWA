@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Loader2, UserPlus, UserMinus, Search, Shield } from 'lucide-react';
+import { UserPlus, UserMinus, Search, Shield } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminModeratorsPage() {
   const queryClient = useQueryClient();
@@ -141,7 +142,7 @@ export default function AdminModeratorsPage() {
 
       {/* Moderators List */}
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : moderators.length === 0 ? (
         <div className="text-center py-12">
           <Shield className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -151,48 +152,46 @@ export default function AdminModeratorsPage() {
         <div className="space-y-3">
           {moderators.map((mod: any, i: number) => (
             <FadeIn key={mod._id} direction="up" delay={i * 0.05}>
-              <div
-                className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3">
+              <div className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0 w-full">
                   {mod.avatar ? (
-                    <img src={mod.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    <img src={mod.avatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground shrink-0">
                       {mod.name?.[0]?.toUpperCase() || '?'}
                     </div>
                   )}
-                  <div>
-                    <p className="font-medium text-foreground">{mod.name}</p>
-                    <p className="text-sm text-muted-foreground">{mod.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-foreground break-words">{mod.name}</p>
+                      <span className={`px-2 py-0.5 text-xs rounded-full capitalize whitespace-nowrap ${
+                        mod.role === 'admin' || mod.role === 'super_admin'
+                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      }`}>
+                        {mod.role?.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground break-all">{mod.email}</p>
+                    {mod.moderatorAssignment && (
+                      <p className="text-xs text-muted-foreground capitalize mt-1 break-words">
+                        {mod.moderatorAssignment.type === 'auto' ? 'Auto-assigned' : 'Manual'}
+                        {mod.moderatorAssignment.reason && ` · ${mod.moderatorAssignment.reason.replace('_', ' ')}`}
+                      </p>
+                    )}
                   </div>
-                  <span className={`ml-2 px-2 py-0.5 text-xs rounded-full capitalize ${
-                    mod.role === 'admin' || mod.role === 'super_admin'
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  }`}>
-                    {mod.role?.replace('_', ' ')}
-                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  {mod.moderatorAssignment && (
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {mod.moderatorAssignment.type === 'auto' ? 'Auto-assigned' : 'Manual'}
-                      {mod.moderatorAssignment.reason && ` · ${mod.moderatorAssignment.reason.replace('_', ' ')}`}
-                    </span>
-                  )}
-                  <button
-                    onClick={async () => {
-                      const ok = await confirm({ title: 'Remove Moderator', message: `Remove ${mod.name} as a moderator? They will return to their base role.`, confirmLabel: 'Remove', variant: 'danger' });
-                      if (ok) removeMutation.mutate(mod._id);
-                    }}
-                    disabled={removeMutation.isPending}
-                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md"
-                    title="Remove moderator"
-                  >
-                    <UserMinus className="h-4 w-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Remove Moderator', message: `Remove ${mod.name} as a moderator? They will return to their base role.`, confirmLabel: 'Remove', variant: 'danger' });
+                    if (ok) removeMutation.mutate(mod._id);
+                  }}
+                  disabled={removeMutation.isPending}
+                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md shrink-0 self-end sm:self-auto"
+                  title="Remove moderator"
+                >
+                  <UserMinus className="h-4 w-4" />
+                </button>
               </div>
             </FadeIn>
           ))}

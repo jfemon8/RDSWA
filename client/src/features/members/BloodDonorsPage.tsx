@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Droplets, Loader2, Phone, MapPin, User } from 'lucide-react';
+import { Droplets, Phone, MapPin, User } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { districts } from '@/data/bdGeo';
 import SEO from '@/components/SEO';
+import Spinner from '@/components/ui/Spinner';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -82,7 +83,7 @@ export default function BloodDonorsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : donors.length === 0 ? (
         <FadeIn delay={0.1} direction="up">
           <div className="text-center py-12">

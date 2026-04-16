@@ -6,10 +6,11 @@ import { UserRole } from '@rdswa/shared';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Loader2, CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminFormsPage() {
   const queryClient = useQueryClient();
@@ -88,7 +89,7 @@ export default function AdminFormsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          <Spinner size="md" />
         ) : forms.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />

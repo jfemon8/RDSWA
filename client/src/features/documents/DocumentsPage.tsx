@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { FileText, Download, Loader2, Search } from 'lucide-react';
+import { FileText, Download, Search } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/ui/Spinner';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -95,7 +96,7 @@ export default function DocumentsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : documents.length === 0 ? (
         <FadeIn delay={0.1} direction="up">
           <div className="text-center py-12">

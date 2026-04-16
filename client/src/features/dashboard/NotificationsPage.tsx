@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Bell, Check, CheckCheck, Loader2, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -45,7 +46,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   return (

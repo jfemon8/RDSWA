@@ -12,6 +12,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/ui/Spinner';
 
 const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
 
@@ -111,9 +112,7 @@ export default function ForumPage() {
 
       {/* Topic List */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : filteredTopics.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-12">

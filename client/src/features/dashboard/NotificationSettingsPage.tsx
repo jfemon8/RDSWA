@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 interface NotifPrefs {
   email: boolean;
@@ -85,7 +86,7 @@ export default function NotificationSettingsPage() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   return (

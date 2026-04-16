@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
+import Spinner from '@/components/ui/Spinner';
 
 import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
@@ -23,7 +24,7 @@ export default function VotingPage() {
   const closed = votes.filter((v: any) => v.status === 'closed' || v.status === 'published');
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   return (

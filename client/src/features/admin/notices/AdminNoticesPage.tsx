@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/date';
 import RichContent from '@/components/ui/RichContent';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 interface NoticeAttachment {
   name: string;
@@ -355,7 +356,7 @@ export default function AdminNoticesPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : (
         <div className="space-y-2">
           {notices.map((n: any, i: number) => {

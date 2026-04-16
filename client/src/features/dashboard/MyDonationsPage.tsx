@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
-import { Loader2, Receipt, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Receipt, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { downloadHtmlPdf } from '@/lib/downloadPdf';
 import { useState } from 'react';
+import Spinner from '@/components/ui/Spinner';
 
 const statusConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'Pending' },
@@ -75,9 +76,7 @@ export default function MyDonationsPage() {
 
       {/* Donations list */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : filtered.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-12 text-muted-foreground">

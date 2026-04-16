@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
-import { Star, Loader2, ArrowRight, MessageSquare, User as UserIcon } from 'lucide-react';
+import { Star, ArrowRight, MessageSquare, User as UserIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/ui/Spinner';
 
 interface StarredMessage {
   _id: string;
@@ -63,9 +64,7 @@ export default function StarredMessagesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : messages.length === 0 ? (
         <FadeIn delay={0.1} direction="up">
           <div className="text-center py-16 text-sm text-muted-foreground">

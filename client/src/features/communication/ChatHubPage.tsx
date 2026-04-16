@@ -5,12 +5,13 @@ import api from '@/lib/api';
 import { usePresence } from '@/hooks/useSocket';
 import {
   Search, MessagesSquare, Star, Globe, Building2, Hash,
-  Plus, Loader2, ChevronRight,
+  Plus, ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import PresenceBadge from '@/components/chat/PresenceBadge';
 import { formatDateCustom } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 /**
  * Unified "chat hub" — single landing page listing DMs, groups, and starred
@@ -282,9 +283,7 @@ export default function ChatHubPage() {
 
       {/* Unified list */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : filtered.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-16 text-sm text-muted-foreground">

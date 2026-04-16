@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, Check, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationSocket } from '@/hooks/useSocket';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
+import Spinner from '@/components/ui/Spinner';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -122,9 +123,7 @@ export default function NotificationBell() {
             {/* Body */}
             <div className="max-h-80 overflow-y-auto">
               {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
+                <Spinner size="sm" />
               ) : notifications.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   No notifications

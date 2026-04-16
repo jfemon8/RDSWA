@@ -11,6 +11,7 @@ import { FadeIn } from '@/components/reactbits';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import UserEventQr from '@/components/ui/UserEventQr';
+import Spinner from '@/components/ui/Spinner';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -52,7 +53,7 @@ export default function EventDetailPage() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   const event = data?.data;

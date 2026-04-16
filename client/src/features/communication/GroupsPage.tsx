@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/ui/Spinner';
 
 const GROUP_TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
@@ -144,9 +145,7 @@ export default function GroupsPage() {
 
       {/* Group List */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : filteredGroups.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-12">

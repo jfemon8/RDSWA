@@ -12,6 +12,7 @@ import { formatDate, formatTime } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 type Tab = 'send' | 'history';
 
@@ -236,7 +237,7 @@ function HistoryPanel() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : notifications.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">
           <Bell className="h-10 w-10 mx-auto mb-3 opacity-30" />

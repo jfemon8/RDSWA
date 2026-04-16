@@ -6,13 +6,14 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Archive, UserPlus, UserMinus, Search, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { CommitteePosition, UserRole } from '@rdswa/shared';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { hasMinRole } from '@/lib/roles';
+import Spinner from '@/components/ui/Spinner';
 
 const POSITIONS = Object.values(CommitteePosition);
 
@@ -143,7 +144,7 @@ export default function AdminCommitteesPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : (
         <div className="space-y-3">
           {committees.map((c: any, i: number) => (

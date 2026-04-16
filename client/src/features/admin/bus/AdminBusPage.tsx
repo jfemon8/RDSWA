@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import { Plus, Loader2, Pencil, Trash2, Upload, X, Download, FileText, Star, ChevronDown } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { toDateInput, formatTimeString } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 const DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
 const DAY_LABELS: Record<string, string> = { sat: 'Sat', sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
@@ -727,8 +728,16 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
         <p className="text-center text-muted-foreground py-8">No schedules for this route yet.</p>
       ) : (
         <FadeIn direction="up" duration={0.4}>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full min-w-[600px] text-sm">
+          {/* Desktop table */}
+          <div className="hidden lg:block border rounded-lg overflow-hidden">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-[12%]" />
+                <col className="w-[12%]" />
+                <col className="w-[44%]" />
+                <col className="w-[20%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <thead><tr className="bg-muted border-b">
                 <th className="text-left p-3 font-medium text-foreground">Departure</th>
                 <th className="text-left p-3 font-medium text-foreground">Arrival</th>
@@ -739,11 +748,11 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
               <tbody>
                 {schedules.map((s: any) => (
                   <tr key={s._id} className="border-t hover:bg-accent/30">
-                    <td className="p-3 text-foreground">{formatTimeString(s.departureTime)}</td>
-                    <td className="p-3 text-foreground">{s.arrivalTime ? formatTimeString(s.arrivalTime) : '-'}</td>
+                    <td className="p-3 text-foreground whitespace-nowrap">{formatTimeString(s.departureTime)}</td>
+                    <td className="p-3 text-foreground whitespace-nowrap">{s.arrivalTime ? formatTimeString(s.arrivalTime) : '-'}</td>
                     <td className="p-3 text-xs text-foreground">
                       {(s.buses || []).map((b: any, i: number) => (
-                        <div key={i} className="py-0.5">
+                        <div key={i} className="py-0.5 break-words">
                           <span className="font-medium">{b.busName || 'N/A'}</span>
                           <span className="text-muted-foreground"> · {b.operator?.name || 'N/A'}</span>
                           <span className="capitalize text-muted-foreground"> · {b.busCategory?.replace('_', ' ')}</span>
@@ -751,7 +760,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                       ))}
                       {!s.buses?.length && <span className="text-muted-foreground">No buses</span>}
                     </td>
-                    <td className="p-3 capitalize text-xs text-muted-foreground">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
+                    <td className="p-3 capitalize text-xs text-muted-foreground break-words">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1">
                         <EditBtn onClick={() => startEdit(s)} />
@@ -762,6 +771,40 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {schedules.map((s: any) => (
+              <div key={s._id} className="border rounded-lg p-4 bg-card">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground whitespace-nowrap">
+                      {formatTimeString(s.departureTime)}
+                      {s.arrivalTime && <span className="text-muted-foreground"> → {formatTimeString(s.arrivalTime)}</span>}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize mt-0.5 break-words">{s.daysOfOperation?.join(', ') || 'Daily'}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <EditBtn onClick={() => startEdit(s)} />
+                    <DeleteBtn onClick={async () => { const ok = await confirm({ title: 'Delete Schedule', message: 'Delete this schedule? This cannot be undone.', confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(s._id); }} />
+                  </div>
+                </div>
+                {s.buses?.length > 0 ? (
+                  <div className="pt-2 border-t space-y-1">
+                    {s.buses.map((b: any, i: number) => (
+                      <div key={i} className="text-xs break-words">
+                        <span className="font-medium text-foreground">{b.busName || 'N/A'}</span>
+                        <span className="text-muted-foreground"> · {b.operator?.name || 'N/A'}</span>
+                        <span className="capitalize text-muted-foreground"> · {b.busCategory?.replace('_', ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="pt-2 border-t text-xs text-muted-foreground">No buses</p>
+                )}
+              </div>
+            ))}
           </div>
         </FadeIn>
       )}
@@ -1056,10 +1099,6 @@ function BulkImport() {
 }
 
 // -- Shared Components --
-
-function Spinner() {
-  return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>;
-}
 
 function EditBtn({ onClick }: { onClick: () => void }) {
   return (

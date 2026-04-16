@@ -13,6 +13,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users, Pencil, X } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 const emptyForm = {
   title: '', description: '', startTime: '', endTime: '',
@@ -239,7 +240,7 @@ export default function AdminVotingPage() {
         </AnimatePresence>
 
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          <Spinner size="md" />
         ) : (
           <div className="space-y-3">
             {votes.map((v: any, index: number) => (

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Link } from 'react-router-dom';
-import { FileText, Loader2, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-600', label: 'Pending' },
@@ -25,7 +26,7 @@ export default function MyFormsPage() {
   const forms = data?.data || [];
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   return (

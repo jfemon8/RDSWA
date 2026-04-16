@@ -6,12 +6,13 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
-import { Search, Loader2, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star, ExternalLink, Pencil } from 'lucide-react';
+import { Search, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star, ExternalLink, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuthStore();
@@ -250,183 +251,257 @@ export default function AdminUsersPage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : (
         <>
           <FadeIn direction="up" delay={0.1}>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm min-w-[600px]">
-                <thead>
-                  <tr className="bg-muted border-b">
-                    {isAdmin && (
-                      <th className="p-3 w-8">
+            {(() => {
+              const renderRoleCell = (u: any) => (
+                isAdmin && u.role !== 'super_admin' ? (
+                  <select value={u.role} onChange={(e) => changeRoleMutation.mutate({ id: u._id, role: e.target.value })}
+                    className="px-2 py-1 border rounded text-xs bg-card text-foreground max-w-full">
+                    <option value="user">User</option>
+                    <option value="member">Member</option>
+                    <option value="moderator">Moderator</option>
+                    {isSuperAdmin && <option value="admin">Admin</option>}
+                  </select>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-muted text-muted-foreground whitespace-nowrap">
+                    {u.role}
+                  </span>
+                )
+              );
+              const renderStatusBadge = (u: any) => (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap ${
+                  u.membershipStatus === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : u.membershipStatus === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : u.membershipStatus === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  {u.membershipStatus}
+                </span>
+              );
+              const renderActions = (u: any) => (
+                <div className="flex gap-1 flex-wrap">
+                  <Link to={`/members/${u._id}`} title="View Profile"
+                    className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded">
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                  {isSuperAdmin && (
+                    <Link to={`/members/${u._id}?edit=true`} title="Edit Profile"
+                      className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded">
+                      <Pencil className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {['pending', 'rejected', 'suspended'].includes(u.membershipStatus) && (
+                    <button
+                      onClick={() => approveMutation.mutate(u._id)}
+                      title={u.membershipStatus === 'pending' ? 'Approve' : 'Reinstate'}
+                      className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                    >
+                      <UserCheck className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isAdmin && u.membershipStatus === 'pending' && (
+                    <button
+                      onClick={async () => {
+                        const ok = await confirm({ title: 'Reject User', message: `Reject membership request from ${u.name}?`, confirmLabel: 'Reject', variant: 'danger' });
+                        if (ok) rejectMutation.mutate(u._id);
+                      }}
+                      title="Reject"
+                      className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                    >
+                      <UserX className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isAdmin && u.membershipStatus !== 'suspended' && u.role !== 'super_admin' && (
+                    <button
+                      onClick={async () => {
+                        const ok = await confirm({ title: 'Suspend User', message: `Suspend ${u.name}'s account? They will not be able to log in until unsuspended.`, confirmLabel: 'Suspend', variant: 'warning' });
+                        if (ok) suspendMutation.mutate(u._id);
+                      }}
+                      title="Suspend"
+                      className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
+                    >
+                      <Ban className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isAdmin && u.membershipStatus === 'approved' && (
+                    <button
+                      onClick={() => setAdvisorMutation.mutate({ id: u._id, grant: !u.isAdvisor })}
+                      title={u.isAdvisor ? 'Revoke Advisor' : 'Grant Advisor'}
+                      className={`p-1.5 rounded ${u.isAdvisor ? 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20' : 'text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'}`}
+                    >
+                      <Award className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isAdmin && u.membershipStatus === 'approved' && (
+                    <button
+                      onClick={() => setSeniorAdvisorMutation.mutate({ id: u._id, grant: !u.isSeniorAdvisor })}
+                      title={u.isSeniorAdvisor ? 'Revoke Senior Advisor' : 'Grant Senior Advisor'}
+                      className={`p-1.5 rounded ${u.isSeniorAdvisor ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                    >
+                      <Star className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isSuperAdmin && u.role !== 'super_admin' && (
+                    <button
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Delete User',
+                          message: `Permanently delete ${u.name}'s account? This removes all their data and cannot be undone.`,
+                          confirmLabel: 'Delete',
+                          variant: 'danger',
+                          requireTypeToConfirm: 'DELETE',
+                        });
+                        if (ok) deleteUserMutation.mutate(u._id);
+                      }}
+                      title="Delete user"
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+
+              return (
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden lg:block border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm table-fixed">
+                      <colgroup>
+                        {isAdmin && <col className="w-[40px]" />}
+                        <col className="w-[28%]" />
+                        <col className="w-[15%]" />
+                        <col className="w-[14%]" />
+                        <col className="w-[10%]" />
+                        <col />
+                      </colgroup>
+                      <thead>
+                        <tr className="bg-muted border-b">
+                          {isAdmin && (
+                            <th className="p-3">
+                              <input type="checkbox"
+                                checked={users.length > 0 && users.every((u: any) => selectedIds.has(u._id))}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedIds(new Set(users.map((u: any) => u._id)));
+                                  else setSelectedIds(new Set());
+                                }}
+                                className="rounded" />
+                            </th>
+                          )}
+                          <th className="text-left p-3 font-medium text-foreground">User</th>
+                          <th className="text-left p-3 font-medium text-foreground">Role</th>
+                          <th className="text-left p-3 font-medium text-foreground">Membership</th>
+                          <th className="text-left p-3 font-medium text-foreground">Batch</th>
+                          <th className="text-left p-3 font-medium text-foreground">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((u: any) => (
+                          <tr key={u._id} className="border-t hover:bg-accent/30">
+                            {isAdmin && (
+                              <td className="p-3">
+                                <input type="checkbox"
+                                  checked={selectedIds.has(u._id)}
+                                  onChange={(e) => {
+                                    const next = new Set(selectedIds);
+                                    if (e.target.checked) next.add(u._id);
+                                    else next.delete(u._id);
+                                    setSelectedIds(next);
+                                  }}
+                                  className="rounded" />
+                              </td>
+                            )}
+                            <td className="p-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {u.avatar ? (
+                                  <img src={u.avatar} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                                ) : (
+                                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                                    {u.name?.[0]}
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <Link to={`/members/${u._id}`} className="font-medium text-foreground hover:text-primary transition-colors truncate block">
+                                    {u.name}
+                                  </Link>
+                                  <p className="text-xs text-muted-foreground truncate" title={u.email}>{u.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3">{renderRoleCell(u)}</td>
+                            <td className="p-3">{renderStatusBadge(u)}</td>
+                            <td className="p-3 text-muted-foreground">{u.batch || '-'}</td>
+                            <td className="p-3">{renderActions(u)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile card list */}
+                  <div className="lg:hidden space-y-3">
+                    {isAdmin && users.length > 0 && (
+                      <label className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/40 text-sm text-foreground cursor-pointer select-none">
                         <input type="checkbox"
-                          checked={users.length > 0 && users.every((u: any) => selectedIds.has(u._id))}
+                          checked={users.every((u: any) => selectedIds.has(u._id))}
                           onChange={(e) => {
                             if (e.target.checked) setSelectedIds(new Set(users.map((u: any) => u._id)));
                             else setSelectedIds(new Set());
                           }}
                           className="rounded" />
-                      </th>
+                        <span className="font-medium">Select all on this page</span>
+                        {selectedIds.size > 0 && (
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {selectedIds.size} selected
+                          </span>
+                        )}
+                      </label>
                     )}
-                    <th className="text-left p-3 font-medium text-foreground">User</th>
-                    <th className="text-left p-3 font-medium text-foreground">Role</th>
-                    <th className="text-left p-3 font-medium text-foreground">Membership</th>
-                    <th className="text-left p-3 font-medium text-foreground">Batch</th>
-                    <th className="text-left p-3 font-medium text-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u: any) => (
-                    <tr
-                      key={u._id}
-                      className="border-t hover:bg-accent/30"
-                    >
-                      {isAdmin && (
-                        <td className="p-3">
-                          <input type="checkbox"
-                            checked={selectedIds.has(u._id)}
-                            onChange={(e) => {
-                              const next = new Set(selectedIds);
-                              if (e.target.checked) next.add(u._id);
-                              else next.delete(u._id);
-                              setSelectedIds(next);
-                            }}
-                            className="rounded" />
-                        </td>
-                      )}
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
+                    {users.map((u: any) => (
+                      <div key={u._id} className="border rounded-lg p-4 bg-card">
+                        <div className="flex items-start gap-3 mb-3">
+                          {isAdmin && (
+                            <input type="checkbox"
+                              checked={selectedIds.has(u._id)}
+                              onChange={(e) => {
+                                const next = new Set(selectedIds);
+                                if (e.target.checked) next.add(u._id);
+                                else next.delete(u._id);
+                                setSelectedIds(next);
+                              }}
+                              className="rounded mt-1 shrink-0" />
+                          )}
                           {u.avatar ? (
-                            <img src={u.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                            <img src={u.avatar} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary shrink-0">
                               {u.name?.[0]}
                             </div>
                           )}
-                          <div>
-                            <Link to={`/members/${u._id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <Link to={`/members/${u._id}`} className="font-medium text-foreground hover:text-primary transition-colors break-words">
                               {u.name}
                             </Link>
-                            <p className="text-xs text-muted-foreground">{u.email}</p>
+                            <p className="text-xs text-muted-foreground break-all">{u.email}</p>
+                            {u.batch && <p className="text-xs text-muted-foreground mt-0.5">Batch {u.batch}</p>}
                           </div>
                         </div>
-                      </td>
-                      <td className="p-3">
-                        {isAdmin && u.role !== 'super_admin' ? (
-                          <select value={u.role} onChange={(e) => changeRoleMutation.mutate({ id: u._id, role: e.target.value })}
-                            className="px-2 py-1 border rounded text-xs bg-card text-foreground">
-                            <option value="user">User</option>
-                            <option value="member">Member</option>
-                            <option value="moderator">Moderator</option>
-                            {isSuperAdmin && <option value="admin">Admin</option>}
-                          </select>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-muted text-muted-foreground">
-                            {u.role}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                          u.membershipStatus === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : u.membershipStatus === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : u.membershipStatus === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                            : u.membershipStatus === 'suspended' ? 'bg-muted text-muted-foreground'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {u.membershipStatus}
-                        </span>
-                      </td>
-                      <td className="p-3 text-muted-foreground">{u.batch || '-'}</td>
-                      <td className="p-3">
-                        <div className="flex gap-1">
-                          <Link to={`/members/${u._id}`} title="View Profile"
-                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded">
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                          {isSuperAdmin && (
-                            <Link to={`/members/${u._id}?edit=true`} title="Edit Profile"
-                              className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded">
-                              <Pencil className="h-4 w-4" />
-                            </Link>
-                          )}
-                          {['pending', 'rejected', 'suspended'].includes(u.membershipStatus) && (
-                            <button
-                              onClick={() => approveMutation.mutate(u._id)}
-                              title={u.membershipStatus === 'pending' ? 'Approve' : 'Reinstate'}
-                              className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
-                            >
-                              <UserCheck className="h-4 w-4" />
-                            </button>
-                          )}
-                          {isAdmin && u.membershipStatus === 'pending' && (
-                            <button
-                              onClick={async () => {
-                                const ok = await confirm({ title: 'Reject User', message: `Reject membership request from ${u.name}?`, confirmLabel: 'Reject', variant: 'danger' });
-                                if (ok) rejectMutation.mutate(u._id);
-                              }}
-                              title="Reject"
-                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                            >
-                              <UserX className="h-4 w-4" />
-                            </button>
-                          )}
-                          {isAdmin && u.membershipStatus !== 'suspended' && u.role !== 'super_admin' && (
-                            <button
-                              onClick={async () => {
-                                const ok = await confirm({ title: 'Suspend User', message: `Suspend ${u.name}'s account? They will not be able to log in until unsuspended.`, confirmLabel: 'Suspend', variant: 'warning' });
-                                if (ok) suspendMutation.mutate(u._id);
-                              }}
-                              title="Suspend"
-                              className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
-                            >
-                              <Ban className="h-4 w-4" />
-                            </button>
-                          )}
-                          {isAdmin && u.membershipStatus === 'approved' && (
-                            <button
-                              onClick={() => setAdvisorMutation.mutate({ id: u._id, grant: !u.isAdvisor })}
-                              title={u.isAdvisor ? 'Revoke Advisor' : 'Grant Advisor'}
-                              className={`p-1.5 rounded ${u.isAdvisor ? 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20' : 'text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'}`}
-                            >
-                              <Award className="h-4 w-4" />
-                            </button>
-                          )}
-                          {isAdmin && u.membershipStatus === 'approved' && (
-                            <button
-                              onClick={() => setSeniorAdvisorMutation.mutate({ id: u._id, grant: !u.isSeniorAdvisor })}
-                              title={u.isSeniorAdvisor ? 'Revoke Senior Advisor' : 'Grant Senior Advisor'}
-                              className={`p-1.5 rounded ${u.isSeniorAdvisor ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
-                            >
-                              <Star className="h-4 w-4" />
-                            </button>
-                          )}
-                          {isSuperAdmin && u.role !== 'super_admin' && (
-                            <button
-                              onClick={async () => {
-                                const ok = await confirm({
-                                  title: 'Delete User',
-                                  message: `Permanently delete ${u.name}'s account? This removes all their data and cannot be undone.`,
-                                  confirmLabel: 'Delete',
-                                  variant: 'danger',
-                                  requireTypeToConfirm: 'DELETE',
-                                });
-                                if (ok) deleteUserMutation.mutate(u._id);
-                              }}
-                              title="Delete user"
-                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          {renderRoleCell(u)}
+                          {renderStatusBadge(u)}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <div className="pt-2 border-t">
+                          {renderActions(u)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </FadeIn>
 
           {pagination && pagination.totalPages > 1 && (

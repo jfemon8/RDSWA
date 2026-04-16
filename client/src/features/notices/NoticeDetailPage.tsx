@@ -9,6 +9,7 @@ import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
+import Spinner from '@/components/ui/Spinner';
 
 // Lazy-load the PDF viewer so pdfjs (~600 KB) only ships when a notice
 // actually has a PDF attachment.
@@ -27,7 +28,7 @@ export default function NoticeDetailPage() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   const notice = data?.data;

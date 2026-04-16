@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Loader2, UserPlus, ArrowDown, Search, Crown } from 'lucide-react';
+import { UserPlus, ArrowDown, Search, Crown } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminAdminsPage() {
   const queryClient = useQueryClient();
@@ -138,7 +139,7 @@ export default function AdminAdminsPage() {
 
       {/* Admins List */}
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : admins.length === 0 ? (
         <div className="text-center py-12">
           <Crown className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -148,28 +149,28 @@ export default function AdminAdminsPage() {
         <div className="space-y-3">
           {admins.map((admin: any, i: number) => (
             <FadeIn key={admin._id} direction="up" delay={i * 0.05}>
-              <div
-                className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3">
+              <div className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0 w-full">
                   {admin.avatar ? (
-                    <img src={admin.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    <img src={admin.avatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground shrink-0">
                       {admin.name?.[0]?.toUpperCase() || '?'}
                     </div>
                   )}
-                  <div>
-                    <p className="font-medium text-foreground">{admin.name}</p>
-                    <p className="text-sm text-muted-foreground">{admin.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-foreground break-words">{admin.name}</p>
+                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium whitespace-nowrap ${
+                        admin.role === 'super_admin'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                      }`}>
+                        {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground break-all">{admin.email}</p>
                   </div>
-                  <span className={`ml-2 px-2 py-0.5 text-xs rounded-full font-medium ${
-                    admin.role === 'super_admin'
-                      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                  }`}>
-                    {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                  </span>
                 </div>
                 {admin.role !== 'super_admin' && (
                   <button
@@ -178,7 +179,7 @@ export default function AdminAdminsPage() {
                       if (ok) demoteMutation.mutate(admin._id);
                     }}
                     disabled={demoteMutation.isPending}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0 whitespace-nowrap"
                     title="Demote admin"
                   >
                     <ArrowDown className="h-3 w-3" /> Demote

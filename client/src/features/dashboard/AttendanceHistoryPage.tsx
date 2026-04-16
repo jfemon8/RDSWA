@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Calendar, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AttendanceHistoryPage() {
   const { data, isLoading } = useQuery({
@@ -28,9 +29,7 @@ export default function AttendanceHistoryPage() {
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : records.length === 0 ? (
         <FadeIn>
           <div className="text-center py-12">

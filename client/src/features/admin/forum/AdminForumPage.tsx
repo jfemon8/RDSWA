@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import { Search, Loader2, Trash2, Pin, Lock } from 'lucide-react';
+import { Search, Trash2, Pin, Lock } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminForumPage() {
   const queryClient = useQueryClient();
@@ -76,66 +77,109 @@ export default function AdminForumPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : filtered.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No topics found.</p></FadeIn>
       ) : (
         <FadeIn direction="up" delay={0.1}>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm min-w-[700px]">
-              <thead>
-                <tr className="bg-muted border-b">
-                  <th className="text-left p-3 font-medium">Topic</th>
-                  <th className="text-left p-3 font-medium">Author</th>
-                  <th className="text-left p-3 font-medium">Category</th>
-                  <th className="text-left p-3 font-medium">Replies</th>
-                  <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-left p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((t: any) => (
-                  <tr key={t._id} className="border-t hover:bg-accent/30">
-                    <td className="p-3">
-                      <Link to={`/dashboard/forum/${t._id}`} className="font-medium hover:text-primary transition-colors flex items-center gap-1.5">
-                        {t.isPinned && <Pin className="h-3 w-3 text-amber-500 shrink-0" />}
-                        {t.isLocked && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
-                        <span className="truncate max-w-[250px]">{t.title}</span>
+          {(() => {
+            const renderActions = (t: any) => (
+              <div className="flex gap-1">
+                <button onClick={() => pinMutation.mutate({ id: t._id, pinned: !t.isPinned })}
+                  title={t.isPinned ? 'Unpin' : 'Pin'}
+                  className={`p-1.5 rounded hover:bg-accent ${t.isPinned ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                  <Pin className="h-4 w-4" />
+                </button>
+                <button onClick={() => lockMutation.mutate({ id: t._id, locked: !t.isLocked })}
+                  title={t.isLocked ? 'Unlock' : 'Lock'}
+                  className={`p-1.5 rounded hover:bg-accent ${t.isLocked ? 'text-red-500' : 'text-muted-foreground'}`}>
+                  <Lock className="h-4 w-4" />
+                </button>
+                <button onClick={async () => {
+                  const ok = await confirm({ title: 'Delete Topic', message: 'Are you sure? This will also delete all replies.', confirmLabel: 'Delete', variant: 'danger' });
+                  if (ok) deleteMutation.mutate(t._id);
+                }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            );
+
+            return (
+              <>
+                {/* Desktop table */}
+                <div className="hidden lg:block border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col className="w-[34%]" />
+                      <col className="w-[18%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[9%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[12%]" />
+                    </colgroup>
+                    <thead>
+                      <tr className="bg-muted border-b">
+                        <th className="text-left p-3 font-medium">Topic</th>
+                        <th className="text-left p-3 font-medium">Author</th>
+                        <th className="text-left p-3 font-medium">Category</th>
+                        <th className="text-left p-3 font-medium">Replies</th>
+                        <th className="text-left p-3 font-medium">Date</th>
+                        <th className="text-left p-3 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((t: any) => (
+                        <tr key={t._id} className="border-t hover:bg-accent/30">
+                          <td className="p-3">
+                            <Link to={`/dashboard/forum/${t._id}`} className="font-medium hover:text-primary transition-colors inline-flex items-center gap-1.5 max-w-full">
+                              {t.isPinned && <Pin className="h-3 w-3 text-amber-500 shrink-0" />}
+                              {t.isLocked && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
+                              <span className="truncate">{t.title}</span>
+                            </Link>
+                          </td>
+                          <td className="p-3 truncate">
+                            {t.author?._id ? (
+                              <Link to={`/members/${t.author._id}`} className="text-sm hover:text-primary transition-colors truncate block" title={t.author.name}>{t.author.name}</Link>
+                            ) : <span className="text-muted-foreground">Unknown</span>}
+                          </td>
+                          <td className="p-3"><span className="px-2 py-0.5 bg-muted rounded-full text-xs whitespace-nowrap">{t.category || 'General'}</span></td>
+                          <td className="p-3 text-muted-foreground">{t.replyCount || 0}</td>
+                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                          <td className="p-3">{renderActions(t)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card list */}
+                <div className="lg:hidden space-y-3">
+                  {filtered.map((t: any) => (
+                    <div key={t._id} className="border rounded-lg p-4 bg-card">
+                      <Link to={`/dashboard/forum/${t._id}`} className="font-medium hover:text-primary transition-colors flex items-start gap-1.5 mb-2">
+                        {t.isPinned && <Pin className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />}
+                        {t.isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />}
+                        <span className="break-words">{t.title}</span>
                       </Link>
-                    </td>
-                    <td className="p-3">
-                      {t.author?._id ? (
-                        <Link to={`/members/${t.author._id}`} className="text-sm hover:text-primary transition-colors">{t.author.name}</Link>
-                      ) : <span className="text-muted-foreground">Unknown</span>}
-                    </td>
-                    <td className="p-3"><span className="px-2 py-0.5 bg-muted rounded-full text-xs">{t.category || 'General'}</span></td>
-                    <td className="p-3 text-muted-foreground">{t.replyCount || 0}</td>
-                    <td className="p-3 text-xs text-muted-foreground">{formatDate(t.createdAt)}</td>
-                    <td className="p-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => pinMutation.mutate({ id: t._id, pinned: !t.isPinned })}
-                          title={t.isPinned ? 'Unpin' : 'Pin'}
-                          className={`p-1.5 rounded hover:bg-accent ${t.isPinned ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                          <Pin className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => lockMutation.mutate({ id: t._id, locked: !t.isLocked })}
-                          title={t.isLocked ? 'Unlock' : 'Lock'}
-                          className={`p-1.5 rounded hover:bg-accent ${t.isLocked ? 'text-red-500' : 'text-muted-foreground'}`}>
-                          <Lock className="h-4 w-4" />
-                        </button>
-                        <button onClick={async () => {
-                          const ok = await confirm({ title: 'Delete Topic', message: 'Are you sure? This will also delete all replies.', confirmLabel: 'Delete', variant: 'danger' });
-                          if (ok) deleteMutation.mutate(t._id);
-                        }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                        <span className="px-2 py-0.5 bg-muted rounded-full whitespace-nowrap">{t.category || 'General'}</span>
+                        <span>{t.replyCount || 0} replies</span>
+                        <span>{formatDate(t.createdAt)}</span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-xs text-muted-foreground truncate">
+                          {t.author?._id ? (
+                            <Link to={`/members/${t.author._id}`} className="hover:text-primary transition-colors">by {t.author.name}</Link>
+                          ) : 'Unknown author'}
+                        </span>
+                        {renderActions(t)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </FadeIn>
       )}
 

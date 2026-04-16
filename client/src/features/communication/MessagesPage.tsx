@@ -20,6 +20,7 @@ import PresenceBadge, { formatLastSeen } from '@/components/chat/PresenceBadge';
 import type { ChatMessage } from '@/components/chat/MessageBubble';
 import type { ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
 import type { ReplyData } from '@/components/chat/ReplyPreview';
+import Spinner from '@/components/ui/Spinner';
 
 export default function MessagesPage() {
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
@@ -181,9 +182,7 @@ function ConversationList({
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Spinner size="md" />
       ) : conversations.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-12">

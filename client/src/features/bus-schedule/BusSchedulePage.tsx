@@ -15,6 +15,7 @@ import { formatDate, formatTimeString } from '@/lib/date';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 const PAGE_LIMIT = 20;
 
@@ -311,7 +312,7 @@ export default function BusSchedulePage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : (
         <AnimatePresence mode="wait">
           {/* ═══ ROUTES VIEW (university/intercity) ═══ */}
@@ -380,8 +381,15 @@ export default function BusSchedulePage() {
               ) : (
                 <>
                   <FadeIn direction="up" duration={0.4}>
-                    <div className="overflow-x-auto border rounded-lg -mx-3 sm:mx-0 scroll-smooth-touch">
-                      <table className="w-full text-sm min-w-[520px]">
+                    {/* Desktop table */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                      <table className="w-full text-sm table-fixed">
+                        <colgroup>
+                          <col className="w-[20%]" />
+                          <col className="w-[30%]" />
+                          <col className="w-[30%]" />
+                          <col className="w-[20%]" />
+                        </colgroup>
                         <thead>
                           <tr className="bg-muted border-b">
                             <th className="p-3 font-medium text-center text-foreground">Time</th>
@@ -400,44 +408,101 @@ export default function BusSchedulePage() {
                                 {bi === 0 && (
                                   <td rowSpan={n} className="p-3 text-center align-middle border-r font-semibold">
                                     <div className="flex flex-col items-center gap-0.5">
-                                      <span>{formatTimeString(s.departureTime)}</span>
-                                      {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
+                                      <span className="whitespace-nowrap">{formatTimeString(s.departureTime)}</span>
+                                      {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">→ {formatTimeString(s.arrivalTime)}</span>}
                                       {s.seasonalVariation?.adjustedDepartureTime && (
-                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 break-words">
                                           {s.seasonalVariation.season}: {formatTimeString(s.seasonalVariation.adjustedDepartureTime)}
                                         </span>
                                       )}
                                     </div>
                                   </td>
                                 )}
-                                <td className="p-3 text-center align-middle">{b.busName || '-'}</td>
-                                <td className="p-3 text-center align-middle">
+                                <td className="p-3 text-center align-middle break-words">{b.busName || '-'}</td>
+                                <td className="p-3 text-center align-middle break-words">
                                   {typeof b.operator === 'object' && b.operator ? (
-                                    <button onClick={(e) => { e.stopPropagation(); handleOperatorClick((b.operator as { _id: string; name: string })._id); }} className="text-primary hover:underline">
+                                    <button onClick={(e) => { e.stopPropagation(); handleOperatorClick((b.operator as { _id: string; name: string })._id); }} className="text-primary hover:underline break-words">
                                       {(b.operator as { name: string }).name}
                                     </button>
                                   ) : '-'}
                                 </td>
-                                {tab === 'intercity' && <td className="p-3 text-center align-middle capitalize">{b.busCategory?.replace('_', ' ') || '-'}</td>}
+                                {tab === 'intercity' && <td className="p-3 text-center align-middle capitalize break-words">{b.busCategory?.replace('_', ' ') || '-'}</td>}
                                 {bi === 0 && tab === 'university' && (
-                                  <td rowSpan={n} className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
+                                  <td rowSpan={n} className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l break-words">{s.daysOfOperation?.join(', ') || 'Daily'}</td>
                                 )}
                               </tr>
                             )) : (
                               <tr key={s._id} className={`border-t hover:bg-accent/30 cursor-pointer ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`} onClick={() => handleScheduleClick(s)}>
                                 <td className="p-3 text-center align-middle border-r font-semibold">
                                   <div className="flex flex-col items-center gap-0.5">
-                                    <span>{formatTimeString(s.departureTime)}</span>
-                                    {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal">→ {formatTimeString(s.arrivalTime)}</span>}
+                                    <span className="whitespace-nowrap">{formatTimeString(s.departureTime)}</span>
+                                    {s.arrivalTime && <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">→ {formatTimeString(s.arrivalTime)}</span>}
                                   </div>
                                 </td>
                                 <td colSpan={tab === 'university' ? 2 : 3} className="p-3 text-center align-middle text-muted-foreground">No buses</td>
-                                {tab === 'university' && <td className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l">{s.daysOfOperation?.join(', ') || 'Daily'}</td>}
+                                {tab === 'university' && <td className="p-3 text-center align-middle text-xs capitalize text-muted-foreground border-l break-words">{s.daysOfOperation?.join(', ') || 'Daily'}</td>}
                               </tr>
                             );
                           })}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile cards */}
+                    <div className="md:hidden space-y-3">
+                      {filteredSchedules.map((s: any) => {
+                        const buses: ScheduleBus[] = s.buses || [];
+                        return (
+                          <div
+                            key={s._id}
+                            onClick={() => handleScheduleClick(s)}
+                            className={`border rounded-lg p-4 bg-card cursor-pointer hover:bg-accent/30 transition-colors ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40' : ''}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <p className="font-semibold text-foreground whitespace-nowrap">
+                                {formatTimeString(s.departureTime)}
+                                {s.arrivalTime && <span className="text-muted-foreground font-normal"> → {formatTimeString(s.arrivalTime)}</span>}
+                              </p>
+                              {tab === 'university' && (
+                                <span className="text-[10px] capitalize text-muted-foreground text-right break-words">{s.daysOfOperation?.join(', ') || 'Daily'}</span>
+                              )}
+                            </div>
+                            {s.seasonalVariation?.adjustedDepartureTime && (
+                              <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">
+                                {s.seasonalVariation.season}: {formatTimeString(s.seasonalVariation.adjustedDepartureTime)}
+                              </p>
+                            )}
+                            {buses.length > 0 ? (
+                              <div className="space-y-1 pt-2 border-t">
+                                {buses.map((b, bi) => (
+                                  <div key={bi} className="text-xs flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                    <span className="font-medium text-foreground break-words">{b.busName || '-'}</span>
+                                    {typeof b.operator === 'object' && b.operator && (
+                                      <>
+                                        <span className="text-muted-foreground">·</span>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleOperatorClick((b.operator as { _id: string })._id); }}
+                                          className="text-primary hover:underline break-words"
+                                        >
+                                          {(b.operator as { name: string }).name}
+                                        </button>
+                                      </>
+                                    )}
+                                    {tab === 'intercity' && b.busCategory && (
+                                      <>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span className="capitalize text-muted-foreground">{b.busCategory.replace('_', ' ')}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="pt-2 border-t text-xs text-muted-foreground">No buses</p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </FadeIn>
 
@@ -654,7 +719,7 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
   const opCounters = counters.filter((c: any) => c.operator?._id === operatorId);
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
   if (!op) {
     return <EmptyState text="Operator not found." />;

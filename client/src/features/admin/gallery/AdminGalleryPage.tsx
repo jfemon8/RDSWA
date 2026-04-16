@@ -11,6 +11,7 @@ import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminGalleryPage() {
   const queryClient = useQueryClient();
@@ -120,7 +121,7 @@ export default function AdminGalleryPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : albums.length === 0 ? (
         <div className="text-center py-12">
           <Image className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -269,7 +270,7 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : photos.length === 0 ? (
         <div className="text-center py-12">
           <Image className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />

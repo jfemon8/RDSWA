@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import {
-  Shield, Check, X, History, Loader2, ArrowRight,
+  Shield, Check, X, History, ArrowRight,
   GraduationCap, Award, Star, Zap,
 } from 'lucide-react';
 import { UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES } from '@rdswa/shared';
 import api from '@/lib/api';
 import { formatDate } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 const ROLE_COLORS: Record<string, string> = {
   guest: 'bg-muted text-muted-foreground',
@@ -203,8 +204,10 @@ export default function AdminRolesPage() {
       <FadeIn direction="up" delay={0.35}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <h2 className="font-semibold text-lg mb-4 text-foreground">Permission Matrix</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[600px]">
+
+          {/* Desktop matrix — table, fits without scroll at lg+ */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b bg-muted">
                   <th className="text-left p-2 font-medium text-foreground sticky left-0 bg-muted z-10 min-w-[140px]">Module : Action</th>
@@ -243,6 +246,47 @@ export default function AdminRolesPage() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile — grouped by module with role chips showing which roles have access */}
+          <div className="lg:hidden space-y-3">
+            {modules.map((mod) => {
+              const modActions = actions.filter((a) => PERMISSIONS[`${mod}:${a}`]);
+              if (modActions.length === 0) return null;
+              return (
+                <div key={mod} className="border rounded-lg overflow-hidden">
+                  <div className="px-3 py-2 bg-muted font-medium text-sm text-foreground capitalize">{mod}</div>
+                  <div className="divide-y">
+                    {modActions.map((action) => {
+                      const allowedRoles = PERMISSIONS[`${mod}:${action}`] || [];
+                      return (
+                        <div key={action} className="px-3 py-2.5">
+                          <p className="text-xs font-medium text-muted-foreground capitalize mb-1.5">{action}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {displayRoles.map((role) => {
+                              const allowed = allowedRoles.includes(role);
+                              return (
+                                <span
+                                  key={role}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium capitalize whitespace-nowrap ${
+                                    allowed
+                                      ? ROLE_COLORS[role] || 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                      : 'bg-muted/50 text-muted-foreground/60 line-through'
+                                  }`}
+                                >
+                                  {allowed ? <Check className="h-2.5 w-2.5" /> : <X className="h-2.5 w-2.5" />}
+                                  {role.replace('_', ' ')}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </FadeIn>
@@ -296,76 +340,135 @@ function RoleHistorySection() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          <Spinner size="sm" />
         ) : history.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">No role changes recorded</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
-              <thead>
-                <tr className="border-b bg-muted">
-                  <th className="text-left p-2.5 font-medium text-foreground">User</th>
-                  <th className="text-left p-2.5 font-medium text-foreground">Change</th>
-                  <th className="text-left p-2.5 font-medium text-foreground">Type</th>
-                  <th className="text-left p-2.5 font-medium text-foreground">Reason</th>
-                  <th className="text-left p-2.5 font-medium text-foreground">By</th>
-                  <th className="text-left p-2.5 font-medium text-foreground">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((h: any, i: number) => (
-                  <motion.tr
-                    key={h._id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="border-b hover:bg-accent/30"
-                  >
-                    <td className="p-2.5">
-                      <div className="flex items-center gap-2">
-                        {h.user?.avatar ? (
-                          <img src={h.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
-                        ) : (
-                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                            {h.user?.name?.[0] || '?'}
+          <>
+            {/* Desktop table */}
+            <div className="hidden lg:block overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[22%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[14%]" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b bg-muted">
+                    <th className="text-left p-2.5 font-medium text-foreground">User</th>
+                    <th className="text-left p-2.5 font-medium text-foreground">Change</th>
+                    <th className="text-left p-2.5 font-medium text-foreground">Type</th>
+                    <th className="text-left p-2.5 font-medium text-foreground">Reason</th>
+                    <th className="text-left p-2.5 font-medium text-foreground">By</th>
+                    <th className="text-left p-2.5 font-medium text-foreground">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h: any, i: number) => (
+                    <motion.tr
+                      key={h._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="border-b hover:bg-accent/30"
+                    >
+                      <td className="p-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {h.user?.avatar ? (
+                            <img src={h.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                              {h.user?.name?.[0] || '?'}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-foreground truncate" title={h.user?.name || ''}>{h.user?.name || 'Unknown'}</p>
+                            <p className="text-[10px] text-muted-foreground truncate" title={h.user?.email || ''}>{h.user?.email}</p>
                           </div>
-                        )}
-                        <div>
-                          <p className="text-xs font-medium text-foreground">{h.user?.name || 'Unknown'}</p>
-                          <p className="text-[10px] text-muted-foreground">{h.user?.email}</p>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-2.5">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className={`px-1.5 py-0.5 rounded capitalize ${ROLE_COLORS[h.previousRole] || 'bg-muted text-muted-foreground'}`}>
-                          {h.previousRole?.replace('_', ' ')}
+                      </td>
+                      <td className="p-2.5">
+                        <div className="flex items-center gap-1.5 text-xs flex-wrap">
+                          <span className={`px-1.5 py-0.5 rounded capitalize whitespace-nowrap ${ROLE_COLORS[h.previousRole] || 'bg-muted text-muted-foreground'}`}>
+                            {h.previousRole?.replace('_', ' ')}
+                          </span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className={`px-1.5 py-0.5 rounded capitalize whitespace-nowrap ${ROLE_COLORS[h.role] || 'bg-muted text-muted-foreground'}`}>
+                            {h.role?.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-2.5">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${
+                          h.assignmentType === 'auto'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                        }`}>
+                          {h.assignmentType}
                         </span>
-                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                        <span className={`px-1.5 py-0.5 rounded capitalize ${ROLE_COLORS[h.role] || 'bg-muted text-muted-foreground'}`}>
-                          {h.role?.replace('_', ' ')}
-                        </span>
+                      </td>
+                      <td className="p-2.5 text-xs text-muted-foreground truncate" title={h.reason}>
+                        {h.reason?.replace(/_/g, ' ')}
+                      </td>
+                      <td className="p-2.5 text-xs text-muted-foreground truncate" title={h.assignedBy?.name || ''}>{h.assignedBy?.name || '—'}</td>
+                      <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(h.createdAt)}</td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="lg:hidden space-y-3">
+              {history.map((h: any, i: number) => (
+                <motion.div
+                  key={h._id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border rounded-lg p-3 bg-card"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    {h.user?.avatar ? (
+                      <img src={h.user.avatar} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                        {h.user?.name?.[0] || '?'}
                       </div>
-                    </td>
-                    <td className="p-2.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                        h.assignmentType === 'auto'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                      }`}>
-                        {h.assignmentType}
-                      </span>
-                    </td>
-                    <td className="p-2.5 text-xs text-muted-foreground max-w-[150px] truncate" title={h.reason}>
-                      {h.reason?.replace(/_/g, ' ')}
-                    </td>
-                    <td className="p-2.5 text-xs text-muted-foreground">{h.assignedBy?.name || '—'}</td>
-                    <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(h.createdAt)}</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground break-words">{h.user?.name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground break-all">{h.user?.email}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${
+                      h.assignmentType === 'auto'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                    }`}>
+                      {h.assignmentType}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs flex-wrap mb-2">
+                    <span className={`px-1.5 py-0.5 rounded capitalize whitespace-nowrap ${ROLE_COLORS[h.previousRole] || 'bg-muted text-muted-foreground'}`}>
+                      {h.previousRole?.replace('_', ' ')}
+                    </span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <span className={`px-1.5 py-0.5 rounded capitalize whitespace-nowrap ${ROLE_COLORS[h.role] || 'bg-muted text-muted-foreground'}`}>
+                      {h.role?.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pt-2 border-t">
+                    {h.reason && <span className="break-words">Reason: {h.reason.replace(/_/g, ' ')}</span>}
+                    {h.assignedBy?.name && <span className="break-words">By: {h.assignedBy.name}</span>}
+                    <span>{formatDate(h.createdAt)}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
         )}
 
         {pagination && pagination.totalPages > 1 && (

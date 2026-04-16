@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
-import { Users, Calendar, Banknote, FileText, Clock, UserCheck, Loader2, TrendingUp, Shield, CheckCircle } from 'lucide-react';
+import { Users, Calendar, Banknote, FileText, Clock, UserCheck, TrendingUp, Shield, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { formatDateCustom } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -58,7 +59,7 @@ export default function AdminDashboardPage() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="md" />;
   }
 
   const stats = data?.data;

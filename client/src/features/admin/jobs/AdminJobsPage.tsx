@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import { Search, Loader2, Trash2, ExternalLink, Briefcase } from 'lucide-react';
+import { Search, Trash2, ExternalLink, Briefcase } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import Spinner from '@/components/ui/Spinner';
 
 export default function AdminJobsPage() {
   const queryClient = useQueryClient();
@@ -60,13 +61,25 @@ export default function AdminJobsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <Spinner size="md" />
       ) : jobs.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No jobs found.</p></FadeIn>
       ) : (
         <FadeIn direction="up" delay={0.1}>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm min-w-[1000px]">
+          {/* Desktop table */}
+          <div className="hidden lg:block border rounded-lg overflow-hidden">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-[18%]" />
+                <col className="w-[14%]" />
+                <col className="w-[10%]" />
+                <col className="w-[7%]" />
+                <col className="w-[10%]" />
+                <col className="w-[8%]" />
+                <col className="w-[13%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+              </colgroup>
               <thead>
                 <tr className="bg-muted border-b">
                   <th className="text-left p-3 font-medium">Title</th>
@@ -85,19 +98,19 @@ export default function AdminJobsPage() {
                   const expired = !!(j.deadline && new Date(j.deadline).getTime() < Date.now());
                   return (
                   <tr key={j._id} className="border-t hover:bg-accent/30">
-                    <td className="p-3">
-                      <Link to={`/dashboard/jobs/${j._id}`} className="font-medium hover:text-primary transition-colors flex items-center gap-1.5">
-                        <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" /> {j.title}
+                    <td className="p-3 truncate">
+                      <Link to={`/dashboard/jobs/${j._id}`} className="font-medium hover:text-primary transition-colors inline-flex items-center gap-1.5 max-w-full">
+                        <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" /> <span className="truncate">{j.title}</span>
                       </Link>
                     </td>
-                    <td className="p-3 text-muted-foreground">{j.company}</td>
+                    <td className="p-3 text-muted-foreground truncate" title={j.company}>{j.company}</td>
                     <td className="p-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">{j.type?.replace('-', ' ')}</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize whitespace-nowrap">{j.type?.replace('-', ' ')}</span>
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">
                       {typeof j.vacancy === 'number' && j.vacancy > 0 ? j.vacancy : '-'}
                     </td>
-                    <td className="p-3 text-xs text-muted-foreground">
+                    <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
                       {j.deadline ? formatDate(j.deadline) : '-'}
                     </td>
                     <td className="p-3">
@@ -107,12 +120,12 @@ export default function AdminJobsPage() {
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
                       )}
                     </td>
-                    <td className="p-3">
+                    <td className="p-3 truncate">
                       {j.postedBy?._id ? (
-                        <Link to={`/members/${j.postedBy._id}`} className="text-sm hover:text-primary transition-colors">{j.postedBy.name}</Link>
+                        <Link to={`/members/${j.postedBy._id}`} className="text-sm hover:text-primary transition-colors truncate block" title={j.postedBy.name}>{j.postedBy.name}</Link>
                       ) : <span className="text-muted-foreground">-</span>}
                     </td>
-                    <td className="p-3 text-xs text-muted-foreground">{formatDate(j.createdAt)}</td>
+                    <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(j.createdAt)}</td>
                     <td className="p-3">
                       <div className="flex gap-1">
                         {j.applicationLink && (
@@ -134,6 +147,56 @@ export default function AdminJobsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile card list */}
+          <div className="lg:hidden space-y-3">
+            {jobs.map((j: any) => {
+              const expired = !!(j.deadline && new Date(j.deadline).getTime() < Date.now());
+              return (
+                <div key={j._id} className="border rounded-lg p-4 bg-card">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <Link to={`/dashboard/jobs/${j._id}`} className="font-medium hover:text-primary transition-colors flex items-start gap-1.5 min-w-0 flex-1">
+                      <Briefcase className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span className="break-words">{j.title}</span>
+                    </Link>
+                    {expired ? (
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Expired</span>
+                    ) : (
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground break-words mb-2">{j.company}</p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mb-3">
+                    <span className="px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary capitalize whitespace-nowrap">{j.type?.replace('-', ' ')}</span>
+                    {typeof j.vacancy === 'number' && j.vacancy > 0 && <span>Vacancy: {j.vacancy}</span>}
+                    {j.deadline && <span>Deadline: {formatDate(j.deadline)}</span>}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+                      {j.postedBy?._id && (
+                        <Link to={`/members/${j.postedBy._id}`} className="hover:text-primary transition-colors truncate">by {j.postedBy.name}</Link>
+                      )}
+                      <span>{formatDate(j.createdAt)}</span>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {j.applicationLink && (
+                        <a href={j.applicationLink} target="_blank" rel="noopener noreferrer" title="Application Link"
+                          className="p-1.5 text-primary hover:bg-primary/10 rounded">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                      <button onClick={async () => {
+                        const ok = await confirm({ title: 'Delete Job', message: `Delete job listing "${j.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                        if (ok) deleteMutation.mutate(j._id);
+                      }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </FadeIn>
       )}

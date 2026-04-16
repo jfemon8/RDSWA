@@ -14,6 +14,7 @@ import {
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import Spinner from '@/components/ui/Spinner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -284,147 +285,213 @@ function DonationsList() {
           </button>
         ))}
       </div>
-      <div className="overflow-x-auto border rounded-lg">
-      <table className="w-full min-w-[600px] text-sm">
-        <thead><tr className="bg-muted border-b">
-          <th className="text-left p-3 font-medium text-foreground">Donor</th>
-          <th className="text-left p-3 font-medium text-foreground">Amount</th>
-          <th className="text-left p-3 font-medium text-foreground">Method</th>
-          <th className="text-left p-3 font-medium text-foreground">TxID / Sender</th>
-          <th className="text-left p-3 font-medium text-foreground">Status</th>
-          <th className="text-left p-3 font-medium text-foreground">Date</th>
-          <th className="text-left p-3 font-medium text-foreground">Actions</th>
-        </tr></thead>
-        <tbody>
-          {donations.map((d: any) => {
-            const isExpanded = expandedId === d._id;
-            const isActionOpen = actionTarget?.id === d._id;
-            return (
-              <motion.tr
-                key={d._id}
-                layout
-                className="border-t hover:bg-accent/30 align-top"
+      {(() => {
+        const renderStatusBadge = (d: any) => (
+          <span className={`px-2 py-0.5 rounded-full text-xs capitalize whitespace-nowrap ${
+            d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+            : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+          }`}>{d.paymentStatus}</span>
+        );
+        const renderActionButtons = (d: any, isExpanded: boolean, isActionOpen: boolean) => (
+          <div className="flex items-center gap-1 flex-wrap">
+            {(d.paymentStatus === 'pending' || d.paymentStatus === 'revision') && (
+              <>
+                <button
+                  onClick={() => verifyMutation.mutate({ id: d._id, status: 'completed' })}
+                  className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded"
+                  title="Accept"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Reject Donation', message: `Reject donation of ${d.amount} from ${d.donorName || 'this donor'}?`, confirmLabel: 'Reject', variant: 'danger' });
+                    if (ok) verifyMutation.mutate({ id: d._id, status: 'failed' });
+                  }}
+                  className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                  title="Reject"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setActionTarget(isActionOpen ? null : { id: d._id, action: 'revision' })}
+                  className="p-1.5 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded"
+                  title="Request Revision"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setExpandedId(isExpanded ? null : d._id)}
+              className="p-1.5 text-muted-foreground hover:bg-accent rounded"
+            >
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+          </div>
+        );
+        const renderRevisionForm = (d: any) => (
+          <div className="mt-2">
+            <textarea
+              placeholder="Revision note for donor..."
+              value={revisionNote}
+              onChange={(e) => setRevisionNote(e.target.value)}
+              rows={2}
+              className="w-full px-2 py-1.5 border rounded text-xs bg-card text-foreground"
+            />
+            <div className="flex gap-1 mt-1">
+              <button
+                onClick={() => verifyMutation.mutate({ id: d._id, status: 'revision', note: revisionNote })}
+                disabled={verifyMutation.isPending}
+                className="px-2 py-1 bg-orange-600 text-white rounded text-xs disabled:opacity-50"
               >
-                <td className="p-3">
-                  <p className="text-foreground">{d.donor?.name || d.donorName || 'Anonymous'}</p>
-                  <p className="text-xs text-muted-foreground">{d.donor?.email || d.donorEmail || ''}</p>
-                </td>
-                <td className="p-3 font-medium text-foreground">BDT {d.amount?.toLocaleString()}</td>
-                <td className="p-3 capitalize text-xs text-muted-foreground">{d.paymentMethod}</td>
-                <td className="p-3 text-xs text-muted-foreground">
-                  {d.transactionId && <p>TxID: {d.transactionId}</p>}
-                  {d.senderNumber && <p>Sender: {d.senderNumber}</p>}
-                </td>
-                <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${
-                    d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  }`}>{d.paymentStatus}</span>
-                </td>
-                <td className="p-3 text-xs text-muted-foreground">{formatDate(d.createdAt)}</td>
-                <td className="p-3">
-                  <div className="flex items-center gap-1">
-                    {(d.paymentStatus === 'pending' || d.paymentStatus === 'revision') && (
-                      <>
-                        <button
-                          onClick={() => verifyMutation.mutate({ id: d._id, status: 'completed' })}
-                          className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded"
-                          title="Accept"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const ok = await confirm({ title: 'Reject Donation', message: `Reject donation of ${d.amount} from ${d.donorName || 'this donor'}?`, confirmLabel: 'Reject', variant: 'danger' });
-                            if (ok) verifyMutation.mutate({ id: d._id, status: 'failed' });
-                          }}
-                          className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
-                          title="Reject"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setActionTarget(isActionOpen ? null : { id: d._id, action: 'revision' })}
-                          className="p-1.5 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded"
-                          title="Request Revision"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => setExpandedId(isExpanded ? null : d._id)}
-                      className="p-1.5 text-muted-foreground hover:bg-accent rounded"
-                    >
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
-                  </div>
+                <MessageSquare className="h-3 w-3 inline mr-1" />
+                Send Revision
+              </button>
+              <button
+                onClick={() => { setActionTarget(null); setRevisionNote(''); }}
+                className="px-2 py-1 border rounded text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+        const renderDetails = (d: any) => (
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Type: <span className="capitalize">{d.type?.replace('-', ' ')}</span></p>
+            <p>Visibility: {d.visibility}</p>
+            {d.receiptNumber && <p className="break-all">Receipt: {d.receiptNumber}</p>}
+            {d.note && <p className="break-words">Note: {d.note}</p>}
+            {d.isRecurring && <p>Recurring: {d.recurringInterval}</p>}
+            {d.revisionNote && <p className="text-orange-600 break-words">Revision note: {d.revisionNote}</p>}
+            {d.campaign && <p className="break-words">Campaign: {d.campaign?.title || d.campaign}</p>}
+            {d.verifiedBy && <p className="break-words">Verified by: {d.verifiedBy?.name || d.verifiedBy}</p>}
+          </div>
+        );
 
-                  {/* Revision note form */}
-                  <AnimatePresence>
-                    {isActionOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-2"
+        return (
+          <>
+            {/* Desktop table */}
+            <div className="hidden lg:block border rounded-lg overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-[17%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[20%]" />
+                </colgroup>
+                <thead><tr className="bg-muted border-b">
+                  <th className="text-left p-3 font-medium text-foreground">Donor</th>
+                  <th className="text-left p-3 font-medium text-foreground">Amount</th>
+                  <th className="text-left p-3 font-medium text-foreground">Method</th>
+                  <th className="text-left p-3 font-medium text-foreground">TxID / Sender</th>
+                  <th className="text-left p-3 font-medium text-foreground">Status</th>
+                  <th className="text-left p-3 font-medium text-foreground">Date</th>
+                  <th className="text-left p-3 font-medium text-foreground">Actions</th>
+                </tr></thead>
+                <tbody>
+                  {donations.map((d: any) => {
+                    const isExpanded = expandedId === d._id;
+                    const isActionOpen = actionTarget?.id === d._id;
+                    return (
+                      <motion.tr
+                        key={d._id}
+                        layout
+                        className="border-t hover:bg-accent/30 align-top"
                       >
-                        <textarea
-                          placeholder="Revision note for donor..."
-                          value={revisionNote}
-                          onChange={(e) => setRevisionNote(e.target.value)}
-                          rows={2}
-                          className="w-full px-2 py-1.5 border rounded text-xs bg-card text-foreground"
-                        />
-                        <div className="flex gap-1 mt-1">
-                          <button
-                            onClick={() => verifyMutation.mutate({ id: d._id, status: 'revision', note: revisionNote })}
-                            disabled={verifyMutation.isPending}
-                            className="px-2 py-1 bg-orange-600 text-white rounded text-xs disabled:opacity-50"
-                          >
-                            <MessageSquare className="h-3 w-3 inline mr-1" />
-                            Send Revision
-                          </button>
-                          <button
-                            onClick={() => { setActionTarget(null); setRevisionNote(''); }}
-                            className="px-2 py-1 border rounded text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <td className="p-3">
+                          <p className="text-foreground truncate" title={d.donor?.name || d.donorName || 'Anonymous'}>{d.donor?.name || d.donorName || 'Anonymous'}</p>
+                          <p className="text-xs text-muted-foreground truncate" title={d.donor?.email || d.donorEmail || ''}>{d.donor?.email || d.donorEmail || ''}</p>
+                        </td>
+                        <td className="p-3 font-medium text-foreground whitespace-nowrap">BDT {d.amount?.toLocaleString()}</td>
+                        <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={d.paymentMethod}>{d.paymentMethod}</td>
+                        <td className="p-3 text-xs text-muted-foreground min-w-0">
+                          {d.transactionId && <p className="truncate" title={d.transactionId}>TxID: {d.transactionId}</p>}
+                          {d.senderNumber && <p className="truncate" title={d.senderNumber}>Sender: {d.senderNumber}</p>}
+                        </td>
+                        <td className="p-3">{renderStatusBadge(d)}</td>
+                        <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(d.createdAt)}</td>
+                        <td className="p-3">
+                          {renderActionButtons(d, isExpanded, isActionOpen)}
+                          <AnimatePresence>
+                            {isActionOpen && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                                {renderRevisionForm(d)}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2">
+                                {renderDetails(d)}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                  {/* Expanded details */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-2 text-xs text-muted-foreground space-y-1"
-                      >
-                        <p>Type: <span className="capitalize">{d.type?.replace('-', ' ')}</span></p>
-                        <p>Visibility: {d.visibility}</p>
-                        {d.receiptNumber && <p>Receipt: {d.receiptNumber}</p>}
-                        {d.note && <p>Note: {d.note}</p>}
-                        {d.isRecurring && <p>Recurring: {d.recurringInterval}</p>}
-                        {d.revisionNote && <p className="text-orange-600">Revision note: {d.revisionNote}</p>}
-                        {d.campaign && <p>Campaign: {d.campaign?.title || d.campaign}</p>}
-                        {d.verifiedBy && <p>Verified by: {d.verifiedBy?.name || d.verifiedBy}</p>}
-                      </motion.div>
+            {/* Mobile card list */}
+            <div className="lg:hidden space-y-3">
+              {donations.map((d: any) => {
+                const isExpanded = expandedId === d._id;
+                const isActionOpen = actionTarget?.id === d._id;
+                return (
+                  <motion.div key={d._id} layout className="border rounded-lg p-4 bg-card">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-foreground font-medium break-words">{d.donor?.name || d.donorName || 'Anonymous'}</p>
+                        {(d.donor?.email || d.donorEmail) && (
+                          <p className="text-xs text-muted-foreground break-all">{d.donor?.email || d.donorEmail}</p>
+                        )}
+                        <p className="text-lg font-semibold text-foreground mt-1">BDT {d.amount?.toLocaleString()}</p>
+                      </div>
+                      {renderStatusBadge(d)}
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                      <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{d.paymentMethod}</span>
+                      <span>{formatDate(d.createdAt)}</span>
+                    </div>
+                    {(d.transactionId || d.senderNumber) && (
+                      <div className="text-xs text-muted-foreground mb-3 space-y-0.5">
+                        {d.transactionId && <p className="break-all"><span className="font-medium">TxID:</span> {d.transactionId}</p>}
+                        {d.senderNumber && <p className="break-all"><span className="font-medium">Sender:</span> {d.senderNumber}</p>}
+                      </div>
                     )}
-                  </AnimatePresence>
-                </td>
-              </motion.tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                    <div className="pt-2 border-t">
+                      {renderActionButtons(d, isExpanded, isActionOpen)}
+                    </div>
+                    <AnimatePresence>
+                      {isActionOpen && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                          {renderRevisionForm(d)}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2">
+                          {renderDetails(d)}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -552,56 +619,88 @@ function ExpensesList() {
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : (
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full min-w-[600px] text-sm">
-            <thead><tr className="bg-muted border-b">
-              <th className="text-left p-3 font-medium text-foreground">Title</th>
-              <th className="text-left p-3 font-medium text-foreground">Amount</th>
-              <th className="text-left p-3 font-medium text-foreground">Category</th>
-              <th className="text-left p-3 font-medium text-foreground">Date</th>
-              <th className="text-right p-3 font-medium text-foreground">Actions</th>
-            </tr></thead>
-            <tbody>
-              {expenses.map((e: any) => (
-                <tr
-                  key={e._id}
-                  className="border-t hover:bg-accent/30"
+        <>
+          {(() => {
+            const renderActions = (e: any) => (
+              <div className="flex items-center justify-end gap-1">
+                <button
+                  onClick={() => startEdit(e)}
+                  className="p-1.5 hover:bg-accent rounded"
+                  title="Edit"
                 >
-                  <td className="p-3 text-foreground">{e.title}</td>
-                  <td className="p-3 font-medium text-red-600">BDT {e.amount?.toLocaleString()}</td>
-                  <td className="p-3 capitalize text-xs text-muted-foreground">{e.category}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{formatDate(e.createdAt)}</td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => startEdit(e)}
-                        className="p-1.5 hover:bg-accent rounded"
-                        title="Edit"
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-foreground" />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          const ok = await confirm({
-                            title: 'Delete Expense',
-                            message: `Delete "${e.title}"? This action cannot be undone.`,
-                            confirmLabel: 'Delete',
-                            variant: 'danger',
-                          });
-                          if (ok) deleteMutation.mutate(e._id);
-                        }}
-                        className="p-1.5 hover:bg-destructive/10 rounded"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </button>
+                  <Pencil className="h-3.5 w-3.5 text-foreground" />
+                </button>
+                <button
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: 'Delete Expense',
+                      message: `Delete "${e.title}"? This action cannot be undone.`,
+                      confirmLabel: 'Delete',
+                      variant: 'danger',
+                    });
+                    if (ok) deleteMutation.mutate(e._id);
+                  }}
+                  className="p-1.5 hover:bg-destructive/10 rounded"
+                  title="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </button>
+              </div>
+            );
+
+            return (
+              <>
+                {/* Desktop table */}
+                <div className="hidden lg:block border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col className="w-[38%]" />
+                      <col className="w-[18%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[18%]" />
+                      <col className="w-[12%]" />
+                    </colgroup>
+                    <thead><tr className="bg-muted border-b">
+                      <th className="text-left p-3 font-medium text-foreground">Title</th>
+                      <th className="text-left p-3 font-medium text-foreground">Amount</th>
+                      <th className="text-left p-3 font-medium text-foreground">Category</th>
+                      <th className="text-left p-3 font-medium text-foreground">Date</th>
+                      <th className="text-right p-3 font-medium text-foreground">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                      {expenses.map((e: any) => (
+                        <tr key={e._id} className="border-t hover:bg-accent/30">
+                          <td className="p-3 text-foreground truncate" title={e.title}>{e.title}</td>
+                          <td className="p-3 font-medium text-red-600 whitespace-nowrap">BDT {e.amount?.toLocaleString()}</td>
+                          <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={e.category}>{e.category}</td>
+                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(e.createdAt)}</td>
+                          <td className="p-3">{renderActions(e)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card list */}
+                <div className="lg:hidden space-y-3">
+                  {expenses.map((e: any) => (
+                    <div key={e._id} className="border rounded-lg p-4 bg-card">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <p className="text-foreground font-medium break-words flex-1 min-w-0">{e.title}</p>
+                        <p className="font-semibold text-red-600 whitespace-nowrap shrink-0">BDT {e.amount?.toLocaleString()}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-2">
+                        <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{e.category}</span>
+                        <span>{formatDate(e.createdAt)}</span>
+                      </div>
+                      <div className="pt-2 border-t">{renderActions(e)}</div>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </>
       )}
     </div>
   );
@@ -754,7 +853,7 @@ function EventFinanceList() {
   const events: any[] = data?.data || [];
 
   if (isLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+    return <Spinner size="sm" />;
   }
 
   if (events.length === 0) {
@@ -767,54 +866,111 @@ function EventFinanceList() {
   }
 
   return (
-    <div className="overflow-x-auto border rounded-lg">
-      <table className="w-full min-w-[600px] text-sm">
-        <thead>
-          <tr className="bg-muted border-b">
-            <th className="text-left p-3 font-medium text-foreground">Event</th>
-            <th className="text-right p-3 font-medium text-foreground">Budget</th>
-            <th className="text-right p-3 font-medium text-foreground">Actual Expense</th>
-            <th className="text-right p-3 font-medium text-foreground">Variance</th>
-            <th className="text-left p-3 font-medium text-foreground">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((e: any, i: number) => {
-            const budget = e.totalBudget || 0;
-            const actual = e.totalExpense || 0;
-            const variance = budget - actual;
-            const overBudget = variance < 0;
-            return (
-              <motion.tr
-                key={e._id || i}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="border-t hover:bg-accent/30"
-              >
-                <td className="p-3 text-foreground">
-                  {e.eventTitle || 'Unknown event'}
+    <>
+      {/* Desktop table */}
+      <div className="hidden lg:block border rounded-lg overflow-hidden">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[36%]" />
+            <col className="w-[16%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[14%]" />
+          </colgroup>
+          <thead>
+            <tr className="bg-muted border-b">
+              <th className="text-left p-3 font-medium text-foreground">Event</th>
+              <th className="text-right p-3 font-medium text-foreground">Budget</th>
+              <th className="text-right p-3 font-medium text-foreground">Actual Expense</th>
+              <th className="text-right p-3 font-medium text-foreground">Variance</th>
+              <th className="text-left p-3 font-medium text-foreground">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((e: any, i: number) => {
+              const budget = e.totalBudget || 0;
+              const actual = e.totalExpense || 0;
+              const variance = budget - actual;
+              const overBudget = variance < 0;
+              return (
+                <motion.tr
+                  key={e._id || i}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border-t hover:bg-accent/30"
+                >
+                  <td className="p-3 text-foreground">
+                    <p className="truncate" title={e.eventTitle || 'Unknown event'}>{e.eventTitle || 'Unknown event'}</p>
+                    {e.eventDate && (
+                      <p className="text-[11px] text-muted-foreground">{formatDate(e.eventDate)}</p>
+                    )}
+                  </td>
+                  <td className="p-3 text-right text-foreground whitespace-nowrap">BDT {budget.toLocaleString()}</td>
+                  <td className="p-3 text-right text-red-600 font-medium whitespace-nowrap">BDT {actual.toLocaleString()}</td>
+                  <td className={`p-3 text-right font-medium whitespace-nowrap ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
+                    {overBudget ? '−' : '+'} BDT {Math.abs(variance).toLocaleString()}
+                  </td>
+                  <td className="p-3 text-xs">
+                    {e.status ? (
+                      <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground whitespace-nowrap">{e.status}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="lg:hidden space-y-3">
+        {events.map((e: any, i: number) => {
+          const budget = e.totalBudget || 0;
+          const actual = e.totalExpense || 0;
+          const variance = budget - actual;
+          const overBudget = variance < 0;
+          return (
+            <motion.div
+              key={e._id || i}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="border rounded-lg p-4 bg-card"
+            >
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-foreground font-medium break-words">{e.eventTitle || 'Unknown event'}</p>
                   {e.eventDate && (
-                    <p className="text-[11px] text-muted-foreground">{formatDate(e.eventDate)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(e.eventDate)}</p>
                   )}
-                </td>
-                <td className="p-3 text-right text-foreground">BDT {budget.toLocaleString()}</td>
-                <td className="p-3 text-right text-red-600 font-medium">BDT {actual.toLocaleString()}</td>
-                <td className={`p-3 text-right font-medium ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
-                  {overBudget ? '−' : '+'} BDT {Math.abs(variance).toLocaleString()}
-                </td>
-                <td className="p-3 text-xs">
-                  {e.status ? (
-                    <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground">{e.status}</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-              </motion.tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                </div>
+                {e.status && (
+                  <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground text-xs whitespace-nowrap shrink-0">{e.status}</span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <p className="text-muted-foreground">Budget</p>
+                  <p className="font-medium text-foreground">BDT {budget.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Actual</p>
+                  <p className="font-medium text-red-600">BDT {actual.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Variance</p>
+                  <p className={`font-medium ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
+                    {overBudget ? '−' : '+'} BDT {Math.abs(variance).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </>
   );
 }
