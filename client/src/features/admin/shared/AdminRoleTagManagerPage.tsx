@@ -42,6 +42,12 @@ export interface AdminRoleTagManagerPageProps {
    * any user holding the tag can be revoked from any of these management pages.
    */
   showEmploymentInfo?: boolean;
+  /**
+   * When true, the candidate search returns ALL users (not just approved members).
+   * Use this for tags that any user can hold regardless of membership status
+   * (e.g. Senior Advisor). Default: false (approved-members-only).
+   */
+  allowAnyUser?: boolean;
 }
 
 /**
@@ -65,6 +71,7 @@ export default function AdminRoleTagManagerPage({
   roleLabel,
   roleLabelPlural,
   showEmploymentInfo = false,
+  allowAnyUser = false,
 }: AdminRoleTagManagerPageProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -81,14 +88,13 @@ export default function AdminRoleTagManagerPage({
     },
   });
 
-  // Search approved members who do NOT yet have this tag — for the "add" panel
+  // Search candidate users who do NOT yet have this tag — for the "add" panel.
+  // When allowAnyUser is true, search across ALL users; otherwise restrict to approved members.
   const { data: candidatesData, isLoading: candidatesLoading } = useQuery({
-    queryKey: ['users', `tag-candidates-${flagFilter}`, addSearch],
+    queryKey: ['users', `tag-candidates-${flagFilter}`, addSearch, allowAnyUser],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        membershipStatus: 'approved',
-        limit: '10',
-      });
+      const params = new URLSearchParams({ limit: '10' });
+      if (!allowAnyUser) params.set('membershipStatus', 'approved');
       if (addSearch) params.set('search', addSearch);
       const { data } = await api.get(`/users?${params}`);
       return data;
@@ -171,7 +177,11 @@ export default function AdminRoleTagManagerPage({
                   <input
                     value={addSearch}
                     onChange={(e) => setAddSearch(e.target.value)}
-                    placeholder="Search approved members by name, email, or student ID..."
+                    placeholder={
+                      allowAnyUser
+                        ? 'Search any user by name, email, or student ID...'
+                        : 'Search approved members by name, email, or student ID...'
+                    }
                     className="w-full pl-10 pr-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                     autoFocus
                   />
@@ -181,8 +191,8 @@ export default function AdminRoleTagManagerPage({
                 ) : candidates.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
                     {addSearch
-                      ? `No approved members found matching "${addSearch}"`
-                      : 'Start typing to find approved members'}
+                      ? `No ${allowAnyUser ? 'users' : 'approved members'} found matching "${addSearch}"`
+                      : `Start typing to find ${allowAnyUser ? 'users' : 'approved members'}`}
                   </p>
                 ) : (
                   <ul className="space-y-1 max-h-80 overflow-y-auto">

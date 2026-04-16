@@ -671,9 +671,7 @@ export class UserService {
     const target = await User.findById(targetUserId);
     if (!target) throw ApiError.notFound('User not found');
 
-    if (grant && target.membershipStatus !== 'approved') {
-      throw ApiError.badRequest('User must be an approved member before becoming a senior advisor');
-    }
+    // Senior Advisor has no membership gate — any user can hold this tag.
 
     if (target.isSeniorAdvisor === grant) return target; // no-op
 
