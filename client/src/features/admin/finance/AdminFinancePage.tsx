@@ -230,6 +230,7 @@ export default function AdminFinancePage() {
 function DonationsList() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState('');
   const [actionTarget, setActionTarget] = useState<{ id: string; action: string } | null>(null);
@@ -335,7 +336,10 @@ function DonationsList() {
                           <CheckCircle className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => verifyMutation.mutate({ id: d._id, status: 'failed' })}
+                          onClick={async () => {
+                            const ok = await confirm({ title: 'Reject Donation', message: `Reject donation of ${d.amount} from ${d.donorName || 'this donor'}?`, confirmLabel: 'Reject', variant: 'danger' });
+                            if (ok) verifyMutation.mutate({ id: d._id, status: 'failed' });
+                          }}
                           className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
                           title="Reject"
                         >

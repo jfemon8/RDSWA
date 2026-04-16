@@ -11,12 +11,14 @@ import { Link } from 'react-router-dom';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuthStore();
   const isAdmin = currentUser ? hasMinRole(currentUser.role, UserRole.ADMIN) : false;
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
@@ -210,7 +212,10 @@ export default function AdminUsersPage() {
                   <UserCheck className="h-3 w-3" /> Approve
                 </motion.button>
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  onClick={() => bulkRejectMutation.mutate([...selectedIds])}
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Reject Selected Users', message: `Reject ${selectedIds.size} pending membership request${selectedIds.size > 1 ? 's' : ''}?`, confirmLabel: 'Reject', variant: 'danger' });
+                    if (ok) bulkRejectMutation.mutate([...selectedIds]);
+                  }}
                   disabled={bulkRejectMutation.isPending}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">
                   <UserX className="h-3 w-3" /> Reject
@@ -358,7 +363,10 @@ export default function AdminUsersPage() {
                           )}
                           {isAdmin && u.membershipStatus === 'pending' && (
                             <button
-                              onClick={() => rejectMutation.mutate(u._id)}
+                              onClick={async () => {
+                                const ok = await confirm({ title: 'Reject User', message: `Reject membership request from ${u.name}?`, confirmLabel: 'Reject', variant: 'danger' });
+                                if (ok) rejectMutation.mutate(u._id);
+                              }}
                               title="Reject"
                               className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                             >
@@ -367,7 +375,10 @@ export default function AdminUsersPage() {
                           )}
                           {isAdmin && u.membershipStatus !== 'suspended' && u.role !== 'super_admin' && (
                             <button
-                              onClick={() => suspendMutation.mutate(u._id)}
+                              onClick={async () => {
+                                const ok = await confirm({ title: 'Suspend User', message: `Suspend ${u.name}'s account? They will not be able to log in until unsuspended.`, confirmLabel: 'Suspend', variant: 'warning' });
+                                if (ok) suspendMutation.mutate(u._id);
+                              }}
                               title="Suspend"
                               className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
                             >
@@ -394,7 +405,16 @@ export default function AdminUsersPage() {
                           )}
                           {isSuperAdmin && u.role !== 'super_admin' && (
                             <button
-                              onClick={() => deleteUserMutation.mutate(u._id)}
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: 'Delete User',
+                                  message: `Permanently delete ${u.name}'s account? This removes all their data and cannot be undone.`,
+                                  confirmLabel: 'Delete',
+                                  variant: 'danger',
+                                  requireTypeToConfirm: 'DELETE',
+                                });
+                                if (ok) deleteUserMutation.mutate(u._id);
+                              }}
                               title="Delete user"
                               className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded"
                             >

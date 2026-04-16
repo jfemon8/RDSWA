@@ -94,7 +94,7 @@ export default function AdminMentorshipPage() {
                     <td className="p-3 text-xs text-muted-foreground">{formatDate(m.createdAt)}</td>
                     <td className="p-3">
                       <button onClick={async () => {
-                        const ok = await confirm({ title: 'Delete Mentorship', message: 'Are you sure?', confirmLabel: 'Delete', variant: 'danger' });
+                        const ok = await confirm({ title: 'Delete Mentorship', message: `Delete this mentorship record? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
                         if (ok) deleteMutation.mutate(m._id);
                       }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
                         <Trash2 className="h-4 w-4" />

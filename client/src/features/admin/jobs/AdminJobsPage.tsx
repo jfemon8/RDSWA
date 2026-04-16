@@ -122,7 +122,7 @@ export default function AdminJobsPage() {
                           </a>
                         )}
                         <button onClick={async () => {
-                          const ok = await confirm({ title: 'Delete Job', message: 'Are you sure?', confirmLabel: 'Delete', variant: 'danger' });
+                          const ok = await confirm({ title: 'Delete Job', message: `Delete job listing "${j.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
                           if (ok) deleteMutation.mutate(j._id);
                         }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
                           <Trash2 className="h-4 w-4" />

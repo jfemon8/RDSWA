@@ -5,10 +5,12 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { Loader2, UserPlus, UserMinus, Search, Shield } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function AdminModeratorsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showAssign, setShowAssign] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -180,7 +182,10 @@ export default function AdminModeratorsPage() {
                     </span>
                   )}
                   <button
-                    onClick={() => removeMutation.mutate(mod._id)}
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Remove Moderator', message: `Remove ${mod.name} as a moderator? They will return to their base role.`, confirmLabel: 'Remove', variant: 'danger' });
+                      if (ok) removeMutation.mutate(mod._id);
+                    }}
                     disabled={removeMutation.isPending}
                     className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md"
                     title="Remove moderator"

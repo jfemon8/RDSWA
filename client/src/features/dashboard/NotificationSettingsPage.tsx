@@ -9,6 +9,7 @@ import { useWebPush } from '@/hooks/useWebPush';
 import { useToast } from '@/components/ui/Toast';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 interface NotifPrefs {
   email: boolean;
@@ -227,6 +228,7 @@ function DeleteAccountSection() {
   const { user, logout } = useAuthStore();
   const toast = useToast();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState('');
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
@@ -288,7 +290,17 @@ function DeleteAccountSection() {
               <div className="flex gap-2">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => deleteMutation.mutate()}
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: 'Delete your account?',
+                      message: 'This will permanently erase your profile, messages, and all personal data. This action is irreversible.',
+                      confirmLabel: 'Yes, delete forever',
+                      cancelLabel: 'Keep my account',
+                      variant: 'danger',
+                      requireTypeToConfirm: 'DELETE MY ACCOUNT',
+                    });
+                    if (ok) deleteMutation.mutate();
+                  }}
                   disabled={!password || deleteMutation.isPending}
                   className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
                 >

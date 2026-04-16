@@ -12,6 +12,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Trash2, Eye, BarChart3, ChevronDown, ChevronUp, Users, Pencil, X } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 const emptyForm = {
   title: '', description: '', startTime: '', endTime: '',
@@ -27,6 +28,7 @@ function toISOWithTZ(localDatetime: string): string {
 export default function AdminVotingPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [showForm, setShowForm] = useState(false);
@@ -277,7 +279,10 @@ export default function AdminVotingPage() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => closeMutation.mutate(v._id)}
+                          onClick={async () => {
+                            const ok = await confirm({ title: 'Close Vote', message: `Close voting for "${v.title}"? No more votes will be accepted after this.`, confirmLabel: 'Close', variant: 'warning' });
+                            if (ok) closeMutation.mutate(v._id);
+                          }}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs border border-orange-300 text-orange-600 dark:border-orange-700 dark:text-orange-400 rounded-md hover:bg-orange-50 dark:hover:bg-orange-900/20"
                         >
                           <X className="h-3 w-3" /> Close
@@ -301,7 +306,10 @@ export default function AdminVotingPage() {
                       </button>
                       {isSuperAdmin && (
                         <button
-                          onClick={() => deleteVoteMutation.mutate(v._id)}
+                          onClick={async () => {
+                            const ok = await confirm({ title: 'Delete Vote', message: `Delete vote "${v.title}"? All cast votes will be permanently lost. This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                            if (ok) deleteVoteMutation.mutate(v._id);
+                          }}
                           className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded"
                           title="Delete vote"
                         >

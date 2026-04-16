@@ -738,7 +738,10 @@ export default function GroupChatPage() {
                                 <UserCheck className="h-2.5 w-2.5" /> Approve
                               </button>
                               <button
-                                onClick={() => reviewJoinRequestMutation.mutate({ requestId: req._id, status: 'rejected' })}
+                                onClick={async () => {
+                                  const ok = await confirm({ title: 'Reject Join Request', message: `Reject ${req.user?.name || 'this user'}'s request to join the group?`, confirmLabel: 'Reject', variant: 'danger' });
+                                  if (ok) reviewJoinRequestMutation.mutate({ requestId: req._id, status: 'rejected' });
+                                }}
                                 disabled={reviewJoinRequestMutation.isPending}
                                 className="flex-1 flex items-center justify-center gap-1 px-2 py-1 border border-destructive/40 text-destructive rounded text-[10px] hover:bg-destructive/10 disabled:opacity-50"
                               >
@@ -775,7 +778,10 @@ export default function GroupChatPage() {
                           </Link>
                           {canManageMembers && member._id !== user?._id && (
                             <button
-                              onClick={() => removeMemberMutation.mutate(member._id)}
+                              onClick={async () => {
+                                const ok = await confirm({ title: 'Remove Member', message: `Remove ${member.name} from this group?`, confirmLabel: 'Remove', variant: 'danger' });
+                                if (ok) removeMemberMutation.mutate(member._id);
+                              }}
                               disabled={removeMemberMutation.isPending}
                               className="p-0.5 rounded opacity-0 group-hover/member:opacity-100 transition-opacity hover:bg-accent text-muted-foreground hover:text-destructive"
                               title="Remove member"

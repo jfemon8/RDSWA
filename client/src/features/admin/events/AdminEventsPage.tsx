@@ -12,10 +12,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -232,7 +234,10 @@ export default function AdminEventsPage() {
                       <Pencil className="h-4 w-4 text-foreground" />
                     </button>
                     <button
-                      onClick={() => deleteMutation.mutate(e._id)}
+                      onClick={async () => {
+                        const ok = await confirm({ title: 'Delete Event', message: `Delete "${e.title}"? All registrations and attendance records will be removed. This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                        if (ok) deleteMutation.mutate(e._id);
+                      }}
                       className="p-2 hover:bg-destructive/10 text-destructive rounded"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -277,6 +282,7 @@ export default function AdminEventsPage() {
 function EventDetailPanel({ event }: { event: any }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoCaption, setPhotoCaption] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
@@ -491,7 +497,10 @@ function EventDetailPanel({ event }: { event: any }) {
                         Approve
                       </button>
                       <button
-                        onClick={() => rejectAttendanceMutation.mutate(a.user?._id || a.user)}
+                        onClick={async () => {
+                          const ok = await confirm({ title: 'Reject Attendance', message: `Reject the attendance request from ${a.user?.name || 'this user'}?`, confirmLabel: 'Reject', variant: 'danger' });
+                          if (ok) rejectAttendanceMutation.mutate(a.user?._id || a.user);
+                        }}
                         className="px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700 text-[10px]"
                       >
                         Reject
@@ -520,7 +529,10 @@ function EventDetailPanel({ event }: { event: any }) {
                       {a.checkedInVia} • {formatTime(a.checkedInAt)}
                     </span>
                     <button
-                      onClick={() => removeAttendanceMutation.mutate(a.user?._id || a.user)}
+                      onClick={async () => {
+                        const ok = await confirm({ title: 'Remove Attendance', message: `Remove attendance record for ${a.user?.name || 'this user'}?`, confirmLabel: 'Remove', variant: 'danger' });
+                        if (ok) removeAttendanceMutation.mutate(a.user?._id || a.user);
+                      }}
                       title="Remove attendance"
                       className="p-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -576,7 +588,10 @@ function EventDetailPanel({ event }: { event: any }) {
                 key={i}
                 photo={photo}
                 index={i}
-                onRemove={() => removePhotoMutation.mutate(i)}
+                onRemove={async () => {
+                  const ok = await confirm({ title: 'Remove Photo', message: 'Remove this photo from the event? This cannot be undone.', confirmLabel: 'Remove', variant: 'danger' });
+                  if (ok) removePhotoMutation.mutate(i);
+                }}
                 onTag={(userIds) => tagPhotoMutation.mutate({ photoIndex: i, userIds })}
                 onUntag={(userId) => untagPhotoMutation.mutate({ photoIndex: i, userId })}
               />
@@ -627,7 +642,10 @@ function EventDetailPanel({ event }: { event: any }) {
                   {r.name}
                 </a>
                 <button
-                  onClick={() => removeReportMutation.mutate(i)}
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Remove Report', message: `Remove report "${r.name}"?`, confirmLabel: 'Remove', variant: 'danger' });
+                    if (ok) removeReportMutation.mutate(i);
+                  }}
                   className="p-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity ml-2"
                 >
                   <X className="h-3 w-3" />

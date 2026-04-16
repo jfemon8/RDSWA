@@ -128,14 +128,17 @@ export default function AdminDonationsPage() {
                             </button>
                           )}
                           {d.paymentStatus !== 'failed' && (
-                            <button onClick={() => verifyMutation.mutate({ id: d._id, paymentStatus: 'failed' })} title="Reject"
+                            <button onClick={async () => {
+                              const ok = await confirm({ title: 'Reject Donation', message: `Reject donation of ${d.amount} from ${d.donorName || 'this donor'}?`, confirmLabel: 'Reject', variant: 'danger' });
+                              if (ok) verifyMutation.mutate({ id: d._id, paymentStatus: 'failed' });
+                            }} title="Reject"
                               className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
                               <XCircle className="h-4 w-4" />
                             </button>
                           )}
                           {isSuperAdmin && (
                             <button onClick={async () => {
-                              const ok = await confirm({ title: 'Delete Donation', message: 'Are you sure?', confirmLabel: 'Delete', variant: 'danger' });
+                              const ok = await confirm({ title: 'Delete Donation', message: `Delete this donation record of ${d.amount} from ${d.donorName || 'this donor'}? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
                               if (ok) deleteMutation.mutate(d._id);
                             }} title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
                               <Trash2 className="h-4 w-4" />

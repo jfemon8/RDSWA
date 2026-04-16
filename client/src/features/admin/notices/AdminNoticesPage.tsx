@@ -12,6 +12,7 @@ import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import RichContent from '@/components/ui/RichContent';
 import { Link } from 'react-router-dom';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 interface NoticeAttachment {
   name: string;
@@ -35,6 +36,7 @@ const ATTACHMENT_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,application
 export default function AdminNoticesPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<NoticeForm>({
@@ -407,7 +409,10 @@ export default function AdminNoticesPage() {
                       </button>
                       {n.status === 'published' && (
                         <button
-                          onClick={() => archiveMutation.mutate(n._id)}
+                          onClick={async () => {
+                            const ok = await confirm({ title: 'Archive Notice', message: `Archive notice "${n.title}"? It will be removed from the active list.`, confirmLabel: 'Archive', variant: 'warning' });
+                            if (ok) archiveMutation.mutate(n._id);
+                          }}
                           className="p-2 hover:bg-accent rounded"
                           title="Archive"
                         >
@@ -415,7 +420,10 @@ export default function AdminNoticesPage() {
                         </button>
                       )}
                       <button
-                        onClick={() => deleteMutation.mutate(n._id)}
+                        onClick={async () => {
+                          const ok = await confirm({ title: 'Delete Notice', message: `Delete notice "${n.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                          if (ok) deleteMutation.mutate(n._id);
+                        }}
                         className="p-2 hover:bg-destructive/10 text-destructive rounded"
                         title="Delete"
                       >

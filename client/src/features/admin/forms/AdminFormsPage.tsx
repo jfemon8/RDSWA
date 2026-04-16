@@ -9,10 +9,12 @@ import { useToast } from '@/components/ui/Toast';
 import { Loader2, CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function AdminFormsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [statusFilter, setStatusFilter] = useState('');
@@ -122,7 +124,10 @@ export default function AdminFormsPage() {
                           {expandedId === f._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
                         {isSuperAdmin && (
-                          <button onClick={() => deleteFormMutation.mutate(f._id)} title="Delete"
+                          <button onClick={async () => {
+                              const ok = await confirm({ title: 'Delete Form Submission', message: 'Delete this form submission? This cannot be undone.', confirmLabel: 'Delete', variant: 'danger' });
+                              if (ok) deleteFormMutation.mutate(f._id);
+                            }} title="Delete"
                             className="p-1 text-muted-foreground hover:text-destructive hover:bg-accent rounded">
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -188,7 +193,10 @@ export default function AdminFormsPage() {
                               <CheckCircle className="h-3 w-3" /> Approve
                             </button>
                             <button
-                              onClick={() => reviewMutation.mutate({ id: f._id, status: 'rejected', comment: reviewComment[f._id] || 'Rejected by admin' })}
+                              onClick={async () => {
+                                const ok = await confirm({ title: 'Reject Form Submission', message: `Reject this form submission from ${f.user?.name || 'this user'}?`, confirmLabel: 'Reject', variant: 'danger' });
+                                if (ok) reviewMutation.mutate({ id: f._id, status: 'rejected', comment: reviewComment[f._id] || 'Rejected by admin' });
+                              }}
                               disabled={reviewMutation.isPending}
                               className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">
                               <XCircle className="h-3 w-3" /> Reject

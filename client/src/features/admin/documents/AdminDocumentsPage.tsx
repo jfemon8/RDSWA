@@ -9,6 +9,7 @@ import { Plus, Loader2, Trash2, Edit2, FileText, Download, X, Upload } from 'luc
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { stripHtml } from '@/lib/stripHtml';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 const CATEGORIES = ['policy', 'resolution', 'report', 'form', 'other'] as const;
 const ROLES = ['user', 'member', 'alumni', 'advisor', 'senior_advisor', 'moderator', 'admin'] as const;
@@ -21,6 +22,7 @@ const defaultForm = {
 export default function AdminDocumentsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
@@ -273,7 +275,10 @@ export default function AdminDocumentsPage() {
                             className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground">
                             <Edit2 className="h-4 w-4" />
                           </button>
-                          <button onClick={() => deleteMutation.mutate(doc._id)} title="Delete"
+                          <button onClick={async () => {
+                              const ok = await confirm({ title: 'Delete Document', message: `Delete "${doc.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                              if (ok) deleteMutation.mutate(doc._id);
+                            }} title="Delete"
                             className="p-1.5 hover:bg-destructive/10 text-destructive rounded">
                             <Trash2 className="h-4 w-4" />
                           </button>

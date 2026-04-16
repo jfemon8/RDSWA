@@ -184,7 +184,10 @@ export default function AdminCommitteesPage() {
                     </button>
                     {c.isCurrent && (
                       <button
-                        onClick={() => archiveMutation.mutate(c._id)}
+                        onClick={async () => {
+                          const ok = await confirm({ title: 'Archive Committee', message: `Archive "${c.name}"? Members with auto-assigned roles will be reset accordingly.`, confirmLabel: 'Archive', variant: 'warning' });
+                          if (ok) archiveMutation.mutate(c._id);
+                        }}
                         className="p-2 hover:bg-accent rounded"
                         title="Archive"
                       >
@@ -233,6 +236,7 @@ export default function AdminCommitteesPage() {
 function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; members: any[] }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -364,7 +368,10 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
                 </div>
               </div>
               <button
-                onClick={() => removeMutation.mutate(m.user?._id)}
+                onClick={async () => {
+                  const ok = await confirm({ title: 'Remove Member', message: `Remove ${m.user?.name || 'this member'} from the committee?`, confirmLabel: 'Remove', variant: 'danger' });
+                  if (ok) removeMutation.mutate(m.user?._id);
+                }}
                 disabled={removeMutation.isPending}
                 className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"
                 title="Remove"

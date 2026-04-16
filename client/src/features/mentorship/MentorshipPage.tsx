@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 function timeAgo(date: string | Date): string {
   const now = Date.now();
@@ -31,6 +32,7 @@ export default function MentorshipPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<'mentors' | 'my-mentors' | 'my-trainees'>('mentors');
   const [areaSearch, setAreaSearch] = useState('');
   const [requestArea, setRequestArea] = useState('');
@@ -242,7 +244,10 @@ export default function MentorshipPage() {
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => actionMutation.mutate({ id: m._id, action: 'cancel' })}
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Decline Request', message: 'Decline this mentorship request? The mentee will be notified.', confirmLabel: 'Decline', variant: 'danger' });
+                      if (ok) actionMutation.mutate({ id: m._id, action: 'cancel' });
+                    }}
                     disabled={actionMutation.isPending}
                     className="flex items-center gap-1 px-3 py-1.5 text-sm border text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50">
                     <XCircle className="h-3.5 w-3.5" /> Decline
@@ -257,7 +262,10 @@ export default function MentorshipPage() {
               {m.status === 'active' && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => actionMutation.mutate({ id: m._id, action: 'complete' })}
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Complete Mentorship', message: 'Mark this mentorship as complete? This will close the consultation group.', confirmLabel: 'Complete', variant: 'info' });
+                    if (ok) actionMutation.mutate({ id: m._id, action: 'complete' });
+                  }}
                   disabled={actionMutation.isPending}
                   className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                   <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
@@ -266,7 +274,10 @@ export default function MentorshipPage() {
               {(m.status === 'pending' || m.status === 'active') && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => actionMutation.mutate({ id: m._id, action: 'cancel' })}
+                  onClick={async () => {
+                    const ok = await confirm({ title: 'Cancel Mentorship', message: m.status === 'active' ? 'Cancel this active mentorship? The consultation group will be closed.' : 'Cancel this mentorship request?', confirmLabel: 'Yes, cancel', cancelLabel: 'Keep', variant: 'danger' });
+                    if (ok) actionMutation.mutate({ id: m._id, action: 'cancel' });
+                  }}
                   disabled={actionMutation.isPending}
                   className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50">
                   Cancel

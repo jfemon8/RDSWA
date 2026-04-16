@@ -5,10 +5,12 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { Loader2, UserPlus, ArrowDown, Search, Crown } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function AdminAdminsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showPromote, setShowPromote] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -171,7 +173,10 @@ export default function AdminAdminsPage() {
                 </div>
                 {admin.role !== 'super_admin' && (
                   <button
-                    onClick={() => demoteMutation.mutate(admin._id)}
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Demote Admin', message: `Demote ${admin.name} from admin? They will return to their base role.`, confirmLabel: 'Demote', variant: 'danger' });
+                      if (ok) demoteMutation.mutate(admin._id);
+                    }}
                     disabled={demoteMutation.isPending}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30"
                     title="Demote admin"

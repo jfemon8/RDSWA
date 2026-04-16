@@ -10,10 +10,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
 import { stripHtml } from '@/lib/stripHtml';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function AdminGalleryPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', coverPhoto: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -146,7 +148,11 @@ export default function AdminGalleryPage() {
                     <p className="text-xs text-muted-foreground">{a.photoCount || 0} photos</p>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(a._id); }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const ok = await confirm({ title: 'Delete Album', message: `Delete album "${a.title}" and all its photos? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                      if (ok) deleteMutation.mutate(a._id);
+                    }}
                     className="p-1.5 hover:bg-destructive/10 text-destructive rounded"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -165,6 +171,7 @@ export default function AdminGalleryPage() {
 function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack: () => void; onSetCover: (url: string) => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showUpload, setShowUpload] = useState(false);
   const [photoForm, setPhotoForm] = useState({ url: '', caption: '' });
 
@@ -289,7 +296,10 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
                     Set Cover
                   </motion.button>
                   <button
-                    onClick={() => deletePhotoMutation.mutate(p._id)}
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Delete Photo', message: 'Delete this photo? This cannot be undone.', confirmLabel: 'Delete', variant: 'danger' });
+                      if (ok) deletePhotoMutation.mutate(p._id);
+                    }}
                     className="p-1 hover:bg-destructive/10 text-destructive rounded"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

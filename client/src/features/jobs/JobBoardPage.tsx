@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 function isJobExpired(job: any): boolean {
   if (!job?.deadline) return false;
@@ -39,6 +40,7 @@ export default function JobBoardPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [view, setView] = useState<'all' | 'mine'>('all');
@@ -380,7 +382,11 @@ export default function JobBoardPage() {
                               <Pencil className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={(e) => { e.preventDefault(); deleteMutation.mutate(job._id); }}
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                const ok = await confirm({ title: 'Delete Job', message: `Delete job listing "${job.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                                if (ok) deleteMutation.mutate(job._id);
+                              }}
                               className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                               title="Delete job"
                             >

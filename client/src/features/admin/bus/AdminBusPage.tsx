@@ -8,6 +8,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 import { Plus, Loader2, Pencil, Trash2, Upload, X, Download, FileText, Star, ChevronDown } from 'lucide-react';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { toDateInput, formatTimeString } from '@/lib/date';
@@ -84,6 +85,7 @@ export default function AdminBusPage() {
 function OperatorsList() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', contactNumber: '', email: '', website: '', description: '', scheduleType: 'both' });
@@ -188,7 +190,7 @@ function OperatorsList() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <EditBtn onClick={() => startEdit(o)} />
-                    <DeleteBtn onClick={() => deleteMutation.mutate(o._id)} />
+                    <DeleteBtn onClick={async () => { const ok = await confirm({ title: 'Delete Operator', message: `Delete "${o.name}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(o._id); }} />
                   </div>
                 </div>
                 <AnimatePresence>
@@ -225,6 +227,7 @@ function OperatorsList() {
 function RoutesList() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ origin: '', destination: '', routeType: 'university', estimatedDuration: '', distanceKm: '' });
@@ -364,7 +367,7 @@ function RoutesList() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <EditBtn onClick={() => startEdit(r)} />
-                    <DeleteBtn onClick={() => deleteMutation.mutate(r._id)} />
+                    <DeleteBtn onClick={async () => { const ok = await confirm({ title: 'Delete Route', message: `Delete route "${r.origin} → ${r.destination}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(r._id); }} />
                   </div>
                 </div>
                 <AnimatePresence>
@@ -456,6 +459,7 @@ function SchedulesList() {
 function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -751,7 +755,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1">
                         <EditBtn onClick={() => startEdit(s)} />
-                        <DeleteBtn onClick={() => deleteMutation.mutate(s._id)} />
+                        <DeleteBtn onClick={async () => { const ok = await confirm({ title: 'Delete Schedule', message: 'Delete this schedule? This cannot be undone.', confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(s._id); }} />
                       </div>
                     </td>
                   </tr>
@@ -815,6 +819,7 @@ function CountersList() {
 function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', location: '', phoneNumbers: '', bookingLink: '' });
@@ -924,7 +929,7 @@ function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => v
                   </div>
                   <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <EditBtn onClick={() => startEdit(c)} />
-                    <DeleteBtn onClick={() => deleteMutation.mutate(c._id)} />
+                    <DeleteBtn onClick={async () => { const ok = await confirm({ title: 'Delete Counter', message: `Delete counter "${c.name}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(c._id); }} />
                   </div>
                 </div>
                 <AnimatePresence>

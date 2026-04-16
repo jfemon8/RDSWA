@@ -6,10 +6,12 @@ import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import { stripHtml } from '@/lib/stripHtml';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -101,7 +103,10 @@ export default function NotificationsPage() {
                     </button>
                   )}
                   <button
-                    onClick={() => deleteMutation.mutate(n._id)}
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Delete Notification', message: 'Remove this notification from your list?', confirmLabel: 'Delete', variant: 'danger' });
+                      if (ok) deleteMutation.mutate(n._id);
+                    }}
                     disabled={deleteMutation.isPending}
                     className="p-2 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 disabled:opacity-50"
                     title="Delete"

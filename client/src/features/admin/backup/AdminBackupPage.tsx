@@ -86,7 +86,8 @@ export default function AdminBackupPage() {
         ? `This will DELETE all existing documents in "${restoreTarget}" and replace them with the file contents. This cannot be undone.`
         : `Documents from the file will be inserted into "${restoreTarget}". Existing documents with the same _id will be skipped.`,
       confirmLabel: restoreMode === 'replace' ? 'Replace' : 'Merge',
-      variant: 'danger',
+      variant: restoreMode === 'replace' ? 'danger' : 'warning',
+      requireTypeToConfirm: restoreMode === 'replace' ? restoreTarget : undefined,
     });
     if (!ok) {
       e.target.value = '';

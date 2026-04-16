@@ -14,6 +14,7 @@ import { useBusSocket } from '@/hooks/useSocket';
 import { formatDate, formatTimeString } from '@/lib/date';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 const PAGE_LIMIT = 20;
 
@@ -775,6 +776,7 @@ function OperatorReviews({ operatorId }: { operatorId: string }) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -894,7 +896,10 @@ function OperatorReviews({ operatorId }: { operatorId: string }) {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate(myReview._id)}
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Remove Review', message: 'Remove your review for this operator?', confirmLabel: 'Remove', variant: 'danger' });
+                      if (ok) deleteMutation.mutate(myReview._id);
+                    }}
                     className="flex items-center gap-1 px-3 py-2 border border-destructive text-destructive rounded-md text-sm hover:bg-destructive/10 disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Remove
