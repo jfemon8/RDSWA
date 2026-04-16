@@ -80,7 +80,10 @@ export const SUPER_ADMIN_EMAILS: string[] = [
   'manikmia.phy@gmail.com',
 ];
 
-/** SuperAdmins who cannot access Settings and Backup pages */
-export const RESTRICTED_SUPER_ADMINS: string[] = [
+/** SuperAdmins who cannot access the Backup page / backup routes */
+export const BACKUP_RESTRICTED_SUPER_ADMINS: string[] = [
   'manikmia.phy@gmail.com',
 ];
+
+/** SuperAdmins who cannot access the Settings page / settings routes */
+export const SETTINGS_RESTRICTED_SUPER_ADMINS: string[] = [];

@@ -6,7 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { User, AuditLog, LoginHistory, Notification, Donation, Event, Form, RoleAssignment } from '../models';
-import { UserRole, SUPER_ADMIN_EMAILS } from '@rdswa/shared';
+import { UserRole, SUPER_ADMIN_EMAILS, BACKUP_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { sendEmail } from '../config/mail';
@@ -431,7 +431,7 @@ router.post('/bulk/email', authenticate(), authorize(UserRole.SUPER_ADMIN), audi
 // ─── Backup & Restore ───
 
 // List all collections and their document counts
-router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), asyncHandler(async (_req, res) => {
+router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(BACKUP_RESTRICTED_SUPER_ADMINS), asyncHandler(async (_req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
 
@@ -452,7 +452,7 @@ router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), deny
 }));
 
 // Export a collection as JSON
-router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('admin.backup_export', 'system'), asyncHandler(async (req, res) => {
+router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(BACKUP_RESTRICTED_SUPER_ADMINS), auditLog('admin.backup_export', 'system'), asyncHandler(async (req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
 
@@ -468,7 +468,7 @@ router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPE
 }));
 
 // Restore a collection from JSON
-router.post('/backup/restore/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(), auditLog('admin.backup_restore', 'system'), asyncHandler(async (req, res) => {
+router.post('/backup/restore/:collection', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(BACKUP_RESTRICTED_SUPER_ADMINS), auditLog('admin.backup_restore', 'system'), asyncHandler(async (req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');
 

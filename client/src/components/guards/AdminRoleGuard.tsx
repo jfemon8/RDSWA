@@ -1,20 +1,23 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { UserRole, ROLE_HIERARCHY, RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 
 interface AdminRoleGuardProps {
   minRole: UserRole;
-  /** Block restricted SuperAdmins (e.g. from Settings/Backup pages) */
-  denyRestricted?: boolean;
+  /**
+   * Optional list of emails to deny even if they otherwise meet the role.
+   * Pass scope-specific lists from shared (e.g. BACKUP_RESTRICTED_SUPER_ADMINS).
+   */
+  denyEmails?: string[];
   children: React.ReactNode;
 }
 
 /**
  * Inline role guard for individual admin routes.
  * Redirects to /admin if user's role is below the required minimum
- * or if the user is a restricted SuperAdmin on a protected page.
+ * or if the user's email is in the denyEmails list.
  */
-export default function AdminRoleGuard({ minRole, denyRestricted, children }: AdminRoleGuardProps) {
+export default function AdminRoleGuard({ minRole, denyEmails, children }: AdminRoleGuardProps) {
   const { user } = useAuthStore();
 
   if (!user) return <Navigate to="/login" replace />;
@@ -26,7 +29,7 @@ export default function AdminRoleGuard({ minRole, denyRestricted, children }: Ad
     return <Navigate to="/admin" replace />;
   }
 
-  if (denyRestricted && user.email && RESTRICTED_SUPER_ADMINS.includes(user.email)) {
+  if (denyEmails && user.email && denyEmails.includes(user.email)) {
     return <Navigate to="/admin" replace />;
   }
 

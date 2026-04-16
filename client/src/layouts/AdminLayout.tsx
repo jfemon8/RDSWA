@@ -10,7 +10,7 @@ import {
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
-import { UserRole, RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
+import { UserRole, BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -79,11 +79,15 @@ export default function AdminLayout() {
   };
 
   const { settings: siteSettings } = useSiteSettings();
-  const isRestricted = user?.email ? RESTRICTED_SUPER_ADMINS.includes(user.email) : false;
-  const restrictedPaths = ['/admin/settings', '/admin/backup'];
+  const email = user?.email;
+  const deniedPaths: Record<string, string[]> = {
+    '/admin/backup': BACKUP_RESTRICTED_SUPER_ADMINS,
+    '/admin/settings': SETTINGS_RESTRICTED_SUPER_ADMINS,
+  };
   const visibleLinks = adminLinks.filter((link) => {
     if (!user?.role || !hasMinRole(user.role, link.minRole)) return false;
-    if (isRestricted && restrictedPaths.includes(link.href)) return false;
+    const denied = deniedPaths[link.href];
+    if (denied && email && denied.includes(email)) return false;
     return true;
   });
 

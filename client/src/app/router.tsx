@@ -7,7 +7,7 @@ import RouteGuard from '@/components/guards/RouteGuard';
 import GuestGuard from '@/components/guards/GuestGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import AdminRoleGuard from '@/components/guards/AdminRoleGuard';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 
 // Public pages
 const Home = lazy(() => import('@/features/home/HomePage'));
@@ -201,13 +201,13 @@ export default function AppRouter() {
               <Route path="/admin/moderators" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminModerators /></AdminRoleGuard>} />
               <Route path="/admin/finance" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminFinance /></AdminRoleGuard>} />
               <Route path="/admin/budgets" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBudget /></AdminRoleGuard>} />
-              <Route path="/admin/backup" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyRestricted><AdminBackup /></AdminRoleGuard>} />
+              <Route path="/admin/backup" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={BACKUP_RESTRICTED_SUPER_ADMINS}><AdminBackup /></AdminRoleGuard>} />
               <Route path="/admin/bus" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBus /></AdminRoleGuard>} />
               <Route path="/admin/reports" element={<AdminRoleGuard minRole={UserRole.MODERATOR}><AdminReports /></AdminRoleGuard>} />
               <Route path="/admin/logs" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminLogs /></AdminRoleGuard>} />
 
               {/* SuperAdmin only */}
-              <Route path="/admin/settings" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyRestricted><AdminSettings /></AdminRoleGuard>} />
+              <Route path="/admin/settings" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={SETTINGS_RESTRICTED_SUPER_ADMINS}><AdminSettings /></AdminRoleGuard>} />
               <Route path="/admin/system-config" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminSystemConfig /></AdminRoleGuard>} />
               <Route path="/admin/admins" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminAdmins /></AdminRoleGuard>} />
             </Route>

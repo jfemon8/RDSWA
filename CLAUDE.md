@@ -42,7 +42,7 @@ Two orthogonal dimensions on every user:
 
 The `ROLE_HIERARCHY` export still includes tag roles at legacy positions for backward compatibility with older DB rows. **Use `TIER_HIERARCHY` for display and tier comparisons**, `ROLE_HIERARCHY` only where legacy DB values must be handled.
 
-**SuperAdmin emails** are hardcoded in [shared/src/constants/roles.ts](shared/src/constants/roles.ts). The auth middleware auto-promotes these emails on every request. One entry (`manikmia.phy@gmail.com`) is in `RESTRICTED_SUPER_ADMINS` — the `denyRestricted()` middleware blocks them from Settings and Backup routes.
+**SuperAdmin emails** are hardcoded in [shared/src/constants/roles.ts](shared/src/constants/roles.ts). The auth middleware auto-promotes these emails on every request. Restrictions are scoped: `BACKUP_RESTRICTED_SUPER_ADMINS` blocks from Backup routes, `SETTINGS_RESTRICTED_SUPER_ADMINS` blocks from Settings routes. `denyRestricted(list)` takes the scope list as a parameter; the client `<AdminRoleGuard denyEmails={list}>` mirrors this.
 
 ### Auto-role assignment from committee positions
 
@@ -63,7 +63,7 @@ Always: **Routes → Controller → Service → Model**. Routes only wire auth/v
 Auth middleware chain:
 - `authenticate()` — requires JWT; `authenticate(true)` allows optional auth
 - `authorize(UserRole.X)` — RBAC by tier, uses `ROLE_HIERARCHY.indexOf()` for comparisons, SuperAdmin always bypasses
-- `denyRestricted()` — blocks `RESTRICTED_SUPER_ADMINS` on sensitive routes
+- `denyRestricted(emails)` — blocks the given email list (pass `BACKUP_RESTRICTED_SUPER_ADMINS` or `SETTINGS_RESTRICTED_SUPER_ADMINS`)
 - `validate({ body: zodSchema })` — Zod validation; returns 400 with field-level errors
 - `auditLog(action, resource)` — writes to AuditLog collection
 
