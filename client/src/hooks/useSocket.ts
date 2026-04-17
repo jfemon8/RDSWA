@@ -6,15 +6,24 @@ let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    const token = localStorage.getItem('accessToken');
     const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
     socket = io(socketUrl, {
       path: '/socket.io',
-      auth: token ? { token } : {},
+      // Dynamic auth: socket.io invokes this callback on every (re)connect,
+      // so a refreshed access token or a post-login token is picked up
+      // automatically. With a static `auth: { token }` the server would keep
+      // seeing a stale/expired token on reconnects — causing presence to
+      // silently drop the user from `onlineUsers` and making them appear
+      // offline even though they are logged in.
+      auth: (cb: (data: Record<string, unknown>) => void) => {
+        const token = localStorage.getItem('accessToken');
+        cb(token ? { token } : {});
+      },
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
   }
   return socket;
@@ -176,13 +185,26 @@ export function usePresence(userIds: string[]): { online: Set<string>; lastSeen:
     if (userIds.length === 0) return;
     const s = getSocket();
 
-    // Seed initial state from a presence:query ack.
+    // Seed initial state from a presence:query ack. Server returns either a
+    // legacy boolean map or the richer { online, lastSeenAt } shape — handle
+    // both so a server/client version skew doesn't break presence.
     const query = () => {
-      s.emit('presence:query', userIds, (states: Record<string, boolean>) => {
+      s.emit('presence:query', userIds, (states: Record<string, any>) => {
+        if (!states || typeof states !== 'object') return;
         setOnline((prev) => {
           const next = new Set(prev);
-          Object.entries(states).forEach(([id, isOnline]) => {
+          Object.entries(states).forEach(([id, val]) => {
+            const isOnline = typeof val === 'object' && val !== null ? !!val.online : !!val;
             if (isOnline) next.add(id); else next.delete(id);
+          });
+          return next;
+        });
+        setLastSeen((prev) => {
+          const next = new Map(prev);
+          Object.entries(states).forEach(([id, val]) => {
+            if (typeof val === 'object' && val !== null && val.lastSeenAt) {
+              next.set(id, val.lastSeenAt);
+            }
           });
           return next;
         });

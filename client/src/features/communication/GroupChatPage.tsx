@@ -177,6 +177,10 @@ export default function GroupChatPage() {
   const markReadMutation = useMutation({
     mutationFn: (messageIds: string[]) =>
       api.post(`/communication/groups/${id}/messages/read`, { messageIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+    },
   });
 
   const leaveGroupMutation = useMutation({

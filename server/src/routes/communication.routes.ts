@@ -862,34 +862,26 @@ router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandle
 
 // ── Direct Messages ──
 
-// Total unread messages for the current user: unread DMs + unread group messages
-// across all groups they belong to. Used by the message bell in the navbar.
+// Total unread messages for the current user. Counts DMs only — group
+// messages don't have a reliable per-user "opened the group" signal (readBy
+// is only populated when a member actively scrolls through individual
+// messages), so including them produces phantom unread counts for groups
+// the user has already browsed. If/when groups track lastVisitedAt per
+// member this can be expanded. See Message.isRead for the DM signal.
 router.get('/messages/unread-count', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const userId = req.user._id;
 
-  const myGroups = await ChatGroup.find({ members: userId, isDeleted: false }).select('_id').lean();
-  const groupIds = myGroups.map((g: any) => g._id);
+  const dmUnread = await Message.countDocuments({
+    recipient: userId,
+    group: null,
+    isRead: false,
+    sender: { $ne: userId },
+    isDeleted: false,
+    deletedFor: { $ne: userId },
+  });
 
-  const [dmUnread, groupUnread] = await Promise.all([
-    Message.countDocuments({
-      recipient: userId,
-      group: null,
-      isRead: false,
-      sender: { $ne: userId },
-      isDeleted: false,
-      deletedFor: { $ne: userId },
-    }),
-    groupIds.length === 0 ? 0 : Message.countDocuments({
-      group: { $in: groupIds },
-      sender: { $ne: userId },
-      'readBy.user': { $ne: userId },
-      isDeleted: false,
-      deletedFor: { $ne: userId },
-    }),
-  ]);
-
-  ApiResponse.success(res, { count: dmUnread + groupUnread, dmCount: dmUnread, groupCount: groupUnread });
+  ApiResponse.success(res, { count: dmUnread, dmCount: dmUnread });
 }));
 
 // Get DM conversations (list of users I've messaged)
@@ -964,11 +956,19 @@ router.get('/dm/:userId', authenticate(), asyncHandler(async (req, res) => {
     Message.countDocuments(dmFilter),
   ]);
 
-  // Mark received messages as read
-  await Message.updateMany(
-    { sender: userId, recipient: myId, isRead: false },
-    { isRead: true, readAt: new Date() },
-  );
+  // Mark received messages as read and notify both participants in real-time
+  // so the sender's ticks flip and the recipient's bell count refreshes.
+  const unread = await Message.find({
+    sender: userId, recipient: myId, isRead: false, group: null,
+  }).select('_id').lean();
+  if (unread.length > 0) {
+    const ids = unread.map((m: any) => m._id);
+    await Message.updateMany(
+      { _id: { $in: ids } },
+      { isRead: true, readAt: new Date() },
+    );
+    broadcastDMRead(req.user._id.toString(), userId, ids.map((i: any) => i.toString()));
+  }
 
   ApiResponse.paginated(res, messages.reverse(), total, page, limit);
 }));

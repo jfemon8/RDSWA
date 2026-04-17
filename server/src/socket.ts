@@ -101,13 +101,32 @@ export function initSocket(httpServer: HTTPServer): Server {
     });
 
     // ── Presence snapshot request (get current state of N users) ──
-    socket.on('presence:query', (userIds: string[], ack?: (states: Record<string, boolean>) => void) => {
-      if (!Array.isArray(userIds)) return;
-      const states: Record<string, boolean> = {};
+    // Returns per-user { online, lastSeenAt? } — offline users get lastSeenAt
+    // from the DB so the client can render "Last seen X ago" on first open.
+    socket.on('presence:query', async (
+      userIds: string[],
+      ack?: (states: Record<string, { online: boolean; lastSeenAt?: string | null }>) => void,
+    ) => {
+      if (!Array.isArray(userIds) || typeof ack !== 'function') return;
+      const states: Record<string, { online: boolean; lastSeenAt?: string | null }> = {};
+      const offlineIds: string[] = [];
       for (const id of userIds) {
-        states[id] = onlineUsers.has(id);
+        const online = onlineUsers.has(id);
+        states[id] = { online };
+        if (!online) offlineIds.push(id);
       }
-      if (typeof ack === 'function') ack(states);
+      if (offlineIds.length > 0) {
+        try {
+          const rows = await User.find({ _id: { $in: offlineIds } })
+            .select('lastSeenAt')
+            .lean();
+          for (const u of rows) {
+            const key = (u._id as any).toString();
+            if (states[key]) states[key].lastSeenAt = u.lastSeenAt ? u.lastSeenAt.toISOString() : null;
+          }
+        } catch { /* non-blocking — fall back to no lastSeenAt */ }
+      }
+      ack(states);
     });
 
     // ── Vote rooms ──

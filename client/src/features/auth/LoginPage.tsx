@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
+import { disconnectSocket } from '@/hooks/useSocket';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
@@ -56,6 +57,10 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', form);
       localStorage.setItem('accessToken', data.data.accessToken);
+      // Drop any pre-login (unauthenticated) socket so the next getSocket()
+      // call opens a fresh, authenticated connection — otherwise presence
+      // and real-time rooms stay unbound to this user.
+      disconnectSocket();
       setUser(data.data.user);
       // Immediately fetch full profile to replace partial login data
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });

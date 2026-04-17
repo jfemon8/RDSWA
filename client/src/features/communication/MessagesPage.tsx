@@ -274,6 +274,15 @@ function ChatView({
     },
   });
 
+  // The DM fetch itself marks received messages as read on the server. Once
+  // that response lands, refresh the bell count and conversation list so the
+  // unread badges drop without waiting for the next poll / socket event.
+  useEffect(() => {
+    if (!data) return;
+    queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
+    queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
+  }, [data, queryClient]);
+
   const messages: ChatMessage[] = useMemo(() => data?.data || [], [data?.data]);
 
   const readMessageIds = useMemo(() => {
@@ -343,6 +352,10 @@ function ChatView({
   const markReadMutation = useMutation({
     mutationFn: (messageIds: string[]) =>
       api.post('/communication/dm/messages/read', { messageIds, partnerId: partner._id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
+    },
   });
 
   const { data: searchMessages, isLoading: searchLoading } = useQuery({
