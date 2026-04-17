@@ -12,6 +12,7 @@ export function useBodyScrollLock(locked: boolean) {
     if (!locked) return;
 
     const scrollY = window.scrollY;
+    const lockedOnPath = window.location.pathname;
     const { body } = document;
     const original = {
       overflow: body.style.overflow,
@@ -36,7 +37,14 @@ export function useBodyScrollLock(locked: boolean) {
       body.style.left = original.left;
       body.style.right = original.right;
       body.style.width = original.width;
-      window.scrollTo(0, scrollY);
+      // Only restore the previous scroll position if we're still on the same
+      // page. If the lock is being released because the user navigated away
+      // (e.g. sidebar auto-closes on route change), restoring scrollY would
+      // apply the OLD page's scroll offset to the NEW page — overriding
+      // ScrollToTop and making navigated pages open mid-scroll.
+      if (window.location.pathname === lockedOnPath) {
+        window.scrollTo(0, scrollY);
+      }
     };
   }, [locked]);
 }

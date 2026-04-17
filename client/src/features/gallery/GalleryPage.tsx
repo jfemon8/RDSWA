@@ -62,9 +62,26 @@ export default function GalleryPage() {
           {albumDetail.photos?.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {albumDetail.photos.map((p: any) => (
-                <div key={p._id} className="cursor-pointer group" onClick={() => setLightbox(p.url)}>
-                  <img src={p.thumbnail || p.url} alt={p.caption || ''} className="w-full aspect-square object-cover rounded-lg group-hover:opacity-80 transition-opacity" />
-                  {p.caption && <p className="text-xs text-muted-foreground mt-1 truncate">{p.caption}</p>}
+                // Caption overlays the image (absolute bottom) so tiles are
+                // uniformly 1:1 whether a photo has a caption or not —
+                // otherwise captioned/uncaptioned tiles in the same row
+                // produce different heights and the grid looks ragged.
+                <div
+                  key={p._id}
+                  className="relative cursor-pointer group overflow-hidden rounded-lg aspect-square bg-muted"
+                  onClick={() => setLightbox(p.url)}
+                >
+                  <img
+                    src={p.thumbnail || p.url}
+                    alt={p.caption || ''}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                  />
+                  {p.caption && (
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-2 py-1.5">
+                      <p className="text-[11px] text-white truncate">{p.caption}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
