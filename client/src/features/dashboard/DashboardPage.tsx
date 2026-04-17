@@ -189,11 +189,11 @@ export default function DashboardPage() {
 function StatusCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
     <div className="bg-background border rounded-lg p-3 sm:p-4">
-      <div className="flex items-center gap-2 text-muted-foreground mb-1.5 sm:mb-2">
-        {icon}
-        <span className="text-xs sm:text-sm truncate">{label}</span>
+      <div className="flex items-start gap-2 text-muted-foreground mb-1.5 sm:mb-2">
+        <span className="shrink-0 mt-0.5">{icon}</span>
+        <span className="text-xs sm:text-sm leading-tight break-words min-w-0">{label}</span>
       </div>
-      <p className={`text-sm sm:text-lg font-semibold capitalize truncate ${color}`}>{value}</p>
+      <p className={`text-sm sm:text-lg font-semibold capitalize break-words ${color}`}>{value}</p>
     </div>
   );
 }

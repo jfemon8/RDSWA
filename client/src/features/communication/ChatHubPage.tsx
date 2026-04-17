@@ -345,14 +345,14 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
       {/* Body */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium truncate flex items-center gap-1.5">
-            {item.name}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span className="text-sm font-medium truncate min-w-0">{item.name}</span>
             {item.kind === 'group' && item.groupType && (
-              <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground capitalize font-normal">
+              <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground capitalize font-normal shrink-0">
                 {item.groupType}
               </span>
             )}
-          </p>
+          </div>
           {item.timestamp && (
             <span className="text-[11px] text-muted-foreground shrink-0">
               {formatTimeAgo(item.timestamp)}
