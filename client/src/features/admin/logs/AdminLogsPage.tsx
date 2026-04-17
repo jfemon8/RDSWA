@@ -113,50 +113,49 @@ function AuditLogsTab() {
                 return (
                   <div key={log._id} className="border rounded-lg bg-card overflow-hidden">
                     <div
-                      className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 cursor-pointer hover:bg-accent/30 transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : log._id)}
                     >
-                      {/* Action badge */}
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium shrink-0 ${
-                        log.action?.includes('delete') || log.action?.includes('reject') || log.action?.includes('remove')
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          : log.action?.includes('create') || log.action?.includes('approve') || log.action?.includes('assign')
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
-                        {log.action}
-                      </span>
+                      {/* Primary info — stacks above metadata on mobile so the
+                          action/actor/resource can use the full row width. */}
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0 flex-1">
+                        {/* Action badge */}
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium shrink-0 ${
+                          log.action?.includes('delete') || log.action?.includes('reject') || log.action?.includes('remove')
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            : log.action?.includes('create') || log.action?.includes('approve') || log.action?.includes('assign')
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          {log.action}
+                        </span>
 
-                      {/* Actor */}
-                      <span className="text-sm font-medium text-foreground shrink-0">
-                        {log.actor?.name || 'System'}
-                      </span>
+                        {/* Actor */}
+                        <span className="text-sm font-medium text-foreground shrink-0">
+                          {log.actor?.name || 'System'}
+                        </span>
 
-                      {/* Resource */}
-                      <span className="text-xs text-muted-foreground">
-                        on <span className="font-medium">{log.resource}</span>
-                        {(log.resourceName || log.resourceId) && (
-                          <span className="ml-1 text-[10px]">
-                            — <span className="font-medium text-foreground">{log.resourceName || `#${String(log.resourceId).slice(-6)}`}</span>
+                        {/* Resource */}
+                        <span className="text-xs text-muted-foreground min-w-0">
+                          on <span className="font-medium">{log.resource}</span>
+                          {(log.resourceName || log.resourceId) && (
+                            <span className="ml-1 text-[10px]">
+                              — <span className="font-medium text-foreground">{log.resourceName || `#${String(log.resourceId).slice(-6)}`}</span>
+                            </span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Metadata — below on mobile (date never clips), right-aligned on desktop. */}
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-muted-foreground">
+                        <span className="text-[10px] font-mono hidden sm:inline">{ip}</span>
+                        <span className="text-xs whitespace-nowrap">{formatDateTime(log.createdAt)}</span>
+                        {hasChanges && (
+                          <span>
+                            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                           </span>
                         )}
-                      </span>
-
-                      {/* Spacer */}
-                      <div className="flex-1" />
-
-                      {/* IP */}
-                      <span className="text-[10px] text-muted-foreground font-mono shrink-0 hidden sm:inline">{ip}</span>
-
-                      {/* Date */}
-                      <span className="text-xs text-muted-foreground shrink-0">{formatDateTime(log.createdAt)}</span>
-
-                      {/* Expand toggle */}
-                      {hasChanges && (
-                        <span className="text-muted-foreground">
-                          {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        </span>
-                      )}
+                      </div>
                     </div>
 
                     {/* Expanded: Show changes detail */}
@@ -188,10 +187,16 @@ function AuditLogsTab() {
                                 );
                               })}
                             </div>
-                            {/* IP and User Agent in expanded view */}
-                            <div className="flex gap-4 text-[10px] text-muted-foreground pt-2 border-t mt-2">
-                              <span>IP: <span className="font-mono">{ip}</span></span>
-                              {log.userAgent && <span className="truncate max-w-[300px]">UA: {log.userAgent}</span>}
+                            {/* IP and User Agent in expanded view — stacked
+                                so the UA string (always long) wraps cleanly
+                                instead of being clipped by a max-width. */}
+                            <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t mt-2">
+                              <div>IP: <span className="font-mono">{ip}</span></div>
+                              {log.userAgent && (
+                                <div className="break-all">
+                                  UA: <span className="font-mono">{log.userAgent}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </motion.div>
