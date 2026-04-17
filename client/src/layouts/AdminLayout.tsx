@@ -15,6 +15,8 @@ import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import NotificationBell from '@/components/shared/NotificationBell';
+import MessageBell from '@/components/shared/MessageBell';
 
 interface AdminLink {
   label: string;
@@ -122,7 +124,10 @@ export default function AdminLayout() {
           <Link to="/dashboard" className="sm:hidden tap-target flex items-center justify-center rounded-md hover:bg-accent" aria-label="Back to dashboard">
             <ChevronLeft className="h-5 w-5" />
           </Link>
-          <span className="text-[10px] sm:text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
+          <NotificationBell />
+          <MessageBell />
+          <span className="text-sm text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">{user?.nickName || user?.name}</span>
+          <span className="hidden sm:inline-block text-[10px] sm:text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
             {user?.role ? getPrimaryRoleLabel(user.role) : 'User'}
           </span>
         </div>

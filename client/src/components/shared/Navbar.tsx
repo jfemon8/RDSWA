@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Menu, X, Sun, Moon, ChevronDown, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useThemeStore } from '@/stores/themeStore';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
@@ -62,6 +63,28 @@ export default function Navbar() {
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   const isActive = (href: string) => location.pathname === href;
+
+  // Unread badges for the profile dropdown — only fetched when authenticated.
+  const { data: notifCountData } = useQuery({
+    queryKey: ['unread-count'],
+    queryFn: async () => {
+      const { data } = await api.get('/notifications/unread-count');
+      return data.data as { count: number };
+    },
+    refetchInterval: 60_000,
+    enabled: isAuthenticated,
+  });
+  const { data: msgCountData } = useQuery({
+    queryKey: ['message-unread-count'],
+    queryFn: async () => {
+      const { data } = await api.get('/communication/messages/unread-count');
+      return data.data as { count: number };
+    },
+    refetchInterval: 60_000,
+    enabled: isAuthenticated,
+  });
+  const notifUnread = notifCountData?.count || 0;
+  const msgUnread = msgCountData?.count || 0;
 
   return (
     <>
@@ -212,16 +235,36 @@ export default function Navbar() {
                     <Link
                       to="/dashboard/notifications"
                       onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="flex items-center justify-between gap-2 px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     >
-                      Notifications
+                      <span>Notifications</span>
+                      {notifUnread > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                          className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5"
+                        >
+                          {notifUnread > 99 ? '99+' : notifUnread}
+                        </motion.span>
+                      )}
                     </Link>
                     <Link
-                      to="/dashboard/messages"
+                      to="/dashboard/chat"
                       onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="flex items-center justify-between gap-2 px-4 py-3 sm:py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                     >
-                      Messages
+                      <span>Messages</span>
+                      {msgUnread > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                          className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5"
+                        >
+                          {msgUnread > 99 ? '99+' : msgUnread}
+                        </motion.span>
+                      )}
                     </Link>
                     <button
                       onClick={async () => {

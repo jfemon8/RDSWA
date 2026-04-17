@@ -11,6 +11,7 @@ import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import { AnimatePresence, motion } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import NotificationBell from '@/components/shared/NotificationBell';
+import MessageBell from '@/components/shared/MessageBell';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -71,8 +72,9 @@ export default function DashboardLayout() {
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <NotificationBell />
-          <span className="text-sm text-muted-foreground hidden md:block truncate max-w-[160px]">{user?.nickName || user?.name}</span>
-          <span className="text-[10px] sm:text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
+          <MessageBell />
+          <span className="text-sm text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">{user?.nickName || user?.name}</span>
+          <span className="hidden sm:inline-block text-[10px] sm:text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
             {user?.role ? getPrimaryRoleLabel(user.role) : 'User'}
           </span>
         </div>

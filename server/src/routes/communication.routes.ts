@@ -862,6 +862,36 @@ router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandle
 
 // ── Direct Messages ──
 
+// Total unread messages for the current user: unread DMs + unread group messages
+// across all groups they belong to. Used by the message bell in the navbar.
+router.get('/messages/unread-count', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const userId = req.user._id;
+
+  const myGroups = await ChatGroup.find({ members: userId, isDeleted: false }).select('_id').lean();
+  const groupIds = myGroups.map((g: any) => g._id);
+
+  const [dmUnread, groupUnread] = await Promise.all([
+    Message.countDocuments({
+      recipient: userId,
+      group: null,
+      isRead: false,
+      sender: { $ne: userId },
+      isDeleted: false,
+      deletedFor: { $ne: userId },
+    }),
+    groupIds.length === 0 ? 0 : Message.countDocuments({
+      group: { $in: groupIds },
+      sender: { $ne: userId },
+      'readBy.user': { $ne: userId },
+      isDeleted: false,
+      deletedFor: { $ne: userId },
+    }),
+  ]);
+
+  ApiResponse.success(res, { count: dmUnread + groupUnread, dmCount: dmUnread, groupCount: groupUnread });
+}));
+
 // Get DM conversations (list of users I've messaged)
 router.get('/dm', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
