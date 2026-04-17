@@ -196,7 +196,7 @@ export default function BusSchedulePage() {
   const showBackButton = view !== 'routes' && view !== 'operators';
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 overflow-x-hidden">
       <SEO title="Bus Schedule" description="Find university and intercity bus schedules, routes, and booking counters." />
       <BlurText text="Bus Schedules" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
@@ -381,8 +381,11 @@ export default function BusSchedulePage() {
               ) : (
                 <>
                   <FadeIn direction="up" duration={0.4}>
-                    {/* Desktop table */}
-                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                    {/* Desktop table — wrapped in overflow-x-auto as a safety
+                        net: if a future layout bug ever surfaces the table on
+                        a narrow viewport, horizontal scroll stays inside the
+                        table's box instead of pushing the whole page wide. */}
+                    <div className="hidden md:block border rounded-lg overflow-x-auto">
                       <table className="w-full text-sm table-fixed">
                         <colgroup>
                           <col className="w-[20%]" />
@@ -458,13 +461,17 @@ export default function BusSchedulePage() {
                             onClick={() => handleScheduleClick(s)}
                             className={`border rounded-lg p-4 bg-card cursor-pointer hover:bg-accent/30 transition-colors ${s.isSpecialSchedule ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40' : ''}`}
                           >
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                              <p className="font-semibold text-foreground whitespace-nowrap">
-                                {formatTimeString(s.departureTime)}
-                                {s.arrivalTime && <span className="text-muted-foreground font-normal"> → {formatTimeString(s.arrivalTime)}</span>}
+                            <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                              <p className="font-semibold text-foreground">
+                                <span className="whitespace-nowrap">{formatTimeString(s.departureTime)}</span>
+                                {s.arrivalTime && (
+                                  <span className="text-muted-foreground font-normal">
+                                    {' '}→ <span className="whitespace-nowrap">{formatTimeString(s.arrivalTime)}</span>
+                                  </span>
+                                )}
                               </p>
                               {tab === 'university' && (
-                                <span className="text-[10px] capitalize text-muted-foreground text-right break-words">{s.daysOfOperation?.join(', ') || 'Daily'}</span>
+                                <span className="text-[10px] capitalize text-muted-foreground text-right break-words min-w-0">{s.daysOfOperation?.join(', ') || 'Daily'}</span>
                               )}
                             </div>
                             {s.seasonalVariation?.adjustedDepartureTime && (
