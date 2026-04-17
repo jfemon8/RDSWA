@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
 import ScrollToTop from '@/components/ScrollToTop';
+import Spinner from '@/components/ui/Spinner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,8 +26,8 @@ function AuthInitializer({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="md" />
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import Spinner from '@/components/ui/Spinner';
 
 export default function RouteGuard() {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -7,8 +8,8 @@ export default function RouteGuard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="md" />
       </div>
     );
   }

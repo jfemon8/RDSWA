@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import Spinner from '@/components/ui/Spinner';
 
-import { FadeIn, BlurText } from '@/components/reactbits';
+import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import RichContent from '@/components/ui/RichContent';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -131,57 +131,61 @@ export default function TopicDetailPage() {
 
       {/* Topic */}
       <FadeIn direction="up" distance={20}>
-        <div className="bg-card border rounded-lg p-5 mb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                {topic.isPinned && <Pin className="h-3.5 w-3.5 text-amber-500" />}
-                {topic.isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
-                <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-                  {topic.category || 'General'}
-                </span>
-              </div>
-              <BlurText text={topic.title} className="text-xl font-bold" delay={30} />
+        <div className="bg-card border rounded-lg p-4 sm:p-5 mb-4">
+          {/* Meta row: category chip + pin/lock indicators + action icons.
+              Actions sit on their own row end so the title below can use the
+              full card width and wrap naturally (BlurText's flex-wrap layout
+              forced one-word-per-line in the narrow leftover space). */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              {topic.isPinned && <Pin className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+              {topic.isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                {topic.category || 'General'}
+              </span>
             </div>
-
-            {/* Topic actions — author can edit, moderator can pin/lock/delete */}
-            <div className="flex gap-1 shrink-0">
+            <div className="flex gap-0.5 shrink-0">
               {(user?._id === topic.author?._id || isMod) && !editingTopic && (
                 <button
                   onClick={() => { setEditingTopic(true); setEditTopicTitle(topic.title); setEditTopicContent(topic.content); }}
-                  className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-accent"
+                  className="p-1.5 sm:p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-accent"
                   title="Edit topic"
+                  aria-label="Edit topic"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               )}
               {isMod && (
                 <>
                   <button
                     onClick={() => pinMutation.mutate(!topic.isPinned)}
-                    className={`p-2 rounded-md ${topic.isPinned ? 'text-amber-500' : 'text-muted-foreground'} hover:bg-accent`}
+                    className={`p-1.5 sm:p-2 rounded-md ${topic.isPinned ? 'text-amber-500' : 'text-muted-foreground'} hover:bg-accent`}
                     title={topic.isPinned ? 'Unpin' : 'Pin'}
+                    aria-label={topic.isPinned ? 'Unpin' : 'Pin'}
                   >
-                    <Pin className="h-4 w-4" />
+                    <Pin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => lockMutation.mutate(!topic.isLocked)}
-                    className={`p-2 rounded-md ${topic.isLocked ? 'text-red-500' : 'text-muted-foreground'} hover:bg-accent`}
+                    className={`p-1.5 sm:p-2 rounded-md ${topic.isLocked ? 'text-red-500' : 'text-muted-foreground'} hover:bg-accent`}
                     title={topic.isLocked ? 'Unlock' : 'Lock'}
+                    aria-label={topic.isLocked ? 'Unlock' : 'Lock'}
                   >
-                    <Lock className="h-4 w-4" />
+                    <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={async () => { const ok = await confirm({ title: 'Delete Topic', message: 'Are you sure you want to delete this topic? This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' }); if (ok) deleteMutation.mutate(); }}
-                    className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-accent"
+                    className="p-1.5 sm:p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-accent"
                     title="Delete"
+                    aria-label="Delete"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 </>
               )}
             </div>
           </div>
+          <h1 className="text-lg sm:text-xl font-bold break-words leading-snug">{topic.title}</h1>
 
           {editingTopic ? (
             <div className="mt-4 space-y-3">
@@ -261,12 +265,17 @@ export default function TopicDetailPage() {
                         </span>
                       </div>
                       {(canEdit || canDelete) && editingReplyId !== reply._id && (
-                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        // Mobile (touch): always visible — :hover doesn't work
+                        // reliably on touch. Desktop: hover-revealed to stay
+                        // visually calm. Uses sm: because touch/hover tends
+                        // to correlate with viewport in this app.
+                        <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
                           {canEdit && (
                             <button
                               onClick={() => { setEditingReplyId(reply._id); setEditReplyContent(reply.content); }}
                               className="p-1 rounded hover:bg-accent"
                               title="Edit"
+                              aria-label="Edit reply"
                             >
                               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                             </button>
@@ -279,6 +288,7 @@ export default function TopicDetailPage() {
                               }}
                               className="p-1 rounded hover:bg-accent"
                               title="Delete"
+                              aria-label="Delete reply"
                             >
                               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                             </button>
@@ -339,29 +349,31 @@ export default function TopicDetailPage() {
             if (!replyContent.trim()) { setErrors({ replyContent: 'Reply content is required' }); return; }
             replyMutation.mutate();
           }} noValidate className="space-y-1">
-            <div className="flex gap-2">
-            <div className="flex-1">
+            {/* FieldError intentionally rendered OUTSIDE the flex row so it
+                doesn't inflate the row height — otherwise the stretched
+                button would grow taller than the textarea. */}
+            <div className="flex items-stretch gap-2">
               <textarea
                 placeholder="Write a reply..."
                 value={replyContent}
                 onChange={(e) => { setReplyContent(e.target.value); setErrors((prev) => { const { replyContent, ...rest } = prev; return rest; }); }}
                 rows={2}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.replyContent ? 'border-red-500' : ''}`}
+                className={`flex-1 min-w-0 px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.replyContent ? 'border-red-500' : ''}`}
               />
-              <FieldError message={errors.replyContent} />
+              <button
+                type="submit"
+                disabled={!replyContent.trim() || replyMutation.isPending}
+                aria-label="Send reply"
+                className="shrink-0 w-12 flex items-center justify-center bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {replyMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={!replyContent.trim() || replyMutation.isPending}
-              className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
-            >
-              {replyMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </button>
-            </div>
+            <FieldError message={errors.replyContent} />
           </form>
         </FadeIn>
       )}

@@ -7,6 +7,7 @@ import RouteGuard from '@/components/guards/RouteGuard';
 import GuestGuard from '@/components/guards/GuestGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import AdminRoleGuard from '@/components/guards/AdminRoleGuard';
+import Spinner from '@/components/ui/Spinner';
 import { UserRole, BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 
 // Public pages
@@ -98,9 +99,13 @@ const AdminBudget = lazy(() => import('@/features/admin/budget/AdminBudgetPage')
 const AdminBackup = lazy(() => import('@/features/admin/backup/AdminBackupPage'));
 
 function LoadingFallback() {
+  // Matches the `<Spinner />` component used by every page's loading state,
+  // so the outer (chunk-loading) spinner and inner (data-loading) spinner
+  // are visually identical — avoiding the "two different spinners in a row"
+  // flash the user saw on navigation.
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    <div className="min-h-screen flex items-center justify-center">
+      <Spinner size="md" />
     </div>
   );
 }

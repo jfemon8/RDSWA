@@ -13,6 +13,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import { useToast } from '@/components/ui/Toast';
+import Spinner from '@/components/ui/Spinner';
 import { formatDate as formatDateBST } from '@/lib/date';
 
 function getOrdinal(n: number): string {
@@ -89,11 +90,7 @@ export default function UserProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <Spinner size="md" fullPage />;
   }
 
   if (error || !data) {

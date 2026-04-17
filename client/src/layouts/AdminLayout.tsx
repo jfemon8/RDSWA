@@ -17,6 +17,7 @@ import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import NotificationBell from '@/components/shared/NotificationBell';
 import MessageBell from '@/components/shared/MessageBell';
+import Spinner from '@/components/ui/Spinner';
 
 interface AdminLink {
   label: string;
@@ -198,11 +199,7 @@ export default function AdminLayout() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             >
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-[60vh]">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                </div>
-              }>
+              <Suspense fallback={<Spinner size="md" fullPage />}>
                 <Outlet />
               </Suspense>
             </motion.div>
