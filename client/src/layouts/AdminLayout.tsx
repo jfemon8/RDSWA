@@ -111,9 +111,9 @@ export default function AdminLayout() {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <Link to="/admin" className="text-lg sm:text-xl font-bold truncate">
+          <Link to="/admin" className="text-base sm:text-xl font-bold truncate min-w-0">
             <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
-              {siteSettings?.siteName || 'RDSWA'} Admin
+              {siteSettings?.siteName || 'RDSWA'}<span className="hidden min-[400px]:inline"> Admin</span>
             </GradientText>
           </Link>
         </div>

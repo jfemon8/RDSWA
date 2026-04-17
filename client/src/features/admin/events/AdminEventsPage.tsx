@@ -6,7 +6,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Plus, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText, Search, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText, Search, Tag, Building2, Calendar, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -27,6 +27,7 @@ export default function AdminEventsPage() {
     title: '', description: '', type: 'event', status: 'draft',
     startDate: '', endDate: '', venue: '', isOnline: false,
     registrationRequired: false, maxParticipants: '', feedbackEnabled: false,
+    committee: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -38,11 +39,24 @@ export default function AdminEventsPage() {
     },
   });
 
+  // Committees list for the "Event Organizing Committee" dropdown.
+  const { data: committeesData } = useQuery({
+    queryKey: queryKeys.committees.all,
+    queryFn: async () => {
+      const { data } = await api.get('/committees');
+      return data;
+    },
+  });
+  const committees: Array<{ _id: string; name: string; year?: string }> = committeesData?.data || [];
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = { ...form };
       if (payload.maxParticipants) payload.maxParticipants = Number(payload.maxParticipants);
       else delete payload.maxParticipants;
+      // Empty string would fail the ObjectId cast on the server; drop it so
+      // the committee simply stays unset.
+      if (!payload.committee) delete payload.committee;
       if (editId) return (await api.patch(`/events/${editId}`, payload)).data;
       return (await api.post('/events', payload)).data;
     },
@@ -64,7 +78,7 @@ export default function AdminEventsPage() {
   const resetForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ title: '', description: '', type: 'event', status: 'draft', startDate: '', endDate: '', venue: '', isOnline: false, registrationRequired: false, maxParticipants: '', feedbackEnabled: false });
+    setForm({ title: '', description: '', type: 'event', status: 'draft', startDate: '', endDate: '', venue: '', isOnline: false, registrationRequired: false, maxParticipants: '', feedbackEnabled: false, committee: '' });
   };
 
   const startEdit = (e: any) => {
@@ -77,6 +91,7 @@ export default function AdminEventsPage() {
       registrationRequired: e.registrationRequired || false,
       maxParticipants: e.maxParticipants ? String(e.maxParticipants) : '',
       feedbackEnabled: e.feedbackEnabled || false,
+      committee: (typeof e.committee === 'object' ? e.committee?._id : e.committee) || '',
     });
     setShowForm(true);
   };
@@ -151,6 +166,21 @@ export default function AdminEventsPage() {
                 </div>
                 <input placeholder="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <div>
+                  <label className="text-xs text-muted-foreground">Event Organizing Committee</label>
+                  <select
+                    value={form.committee}
+                    onChange={(e) => setForm({ ...form, committee: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  >
+                    <option value="">— None —</option>
+                    {committees.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}{c.year ? ` (${c.year})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                   <label className="flex items-center gap-2 text-sm text-foreground">
                     <input type="checkbox" checked={form.registrationRequired} onChange={(e) => setForm({ ...form, registrationRequired: e.target.checked })} />
@@ -207,6 +237,13 @@ export default function AdminEventsPage() {
                       <span className="capitalize">{e.type}</span>
                       <span className="capitalize">{e.status}</span>
                       <span>{formatDate(e.startDate)}</span>
+                      {e.venue && <span className="truncate max-w-[160px]">{e.venue}</span>}
+                      {e.committee && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                          <Building2 className="h-3 w-3" />
+                          {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
+                        </span>
+                      )}
                       {e.registeredUsers && <span>{e.registeredUsers.length} registered</span>}
                       {e.attendance && <span>{e.attendance.length} attended</span>}
                       {e.registeredUsers?.length > 0 && <span className="text-green-600">QR ready</span>}
@@ -394,6 +431,33 @@ function EventDetailPanel({ event }: { event: any }) {
 
   return (
     <div className="p-4 space-y-6">
+      {/* Event Meta — mirrors the public detail view so admins see the same
+          committee / venue / schedule context while managing the event. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-3 border-b">
+        <span className="flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5" />
+          {formatDate(fullEvent.startDate)} {formatTime(fullEvent.startDate)}
+          {fullEvent.endDate && ` – ${formatDate(fullEvent.endDate)}`}
+        </span>
+        {fullEvent.venue && (
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5" /> {fullEvent.venue}
+          </span>
+        )}
+        {fullEvent.committee && (
+          <span className="flex items-center gap-1">
+            <Building2 className="h-3.5 w-3.5" />
+            <span>Organized by </span>
+            <span className="text-foreground font-medium">
+              {typeof fullEvent.committee === 'object' ? fullEvent.committee.name : 'Committee'}
+            </span>
+          </span>
+        )}
+        {fullEvent.type && (
+          <span className="capitalize px-2 py-0.5 bg-muted rounded">{fullEvent.type}</span>
+        )}
+      </div>
+
       {/* QR Code Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>

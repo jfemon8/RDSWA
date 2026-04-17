@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
@@ -204,6 +204,14 @@ export default function EventsPage() {
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-3.5 w-3.5" />
                                   <span className="truncate">{e.venue}</span>
+                                </div>
+                              )}
+                              {e.committee && (
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-3.5 w-3.5" />
+                                  <span className="truncate">
+                                    {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
+                                  </span>
                                 </div>
                               )}
                             </div>

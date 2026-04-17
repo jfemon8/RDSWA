@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
-import { Calendar, MapPin, Users, Loader2, UserPlus, Star, QrCode, CheckCircle2, Image, Clock, Bell } from 'lucide-react';
+import { Calendar, MapPin, Users, Loader2, UserPlus, Star, QrCode, CheckCircle2, Image, Clock, Bell, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -111,6 +111,15 @@ export default function EventDetailPage() {
           )}
           {event.type && (
             <span className="capitalize px-2 py-0.5 bg-muted rounded text-xs">{event.type}</span>
+          )}
+          {event.committee && (
+            <div className="flex items-center gap-1">
+              <Building2 className="h-4 w-4" />
+              <span>Organized by </span>
+              <Link to="/committee" className="text-primary hover:underline">
+                {typeof event.committee === 'object' ? event.committee.name : 'Committee'}
+              </Link>
+            </div>
           )}
         </div>
       </FadeIn>
