@@ -103,8 +103,8 @@ export default function AdminDashboardPage() {
               <div
                 className="border rounded-lg p-3 sm:p-5 bg-card"
               >
-                <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
-                  <span className="text-xs sm:text-sm text-muted-foreground truncate">{card.label}</span>
+                <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground leading-tight break-words min-w-0">{card.label}</span>
                   <div className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${card.bg}`}>
                     <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                   </div>
