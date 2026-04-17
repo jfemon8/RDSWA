@@ -36,10 +36,14 @@ export default function AdminSettingsPage() {
       <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Site Settings</h1>
 
-        <div className="flex flex-wrap gap-1.5 mb-6 border-b pb-2 overflow-x-auto">
+        {/* Horizontally scrollable tab bar. flex-nowrap keeps everything on
+            one row; shrink-0 on each button prevents labels from squeezing;
+            -mx + px restores edge padding so the first/last tab don't hug
+            the screen edge while scrolling. */}
+        <div className="flex flex-nowrap gap-1.5 mb-6 border-b pb-2 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-thin">
           {TABS.map((t) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+              className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
                 tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               }`}>
               {TAB_LABELS[t]}
