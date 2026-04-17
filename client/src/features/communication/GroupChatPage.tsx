@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -346,10 +346,11 @@ export default function GroupChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, user?._id]);
 
-  useEffect(() => {
-    document.body.classList.add('overflow-hidden');
-    return () => { document.body.classList.remove('overflow-hidden'); };
-  }, []);
+  // The chat container is already `h-[calc(100dvh-4rem)]` so body scroll is
+  // a non-issue here. Adding a global `overflow-hidden` class on body caused
+  // leaks with AnimatePresence mode="wait": during the exit animation the
+  // cleanup hasn't run yet, so the next page (ChatHub) could briefly mount
+  // while body was still scroll-locked, producing a blank-ish viewport.
 
   // ── Render ─────────────────────────────────────────────────────
 
@@ -377,7 +378,7 @@ export default function GroupChatPage() {
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">
         <button
-          onClick={() => navigate('/dashboard/groups')}
+          onClick={() => navigate('/dashboard/chat')}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
           aria-label="Back"
         >

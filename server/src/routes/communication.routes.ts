@@ -1150,6 +1150,31 @@ router.delete('/dm/messages/:messageId', authenticate(), asyncHandler(async (req
   ApiResponse.success(res, null, 'Message deleted');
 }));
 
+// Clear the entire DM conversation with a user — hides every DM between the
+// two participants from the current user's view only. The partner still sees
+// the thread untouched. Implemented by adding the current user to deletedFor
+// on every non-deleted DM in the thread; no time window restriction because
+// the user is only hiding their own view.
+router.post('/dm/:userId/clear', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const partnerId = req.params.userId as string;
+  const myId = req.user._id;
+
+  const result = await Message.updateMany(
+    {
+      group: null,
+      isDeleted: false,
+      deletedFor: { $ne: myId },
+      $or: [
+        { sender: myId, recipient: partnerId },
+        { sender: partnerId, recipient: myId },
+      ],
+    },
+    { $addToSet: { deletedFor: myId } },
+  );
+  ApiResponse.success(res, { cleared: result.modifiedCount }, 'Chat cleared');
+}));
+
 // Delete DM just for the current user — either participant, within DELETE_FOR_ME_WINDOW
 router.delete('/dm/messages/:messageId/me', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();

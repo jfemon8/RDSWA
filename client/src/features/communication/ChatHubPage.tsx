@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { usePresence } from '@/hooks/useSocket';
@@ -65,11 +65,41 @@ function lastMessagePreview(msg: any): string {
   return '';
 }
 
+const TAB_STORAGE_KEY = 'chat-hub-tab';
+const VALID_TABS: Tab[] = ['all', 'chats', 'groups', 'starred'];
+
+function readInitialTab(urlTab: string | null): Tab {
+  if (urlTab && (VALID_TABS as string[]).includes(urlTab)) return urlTab as Tab;
+  try {
+    const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
+    if (saved && (VALID_TABS as string[]).includes(saved)) return saved as Tab;
+  } catch { /* sessionStorage unavailable — private mode, etc. */ }
+  return 'all';
+}
+
 export default function ChatHubPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Preserve the selected tab across conversation entry/exit. Priority:
+  //   1. ?tab= in URL (shareable / deep-linkable)
+  //   2. sessionStorage (survives internal navigation even without URL state)
+  //   3. Default to 'all'
+  const [tab, setTab] = useState<Tab>(() => readInitialTab(searchParams.get('tab')));
   const [search, setSearch] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
+
+  // Persist the active tab so returning from a conversation restores it.
+  useEffect(() => {
+    try { sessionStorage.setItem(TAB_STORAGE_KEY, tab); } catch { /* ignore */ }
+    const current = searchParams.get('tab');
+    if (current !== tab) {
+      const next = new URLSearchParams(searchParams);
+      if (tab === 'all') next.delete('tab');
+      else next.set('tab', tab);
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   // Fetch both data sources in parallel; each has independent loading state.
   const { data: dms, isLoading: loadingDms } = useQuery({

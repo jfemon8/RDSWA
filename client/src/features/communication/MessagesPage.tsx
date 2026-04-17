@@ -1,12 +1,12 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useDMSocket, useTypingState, usePresence } from '@/hooks/useSocket';
 import {
   MessagesSquare, Send, Loader2, Search, ArrowLeft,
-  User as UserIcon, X,
+  User as UserIcon, X, MoreVertical, Star, Trash2, UserCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -23,8 +23,9 @@ import type { ReplyData } from '@/components/chat/ReplyPreview';
 import Spinner from '@/components/ui/Spinner';
 
 export default function MessagesPage() {
+  const navigate = useNavigate();
   const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const withUserId = searchParams.get('with');
 
   // Deep-link: when ?with=<userId> is in the URL, auto-open that conversation
@@ -46,14 +47,12 @@ export default function MessagesPage() {
     return () => { cancelled = true; };
   }, [withUserId, selectedUser?._id]);
 
+  // Back always returns to the unified Chat Hub (All/Chats/Groups/Starred).
+  // /dashboard/messages is an entry point but not the canonical list — going
+  // back to it would strand the user on the older list view without tabs.
   const handleBack = () => {
     setSelectedUser(null);
-    // Clear the query param so the URL matches the list view.
-    if (withUserId) {
-      const next = new URLSearchParams(searchParams);
-      next.delete('with');
-      setSearchParams(next, { replace: true });
-    }
+    navigate('/dashboard/chat');
   };
 
   return (
@@ -257,6 +256,8 @@ function ChatView({
   const [forwardTarget, setForwardTarget] = useState<ChatMessage | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useDMSocket(partner._id);
   const { online, lastSeen } = usePresence([partner._id]);
@@ -358,6 +359,43 @@ function ChatView({
     },
   });
 
+  const clearChatMutation = useMutation({
+    mutationFn: () => api.post(`/communication/dm/${partner._id}/clear`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dm', partner._id] });
+      queryClient.invalidateQueries({ queryKey: ['dm-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
+      toast.success('Chat cleared');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to clear chat'),
+  });
+
+  // Close the header menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  const handleClearChat = async () => {
+    setMenuOpen(false);
+    const ok = await confirm({
+      title: 'Clear chat?',
+      message: `All messages with ${partner.name} will be hidden in your view. ${partner.name} will still see them.`,
+      confirmLabel: 'Clear chat',
+      variant: 'danger',
+    });
+    if (ok) clearChatMutation.mutate();
+  };
+
   const { data: searchMessages, isLoading: searchLoading } = useQuery({
     queryKey: ['dm-search', partner._id, searchQuery],
     queryFn: async () => {
@@ -448,24 +486,30 @@ function ChatView({
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="relative shrink-0">
-          <Avatar src={partner.avatar} name={partner.name} />
-          {isOnline && (
-            <span className="absolute bottom-0 right-0">
-              <PresenceBadge online size={10} />
-            </span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-sm truncate">{partner.name}</h2>
-          <p className="text-[11px] text-muted-foreground truncate">
-            {typingNames.length > 0
-              ? 'typing…'
-              : isOnline
-                ? 'Online'
-                : formatLastSeen(partnerLastSeen)}
-          </p>
-        </div>
+        <Link
+          to={`/members/${partner._id}`}
+          className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 rounded-md hover:bg-accent/40 transition-colors px-1 -mx-1 py-1"
+          title={`View ${partner.name}'s profile`}
+        >
+          <div className="relative shrink-0">
+            <Avatar src={partner.avatar} name={partner.name} />
+            {isOnline && (
+              <span className="absolute bottom-0 right-0">
+                <PresenceBadge online size={10} />
+              </span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-sm truncate">{partner.name}</h2>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {typingNames.length > 0
+                ? 'typing…'
+                : isOnline
+                  ? 'Online'
+                  : formatLastSeen(partnerLastSeen)}
+            </p>
+          </div>
+        </Link>
         <button
           onClick={() => setShowSearch((v) => !v)}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
@@ -474,6 +518,60 @@ function ChatView({
         >
           <Search className="h-5 w-5 text-muted-foreground" />
         </button>
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="tap-target flex items-center justify-center rounded-md hover:bg-accent"
+            title="More options"
+            aria-label="More options"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+          >
+            <MoreVertical className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                role="menu"
+                className="absolute right-0 top-full mt-1 w-56 bg-popover border rounded-md shadow-xl py-1 z-50"
+              >
+                <Link
+                  to={`/members/${partner._id}`}
+                  onClick={() => setMenuOpen(false)}
+                  role="menuitem"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                >
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  View profile
+                </Link>
+                <Link
+                  to="/dashboard/starred"
+                  onClick={() => setMenuOpen(false)}
+                  role="menuitem"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                >
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                  Starred messages
+                </Link>
+                <div className="h-px bg-border my-1" />
+                <button
+                  type="button"
+                  onClick={handleClearChat}
+                  disabled={clearChatMutation.isPending}
+                  role="menuitem"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clear chat
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Search bar */}

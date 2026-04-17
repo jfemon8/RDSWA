@@ -40,6 +40,18 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Ship updates the moment a new build deploys: the new SW skips the
+        // waiting state, claims all open tabs, and evicts stale precache
+        // entries. Without this, users keep a cached index.html that
+        // references old chunk hashes — which 404 after a rolling deploy
+        // and render blank pages until a manual hard-reload. SPA deep links
+        // (e.g. /dashboard/chat) also need navigateFallback so the SW
+        // returns the cached shell instead of a 404 when offline.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
