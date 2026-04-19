@@ -11,6 +11,7 @@ import {
   resetPasswordSchema,
   sendOtpSchema,
   verifyOtpSchema,
+  changePasswordSchema,
 } from '../validators/auth.validator';
 
 const router = Router();
@@ -24,5 +25,6 @@ router.post('/forgot-password', authLimiter, validate({ body: forgotPasswordSche
 router.post('/reset-password', validate({ body: resetPasswordSchema }), authController.resetPassword);
 router.post('/send-otp', authLimiter, validate({ body: sendOtpSchema }), authController.sendOtp);
 router.post('/verify-otp', validate({ body: verifyOtpSchema }), authController.verifyOtp);
+router.post('/change-password', authenticate(), validate({ body: changePasswordSchema }), authController.changePassword);
 
 export default router;

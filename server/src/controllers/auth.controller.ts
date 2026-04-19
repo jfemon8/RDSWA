@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/auth.service';
 import { ApiResponse } from '../utils/ApiResponse';
+import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
 import { getClientIp } from '../middlewares/audit.middleware';
 
@@ -99,4 +100,14 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const user = await authService.verifyOtp(req.body.email, req.body.otp);
   ApiResponse.success(res, { _id: user._id, email: user.email }, 'OTP verified');
+});
+
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  await authService.changePassword(
+    req.user._id.toString(),
+    req.body.currentPassword,
+    req.body.newPassword,
+  );
+  ApiResponse.success(res, null, 'Password changed successfully');
 });

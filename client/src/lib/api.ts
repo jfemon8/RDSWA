@@ -25,8 +25,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    const isAuthRoute = originalRequest.url?.includes('/auth/');
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+    // Routes that should NOT trigger a refresh retry on 401 — either public
+    // (no token to refresh) or the refresh endpoint itself (would loop).
+    const noRetryAuthRoutes = ['/auth/login', '/auth/register', '/auth/refresh-token', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email', '/auth/verify-otp', '/auth/send-otp'];
+    const isNoRetryRoute = noRetryAuthRoutes.some((r) => originalRequest.url?.includes(r));
+    if (error.response?.status === 401 && !originalRequest._retry && !isNoRetryRoute) {
       originalRequest._retry = true;
 
       try {

@@ -233,6 +233,32 @@ export class AuthService {
     await user.save();
   }
 
+  /**
+   * Change password for an authenticated user. Verifies the current password,
+   * updates to the new one, and invalidates existing refresh tokens so other
+   * sessions are logged out — a standard security hygiene step after a
+   * password rotation.
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await User.findById(userId).select('+password +refreshTokens');
+    if (!user) throw ApiError.notFound('User not found');
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) throw ApiError.badRequest('Current password is incorrect');
+
+    if (currentPassword === newPassword) {
+      throw ApiError.badRequest('New password must be different from current');
+    }
+
+    user.password = newPassword;
+    user.refreshTokens = [];
+    await user.save();
+  }
+
   async sendOtp(email: string): Promise<void> {
     const user = await User.findOne({ email, isDeleted: false });
     if (!user) {
