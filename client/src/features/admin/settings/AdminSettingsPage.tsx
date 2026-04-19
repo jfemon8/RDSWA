@@ -9,11 +9,12 @@ import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Spinner from '@/components/ui/Spinner';
 
-const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social'] as const;
+const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social', 'academic'] as const;
 type Tab = typeof TABS[number];
 const TAB_LABELS: Record<Tab, string> = {
   general: 'General & Branding', homepage: 'Home Page', content: 'About & Content',
   university: 'University', organizations: 'Organizations', legal: 'Legal', social: 'Social Links',
+  academic: 'Academic Config',
 };
 
 export default function AdminSettingsPage() {
@@ -58,11 +59,7 @@ export default function AdminSettingsPage() {
         {tab === 'organizations' && <OrganizationsTab settings={settings} />}
         {tab === 'legal' && <LegalTab settings={settings} />}
         {tab === 'social' && <SocialTab settings={settings} />}
-
-        {/* Academic Config — always below */}
-        <div className="mt-10 pt-8 border-t">
-          <AcademicConfigSection />
-        </div>
+        {tab === 'academic' && <AcademicConfigSection />}
       </div>
     </FadeIn>
   );

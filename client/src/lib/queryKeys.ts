@@ -41,6 +41,12 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
   },
+  contactMessages: {
+    all: ['contact-messages'] as const,
+    list: (filters: Record<string, string>) => ['contact-messages', 'list', filters] as const,
+    detail: (id: string) => ['contact-messages', 'detail', id] as const,
+    stats: ['contact-messages', 'stats'] as const,
+  },
   jobs: {
     all: ['jobs'] as const,
     detail: (id: string) => ['jobs', 'detail', id] as const,

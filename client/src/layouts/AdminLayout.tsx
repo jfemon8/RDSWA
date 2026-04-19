@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, UserCheck, BarChart3, KeyRound, CreditCard, Settings2,
-  Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database,
+  Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database, Inbox,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,6 +39,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
   { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },
+  { label: 'Contact Messages', href: '/admin/contact-messages', icon: Inbox, minRole: UserRole.MODERATOR },
 
   // ── Operations (Moderator+) ──
   { label: 'Donations', href: '/admin/donations', icon: Heart, minRole: UserRole.MODERATOR },

@@ -84,3 +84,6 @@ export type { IJobPostDocument } from './JobPost';
 
 export { Mentorship } from './Mentorship';
 export type { IMentorshipDocument } from './Mentorship';
+
+export { ContactMessage } from './ContactMessage';
+export type { IContactMessageDocument, ContactMessageStatus } from './ContactMessage';

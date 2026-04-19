@@ -72,6 +72,7 @@ const ChatHub = lazy(() => import('@/features/communication/ChatHubPage'));
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
 const AdminUsers = lazy(() => import('@/features/admin/users/AdminUsersPage'));
 const AdminMembers = lazy(() => import('@/features/admin/members/AdminMembersPage'));
+const AdminContactMessages = lazy(() => import('@/features/admin/contact/AdminContactMessagesPage'));
 const AdminRoles = lazy(() => import('@/features/admin/roles/AdminRolesPage'));
 const AdminModerators = lazy(() => import('@/features/admin/moderators/AdminModeratorsPage'));
 const AdminAdmins = lazy(() => import('@/features/admin/admins/AdminAdminsPage'));
@@ -187,6 +188,7 @@ export default function AppRouter() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/members" element={<AdminMembers />} />
+              <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
               <Route path="/admin/committees" element={<AdminCommittees />} />
               <Route path="/admin/events" element={<AdminEvents />} />
               <Route path="/admin/events/:id/checkin" element={<CheckInScanner />} />

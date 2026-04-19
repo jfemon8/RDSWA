@@ -8,7 +8,7 @@ import { validate } from '../middlewares/validate.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { SiteSettings, User, Event } from '../models';
+import { SiteSettings, User, Event, ContactMessage } from '../models';
 import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { cacheResponse } from '../middlewares/cache.middleware';
 import { sendEmail } from '../config/mail';
@@ -325,9 +325,16 @@ router.post(
 
     const settings = await SiteSettings.findOne();
     const recipient = settings?.contactEmail || env.EMAIL_FROM;
-    if (!recipient) {
-      throw ApiError.internal('Contact email is not configured. Please try again later.');
-    }
+
+    // Persist to DB first so admins can still manage submissions even if email sending is down
+    const record = await ContactMessage.create({
+      name,
+      email,
+      subject,
+      message,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')?.slice(0, 500),
+    });
 
     const safeName = escapeHtml(name);
     const safeEmail = escapeHtml(email);
@@ -342,18 +349,208 @@ router.post(
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
         <p style="white-space: pre-wrap;">${safeMessage}</p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
-        <p style="color: #6b7280; font-size: 12px;">Sent via the RDSWA contact form.</p>
+        <p style="color: #6b7280; font-size: 12px;">
+          Sent via the RDSWA contact form. Manage in Admin Panel &gt; Contact Messages.<br/>
+          Ref: ${record._id}
+        </p>
+      </div>
+    `;
+
+    if (recipient) {
+      try {
+        await sendEmail(recipient, `[Contact] ${subject}`, html);
+      } catch (err) {
+        console.error('[Contact] Failed to send notification email:', err);
+        // Do not fail the request — submission is already persisted
+      }
+    }
+
+    ApiResponse.success(res, null, 'Your message has been sent. We will get back to you soon.');
+  })
+);
+
+// ═══════════════════════════════════════════
+// Admin: Contact message management (Moderator+)
+// ═══════════════════════════════════════════
+
+const statusEnum = z.enum(['new', 'read', 'replied', 'archived']);
+
+const listQuerySchema = z.object({
+  status: statusEnum.optional(),
+  search: z.string().trim().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+});
+
+const updateStatusSchema = z.object({
+  status: statusEnum,
+});
+
+const replySchema = z.object({
+  reply: z.string().trim().min(5, 'Reply must be at least 5 characters').max(10000),
+  subject: z.string().trim().min(3).max(200).optional(),
+});
+
+router.get(
+  '/contact/messages',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  validate({ query: listQuerySchema }),
+  asyncHandler(async (req, res) => {
+    const { status, search } = req.query as z.infer<typeof listQuerySchema>;
+    const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || '20', 10)));
+
+    const filter: Record<string, unknown> = { isDeleted: false };
+    if (status) filter.status = status;
+    if (search) {
+      const regex = { $regex: search, $options: 'i' };
+      filter.$or = [{ name: regex }, { email: regex }, { subject: regex }, { message: regex }];
+    }
+
+    const [messages, total] = await Promise.all([
+      ContactMessage.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('repliedBy', 'name email avatar')
+        .lean(),
+      ContactMessage.countDocuments(filter),
+    ]);
+
+    ApiResponse.paginated(res, messages, total, page, limit);
+  })
+);
+
+router.get(
+  '/contact/messages/stats',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  asyncHandler(async (_req, res) => {
+    const counts = await ContactMessage.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+
+    const stats = { new: 0, read: 0, replied: 0, archived: 0, total: 0 };
+    for (const c of counts) {
+      const key = c._id as keyof typeof stats;
+      if (key in stats) stats[key] = c.count;
+      stats.total += c.count;
+    }
+
+    ApiResponse.success(res, stats);
+  })
+);
+
+router.get(
+  '/contact/messages/:id',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  asyncHandler(async (req, res) => {
+    const msg = await ContactMessage.findOne({ _id: req.params.id, isDeleted: false })
+      .populate('repliedBy', 'name email avatar');
+    if (!msg) throw ApiError.notFound('Message not found');
+
+    // Mark as read on first fetch if still new
+    if (msg.status === 'new') {
+      msg.status = 'read';
+      msg.readAt = new Date();
+      await msg.save();
+    }
+
+    ApiResponse.success(res, msg);
+  })
+);
+
+router.patch(
+  '/contact/messages/:id',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  validate({ body: updateStatusSchema }),
+  auditLog('contact.message_update', 'contact_message'),
+  asyncHandler(async (req, res) => {
+    const { status } = req.body as z.infer<typeof updateStatusSchema>;
+    const update: Record<string, unknown> = { status };
+    if (status === 'read') update.readAt = new Date();
+
+    const msg = await ContactMessage.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: false },
+      { $set: update },
+      { new: true }
+    );
+    if (!msg) throw ApiError.notFound('Message not found');
+    ApiResponse.success(res, msg, 'Status updated');
+  })
+);
+
+router.post(
+  '/contact/messages/:id/reply',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  validate({ body: replySchema }),
+  auditLog('contact.message_reply', 'contact_message'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const { reply, subject } = req.body as z.infer<typeof replySchema>;
+
+    const msg = await ContactMessage.findOne({ _id: req.params.id, isDeleted: false });
+    if (!msg) throw ApiError.notFound('Message not found');
+
+    const settings = await SiteSettings.findOne();
+    const orgName = settings?.siteNameFull || settings?.siteName || 'RDSWA';
+    const replySubject = subject?.trim() || `Re: ${msg.subject}`;
+    const safeReply = escapeHtml(reply).replace(/\n/g, '<br/>');
+    const safeOriginal = escapeHtml(msg.message).replace(/\n/g, '<br/>');
+    const replierName = escapeHtml(req.user.name || 'The RDSWA Team');
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+        <p>Hi ${escapeHtml(msg.name)},</p>
+        <p>Thank you for reaching out to ${escapeHtml(orgName)}. Here is our reply to your message:</p>
+        <div style="border-left: 3px solid #3b82f6; padding: 12px 16px; background: #f9fafb; border-radius: 4px; margin: 16px 0;">
+          <p style="white-space: pre-wrap; margin: 0;">${safeReply}</p>
+        </div>
+        <p>Best regards,<br/>${replierName}<br/><em>${escapeHtml(orgName)}</em></p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;"/>
+        <details style="color: #6b7280; font-size: 12px;">
+          <summary style="cursor: pointer;">Your original message</summary>
+          <p><strong>Subject:</strong> ${escapeHtml(msg.subject)}</p>
+          <p style="white-space: pre-wrap;">${safeOriginal}</p>
+        </details>
       </div>
     `;
 
     try {
-      await sendEmail(recipient, `[Contact] ${subject}`, html);
+      await sendEmail(msg.email, replySubject, html);
     } catch (err) {
-      console.error('[Contact] Failed to send email:', err);
-      throw ApiError.internal('Unable to send your message right now. Please try again later.');
+      console.error('[Contact] Failed to send reply:', err);
+      throw ApiError.internal('Failed to send reply email. Please try again later.');
     }
 
-    ApiResponse.success(res, null, 'Your message has been sent. We will get back to you soon.');
+    msg.reply = reply;
+    msg.repliedBy = req.user._id;
+    msg.repliedAt = new Date();
+    msg.status = 'replied';
+    await msg.save();
+
+    ApiResponse.success(res, msg, 'Reply sent successfully');
+  })
+);
+
+router.delete(
+  '/contact/messages/:id',
+  authenticate(),
+  authorize(UserRole.ADMIN),
+  auditLog('contact.message_delete', 'contact_message'),
+  asyncHandler(async (req, res) => {
+    const msg = await ContactMessage.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: false },
+      { $set: { isDeleted: true } },
+      { new: true }
+    );
+    if (!msg) throw ApiError.notFound('Message not found');
+    ApiResponse.success(res, null, 'Message deleted');
   })
 );
 
