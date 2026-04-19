@@ -38,6 +38,7 @@ const Gallery = lazy(() => import('@/features/gallery/GalleryPage'));
 const PrivacyPolicy = lazy(() => import('@/features/legal/PrivacyPolicyPage'));
 const Terms = lazy(() => import('@/features/legal/TermsPage'));
 const FAQ = lazy(() => import('@/features/legal/FAQPage'));
+const Contact = lazy(() => import('@/features/contact/ContactPage'));
 const JobBoard = lazy(() => import('@/features/jobs/JobBoardPage'));
 const JobDetail = lazy(() => import('@/features/jobs/JobDetailPage'));
 const MentorshipPage = lazy(() => import('@/features/mentorship/MentorshipPage'));
@@ -70,6 +71,7 @@ const ChatHub = lazy(() => import('@/features/communication/ChatHubPage'));
 // Admin pages
 const AdminDashboard = lazy(() => import('@/features/admin/dashboard/AdminDashboardPage'));
 const AdminUsers = lazy(() => import('@/features/admin/users/AdminUsersPage'));
+const AdminMembers = lazy(() => import('@/features/admin/members/AdminMembersPage'));
 const AdminRoles = lazy(() => import('@/features/admin/roles/AdminRolesPage'));
 const AdminModerators = lazy(() => import('@/features/admin/moderators/AdminModeratorsPage'));
 const AdminAdmins = lazy(() => import('@/features/admin/admins/AdminAdminsPage'));
@@ -147,6 +149,7 @@ export default function AppRouter() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/contact" element={<Contact />} />
         </Route>
 
         {/* Dashboard routes (authenticated) */}
@@ -183,6 +186,7 @@ export default function AppRouter() {
               {/* Moderator+ routes */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/members" element={<AdminMembers />} />
               <Route path="/admin/committees" element={<AdminCommittees />} />
               <Route path="/admin/events" element={<AdminEvents />} />
               <Route path="/admin/events/:id/checkin" element={<CheckInScanner />} />

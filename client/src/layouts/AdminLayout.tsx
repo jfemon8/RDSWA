@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
-  LogOut, Menu, X, ChevronLeft, Crown, UserCog, BarChart3, KeyRound, CreditCard, Settings2,
+  LogOut, Menu, X, ChevronLeft, Crown, UserCog, UserCheck, BarChart3, KeyRound, CreditCard, Settings2,
   Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
@@ -30,6 +30,7 @@ const adminLinks: AdminLink[] = [
   // ── Overview ──
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: UserRole.MODERATOR },
   { label: 'Users', href: '/admin/users', icon: Users, minRole: UserRole.MODERATOR },
+  { label: 'Members', href: '/admin/members', icon: UserCheck, minRole: UserRole.MODERATOR },
 
   // ── Content Management (Moderator+) ──
   { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },

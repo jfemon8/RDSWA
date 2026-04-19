@@ -31,6 +31,7 @@ const moreLinks = [
   { label: 'Donations', href: '/donations' },
   { label: 'Voting', href: '/voting' },
   { label: 'Blood Donors', href: '/blood-donors' },
+  { label: 'Contact', href: '/contact' },
 ];
 
 export default function Navbar() {

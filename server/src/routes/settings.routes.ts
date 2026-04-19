@@ -1,13 +1,18 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize, denyRestricted } from '../middlewares/rbac.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
+import { validate } from '../middlewares/validate.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { SiteSettings, User, Event } from '../models';
 import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { cacheResponse } from '../middlewares/cache.middleware';
+import { sendEmail } from '../config/mail';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -285,5 +290,71 @@ router.get('/auto-role-config', authenticate(), authorize(UserRole.ADMIN), async
   const settings = await SiteSettings.findOne();
   ApiResponse.success(res, settings?.autoRoleConfig || { moderatorPositions: [], retainPositions: [] });
 }));
+
+// Public contact form — throttled: 5 submissions / 15 min / IP
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many contact submissions. Please try again later.' },
+});
+
+const contactSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().trim().toLowerCase().email('Please enter a valid email'),
+  subject: z.string().trim().min(5, 'Subject must be at least 5 characters').max(200),
+  message: z.string().trim().min(10, 'Message must be at least 10 characters').max(5000),
+});
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+router.post(
+  '/contact',
+  contactLimiter,
+  validate({ body: contactSchema }),
+  asyncHandler(async (req, res) => {
+    const { name, email, subject, message } = req.body as z.infer<typeof contactSchema>;
+
+    const settings = await SiteSettings.findOne();
+    const recipient = settings?.contactEmail || env.EMAIL_FROM;
+    if (!recipient) {
+      throw ApiError.internal('Contact email is not configured. Please try again later.');
+    }
+
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeSubject = escapeHtml(subject);
+    const safeMessage = escapeHtml(message).replace(/\n/g, '<br/>');
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #3b82f6;">New Contact Form Submission</h2>
+        <p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p>
+        <p><strong>Subject:</strong> ${safeSubject}</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
+        <p style="white-space: pre-wrap;">${safeMessage}</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
+        <p style="color: #6b7280; font-size: 12px;">Sent via the RDSWA contact form.</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail(recipient, `[Contact] ${subject}`, html);
+    } catch (err) {
+      console.error('[Contact] Failed to send email:', err);
+      throw ApiError.internal('Unable to send your message right now. Please try again later.');
+    }
+
+    ApiResponse.success(res, null, 'Your message has been sent. We will get back to you soon.');
+  })
+);
 
 export default router;
