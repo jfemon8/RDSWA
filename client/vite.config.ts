@@ -9,34 +9,45 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg', 'og-image.png'],
+      includeAssets: ['vite.svg'],
       manifest: {
+        // Stable identifier — keeps the PWA identity even if start_url changes
+        id: '/',
         name: 'RDSWA - Rangpur Divisional Student Welfare Association',
         short_name: 'RDSWA',
         description: 'Official platform of Rangpur Divisional Student Welfare Association, University of Barishal.',
         theme_color: '#1e40af',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'portrait',
         start_url: '/',
         scope: '/',
+        lang: 'en',
+        categories: ['education', 'social', 'productivity'],
         icons: [
           {
             src: '/icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: '/icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: '/icons/icon-maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
         ],
+        // Screenshots are optional — add them later by capturing the running
+        // app (see `next-steps.md`) and re-enable this block once the PNGs
+        // are in public/icons/. PWABuilder shows only a non-blocking warning
+        // when screenshots are missing.
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

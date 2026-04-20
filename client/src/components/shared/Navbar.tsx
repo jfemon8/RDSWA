@@ -42,7 +42,10 @@ export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const { settings } = useSiteSettings();
-  const navLogo = theme === 'dark' ? (settings?.logoDark || settings?.logo) : settings?.logo;
+  // Fall back to the bundled brand banner (theme-aware) when the admin hasn't
+  // uploaded a custom logo via the Settings panel.
+  const fallbackLogo = theme === 'dark' ? '/icons/logo-dark.png' : '/icons/logo-light.png';
+  const navLogo = (theme === 'dark' ? (settings?.logoDark || settings?.logo) : settings?.logo) || fallbackLogo;
   const location = useLocation();
   const navigate = useNavigate();
 

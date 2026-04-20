@@ -6,7 +6,10 @@ import { useThemeStore } from '@/stores/themeStore';
 export default function Footer() {
   const { settings } = useSiteSettings();
   const { theme } = useThemeStore();
-  const fLogo = theme === 'dark' ? (settings?.footerLogoDark || settings?.footerLogo) : settings?.footerLogo;
+  // Fall back to the bundled brand banner (theme-aware) when no custom footer
+  // logo is configured.
+  const fallbackLogo = theme === 'dark' ? '/icons/logo-dark.png' : '/icons/logo-light.png';
+  const fLogo = (theme === 'dark' ? (settings?.footerLogoDark || settings?.footerLogo) : settings?.footerLogo) || fallbackLogo;
   const siteName = settings?.siteName || 'RDSWA';
 
   // WCAG AA requires 4.5:1 contrast for normal text. text-muted-foreground against

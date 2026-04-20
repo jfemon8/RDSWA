@@ -47,7 +47,8 @@ export default function DashboardLayout() {
   };
   const { settings: siteSettings } = useSiteSettings();
   const { theme } = useThemeStore();
-  const navLogo = theme === 'dark' ? (siteSettings?.logoDark || siteSettings?.logo) : siteSettings?.logo;
+  const fallbackLogo = theme === 'dark' ? '/icons/logo-dark.png' : '/icons/logo-light.png';
+  const navLogo = (theme === 'dark' ? (siteSettings?.logoDark || siteSettings?.logo) : siteSettings?.logo) || fallbackLogo;
   const isAndroidApp = useIsAndroidApp();
 
   // Lock body scroll on mobile when sidebar is open
