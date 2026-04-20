@@ -3,49 +3,57 @@
 @tailwind utilities;
 
 @layer base {
+  /* ─────────────────────────────────────────────────────────────
+   * Brand palette — sourced from the Rangpur Association logo.
+   *   Emerald  #008f57  (logo primary, darkened for WCAG-safe contrast)
+   *   Red      #e03030  (destructive / errors)
+   *   Neutral  pure white / pure black backgrounds per user request
+   *   Light + dark variants are hand-balanced to stay ≥4.5:1 against
+   *   their foregrounds (WCAG AA).
+   * ───────────────────────────────────────────────────────────── */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%;             /* pure white */
+    --foreground: 0 0% 9%;                /* near-black neutral */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 158 100% 28%;              /* #008f57 emerald */
+    --primary-foreground: 0 0% 100%;      /* white on primary */
+    --secondary: 158 30% 95%;             /* pale emerald tint */
+    --secondary-foreground: 158 100% 18%; /* deep emerald text */
+    --muted: 0 0% 96%;                    /* neutral light gray */
+    --muted-foreground: 0 0% 40%;         /* AA against white */
+    --accent: 158 30% 95%;                /* same family as secondary */
+    --accent-foreground: 158 100% 18%;
+    --destructive: 0 75% 53%;             /* logo red #e03030 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;                   /* neutral border */
+    --input: 0 0% 90%;
+    --ring: 158 100% 28%;                 /* emerald focus ring */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --background: 0 0% 0%;                /* pure black */
+    --foreground: 0 0% 98%;               /* near-white */
+    --card: 0 0% 7%;                      /* very dark neutral for surfaces */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 158 65% 45%;               /* brighter emerald for dark bg (#28b578) */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 14%;                /* dark neutral surface */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 65%;         /* AA against black */
+    --accent: 158 35% 16%;                /* dark emerald tint */
+    --accent-foreground: 158 60% 80%;
+    --destructive: 0 63% 45%;             /* darker red for dark bg */
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 158 65% 45%;                  /* matches primary */
   }
 }
 

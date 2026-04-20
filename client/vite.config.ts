@@ -16,7 +16,10 @@ export default defineConfig({
         name: 'RDSWA - Rangpur Divisional Student Welfare Association',
         short_name: 'RDSWA',
         description: 'Official platform of Rangpur Divisional Student Welfare Association, University of Barishal.',
-        theme_color: '#1e40af',
+        // Brand colors sourced from the Rangpur Association logo palette —
+        // #008f57 is the logo's signature emerald, darkened slightly from the
+        // raw #00a060 so white status-bar icons meet WCAG AA contrast.
+        theme_color: '#008f57',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

@@ -7,7 +7,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0" />
     <meta name="description" content="Official platform of Rangpur Divisional Student Welfare Association, University of Barishal. Member directory, events, notices, committees, and more." />
-    <meta name="theme-color" content="#1e40af" />
+    <meta name="theme-color" content="#008f57" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#042f1f" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -30,6 +31,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>RDSWA - Rangpur Divisional Student Welfare Association</title>
+    <!-- FOUC prevention: resolve theme BEFORE React hydrates so the very first
+         paint uses the correct mode. Priority: localStorage → system → light.
+         Mirrors the logic in src/stores/themeStore.ts; keep them in sync. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var isDark =
+            saved === 'dark' ||
+            ((saved === 'system' || saved == null) &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var root = document.documentElement;
+          if (isDark) root.classList.add('dark');
+          root.dataset.theme = isDark ? 'dark' : 'light';
+        } catch (e) { /* localStorage blocked — fall back to light */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
