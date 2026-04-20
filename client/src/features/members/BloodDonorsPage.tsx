@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Droplets, Phone, MapPin, User } from 'lucide-react';
+import { Droplets, Phone, MapPin, User, X, UserPlus } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { districts } from '@/data/bdGeo';
 import SEO from '@/components/SEO';
 import Spinner from '@/components/ui/Spinner';
+import EmptyState from '@/components/ui/EmptyState';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -85,12 +86,17 @@ export default function BloodDonorsPage() {
       {isLoading ? (
         <Spinner size="md" />
       ) : donors.length === 0 ? (
-        <FadeIn delay={0.1} direction="up">
-          <div className="text-center py-12">
-            <Droplets className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No donors found with the selected criteria</p>
-          </div>
-        </FadeIn>
+        <EmptyState
+          icon={Droplets}
+          title="No Donors Found"
+          description={bloodGroup || district
+            ? 'No blood donors match your filters. Try a different blood group or district, or clear filters to see all donors.'
+            : 'No blood donors are listed yet. Members can mark themselves as donors from their profile to appear here.'}
+          primary={bloodGroup || district
+            ? { label: 'Clear Filters', icon: X, onClick: () => { setBloodGroup(''); setDistrict(''); } }
+            : { label: 'Become a Donor', icon: UserPlus, to: '/dashboard/profile/edit' }}
+          hint="Enable “Available as blood donor” on your profile to help fellow members in emergencies."
+        />
       ) : (
         <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {donors.map((d: any, index: number) => (

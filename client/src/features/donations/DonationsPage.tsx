@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface PaymentMethod {
   provider: string;
@@ -480,7 +481,12 @@ function RecentDonations() {
       {isLoading ? (
         <Spinner size="sm" />
       ) : donations.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No donations yet</p>
+        <EmptyState
+          icon={Heart}
+          title="No Donations Yet"
+          description="Be the first to contribute. Every donation helps RDSWA support fellow students and community welfare."
+          hint="Recent verified donations will appear here once members start contributing."
+        />
       ) : (
         <div className="space-y-2">
           {donations.map((d: any, index: number) => (

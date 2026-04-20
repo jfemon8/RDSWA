@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
+import SharedEmptyState from '@/components/ui/EmptyState';
 
 const PAGE_LIMIT = 20;
 
@@ -1029,12 +1030,12 @@ function OperatorReviews({ operatorId }: { operatorId: string }) {
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <FadeIn direction="up">
-      <div className="text-center py-12">
-        <Bus className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-        <p className="text-muted-foreground">{text}</p>
-      </div>
-    </FadeIn>
+    <SharedEmptyState
+      icon={Bus}
+      title="Nothing to Show"
+      description={text || 'No results match your current filters. Try clearing them or adjusting your search.'}
+      hint="Bus operators, routes, schedules and counters published by RDSWA will appear here."
+    />
   );
 }
 

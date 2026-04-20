@@ -13,6 +13,7 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
+import EmptyState from '@/components/ui/EmptyState';
 
 const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
 
@@ -114,12 +115,17 @@ export default function ForumPage() {
       {isLoading ? (
         <Spinner size="md" />
       ) : filteredTopics.length === 0 ? (
-        <FadeIn direction="up">
-          <div className="text-center py-12">
-            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No topics yet. Start a discussion!</p>
-          </div>
-        </FadeIn>
+        <EmptyState
+          icon={MessageSquare}
+          title={search || filterCategory ? 'No Matching Topics' : 'Start the Conversation'}
+          description={search || filterCategory
+            ? 'No topics match your current filters. Try a different category or search term.'
+            : 'No discussion topics yet. Be the first to start a conversation with the community.'}
+          primary={search || filterCategory
+            ? undefined
+            : { label: 'New Topic', icon: Plus, onClick: () => setShowCreate(true) }}
+          hint="The forum is a space for members to discuss academics, events, careers and anything else on their mind."
+        />
       ) : (
         <div className="space-y-2">
           {filteredTopics.map((topic: any, i: number) => (

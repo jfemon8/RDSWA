@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { FileText, Download, Search } from 'lucide-react';
+import { FileText, Download, Search, Mail, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -98,12 +99,17 @@ export default function DocumentsPage() {
       {isLoading ? (
         <Spinner size="md" />
       ) : documents.length === 0 ? (
-        <FadeIn delay={0.1} direction="up">
-          <div className="text-center py-12">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No documents found</p>
-          </div>
-        </FadeIn>
+        <EmptyState
+          icon={FileText}
+          title={search || category ? 'No Matches' : 'No Documents Yet'}
+          description={search || category
+            ? 'No documents match your current filters. Try a different search term or category.'
+            : 'No documents have been uploaded yet. Contact an admin if you need a specific document.'}
+          primary={search || category
+            ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setCategory(''); } }
+            : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
+          hint="Policies, resolutions, reports and forms published by RDSWA will appear here once uploaded."
+        />
       ) : (
         <div className="space-y-3">
           {documents.map((doc: any, index: number) => (

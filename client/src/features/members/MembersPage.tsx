@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User } from 'lucide-react';
+import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
@@ -12,6 +12,7 @@ import SEO from '@/components/SEO';
 import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
+import EmptyState from '@/components/ui/EmptyState';
 
 type CategoryKey = '' | 'alumni' | 'advisor' | 'senior_advisor';
 
@@ -160,10 +161,29 @@ export default function MembersPage() {
           {Array.from({ length: 9 }).map((_, i) => <ListItemSkeleton key={i} />)}
         </div>
       ) : members.length === 0 ? (
-        <div className="text-center py-12">
-          <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No {activeCategory.label.toLowerCase()} found</p>
-        </div>
+        <EmptyState
+          icon={activeCategory.icon}
+          title={`No ${activeCategory.label} Found`}
+          description={
+            search || batch || department || session || homeDistrict || profession
+              ? 'No members match your current filters. Try clearing some filters to broaden your search.'
+              : `No ${activeCategory.label.toLowerCase()} are listed yet. The directory updates as members join and admins approve applications.`
+          }
+          primary={
+            search || batch || department || session || homeDistrict || profession
+              ? {
+                  label: 'Clear Filters',
+                  icon: X,
+                  onClick: () => {
+                    setSearch(''); setBatch(''); setDepartment(''); setSession('');
+                    setHomeDistrict(''); setProfession(''); setPage(1);
+                  },
+                }
+              : undefined
+          }
+          secondary={categoryFilter !== '' ? { label: 'View All Members', icon: Users, onClick: () => setCategoryFilter('') } : undefined}
+          hint="Members are students, alumni and advisors who have been approved as part of the RDSWA community."
+        />
       ) : (
         <>
           <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

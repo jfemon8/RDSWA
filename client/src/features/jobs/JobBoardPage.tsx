@@ -8,13 +8,14 @@ import { UserRole } from '@rdswa/shared';
 import { hasMinRole } from '@/lib/roles';
 import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2, Users, CalendarX, Pencil, Banknote, UserCircle } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2, Users, CalendarX, Pencil, Banknote, UserCircle, Mail, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import EmptyState from '@/components/ui/EmptyState';
 
 function isJobExpired(job: any): boolean {
   if (!job?.deadline) return false;
@@ -285,9 +286,17 @@ export default function JobBoardPage() {
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <FadeIn>
-          <p className="text-center text-muted-foreground py-12">No job posts found.</p>
-        </FadeIn>
+        <EmptyState
+          icon={Briefcase}
+          title={search || typeFilter ? 'No Matches' : 'No Job Posts Yet'}
+          description={search || typeFilter
+            ? 'No job posts match your filters. Try clearing them or searching with different keywords.'
+            : 'No job opportunities have been posted yet. Check back soon — new openings are shared by members and admins.'}
+          primary={search || typeFilter
+            ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setTypeFilter(''); } }
+            : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
+          hint="Full-time, part-time, internship and remote opportunities shared within the RDSWA community appear here."
+        />
       ) : (
         <div className="space-y-4">
           {jobs.map((job: any, i: number) => {

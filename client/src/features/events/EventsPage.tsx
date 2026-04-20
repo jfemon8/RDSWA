@@ -4,11 +4,12 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
+import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2, Mail, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
+import EmptyState from '@/components/ui/EmptyState';
 
 const EVENT_TYPES = ['event', 'meeting', 'workshop', 'seminar', 'social', 'other'];
 const STATUSES = ['', 'upcoming', 'ongoing', 'completed'];
@@ -163,12 +164,17 @@ export default function EventsPage() {
                 {Array.from({ length: 6 }).map((_, i) => <ImageCardSkeleton key={i} />)}
               </div>
             ) : events.length === 0 ? (
-              <FadeIn>
-                <div className="text-center py-12">
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">No events found</p>
-                </div>
-              </FadeIn>
+              <EmptyState
+                icon={Calendar}
+                title="No Events Found"
+                description={search || status || type
+                  ? 'No events match your filters. Try clearing them to see all events.'
+                  : 'No events have been scheduled yet. Check back soon — new events are posted regularly.'}
+                primary={search || status || type
+                  ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setStatus(''); setType(''); setPage(1); } }
+                  : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
+                hint="Upcoming meetings, workshops, and social gatherings for RDSWA members appear here as soon as they are announced."
+              />
             ) : (
               <>
                 <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { Users, Crown } from 'lucide-react';
+import { Users, Crown, Mail } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -58,12 +59,13 @@ export default function CommitteePage() {
       />
 
       {committees.length === 0 ? (
-        <FadeIn>
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No committees found</p>
-          </div>
-        </FadeIn>
+        <EmptyState
+          icon={Users}
+          title="No Committees Yet"
+          description="No committee information has been published yet. Once a committee is formed, members and positions will appear here."
+          primary={{ label: 'Contact Admin', icon: Mail, to: '/contact' }}
+          hint="Committees are elected teams that lead RDSWA activities — President, General Secretary, Organizing Secretary, and more."
+        />
       ) : (
         <div className="space-y-8">
           {committees.map((c: any, idx: number) => (

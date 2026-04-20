@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { FileText, AlertTriangle, Search, Archive } from 'lucide-react';
+import { FileText, AlertTriangle, Search, Archive, Mail, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function NoticesPage() {
   const [category, setCategory] = useState('');
@@ -90,14 +91,20 @@ export default function NoticesPage() {
           {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : notices.length === 0 ? (
-        <FadeIn>
-          <div className="text-center py-12">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">
-              {search ? `No notices found for "${search}"` : 'No notices found'}
-            </p>
-          </div>
-        </FadeIn>
+        <EmptyState
+          icon={FileText}
+          title={search ? 'No Matches' : showArchived ? 'No Archived Notices' : 'No Notices Yet'}
+          description={search
+            ? `No notices match "${search}". Try a different search term or clear your filters.`
+            : showArchived
+              ? 'There are no archived notices. Older notices are archived here once they become inactive.'
+              : 'No notices have been posted yet. Check back soon or contact an admin for the latest updates.'}
+          primary={search
+            ? { label: 'Clear Search', icon: X, onClick: () => { setSearch(''); setPage(1); } }
+            : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
+          secondary={!search && !showArchived ? { label: 'View Archived', icon: Archive, onClick: () => { setShowArchived(true); setPage(1); } } : undefined}
+          hint="Important announcements, academic updates and urgent notices from RDSWA appear here."
+        />
       ) : (
         <>
           <AnimatePresence>

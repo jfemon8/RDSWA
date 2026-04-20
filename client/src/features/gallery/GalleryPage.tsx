@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Image, X } from 'lucide-react';
+import { Image, X, Mail, Calendar } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
+import EmptyState from '@/components/ui/EmptyState';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 export default function GalleryPage() {
@@ -86,16 +87,25 @@ export default function GalleryPage() {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">No photos in this album</p>
+            <EmptyState
+              icon={Image}
+              title="No Photos Yet"
+              description="This album doesn't have any photos yet. Check back later as new photos are added."
+              hint="Once photos are uploaded to this album, they will appear here in a grid."
+            />
           )}
         </div>
       ) : (
         <>
           {albums.length === 0 ? (
-            <div className="text-center py-12">
-              <Image className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground">No albums yet</p>
-            </div>
+            <EmptyState
+              icon={Image}
+              title="No Albums Yet"
+              description="No photo albums have been published yet. Albums with photos from events and gatherings will appear here soon."
+              primary={{ label: 'Browse Events', icon: Calendar, to: '/events' }}
+              secondary={{ label: 'Contact Admin', icon: Mail, to: '/contact' }}
+              hint="Photos from RDSWA events, workshops, and social gatherings are organized into albums for easy browsing."
+            />
           ) : (
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {albums.map((a: any, i: number) => (

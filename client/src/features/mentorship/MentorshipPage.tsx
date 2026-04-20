@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
 import { useConfirm } from '@/components/ui/ConfirmModal';
+import EmptyState from '@/components/ui/EmptyState';
 
 function timeAgo(date: string | Date): string {
   const now = Date.now();
@@ -353,11 +354,12 @@ export default function MentorshipPage() {
               ))}
             </div>
           ) : mentors.length === 0 ? (
-            <div className="text-center py-16">
-              <GraduationCap className="h-14 w-14 mx-auto text-muted-foreground/20 mb-4" />
-              <p className="text-muted-foreground font-medium">No mentors found</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Try a different skill area or check back later</p>
-            </div>
+            <EmptyState
+              icon={GraduationCap}
+              title="No Mentors Found"
+              description="No mentors match your search. Try a different skill area or clear your filters to see all available mentors."
+              hint="Alumni and senior members volunteer as mentors to guide students in careers, research and personal growth."
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {mentors.map((mentor: any, i: number) => {
@@ -472,18 +474,13 @@ export default function MentorshipPage() {
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
             </div>
           ) : myMentors.length === 0 ? (
-            <div className="text-center py-16">
-              <GraduationCap className="h-14 w-14 mx-auto text-muted-foreground/20 mb-4" />
-              <p className="text-muted-foreground font-medium">No mentors yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Browse the "Find Mentors" tab to request mentorship</p>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setTab('mentors')}
-                className="mt-4 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 inline-flex items-center gap-1.5"
-              >
-                <Search className="h-3.5 w-3.5" /> Find Mentors
-              </motion.button>
-            </div>
+            <EmptyState
+              icon={GraduationCap}
+              title="No Mentors Yet"
+              description="You haven't requested mentorship yet. Browse available mentors and send a request to get started."
+              primary={{ label: 'Find Mentors', icon: Search, onClick: () => setTab('mentors') }}
+              hint="Once a mentor accepts your request, they will appear here and you can chat with them directly."
+            />
           ) : (
             <div className="space-y-4">
               {myMentors.map((m: any, i: number) => renderMentorshipCard(m, false, i))}
@@ -500,11 +497,12 @@ export default function MentorshipPage() {
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
             </div>
           ) : myTrainees.length === 0 ? (
-            <div className="text-center py-16">
-              <Users className="h-14 w-14 mx-auto text-muted-foreground/20 mb-4" />
-              <p className="text-muted-foreground font-medium">No trainee requests yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Members can find you in the mentor directory and send requests</p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No Trainee Requests Yet"
+              description="No members have requested your mentorship yet. They will find you in the mentor directory based on your skills."
+              hint="Make sure your profile lists the skills and areas you can mentor so members can discover you easily."
+            />
           ) : (
             <div className="space-y-4">
               {/* Pending first, then active, then rest */}

@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Calendar, MapPin, Users, FileText } from 'lucide-react';
+import { Calendar, MapPin, Users, FileText, X, Mail } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
@@ -59,12 +60,17 @@ export default function MeetingRecordsPage() {
       {isLoading ? (
         <Spinner size="md" />
       ) : meetings.length === 0 ? (
-        <FadeIn>
-          <div className="text-center py-12">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No meeting records found</p>
-          </div>
-        </FadeIn>
+        <EmptyState
+          icon={FileText}
+          title="No Meeting Records"
+          description={status
+            ? `No ${status} meetings are listed. Try a different status filter or view all meetings.`
+            : 'No committee or general meeting records are available yet. Records are added after meetings are held.'}
+          primary={status
+            ? { label: 'View All Meetings', icon: X, onClick: () => { setStatus(''); setPage(1); } }
+            : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
+          hint="Meeting agendas, attendance and minutes are documented here for members to review."
+        />
       ) : (
         <>
           <div className="space-y-3">

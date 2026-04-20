@@ -3,7 +3,8 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import Spinner from '@/components/ui/Spinner';
 
-import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward } from 'lucide-react';
+import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward, Mail } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -32,56 +33,60 @@ export default function VotingPage() {
       <SEO title="Voting" description="Participate in RDSWA polls and elections — cast your vote on active polls." />
       <BlurText text="Voting & Polls" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
-      {votes.length === 0 ? (
-        <FadeIn delay={0.2} direction="up">
-          <div className="text-center py-12">
-            <Vote className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No polls available</p>
+      {active.length > 0 ? (
+        <FadeIn delay={0.1} direction="up">
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+              <Clock className="h-5 w-5 text-blue-500" /> Active Polls
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+              </span>
+              <span className="text-xs font-normal text-green-600">Live</span>
+            </h2>
+            <div className="space-y-4">
+              {active.map((v: any, i: number) => (
+                <FadeIn key={v._id} delay={0.1 + i * 0.08} direction="up">
+                  <VoteCard vote={v} />
+                </FadeIn>
+              ))}
+            </div>
           </div>
         </FadeIn>
       ) : (
-        <>
-          {active.length > 0 && (
-            <FadeIn delay={0.1} direction="up">
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
-                  <Clock className="h-5 w-5 text-blue-500" /> Active Polls
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-                  </span>
-                  <span className="text-xs font-normal text-green-600">Live</span>
-                </h2>
-                <div className="space-y-4">
-                  {active.map((v: any, i: number) => (
-                    <FadeIn key={v._id} delay={0.1 + i * 0.08} direction="up">
-                      <VoteCard vote={v} />
-                    </FadeIn>
-                  ))}
-                </div>
-              </div>
-            </FadeIn>
-          )}
+        <NoActivePollsEmptyState hasPastPolls={closed.length > 0} />
+      )}
 
-          {closed.length > 0 && (
-            <FadeIn delay={0.2} direction="up">
-              <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
-                  <BarChart3 className="h-5 w-5 text-muted-foreground" /> Past Polls
-                </h2>
-                <div className="space-y-4">
-                  {closed.map((v: any, i: number) => (
-                    <FadeIn key={v._id} delay={0.1 + i * 0.08} direction="up">
-                      <VoteCard vote={v} />
-                    </FadeIn>
-                  ))}
-                </div>
-              </div>
-            </FadeIn>
-          )}
-        </>
+      {closed.length > 0 && (
+        <FadeIn delay={0.2} direction="up">
+          <div id="past-polls" className={active.length > 0 ? '' : 'mt-8'}>
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+              <BarChart3 className="h-5 w-5 text-muted-foreground" /> Past Polls
+            </h2>
+            <div className="space-y-4">
+              {closed.map((v: any, i: number) => (
+                <FadeIn key={v._id} delay={0.1 + i * 0.08} direction="up">
+                  <VoteCard vote={v} />
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
       )}
     </div>
+  );
+}
+
+function NoActivePollsEmptyState({ hasPastPolls }: { hasPastPolls: boolean }) {
+  return (
+    <EmptyState
+      icon={Vote}
+      title="No Active Polls"
+      description="No active polls right now. Check back later or contact an admin."
+      primary={{ label: 'Contact Admin', icon: Mail, to: '/contact' }}
+      secondary={hasPastPolls ? { label: 'View Past Polls', icon: BarChart3, href: '#past-polls' } : undefined}
+      hint="RDSWA polls let members vote on elections, decisions, and community feedback. New polls appear here as soon as they go live."
+    />
   );
 }
 
