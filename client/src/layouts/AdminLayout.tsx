@@ -14,6 +14,7 @@ import { UserRole, BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADM
 import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useThemeStore } from '@/stores/themeStore';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import NotificationBell from '@/components/shared/NotificationBell';
 import MessageBell from '@/components/shared/MessageBell';
@@ -84,6 +85,8 @@ export default function AdminLayout() {
   };
 
   const { settings: siteSettings } = useSiteSettings();
+  const { theme } = useThemeStore();
+  const navLogo = theme === 'dark' ? (siteSettings?.logoDark || siteSettings?.logo) : siteSettings?.logo;
   const email = user?.email;
   const deniedPaths: Record<string, string[]> = {
     '/admin/backup': BACKUP_RESTRICTED_SUPER_ADMINS,
@@ -114,10 +117,23 @@ export default function AdminLayout() {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <Link to="/admin" className="text-base sm:text-xl font-bold truncate min-w-0">
-            <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
-              {siteSettings?.siteName || 'RDSWA'}<span className="hidden min-[400px]:inline"> Admin</span>
-            </GradientText>
+          <Link to="/admin" className="flex items-center gap-2 text-base sm:text-xl font-bold truncate min-w-0">
+            {navLogo ? (
+              <>
+                <img
+                  src={navLogo}
+                  alt={siteSettings?.siteName || 'RDSWA'}
+                  className="h-9 object-contain shrink-0"
+                />
+                <span className="hidden min-[400px]:inline text-sm sm:text-base text-muted-foreground font-semibold">
+                  Admin
+                </span>
+              </>
+            ) : (
+              <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
+                {siteSettings?.siteName || 'RDSWA'}<span className="hidden min-[400px]:inline"> Admin</span>
+              </GradientText>
+            )}
           </Link>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">

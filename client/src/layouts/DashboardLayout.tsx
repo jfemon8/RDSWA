@@ -14,6 +14,7 @@ import NotificationBell from '@/components/shared/NotificationBell';
 import MessageBell from '@/components/shared/MessageBell';
 import Spinner from '@/components/ui/Spinner';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useThemeStore } from '@/stores/themeStore';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const sidebarLinks = [
@@ -43,6 +44,8 @@ export default function DashboardLayout() {
     navigate('/login');
   };
   const { settings: siteSettings } = useSiteSettings();
+  const { theme } = useThemeStore();
+  const navLogo = theme === 'dark' ? (siteSettings?.logoDark || siteSettings?.logo) : siteSettings?.logo;
 
   // Lock body scroll on mobile when sidebar is open
   useBodyScrollLock(sidebarOpen);
@@ -65,10 +68,18 @@ export default function DashboardLayout() {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <Link to="/" className="text-lg sm:text-xl font-bold truncate">
-            <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
-              {siteSettings?.siteName || 'RDSWA'}
-            </GradientText>
+          <Link to="/" className="flex items-center text-lg sm:text-xl font-bold truncate min-w-0">
+            {navLogo ? (
+              <img
+                src={navLogo}
+                alt={siteSettings?.siteName || 'RDSWA'}
+                className="h-9 object-contain"
+              />
+            ) : (
+              <GradientText colors={['#5227FF', '#FF9FFC', '#B19EEF']} animationSpeed={6}>
+                {siteSettings?.siteName || 'RDSWA'}
+              </GradientText>
+            )}
           </Link>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">

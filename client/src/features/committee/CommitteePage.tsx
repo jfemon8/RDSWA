@@ -93,13 +93,14 @@ export default function CommitteePage() {
                 </div>
 
                 <div className="p-6">
-                  <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="flex flex-wrap justify-center gap-3">
                     {c.members?.filter((m: any) => !m.leftAt).map((m: any, i: number) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 * i }}
+                        className="w-full sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
                       >
                         <MemberCard member={m} />
                       </motion.div>
@@ -118,7 +119,7 @@ export default function CommitteePage() {
 function MemberCard({ member }: { member: any }) {
   const isLeader = ['president', 'general_secretary'].includes(member.position);
   return (
-    <Link to={`/members/${member.user?._id}`} className={`flex items-center gap-3 p-3 border rounded-xl transition-colors ${isLeader ? 'border-primary/30 bg-primary/5' : 'hover:bg-accent hover:border-primary/30'}`}>
+    <Link to={`/members/${member.user?._id}`} className={`flex items-center gap-3 p-3 border rounded-xl transition-colors h-full ${isLeader ? 'border-primary/30 bg-primary/5' : 'hover:bg-accent hover:border-primary/30'}`}>
       {member.user?.avatar ? (
         <img src={member.user.avatar} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
       ) : (
