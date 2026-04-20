@@ -257,7 +257,14 @@ export class UserService {
     return this.listUsers({ ...query, role: undefined });
   }
 
-  async listBloodDonors(query: { bloodGroup?: string; homeDistrict?: string; page?: string; limit?: string }) {
+  async listBloodDonors(query: {
+    bloodGroup?: string;
+    presentDistrict?: string;
+    presentDivision?: string;
+    homeDistrict?: string;
+    page?: string;
+    limit?: string;
+  }) {
     const { page, limit } = parsePagination(query);
     const filter: FilterQuery<IUserDocument> = {
       isDeleted: false,
@@ -266,11 +273,13 @@ export class UserService {
     };
 
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
+    if (query.presentDistrict) filter['presentAddress.district'] = query.presentDistrict;
+    if (query.presentDivision) filter['presentAddress.division'] = query.presentDivision;
     if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
 
     const [users, total] = await Promise.all([
       User.find(filter)
-        .select('name avatar bloodGroup homeDistrict phone lastDonationDate')
+        .select('name avatar bloodGroup homeDistrict presentAddress phone lastDonationDate')
         .skip(getSkip({ page, limit }))
         .limit(limit),
       User.countDocuments(filter),
