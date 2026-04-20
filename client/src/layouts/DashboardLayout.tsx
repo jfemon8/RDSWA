@@ -16,6 +16,8 @@ import Spinner from '@/components/ui/Spinner';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useThemeStore } from '@/stores/themeStore';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useIsAndroidApp } from '@/hooks/usePlatform';
+import BottomNav from '@/components/shared/BottomNav';
 
 const sidebarLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: Home },
@@ -46,6 +48,7 @@ export default function DashboardLayout() {
   const { settings: siteSettings } = useSiteSettings();
   const { theme } = useThemeStore();
   const navLogo = theme === 'dark' ? (siteSettings?.logoDark || siteSettings?.logo) : siteSettings?.logo;
+  const isAndroidApp = useIsAndroidApp();
 
   // Lock body scroll on mobile when sidebar is open
   useBodyScrollLock(sidebarOpen);
@@ -165,7 +168,7 @@ export default function DashboardLayout() {
         </AnimatePresence>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 min-h-[calc(100dvh-4rem)]">
+        <main className={`flex-1 min-w-0 p-3 sm:p-4 lg:p-6 min-h-[calc(100dvh-4rem)] ${isAndroidApp ? 'pb-24' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -181,6 +184,7 @@ export default function DashboardLayout() {
           </AnimatePresence>
         </main>
       </div>
+      {isAndroidApp && <BottomNav />}
     </div>
   );
 }

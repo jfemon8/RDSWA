@@ -2,11 +2,14 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Suspense } from 'react';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
+import BottomNav from '@/components/shared/BottomNav';
 import { motion, AnimatePresence } from 'motion/react';
 import Spinner from '@/components/ui/Spinner';
+import { useIsAndroidApp } from '@/hooks/usePlatform';
 
 export default function PublicLayout() {
   const location = useLocation();
+  const isAndroidApp = useIsAndroidApp();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -17,7 +20,11 @@ export default function PublicLayout() {
         Skip to main content
       </a>
       <Navbar />
-      <main id="main-content" className="flex-1" role="main">
+      <main
+        id="main-content"
+        className={`flex-1 ${isAndroidApp ? 'pb-20' : ''}`}
+        role="main"
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -32,7 +39,9 @@ export default function PublicLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <Footer />
+      {/* Hide footer inside the Android app — bottom nav replaces it for navigation */}
+      {!isAndroidApp && <Footer />}
+      {isAndroidApp && <BottomNav />}
     </div>
   );
 }

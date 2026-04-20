@@ -16,6 +16,8 @@ import type { LucideIcon } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useThemeStore } from '@/stores/themeStore';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useIsAndroidApp } from '@/hooks/usePlatform';
+import BottomNav from '@/components/shared/BottomNav';
 import NotificationBell from '@/components/shared/NotificationBell';
 import MessageBell from '@/components/shared/MessageBell';
 import Spinner from '@/components/ui/Spinner';
@@ -87,6 +89,7 @@ export default function AdminLayout() {
   const { settings: siteSettings } = useSiteSettings();
   const { theme } = useThemeStore();
   const navLogo = theme === 'dark' ? (siteSettings?.logoDark || siteSettings?.logo) : siteSettings?.logo;
+  const isAndroidApp = useIsAndroidApp();
   const email = user?.email;
   const deniedPaths: Record<string, string[]> = {
     '/admin/backup': BACKUP_RESTRICTED_SUPER_ADMINS,
@@ -208,7 +211,7 @@ export default function AdminLayout() {
           )}
         </AnimatePresence>
 
-        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 min-h-[calc(100dvh-4rem)]">
+        <main className={`flex-1 min-w-0 p-3 sm:p-4 lg:p-6 min-h-[calc(100dvh-4rem)] ${isAndroidApp ? 'pb-24' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -224,6 +227,7 @@ export default function AdminLayout() {
           </AnimatePresence>
         </main>
       </div>
+      {isAndroidApp && <BottomNav />}
     </div>
   );
 }

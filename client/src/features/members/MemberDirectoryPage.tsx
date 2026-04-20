@@ -145,7 +145,7 @@ export default function MemberDirectoryPage({
                 >
                   <div className="flex items-center gap-3">
                     {m.avatar ? (
-                      <img src={m.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                      <img src={m.avatar} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-full object-cover" />
                     ) : (
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                         {m.name?.[0]}

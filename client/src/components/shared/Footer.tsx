@@ -9,6 +9,13 @@ export default function Footer() {
   const fLogo = theme === 'dark' ? (settings?.footerLogoDark || settings?.footerLogo) : settings?.footerLogo;
   const siteName = settings?.siteName || 'RDSWA';
 
+  // WCAG AA requires 4.5:1 contrast for normal text. text-muted-foreground against
+  // bg-background sits near the 4.5:1 boundary in both themes and fails for links/
+  // small text. Using foreground with opacity guarantees a stronger base colour
+  // while keeping the hover-to-full-opacity affordance.
+  const linkClass = 'text-foreground/75 hover:text-foreground transition-colors';
+  const textClass = 'text-foreground/80';
+
   return (
     <footer role="contentinfo" className="border-t bg-background" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="container mx-auto py-10 sm:py-12">
@@ -26,7 +33,7 @@ export default function Footer() {
                   {siteName}
                 </GradientText>
               )}
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className={`text-sm leading-relaxed ${textClass}`}>
                 {settings?.siteNameFull || siteName}
                 {settings?.address ? `, ${settings.address}` : ''}
               </p>
@@ -34,42 +41,42 @@ export default function Footer() {
           </FadeIn>
           <FadeIn delay={0.1}>
             <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2.5 text-sm text-muted-foreground">
-                <li><Link to="/about" className="hover:text-foreground transition-colors">About Us</Link></li>
-                <li><Link to="/committee" className="hover:text-foreground transition-colors">Committee</Link></li>
-                <li><Link to="/events" className="hover:text-foreground transition-colors">Events</Link></li>
-                <li><Link to="/notices" className="hover:text-foreground transition-colors">Notices</Link></li>
+              <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
+              <ul className="space-y-2.5 text-sm">
+                <li><Link to="/about" className={linkClass}>About Us</Link></li>
+                <li><Link to="/committee" className={linkClass}>Committee</Link></li>
+                <li><Link to="/events" className={linkClass}>Events</Link></li>
+                <li><Link to="/notices" className={linkClass}>Notices</Link></li>
               </ul>
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>
             <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2.5 text-sm text-muted-foreground">
-                <li><Link to="/bus-schedule" className="hover:text-foreground transition-colors">Bus Schedule</Link></li>
-                <li><Link to="/gallery" className="hover:text-foreground transition-colors">Gallery</Link></li>
-                <li><Link to="/donations" className="hover:text-foreground transition-colors">Donations</Link></li>
-                <li><Link to="/documents" className="hover:text-foreground transition-colors">Documents</Link></li>
+              <h4 className="font-semibold text-foreground mb-4">Resources</h4>
+              <ul className="space-y-2.5 text-sm">
+                <li><Link to="/bus-schedule" className={linkClass}>Bus Schedule</Link></li>
+                <li><Link to="/gallery" className={linkClass}>Gallery</Link></li>
+                <li><Link to="/donations" className={linkClass}>Donations</Link></li>
+                <li><Link to="/documents" className={linkClass}>Documents</Link></li>
               </ul>
             </div>
           </FadeIn>
           <FadeIn delay={0.3}>
             <div>
-              <h4 className="font-semibold mb-4">Legal & Help</h4>
-              <ul className="space-y-2.5 text-sm text-muted-foreground">
-                <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</Link></li>
-                <li><Link to="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
-                <li><Link to="/contact" className="hover:text-foreground transition-colors">Contact Us</Link></li>
+              <h4 className="font-semibold text-foreground mb-4">Legal & Help</h4>
+              <ul className="space-y-2.5 text-sm">
+                <li><Link to="/privacy" className={linkClass}>Privacy Policy</Link></li>
+                <li><Link to="/terms" className={linkClass}>Terms & Conditions</Link></li>
+                <li><Link to="/faq" className={linkClass}>FAQ</Link></li>
+                <li><Link to="/contact" className={linkClass}>Contact Us</Link></li>
               </ul>
             </div>
           </FadeIn>
         </div>
         <FadeIn>
-          <div className="mt-8 sm:mt-10 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground text-center sm:text-left">
+          <div className={`mt-8 sm:mt-10 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-center sm:text-left ${textClass}`}>
             <span>&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</span>
-            <span className="text-xs">Developed by <a href="https://github.com/jfemon8" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline underline-offset-2">Emon</a></span>
+            <span>Developed by <a href="https://github.com/jfemon8" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline underline-offset-2 font-medium">Emon</a></span>
           </div>
         </FadeIn>
       </div>

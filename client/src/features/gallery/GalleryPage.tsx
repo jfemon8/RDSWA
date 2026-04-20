@@ -113,7 +113,7 @@ export default function GalleryPage() {
                   <div onClick={() => setSelectedAlbum(a._id)}
                     className="border rounded-xl overflow-hidden bg-card cursor-pointer hover:border-primary/30 transition-colors">
                     {a.coverPhoto ? (
-                      <img src={a.coverPhoto} alt="" className="w-full h-40 object-cover" />
+                      <img src={a.coverPhoto} alt="" loading="lazy" decoding="async" className="w-full h-40 object-cover" />
                     ) : (
                       <div className="w-full h-40 bg-muted flex items-center justify-center">
                         <Image className="h-8 w-8 text-muted-foreground/30" />

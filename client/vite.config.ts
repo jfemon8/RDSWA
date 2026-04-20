@@ -71,6 +71,36 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // ── Offline-first endpoints (Bus Schedule, About/Settings, Blood Donors) ──
+          // StaleWhileRevalidate: serve cached instantly, refresh in the background.
+          // Placed BEFORE the generic /api/* rule so it takes priority.
+          {
+            urlPattern: /\/api\/bus\/.*$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-bus-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/api\/settings(\?.*)?$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-settings-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/api\/users\/blood-donors.*$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-blood-donors-cache',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 6 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /\/api\/.*$/i,
             handler: 'NetworkFirst',

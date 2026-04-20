@@ -100,7 +100,7 @@ export default function HomePage() {
 
           <BlurText
             text={hp?.heroTitle || 'Rangpur Divisional Student'}
-            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2 justify-center"
+            className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2 justify-center"
             delay={100}
             animateBy="words"
             direction="bottom"
@@ -110,14 +110,14 @@ export default function HomePage() {
             <GradientText
               colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
               animationSpeed={4}
-              className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight"
+              className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight"
             >
               {hp?.heroTitleGradient || 'Welfare Association'}
             </GradientText>
           </div>
 
           <FadeIn delay={0.6} blur>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
               {hp?.heroSubtitle || 'Connecting students from Rangpur Division at University of Barishal.'}
             </p>
           </FadeIn>

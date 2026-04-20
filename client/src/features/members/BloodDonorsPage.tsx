@@ -139,7 +139,7 @@ export default function BloodDonorsPage() {
               <div className="border rounded-xl p-4 bg-card h-full flex flex-col hover:border-primary/30 transition-colors">
                 <div className="flex items-center gap-3 mb-3">
                   {d.avatar ? (
-                    <img src={d.avatar} alt="" className="h-12 w-12 rounded-full object-cover shrink-0" />
+                    <img src={d.avatar} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-full object-cover shrink-0" />
                   ) : (
                     <div className="h-12 w-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 font-bold text-sm shrink-0">
                       {d.bloodGroup}

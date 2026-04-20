@@ -123,7 +123,7 @@ function MemberCard({ member }: { member: any }) {
   return (
     <Link to={`/members/${member.user?._id}`} className={`flex items-center gap-3 p-3 border rounded-xl transition-colors h-full ${isLeader ? 'border-primary/30 bg-primary/5' : 'hover:bg-accent hover:border-primary/30'}`}>
       {member.user?.avatar ? (
-        <img src={member.user.avatar} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
+        <img src={member.user.avatar} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover shrink-0" />
       ) : (
         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm shrink-0">
           {member.user?.name?.[0] || '?'}
