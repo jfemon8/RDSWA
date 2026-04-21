@@ -119,24 +119,31 @@ export default function ImageUpload({
               alt=""
               className={`object-cover ${circular ? 'h-24 w-24 rounded-full' : 'h-32 w-full max-w-xs'}`}
             />
-            {/* Always-visible action buttons on mobile, hover-only on desktop */}
-            <div className="absolute top-1 right-1 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            {/* Always-visible action buttons. Previously hidden with
+                `sm:opacity-0 sm:group-hover:opacity-100`, but the parent
+                never had the `group` class, so on desktop the hover never
+                triggered and the buttons were permanently invisible.
+                Keep them visible with a strong backdrop + ring so they
+                read clearly against any image underneath. */}
+            <div className="absolute top-1.5 right-1.5 flex gap-1.5">
               <motion.button
                 type="button"
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => fileRef.current?.click()}
-                className="p-2 bg-white/95 dark:bg-black/80 backdrop-blur-sm rounded-full text-foreground shadow-md"
-                title="Change"
+                className="p-2 bg-white/95 dark:bg-black/80 backdrop-blur-sm rounded-full text-foreground shadow-md ring-1 ring-black/10 dark:ring-white/20 hover:bg-white dark:hover:bg-black transition-colors"
+                title="Change image"
                 aria-label="Change image"
               >
                 <Upload className="h-3.5 w-3.5" />
               </motion.button>
               <motion.button
                 type="button"
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => onChange('')}
-                className="p-2 bg-white/95 dark:bg-black/80 backdrop-blur-sm rounded-full text-destructive shadow-md"
-                title="Remove"
+                className="p-2 bg-white/95 dark:bg-black/80 backdrop-blur-sm rounded-full text-destructive shadow-md ring-1 ring-black/10 dark:ring-white/20 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                title="Remove image"
                 aria-label="Remove image"
               >
                 <X className="h-3.5 w-3.5" />

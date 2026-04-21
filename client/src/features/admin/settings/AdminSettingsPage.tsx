@@ -4,10 +4,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Save, Loader2, Plus, Trash2, GraduationCap } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, GraduationCap, Palette, RotateCcw } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Spinner from '@/components/ui/Spinner';
+import { useAuthStore } from '@/stores/authStore';
+import { hasMinRole } from '@/lib/roles';
+import { UserRole } from '@rdswa/shared';
+import { isValidHex } from '@/lib/colorUtils';
+import { DEFAULT_BRAND_COLORS } from '@/hooks/useBrandColors';
 
 const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social', 'academic'] as const;
 type Tab = typeof TABS[number];
@@ -125,8 +130,157 @@ function GeneralTab({ settings: s }: { settings: any }) {
         </div>
 
         <SaveButton mutation={mutation} />
+
+        <BrandColorsSection settings={s} />
       </div>
     </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Brand Colors — SuperAdmin only
+// ═══════════════════════════════════════════
+
+function BrandColorsSection({ settings }: { settings: any }) {
+  const { user } = useAuthStore();
+  const isSuperAdmin = user ? hasMinRole(user.role, UserRole.SUPER_ADMIN) : false;
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const [colors, setColors] = useState({
+    lightPrimary: DEFAULT_BRAND_COLORS.lightPrimary,
+    lightSecondary: DEFAULT_BRAND_COLORS.lightSecondary,
+    darkPrimary: DEFAULT_BRAND_COLORS.darkPrimary,
+    darkSecondary: DEFAULT_BRAND_COLORS.darkSecondary,
+  });
+
+  useEffect(() => {
+    const bc = settings?.brandColors || {};
+    setColors({
+      lightPrimary: bc.lightPrimary || DEFAULT_BRAND_COLORS.lightPrimary,
+      lightSecondary: bc.lightSecondary || DEFAULT_BRAND_COLORS.lightSecondary,
+      darkPrimary: bc.darkPrimary || DEFAULT_BRAND_COLORS.darkPrimary,
+      darkSecondary: bc.darkSecondary || DEFAULT_BRAND_COLORS.darkSecondary,
+    });
+  }, [settings]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/brand-colors', { brandColors: colors }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success('Brand colors saved — preview is live');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save colors'),
+  });
+
+  const resetToDefaults = () => setColors({ ...DEFAULT_BRAND_COLORS });
+
+  // Non-SuperAdmin users see the section as read-only with an explanation.
+  const readOnly = !isSuperAdmin;
+
+  const allValid = Object.values(colors).every(isValidHex);
+
+  return (
+    <FadeIn direction="up" delay={0.1}>
+      <div className="mt-10 pt-8 border-t space-y-4">
+        <div className="flex items-center gap-2">
+          <Palette className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Brand Colors</h2>
+          {readOnly && (
+            <span className="ml-auto text-xs text-muted-foreground italic">Super Admin only</span>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground -mt-2">
+          These colors drive the primary / secondary buttons, links, tags, and accent surfaces across the whole website. Pick from the swatch or paste a 6-digit hex (e.g. <code className="px-1 rounded bg-muted">#008f57</code>). Empty values fall back to the brand defaults.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ColorField
+            label="Light Mode — Primary"
+            value={colors.lightPrimary}
+            onChange={(v) => setColors({ ...colors, lightPrimary: v })}
+            disabled={readOnly}
+          />
+          <ColorField
+            label="Light Mode — Secondary"
+            value={colors.lightSecondary}
+            onChange={(v) => setColors({ ...colors, lightSecondary: v })}
+            disabled={readOnly}
+          />
+          <ColorField
+            label="Dark Mode — Primary"
+            value={colors.darkPrimary}
+            onChange={(v) => setColors({ ...colors, darkPrimary: v })}
+            disabled={readOnly}
+          />
+          <ColorField
+            label="Dark Mode — Secondary"
+            value={colors.darkSecondary}
+            onChange={(v) => setColors({ ...colors, darkSecondary: v })}
+            disabled={readOnly}
+          />
+        </div>
+
+        {!readOnly && (
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => mutation.mutate()}
+              disabled={!allValid || mutation.isPending}
+              className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+            >
+              {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Brand Colors
+            </motion.button>
+            <button
+              type="button"
+              onClick={resetToDefaults}
+              className="flex items-center gap-1.5 px-4 py-2 border rounded-md hover:bg-accent text-sm text-muted-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Reset to defaults
+            </button>
+            {!allValid && (
+              <span className="text-xs text-destructive">One or more values aren't valid 6-digit hex codes.</span>
+            )}
+          </div>
+        )}
+      </div>
+    </FadeIn>
+  );
+}
+
+function ColorField({
+  label, value, onChange, disabled,
+}: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const valid = isValidHex(value);
+  return (
+    <div>
+      <label className="block text-sm font-medium text-foreground mb-1.5">{label}</label>
+      <div className="flex items-center gap-2">
+        {/* Native swatch — standard, accessible, no third-party picker lib needed. */}
+        <input
+          type="color"
+          value={valid ? value : '#000000'}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          aria-label={`${label} color picker`}
+          className="h-10 w-14 rounded-md border cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 p-0.5 bg-background"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value.trim())}
+          disabled={disabled}
+          placeholder="#008f57"
+          className={`flex-1 px-3 py-2 border rounded-md bg-card text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60 ${!valid && value ? 'border-destructive' : ''}`}
+        />
+      </div>
+      {!valid && value && (
+        <p className="text-[11px] text-destructive mt-1">Must be #RRGGBB format</p>
+      )}
+    </div>
   );
 }
 

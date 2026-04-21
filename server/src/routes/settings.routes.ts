@@ -41,6 +41,7 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       contactEmail: settings.contactEmail,
       contactPhone: settings.contactPhone,
       address: settings.address,
+      brandColors: settings.brandColors,
       aboutContent: settings.aboutContent,
       missionContent: settings.missionContent,
       visionContent: settings.visionContent,
@@ -186,6 +187,40 @@ router.patch('/general', authenticate(), authorize(UserRole.ADMIN), auditLog('se
   const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
   ApiResponse.success(res, settings, 'General settings updated');
 }));
+
+// Update brand colors (SuperAdmin only) — controls the CSS primary/secondary
+// variables applied app-wide. Empty strings fall back to hardcoded defaults
+// baked into client/src/index.css.
+const hexColorSchema = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a 6-digit hex color (e.g. #008f57)').or(z.literal(''));
+const brandColorsSchema = z.object({
+  brandColors: z.object({
+    lightPrimary: hexColorSchema.optional(),
+    lightSecondary: hexColorSchema.optional(),
+    darkPrimary: hexColorSchema.optional(),
+    darkSecondary: hexColorSchema.optional(),
+  }),
+});
+
+router.patch(
+  '/brand-colors',
+  authenticate(),
+  authorize(UserRole.SUPER_ADMIN),
+  denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS),
+  validate({ body: brandColorsSchema }),
+  auditLog('settings.update_brand_colors', 'site_settings'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const { brandColors } = req.body as z.infer<typeof brandColorsSchema>;
+    // Build $set with dotted paths so we don't replace the entire subdoc
+    // (each key is optional — only provided colors update).
+    const update: Record<string, unknown> = { updatedBy: req.user._id };
+    for (const key of ['lightPrimary', 'lightSecondary', 'darkPrimary', 'darkSecondary'] as const) {
+      if (brandColors[key] !== undefined) update[`brandColors.${key}`] = brandColors[key] || undefined;
+    }
+    const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+    ApiResponse.success(res, settings, 'Brand colors updated');
+  })
+);
 
 // Update organizations (SuperAdmin)
 router.patch('/organizations', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_organizations', 'site_settings'), asyncHandler(async (req, res) => {

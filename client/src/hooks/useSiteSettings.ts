@@ -15,6 +15,12 @@ export interface SiteSettings {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  brandColors?: {
+    lightPrimary?: string;
+    lightSecondary?: string;
+    darkPrimary?: string;
+    darkSecondary?: string;
+  };
   socialLinks?: { facebook?: string; youtube?: string; linkedin?: string; twitter?: string };
   universityInfo?: {
     name?: string;

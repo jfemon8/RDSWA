@@ -21,6 +21,12 @@ export interface ISiteSettingsDocument extends Document {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  brandColors?: {
+    lightPrimary?: string;
+    lightSecondary?: string;
+    darkPrimary?: string;
+    darkSecondary?: string;
+  };
   aboutContent?: string;
   missionContent?: string;
   visionContent?: string;
@@ -113,6 +119,16 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
     contactEmail: String,
     contactPhone: String,
     address: String,
+    // Brand colors — hex strings (e.g. "#008f57"). Empty / missing fields
+    // fall back to the hardcoded defaults baked into client/src/index.css.
+    // Defaults mirror the current brand emerald palette so existing sites
+    // render identically before any admin customization.
+    brandColors: {
+      lightPrimary: { type: String, default: '#008f57' },
+      lightSecondary: { type: String, default: '#e6f4ee' },
+      darkPrimary: { type: String, default: '#28b578' },
+      darkSecondary: { type: String, default: '#242424' },
+    },
     aboutContent: String,
     missionContent: String,
     visionContent: String,

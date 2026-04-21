@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
+import { useBrandColors } from '@/hooks/useBrandColors';
 import ScrollToTop from '@/components/ScrollToTop';
 import Spinner from '@/components/ui/Spinner';
 import { persistOptions } from '@/lib/queryPersister';
@@ -44,6 +45,13 @@ function DynamicSiteMeta() {
   return null;
 }
 
+/** Null-rendering component that injects the admin-configured brand palette as
+ *  CSS variable overrides. See useBrandColors for the precedence rules. */
+function BrandColorsApplier() {
+  useBrandColors();
+  return null;
+}
+
 interface ProvidersProps {
   children: ReactNode;
 }
@@ -62,6 +70,7 @@ export default function Providers({ children }: ProvidersProps) {
             <ConfirmProvider>
               <AuthInitializer>
                 <DynamicSiteMeta />
+                <BrandColorsApplier />
                 {children}
               </AuthInitializer>
             </ConfirmProvider>
