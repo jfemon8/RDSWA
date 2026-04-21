@@ -9,6 +9,10 @@
     <meta name="description" content="Official platform of Rangpur Divisional Student Welfare Association, University of Barishal. Member directory, events, notices, committees, and more." />
     <meta name="theme-color" content="#008f57" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#042f1f" media="(prefers-color-scheme: dark)" />
+    <!-- Declares the page supports both colour schemes. Without this, Android
+         WebView (and some iOS embedded browsers) force light mode regardless
+         of the OS setting and make `prefers-color-scheme` media queries lie. -->
+    <meta name="color-scheme" content="light dark" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

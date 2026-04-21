@@ -65,6 +65,11 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Tells the UA the page has matching styles for both schemes. Without
+       this CSS property, Android WebView (especially when wrapped by third-
+       party APK builders) forces light and makes matchMedia return false
+       even when the system is set to dark. */
+    color-scheme: light dark;
     /* overflow-x: clip avoids the accidental horizontal scrollbar caused by
        in-view animations (FadeIn direction="left" / motion transforms) and
        sub-pixel rendering in mobile WebViews. Unlike overflow-x: hidden it
