@@ -27,7 +27,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'strict', // 'none' needed for cross-origin (Vercel↔Render)
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days — matches JWT_REFRESH_EXPIRY
   });
 
   ApiResponse.success(res, {
@@ -71,7 +71,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days — matches JWT_REFRESH_EXPIRY
   });
 
   ApiResponse.success(res, { accessToken: tokens.accessToken }, 'Token refreshed');

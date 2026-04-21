@@ -17,7 +17,9 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
   JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
-  JWT_REFRESH_EXPIRY: z.string().default('7d'),
+  // Sessions stay valid for 1 year unless the user explicitly logs out.
+  // A silent refresh renews the access token while the refresh token is alive.
+  JWT_REFRESH_EXPIRY: z.string().default('365d'),
 
   // Email
   SMTP_HOST: z.string().default('smtp.gmail.com'),
