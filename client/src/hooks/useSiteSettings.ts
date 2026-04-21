@@ -21,7 +21,17 @@ export interface SiteSettings {
     darkPrimary?: string;
     darkSecondary?: string;
   };
-  socialLinks?: { facebook?: string; youtube?: string; linkedin?: string; twitter?: string };
+  socialLinks?: {
+    facebook?: string;
+    youtube?: string;
+    linkedin?: string;
+    twitter?: string;
+    androidApp?: string;
+    iosApp?: string;
+    windowsApp?: string;
+    macosApp?: string;
+    linuxApp?: string;
+  };
   universityInfo?: {
     name?: string;
     logo?: string;

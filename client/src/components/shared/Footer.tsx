@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { FadeIn, GradientText } from '@/components/reactbits';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useThemeStore } from '@/stores/themeStore';
+import AppDownloadButtons from '@/components/shared/AppDownloadButtons';
 
 export default function Footer() {
   const { settings } = useSiteSettings();
@@ -22,9 +23,9 @@ export default function Footer() {
   return (
     <footer role="contentinfo" className="border-t bg-background" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="container mx-auto py-10 sm:py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-6 sm:gap-8">
           <FadeIn delay={0}>
-            <div className="col-span-2 md:col-span-1">
+            <div>
               {fLogo ? (
                 <img src={fLogo} alt={siteName} className="h-10 object-contain mb-3" />
               ) : (
@@ -40,6 +41,8 @@ export default function Footer() {
                 {settings?.siteNameFull || siteName}
                 {settings?.address ? `, ${settings.address}` : ''}
               </p>
+              {/* Conditional — renders nothing if no app links are configured */}
+              <AppDownloadButtons />
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>

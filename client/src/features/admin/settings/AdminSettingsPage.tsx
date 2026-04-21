@@ -603,11 +603,20 @@ function LegalTab({ settings: s }: { settings: any }) {
 function SocialTab({ settings: s }: { settings: any }) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [form, setForm] = useState({ facebook: '', youtube: '', linkedin: '', twitter: '' });
+  const [form, setForm] = useState({
+    facebook: '', youtube: '', linkedin: '', twitter: '',
+    androidApp: '', iosApp: '', windowsApp: '', macosApp: '', linuxApp: '',
+  });
 
   useEffect(() => {
     const sl = s.socialLinks || {};
-    setForm({ facebook: sl.facebook || '', youtube: sl.youtube || '', linkedin: sl.linkedin || '', twitter: sl.twitter || '' });
+    setForm({
+      facebook: sl.facebook || '', youtube: sl.youtube || '',
+      linkedin: sl.linkedin || '', twitter: sl.twitter || '',
+      androidApp: sl.androidApp || '', iosApp: sl.iosApp || '',
+      windowsApp: sl.windowsApp || '', macosApp: sl.macosApp || '',
+      linuxApp: sl.linuxApp || '',
+    });
   }, [s]);
 
   const mutation = useMutation({
@@ -619,10 +628,22 @@ function SocialTab({ settings: s }: { settings: any }) {
   return (
     <FadeIn direction="up">
       <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Social Profiles</h2>
         <Field label="Facebook" value={form.facebook} onChange={(v) => setForm({ ...form, facebook: v })} placeholder="https://facebook.com/..." />
         <Field label="YouTube" value={form.youtube} onChange={(v) => setForm({ ...form, youtube: v })} placeholder="https://youtube.com/..." />
         <Field label="LinkedIn" value={form.linkedin} onChange={(v) => setForm({ ...form, linkedin: v })} placeholder="https://linkedin.com/..." />
         <Field label="Twitter / X" value={form.twitter} onChange={(v) => setForm({ ...form, twitter: v })} placeholder="https://x.com/..." />
+
+        <h2 className="text-lg font-semibold text-foreground pt-4">App Download Links</h2>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Leave blank to hide that platform's download button in the footer.
+        </p>
+        <Field label="Android (Play Store)" value={form.androidApp} onChange={(v) => setForm({ ...form, androidApp: v })} placeholder="https://play.google.com/store/apps/details?id=..." />
+        <Field label="iOS (App Store)" value={form.iosApp} onChange={(v) => setForm({ ...form, iosApp: v })} placeholder="https://apps.apple.com/app/id..." />
+        <Field label="Windows (Microsoft Store)" value={form.windowsApp} onChange={(v) => setForm({ ...form, windowsApp: v })} placeholder="https://apps.microsoft.com/detail/..." />
+        <Field label="macOS (Mac App Store)" value={form.macosApp} onChange={(v) => setForm({ ...form, macosApp: v })} placeholder="https://apps.apple.com/app/mac/id..." />
+        <Field label="Linux (direct / Snap / Flathub)" value={form.linuxApp} onChange={(v) => setForm({ ...form, linuxApp: v })} placeholder="https://snapcraft.io/... or https://flathub.org/apps/..." />
+
         <SaveButton mutation={mutation} />
       </div>
     </FadeIn>

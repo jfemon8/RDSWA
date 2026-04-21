@@ -17,6 +17,11 @@ export interface ISiteSettingsDocument extends Document {
     youtube?: string;
     linkedin?: string;
     twitter?: string;
+    androidApp?: string;
+    iosApp?: string;
+    windowsApp?: string;
+    macosApp?: string;
+    linuxApp?: string;
   };
   contactEmail?: string;
   contactPhone?: string;
@@ -115,6 +120,13 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       youtube: String,
       linkedin: String,
       twitter: String,
+      // Per-platform app download links shown as buttons in the footer.
+      // Any unset value hides its button.
+      androidApp: String,
+      iosApp: String,
+      windowsApp: String,
+      macosApp: String,
+      linuxApp: String,
     },
     contactEmail: String,
     contactPhone: String,

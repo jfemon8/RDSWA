@@ -175,6 +175,18 @@
   height: 100%;
 }
 
+/* Pulsing ring animation used for hover affordances where we want the
+   border to draw attention without translating the element itself. The
+   colour channel is read from --primary, so it automatically tracks the
+   brand palette (light/dark + admin overrides). */
+@keyframes rdswa-border-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); }
+  50%      { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+}
+.hover-border-pulse:hover {
+  animation: rdswa-border-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* TipTap Rich Text Editor */
 .rich-editor .tiptap {
   padding: 0.5rem 0.75rem;
