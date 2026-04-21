@@ -8,6 +8,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
 import { useBrandColors } from '@/hooks/useBrandColors';
+import { useGroupActivitySocket } from '@/hooks/useSocket';
 import ScrollToTop from '@/components/ScrollToTop';
 import Spinner from '@/components/ui/Spinner';
 import { persistOptions } from '@/lib/queryPersister';
@@ -52,6 +53,14 @@ function BrandColorsApplier() {
   return null;
 }
 
+/** Null-rendering listener for group chat activity across the whole app so
+ *  the MessageBell badge + any mounted chat-list view stay in sync even when
+ *  the user isn't currently on the group's chat page. */
+function GroupActivityListener() {
+  useGroupActivitySocket();
+  return null;
+}
+
 interface ProvidersProps {
   children: ReactNode;
 }
@@ -71,6 +80,7 @@ export default function Providers({ children }: ProvidersProps) {
               <AuthInitializer>
                 <DynamicSiteMeta />
                 <BrandColorsApplier />
+                <GroupActivityListener />
                 {children}
               </AuthInitializer>
             </ConfirmProvider>

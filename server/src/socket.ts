@@ -218,6 +218,34 @@ export function broadcastChatRead(groupId: string, messageIds: string[], userId:
 }
 
 /**
+ * Notify *every* member of a group that chat activity happened, so their
+ * chat-list UIs (GroupsPage, ChatHubPage, MessageBell, etc.) can refresh
+ * previews / unread counts / ordering even when they don't currently have
+ * the group chat page open. The `chat:${groupId}` room only reaches users
+ * actively viewing that chat, so this is the complement for everyone else.
+ *
+ * `kind`:
+ *   - 'message' — new message posted (reorder list, bump unread)
+ *   - 'edit' / 'delete' — preview text may have changed
+ *   - 'read' — unread count for the reader should recompute
+ */
+export function broadcastGroupActivity(
+  groupId: string,
+  kind: 'message' | 'edit' | 'delete' | 'read',
+  memberIds: Array<string | { toString(): string }>
+): void {
+  if (!io) return;
+  const payload = { groupId, kind, at: Date.now() };
+  const seen = new Set<string>();
+  for (const raw of memberIds) {
+    const id = typeof raw === 'string' ? raw : raw.toString();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    io.to(`user:${id}`).emit('chat:group:activity', payload);
+  }
+}
+
+/**
  * Broadcast a DM to both sender and recipient personal rooms.
  */
 export function broadcastDM(senderId: string, recipientId: string, message: any): void {

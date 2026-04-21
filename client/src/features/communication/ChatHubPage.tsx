@@ -163,7 +163,9 @@ export default function ChatHubPage() {
         avatar: g.avatar,
         subtitle: g.description || `${g.members?.length || 0} members`,
         timestamp: g.updatedAt,
-        unreadCount: 0, // groups endpoint doesn't report unread — future enhancement
+        // Server reports per-group unread count via aggregation on the
+        // /communication/groups endpoint — see its handler for the query.
+        unreadCount: g.unreadCount || 0,
         groupType: g.type,
         to: `/dashboard/groups/${g._id}`,
         raw: g,

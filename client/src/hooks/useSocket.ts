@@ -67,6 +67,40 @@ export function useNotificationSocket(
 }
 
 /**
+ * App-wide listener for group-chat activity. Keeps every surface that shows
+ * a group list / preview / unread indicator in sync when a group event
+ * happens *somewhere else* in the app (e.g. the Messages bell, ChatHubPage,
+ * GroupsPage). The server emits `chat:group:activity` to each member's
+ * personal room whenever a message is posted / edited / deleted / read, so
+ * this listener fires regardless of whether the user currently has that
+ * group's chat page open. Complement to `useChatSocket`, which only fires
+ * while the user is actively in the group chat room.
+ *
+ * Mount once at the app root (providers.tsx).
+ */
+export function useGroupActivitySocket() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const s = getSocket();
+
+    const handler = (data: any) => {
+      if (!data?.groupId) return;
+      // Chat-list / preview queries — ChatHubPage, GroupsPage, ForwardModal.
+      queryClient.invalidateQueries({ queryKey: ['communication', 'groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group', data.groupId] });
+      // Global unread badge shown in the navbar's MessageBell.
+      queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
+    };
+
+    s.on('chat:group:activity', handler);
+    return () => {
+      s.off('chat:group:activity', handler);
+    };
+  }, [queryClient]);
+}
+
+/**
  * Hook for real-time chat messages in a group. Listens on all the related
  * events (new message, edit, delete, reaction, read-receipt) and invalidates
  * the group query so consumers just re-read from cache.

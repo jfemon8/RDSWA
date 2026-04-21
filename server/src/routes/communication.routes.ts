@@ -14,6 +14,7 @@ import {
   broadcastChatMessageDelete,
   broadcastChatReaction,
   broadcastChatRead,
+  broadcastGroupActivity,
   broadcastDM,
   broadcastDMEdit,
   broadcastDMDelete,
@@ -163,14 +164,46 @@ const router = Router();
 // List my groups (Admin+ sees all groups)
 router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
+  const userId = req.user._id;
   const filter: any = { isDeleted: false };
   // Admin+ can see all groups; others only their own
   if (!isAdminOrAbove(req.user.role)) {
-    filter.members = req.user._id;
+    filter.members = userId;
   }
   const groups = await ChatGroup.find(filter)
-    .populate('members', 'name avatar').sort({ updatedAt: -1 });
-  ApiResponse.success(res, groups);
+    .populate('members', 'name avatar').sort({ updatedAt: -1 }).lean();
+
+  if (groups.length === 0) {
+    return ApiResponse.success(res, []);
+  }
+
+  // Compute unread count per group in a single aggregation. A message counts
+  // as unread for the current user when they didn't send it and their id is
+  // not in the message's readBy list. `deletedFor` excludes messages the
+  // user has hidden from their own view.
+  const groupIds = groups.map((g: any) => g._id);
+  const unreadAgg = await Message.aggregate([
+    {
+      $match: {
+        group: { $in: groupIds },
+        isDeleted: false,
+        sender: { $ne: userId },
+        'readBy.user': { $ne: userId },
+        deletedFor: { $ne: userId },
+      },
+    },
+    { $group: { _id: '$group', count: { $sum: 1 } } },
+  ]);
+  const unreadMap = new Map<string, number>(
+    unreadAgg.map((u: any) => [u._id.toString(), u.count])
+  );
+
+  const result = groups.map((g: any) => ({
+    ...g,
+    unreadCount: unreadMap.get(g._id.toString()) || 0,
+  }));
+
+  ApiResponse.success(res, result);
 }));
 
 // Create custom group (Moderator+). Always creates type='custom' — central and department
@@ -373,6 +406,10 @@ router.post('/groups/:id/messages/read', authenticate(), asyncHandler(async (req
   );
 
   broadcastChatRead(id, messageIds.map(String), req.user._id.toString());
+  // Also nudge every member's user room so their chat-list unread counters
+  // update even when they don't have the group chat page open.
+  const fullGroup = await ChatGroup.findById(id).select('members').lean();
+  if (fullGroup?.members) broadcastGroupActivity(id, 'read', fullGroup.members as any);
   ApiResponse.success(res, null, 'Marked as read');
 }));
 
@@ -409,8 +446,11 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   group.updatedAt = new Date();
   await group.save();
 
-  // Real-time broadcast to group room
+  // Real-time broadcast to the group room (for users actively viewing it)
+  // AND to each member's user room (for chat-list / bell badge updates
+  // across the app when they don't have the group open).
   broadcastChatMessage(id, message);
+  broadcastGroupActivity(id, 'message', group.members as any);
 
   ApiResponse.created(res, message);
 }));
@@ -596,6 +636,7 @@ router.post('/messages/:messageId/forward', authenticate(), asyncHandler(async (
     });
     await msg.populate('sender', 'name avatar');
     broadcastChatMessage(gid, msg);
+    broadcastGroupActivity(gid, 'message', group.members as any);
     created.push(msg);
   }
 
@@ -642,6 +683,8 @@ router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(asy
   }
   await message.populate('sender', 'name avatar');
   broadcastChatMessageEdit(req.params.id as string, message);
+  const editGroup = await ChatGroup.findById(req.params.id).select('members').lean();
+  if (editGroup?.members) broadcastGroupActivity(req.params.id as string, 'edit', editGroup.members as any);
   ApiResponse.success(res, message, 'Message updated');
 }));
 
@@ -666,6 +709,8 @@ router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(as
   message.isDeleted = true;
   await message.save();
   broadcastChatMessageDelete(req.params.id as string, messageId as string);
+  const delGroup = await ChatGroup.findById(req.params.id).select('members').lean();
+  if (delGroup?.members) broadcastGroupActivity(req.params.id as string, 'delete', delGroup.members as any);
   ApiResponse.success(res, null, 'Message deleted');
 }));
 
@@ -881,7 +926,23 @@ router.get('/messages/unread-count', authenticate(), asyncHandler(async (req, re
     deletedFor: { $ne: userId },
   });
 
-  ApiResponse.success(res, { count: dmUnread, dmCount: dmUnread });
+  // Only count group messages from groups the user is still a member of.
+  const memberGroups = await ChatGroup.find({ members: userId, isDeleted: false })
+    .select('_id').lean();
+  const groupIds = memberGroups.map((g: any) => g._id);
+  const groupUnread = groupIds.length === 0 ? 0 : await Message.countDocuments({
+    group: { $in: groupIds },
+    sender: { $ne: userId },
+    'readBy.user': { $ne: userId },
+    isDeleted: false,
+    deletedFor: { $ne: userId },
+  });
+
+  ApiResponse.success(res, {
+    count: dmUnread + groupUnread,
+    dmCount: dmUnread,
+    groupCount: groupUnread,
+  });
 }));
 
 // Get DM conversations (list of users I've messaged)
