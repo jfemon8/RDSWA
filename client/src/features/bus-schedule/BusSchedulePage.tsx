@@ -1,6 +1,29 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+
+/**
+ * Offline-persistence options applied to every Bus Schedule query.
+ *   - `meta.persist`: opts this query into IndexedDB-backed persistence
+ *     (see lib/queryPersister.ts). Without it the query lives in memory only.
+ *   - `gcTime` 30 days: keeps the query entry alive long enough to actually
+ *     be persisted. If gcTime expires before a persist tick, the entry is
+ *     dropped and never written to IndexedDB.
+ *   - `staleTime` 1 hour: avoids refetching on every navigation when the data
+ *     is typically fine for an hour. Stale queries auto-refetch on mount and
+ *     on the browser 'online' event, which is how the "come back online →
+ *     see fresh data" sync works alongside the Workbox NetworkFirst rule.
+ *   - `refetchOnReconnect: true`: explicit — fire a refetch the moment the
+ *     device transitions from offline to online, as long as the query is
+ *     stale. Combined with NetworkFirst in the SW this gives fresh data
+ *     without requiring the user to navigate away and back.
+ */
+const BUS_OFFLINE_OPTS = {
+  meta: { persist: true } as const,
+  gcTime: 30 * 24 * 60 * 60 * 1000,
+  staleTime: 60 * 60 * 1000,
+  refetchOnReconnect: true as const,
+};
 import {
   Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink,
   ChevronLeft, ChevronRight, AlertTriangle, ArrowLeft, Info, Star, Building2,
@@ -42,7 +65,27 @@ export default function BusSchedulePage() {
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);
 
+  const prefetchClient = useQueryClient();
   useBusSocket();
+
+  // Eager prefetch on mount: the user expects every tab + filter to work
+  // offline after one online visit, so we warm the cache for BOTH route
+  // types (not just the active tab), operators, and counters in parallel
+  // the first time the page is opened. Subsequent mounts are cheap — the
+  // queries are already cached.
+  useEffect(() => {
+    const fire = (key: unknown[], url: string) =>
+      prefetchClient.prefetchQuery({
+        queryKey: key,
+        queryFn: async () => (await api.get(url)).data,
+        ...BUS_OFFLINE_OPTS,
+      }).catch(() => { /* offline — ignore, SW/persister handle it */ });
+
+    fire(['bus', 'routes', 'university'], '/bus/routes?routeType=university');
+    fire(['bus', 'routes', 'intercity'], '/bus/routes?routeType=intercity');
+    fire(['bus', 'operators'], '/bus/operators');
+    fire(['bus', 'counters'], '/bus/counters');
+  }, [prefetchClient]);
 
   // Routes (for university/intercity tabs)
   const { data: routesData, isLoading: routesLoading } = useQuery({
@@ -52,6 +95,7 @@ export default function BusSchedulePage() {
       return data;
     },
     enabled: tab !== 'all',
+    ...BUS_OFFLINE_OPTS,
   });
 
   // All operators (for "All Buses" tab)
@@ -61,6 +105,7 @@ export default function BusSchedulePage() {
       const { data } = await api.get('/bus/operators');
       return data;
     },
+    ...BUS_OFFLINE_OPTS,
   });
 
   // Schedules for selected route (sorted ascending by departureTime)
@@ -79,6 +124,7 @@ export default function BusSchedulePage() {
       return data;
     },
     enabled: view === 'schedules' && !!selectedRoute,
+    ...BUS_OFFLINE_OPTS,
   });
 
   // Counters (used for operator-detail view)
@@ -88,11 +134,36 @@ export default function BusSchedulePage() {
       const { data } = await api.get('/bus/counters');
       return data;
     },
+    ...BUS_OFFLINE_OPTS,
   });
 
   const routes = routesData?.data || [];
   const schedules = schedulesData?.data || [];
   const operators = operatorsData?.data || [];
+
+  // Phase 2 prefetch: once the list queries resolve, warm the per-item
+  // detail / reviews / schedules caches. Fires in parallel, falls back
+  // gracefully offline. Runs once per operator/route — subsequent renders
+  // hit TanStack's in-memory cache so no network activity.
+  useEffect(() => {
+    const warm = (key: unknown[], url: string) =>
+      prefetchClient.prefetchQuery({
+        queryKey: key,
+        queryFn: async () => (await api.get(url)).data,
+        ...BUS_OFFLINE_OPTS,
+      }).catch(() => { /* ignore failure */ });
+
+    for (const op of operators) {
+      if (!op?._id) continue;
+      warm(['bus', 'operator', op._id], `/bus/operators/${op._id}`);
+      warm(['bus', 'operator', op._id, 'reviews'], `/bus/operators/${op._id}/reviews`);
+    }
+    for (const route of routes) {
+      if (!route?._id) continue;
+      const params = new URLSearchParams({ page: '1', limit: String(PAGE_LIMIT), route: route._id });
+      warm(['bus', 'schedules', params.toString()], `/bus/schedules?${params.toString()}`);
+    }
+  }, [operators, routes, prefetchClient]);
   const pagination = schedulesData?.pagination;
   const counters = countersData?.data || [];
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 1;
@@ -722,6 +793,7 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
       const { data } = await api.get(`/bus/operators/${operatorId}`);
       return data;
     },
+    ...BUS_OFFLINE_OPTS,
   });
   const op = data?.data;
   const opCounters = counters.filter((c: any) => c.operator?._id === operatorId);
@@ -861,6 +933,7 @@ function OperatorReviews({ operatorId }: { operatorId: string }) {
       const { data } = await api.get(`/bus/operators/${operatorId}/reviews`);
       return data;
     },
+    ...BUS_OFFLINE_OPTS,
   });
 
   const reviews = data?.data || [];

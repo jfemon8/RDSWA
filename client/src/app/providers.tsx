@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ReactNode } from 'react';
@@ -8,6 +9,7 @@ import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
 import ScrollToTop from '@/components/ScrollToTop';
 import Spinner from '@/components/ui/Spinner';
+import { persistOptions } from '@/lib/queryPersister';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +51,11 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
+      {/* PersistQueryClientProvider hydrates the query cache from IndexedDB
+          on mount (before children render) and then persists subsequent
+          writes. Queries opt in via `meta: { persist: true }` — see
+          lib/queryPersister.ts. */}
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <BrowserRouter>
           <ScrollToTop />
           <ToastProvider>
@@ -61,7 +67,7 @@ export default function Providers({ children }: ProvidersProps) {
             </ConfirmProvider>
           </ToastProvider>
         </BrowserRouter>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </HelmetProvider>
   );
 }

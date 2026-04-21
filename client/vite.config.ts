@@ -86,32 +86,100 @@ export default defineConfig({
             },
           },
           // ── Offline-first endpoints (Bus Schedule, About/Settings, Blood Donors) ──
-          // StaleWhileRevalidate: serve cached instantly, refresh in the background.
+          //
+          // Strategy: NetworkFirst with `networkTimeoutSeconds: 3`. This gives
+          // us the best of both worlds:
+          //   • Online (fast network): network response wins → fresh data.
+          //     The UI immediately reflects server-side changes on navigation.
+          //   • Online (slow / >3s network): timeout → cache fallback. Users
+          //     never wait indefinitely on a bad connection.
+          //   • Offline: the network fetch rejects immediately → cache
+          //     fallback. All previously-visited data stays accessible.
+          //
+          // We deliberately DON'T use StaleWhileRevalidate here: SWR returns
+          // the cached (potentially stale) response to the client even when
+          // online, and the fresh background response only updates the SW's
+          // cache. That means the TanStack in-memory cache gets the stale
+          // response and the UI shows stale data until the next navigation —
+          // a poor "just-came-online" sync experience.
+          //
+          // TanStack Query's refetchOnReconnect (default true) then triggers
+          // a refetch when the browser fires the 'online' event, which hits
+          // this rule and returns fresh data, completing the sync.
+          //
+          // The IndexedDB-backed TanStack persistence layer (see
+          // lib/queryPersister.ts) acts as a *second* independent offline
+          // source so even if Workbox evicts entries under quota pressure,
+          // the UI still hydrates from persisted query state.
+          //
           // Placed BEFORE the generic /api/* rule so it takes priority.
+          // `purgeOnQuotaError: false` on these critical caches means the
+          // browser evicts *other* origins' storage (and our image cache,
+          // see below) before it touches Bus Schedule / Blood Donors data.
           {
             urlPattern: /\/api\/bus\/.*$/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-bus-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: false },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
           {
             urlPattern: /\/api\/settings(\?.*)?$/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-settings-cache',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: false },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // Blood Donors list — including all blood-group + district filter combos.
           {
             urlPattern: /\/api\/users\/blood-donors.*$/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-blood-donors-cache',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 6 },
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: false },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Academic config feeds dropdowns on member-related pages.
+          {
+            urlPattern: /\/api\/settings\/academic-config.*$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-academic-config-cache',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: false },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Images (avatars, bus photos). Cloudinary URLs are content-hashed
+          // and immutable per URL — CacheFirst is ideal because the browser
+          // can skip the network entirely on repeat access.
+          // `purgeOnQuotaError: true` lets Workbox auto-drop THIS cache first
+          // when quota pressure hits, protecting the API data caches above.
+          {
+            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*\.(?:png|jpg|jpeg|webp|gif|svg|avif)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'cloudinary-images-cache',
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Generic Cloudinary catch-all for URLs without a file-extension
+          // suffix (Cloudinary URL transformations sometimes omit one).
+          {
+            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'cloudinary-assets-cache',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

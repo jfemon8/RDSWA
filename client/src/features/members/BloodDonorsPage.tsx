@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Droplets, Phone, MapPin, User, X, UserPlus, Filter } from 'lucide-react';
@@ -12,9 +12,21 @@ import EmptyState from '@/components/ui/EmptyState';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+/**
+ * Offline-persistence options applied to every Blood Donors query.
+ * Same rationale as in BusSchedulePage — see BUS_OFFLINE_OPTS there.
+ */
+const DONORS_OFFLINE_OPTS = {
+  meta: { persist: true } as const,
+  gcTime: 30 * 24 * 60 * 60 * 1000,
+  staleTime: 60 * 60 * 1000,
+  refetchOnReconnect: true as const,
+};
+
 export default function BloodDonorsPage() {
   const [bloodGroup, setBloodGroup] = useState('');
   const [presentDistrict, setPresentDistrict] = useState('');
+  const prefetchClient = useQueryClient();
 
   const filters: Record<string, string> = {};
   if (bloodGroup) filters.bloodGroup = bloodGroup;
@@ -27,7 +39,28 @@ export default function BloodDonorsPage() {
       const { data } = await api.get(`/users/blood-donors?${params}`);
       return data;
     },
+    ...DONORS_OFFLINE_OPTS,
   });
+
+  // Eager prefetch — on first visit, warm the caches for:
+  //   • the unfiltered donor list (fallback for offline filter resets)
+  //   • each blood-group filter (so tapping "A+" offline still works)
+  //   • the academic-config endpoint (drives the district dropdown)
+  // District-level prefetch is skipped (64 districts × 8 blood groups = 512
+  // combos — too heavy); those caches populate as the user actually filters.
+  useEffect(() => {
+    const warm = (key: readonly unknown[], url: string) =>
+      prefetchClient.prefetchQuery({
+        queryKey: [...key],
+        queryFn: async () => (await api.get(url)).data,
+        ...DONORS_OFFLINE_OPTS,
+      }).catch(() => { /* ignore */ });
+
+    warm(queryKeys.users.bloodDonors({}), '/users/blood-donors?');
+    for (const bg of bloodGroups) {
+      warm(queryKeys.users.bloodDonors({ bloodGroup: bg }), `/users/blood-donors?bloodGroup=${encodeURIComponent(bg)}`);
+    }
+  }, [prefetchClient]);
 
   const donors = data?.data || [];
   const clearFilters = () => { setBloodGroup(''); setPresentDistrict(''); };
