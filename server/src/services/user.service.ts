@@ -462,6 +462,7 @@ export class UserService {
     const becomesMemberOrAbove = newRoleIdx >= memberIdx;
     const wasApproved = target.membershipStatus === 'approved';
     let justApproved = false;
+    let justDemoted = false;
 
     if (becomesMemberOrAbove && !wasApproved) {
       // Promote — mark membership approved
@@ -478,6 +479,7 @@ export class UserService {
       target.membershipStatus = 'none';
       target.memberApprovedBy = undefined;
       target.memberApprovedAt = undefined;
+      justDemoted = true;
     }
 
     await target.save();
@@ -494,6 +496,23 @@ export class UserService {
         await ChatGroup.findOneAndUpdate(
           { type: 'department', department: target.department, isDeleted: false },
           { $addToSet: { members: target._id } }
+        );
+      }
+    }
+
+    // When demoted from Member+ to a lower tier (User / Guest), remove them
+    // from the Central RDSWA group and their Department group. Custom /
+    // consultation groups are intentionally left alone — the user may still
+    // participate in those by invitation even without Member status.
+    if (justDemoted) {
+      await ChatGroup.findOneAndUpdate(
+        { type: 'central', isDeleted: false },
+        { $pull: { members: target._id, admins: target._id } }
+      );
+      if (target.department) {
+        await ChatGroup.findOneAndUpdate(
+          { type: 'department', department: target.department, isDeleted: false },
+          { $pull: { members: target._id, admins: target._id } }
         );
       }
     }

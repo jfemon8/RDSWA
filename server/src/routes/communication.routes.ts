@@ -854,7 +854,7 @@ router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandle
     message: action === 'approve'
       ? `Your request to join "${group.name}" has been approved!`
       : `Your request to join "${group.name}" has been rejected.`,
-    link: action === 'approve' ? `/communication/groups/${group._id}` : undefined,
+    link: action === 'approve' ? `/dashboard/groups/${group._id}` : undefined,
   });
 
   ApiResponse.success(res, null, `Request ${action}d`);
@@ -1384,7 +1384,7 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
       type: 'announcement',
       title,
       message: content.substring(0, 200),
-      link: link || `/communication/groups/${centralGroup._id}`,
+      link: link || `/dashboard/groups/${centralGroup._id}`,
     });
   }
 

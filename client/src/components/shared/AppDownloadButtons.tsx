@@ -48,16 +48,19 @@ export default function AppDownloadButtons() {
           target="_blank"
           rel="noopener noreferrer"
           whileTap={{ scale: 0.98 }}
-          // No `whileHover` translation — the border-pulse class animates
-          // the border ring on hover instead (see .hover-border-pulse in
-          // index.css). Keeps the button anchored in place.
+          // No `whileHover` translation — the button stays anchored.
+          // On hover: background fills with primary, text/icon flip to the
+          // foreground colour, and a conic-gradient streak orbits the
+          // border via .hover-rotating-border (see index.css).
           className="
             flex items-center justify-between gap-3
             bg-white dark:bg-background
             border border-primary text-primary
             rounded-lg px-3.5 py-2
             text-sm font-medium
-            hover-border-pulse
+            hover:bg-primary hover:text-primary-foreground
+            transition-colors
+            hover-rotating-border
             w-full max-w-[210px]
           "
           aria-label={`Download from ${label}`}

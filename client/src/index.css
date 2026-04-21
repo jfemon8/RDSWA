@@ -175,16 +175,50 @@
   height: 100%;
 }
 
-/* Pulsing ring animation used for hover affordances where we want the
-   border to draw attention without translating the element itself. The
-   colour channel is read from --primary, so it automatically tracks the
-   brand palette (light/dark + admin overrides). */
-@keyframes rdswa-border-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); }
-  50%      { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+/* Rotating border animation — on hover, a bright conic-gradient segment
+   orbits around the element's border, "tracing" a light streak around it.
+   Uses @property to make the conic-gradient's angle animatable (CSS custom
+   properties are stringly-typed by default and don't interpolate smoothly).
+   Colour is pulled from --primary-foreground so it contrasts against the
+   primary-filled hover state. Automatically tracks admin-configured colours.
+   Modern browsers only (Chrome 85+, Safari 16.4+, Firefox 128+); older UAs
+   gracefully fall back to a solid border with no animation. */
+@property --rdswa-rotate-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
-.hover-border-pulse:hover {
-  animation: rdswa-border-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@keyframes rdswa-rotate-border {
+  from { --rdswa-rotate-angle: 0deg; }
+  to   { --rdswa-rotate-angle: 360deg; }
+}
+.hover-rotating-border {
+  position: relative;
+  isolation: isolate;
+}
+.hover-rotating-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--rdswa-rotate-angle),
+    transparent 0deg,
+    hsl(var(--primary-foreground)) 45deg,
+    transparent 110deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.hover-rotating-border:hover::before {
+  opacity: 1;
+  animation: rdswa-rotate-border 2.4s linear infinite;
 }
 
 /* TipTap Rich Text Editor */

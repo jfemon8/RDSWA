@@ -1,16 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
-import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import { stripHtml } from '@/lib/stripHtml';
+import { normalizeNotificationLink } from '@/lib/notificationLink';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -48,6 +51,18 @@ export default function NotificationsPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete'),
   });
 
+  // Click on a notification → mark as read (optimistic, fire-and-forget) and
+  // navigate to its linked page, Facebook-style. If the notification has no
+  // `link`, we still mark it read but stay on the page.
+  // `normalizeNotificationLink` rewrites legacy API-path prefixes like
+  // `/communication/groups/...` → `/dashboard/groups/...` so old notifications
+  // still stored in the DB (before the server-side fix) don't hit 404.
+  const handleNotificationClick = (n: any) => {
+    if (!n.isRead) markReadMutation.mutate(n._id);
+    const target = normalizeNotificationLink(n.link);
+    if (target) navigate(target);
+  };
+
   const notifications = data?.data || [];
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
@@ -84,12 +99,27 @@ export default function NotificationsPage() {
           {notifications.map((n: any, i: number) => (
             <FadeIn key={n._id} delay={i * 0.03} direction="up" distance={15}>
               <div
-                className={`p-4 rounded-lg border flex items-start justify-between gap-4 ${
+                role="button"
+                tabIndex={0}
+                onClick={() => handleNotificationClick(n)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotificationClick(n);
+                  }
+                }}
+                className={`p-4 rounded-lg border flex items-start justify-between gap-4 cursor-pointer hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors ${
                   n.isRead ? 'bg-background' : 'bg-primary/5 border-primary/20'
                 }`}
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm flex items-center gap-1.5">
+                    {!n.isRead && (
+                      <span
+                        className="h-2 w-2 rounded-full bg-primary shrink-0"
+                        aria-label="Unread"
+                      />
+                    )}
                     <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">{stripHtml(n.message)}</p>
@@ -100,23 +130,18 @@ export default function NotificationsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {!n.isRead && (
-                    <button
-                      onClick={() => markReadMutation.mutate(n._id)}
-                      className="p-2 text-muted-foreground hover:text-primary rounded-md hover:bg-accent"
-                      title="Mark as read"
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-                  )}
                   <button
-                    onClick={async () => {
+                    onClick={async (e) => {
+                      // Stop the card's click handler from also firing —
+                      // otherwise we'd navigate + delete in the same tap.
+                      e.stopPropagation();
                       const ok = await confirm({ title: 'Delete Notification', message: 'Remove this notification from your list?', confirmLabel: 'Delete', variant: 'danger' });
                       if (ok) deleteMutation.mutate(n._id);
                     }}
                     disabled={deleteMutation.isPending}
                     className="p-2 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 disabled:opacity-50"
                     title="Delete"
+                    aria-label="Delete notification"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

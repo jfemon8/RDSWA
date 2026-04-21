@@ -1,19 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationSocket } from '@/hooks/useSocket';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
+import { normalizeNotificationLink } from '@/lib/notificationLink';
 import Spinner from '@/components/ui/Spinner';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
 
   // Real-time notifications
@@ -58,6 +60,13 @@ export default function NotificationBell() {
 
   const unreadCount = countData?.count || 0;
   const notifications = notifData?.data || [];
+
+  const handleNotificationClick = (n: any) => {
+    if (!n.isRead) markReadMutation.mutate(n._id);
+    setOpen(false);
+    const target = normalizeNotificationLink(n.link);
+    if (target) navigate(target);
+  };
 
   // Close on click outside
   useEffect(() => {
@@ -130,16 +139,24 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 notifications.map((n: any, i: number) => (
-                  <motion.div
+                  <motion.button
                     key={n._id}
+                    type="button"
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
                     role="menuitem"
-                    className={`flex items-start gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-accent/50 transition-colors ${
+                    onClick={() => handleNotificationClick(n)}
+                    className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-accent/50 transition-colors focus:outline-none focus:bg-accent/50 ${
                       !n.isRead ? 'bg-primary/5' : ''
                     }`}
                   >
+                    {!n.isRead && (
+                      <span
+                        className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0"
+                        aria-label="Unread"
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{n.title}</p>
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{stripHtml(n.message)}</p>
@@ -147,19 +164,7 @@ export default function NotificationBell() {
                         {formatTimeAgo(n.createdAt)}
                       </p>
                     </div>
-                    {!n.isRead && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markReadMutation.mutate(n._id);
-                        }}
-                        className="p-1 text-muted-foreground hover:text-primary rounded shrink-0"
-                        title="Mark as read"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </motion.div>
+                  </motion.button>
                 ))
               )}
             </div>
