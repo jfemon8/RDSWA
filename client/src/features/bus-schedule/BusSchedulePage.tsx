@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import api from '@/lib/api';
 
 /**
@@ -17,12 +17,17 @@ import api from '@/lib/api';
  *     device transitions from offline to online, as long as the query is
  *     stale. Combined with NetworkFirst in the SW this gives fresh data
  *     without requiring the user to navigate away and back.
+ *   - `networkMode: 'offlineFirst'`: critical for PWA + Workbox. Default
+ *     'online' aborts the fetch when navigator.onLine is false, preventing
+ *     the SW from ever seeing the request. 'offlineFirst' lets the queryFn
+ *     run once so Workbox's NetworkFirst cache can answer.
  */
 const BUS_OFFLINE_OPTS = {
   meta: { persist: true } as const,
   gcTime: 30 * 24 * 60 * 60 * 1000,
   staleTime: 60 * 60 * 1000,
   refetchOnReconnect: true as const,
+  networkMode: 'offlineFirst' as const,
 };
 import {
   Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink,
@@ -66,6 +71,11 @@ export default function BusSchedulePage() {
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);
 
   const prefetchClient = useQueryClient();
+  // True while PersistQueryClientProvider is still pulling cached queries
+  // out of IndexedDB. Used below to suppress the spinner flash on cold
+  // offline launches — if we have persisted data, it'll land in the cache
+  // within a tick and we'd rather show it than a spinner.
+  const isRestoring = useIsRestoring();
   useBusSocket();
 
   // Eager prefetch on mount: the user expects every tab + filter to work
@@ -261,9 +271,17 @@ export default function BusSchedulePage() {
     }
   };
 
-  const isLoading = (view === 'routes' && routesLoading) ||
+  // Only show the spinner when we genuinely have no data AND aren't merely
+  // waiting on IndexedDB hydration. `useIsRestoring` returns true for one
+  // render cycle on cold mount while PersistQueryClientProvider rehydrates
+  // — flashing a spinner during that window would hide data we already have
+  // on disk.
+  const hasAnyBaseData = (routes.length > 0) || (operators.length > 0);
+  const isLoading = !isRestoring && !hasAnyBaseData && (
+    (view === 'routes' && routesLoading) ||
     (view === 'schedules' && schedulesLoading) ||
-    (view === 'operators' && operatorsLoading);
+    (view === 'operators' && operatorsLoading)
+  );
 
   const showBackButton = view !== 'routes' && view !== 'operators';
 

@@ -158,6 +158,20 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // Current-user profile. Cached so useAuth can hydrate the Zustand
+          // store on cold offline launches without wiping the access token.
+          // Kept short (7 days) because this response carries identity — we
+          // don't want a stale role/permission set lingering indefinitely.
+          {
+            urlPattern: /\/api\/users\/me$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-users-me-cache',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 7, purgeOnQuotaError: false },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           // Images (avatars, bus photos). Cloudinary URLs are content-hashed
           // and immutable per URL — CacheFirst is ideal because the browser
           // can skip the network entirely on repeat access.
@@ -204,6 +218,18 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
+  // `vite preview` doesn't inherit `server.proxy` — it needs its own block.
+  // Without this, the built app hits /api on the preview server (4173) and
+  // 404s, making local PWA offline testing impossible.
+  preview: {
+    port: 4173,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

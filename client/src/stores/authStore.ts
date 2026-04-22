@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { UserRole } from '@rdswa/shared';
 
 export interface AuthUser {
@@ -62,14 +63,39 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
-  setLoading: (isLoading) => set({ isLoading }),
-  logout: () => {
-    localStorage.removeItem('accessToken');
-    set({ user: null, isAuthenticated: false, isLoading: false });
-  },
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      // Start as NOT loading when rehydrating from storage — a persisted
+      // user means we already know who the user is; useAuth will revalidate
+      // in the background. Without persistence we default to `true` so the
+      // initial /users/me call can run before the app renders.
+      isLoading: true,
+      setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+      setLoading: (isLoading) => set({ isLoading }),
+      logout: () => {
+        localStorage.removeItem('accessToken');
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      },
+    }),
+    {
+      name: 'rdswa-auth',
+      storage: createJSONStorage(() => localStorage),
+      // Persist only the identity — NEVER persist `isLoading` (would freeze
+      // the app in a loading state on the next cold start if the previous
+      // session crashed mid-auth).
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      // After rehydration, if we already have a user, we're no longer in
+      // the initial-loading state. This lets the app render immediately on
+      // cold offline launches instead of blocking on /users/me.
+      onRehydrateStorage: () => (state) => {
+        if (state?.user) state.isLoading = false;
+      },
+    }
+  )
+);

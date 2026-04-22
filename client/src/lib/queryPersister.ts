@@ -64,7 +64,7 @@ export const persistOptions = {
   maxAge: THIRTY_DAYS_MS,
   // Bump this when the query cache shape changes in an incompatible way —
   // persisted data with a different buster is discarded on app load.
-  buster: 'v1',
+  buster: 'v2-offlineFirst',
   dehydrateOptions: {
     shouldDehydrateQuery: (query: { meta?: { persist?: boolean }; state: { status: string } }) => {
       // Only persist successful, explicitly opted-in queries.

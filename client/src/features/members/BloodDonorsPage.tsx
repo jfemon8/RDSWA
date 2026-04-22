@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Droplets, Phone, MapPin, User, X, UserPlus, Filter } from 'lucide-react';
@@ -15,24 +15,29 @@ const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 /**
  * Offline-persistence options applied to every Blood Donors query.
  * Same rationale as in BusSchedulePage — see BUS_OFFLINE_OPTS there.
+ * `networkMode: 'offlineFirst'` is required so Workbox can serve cached
+ * responses on cold offline launches; default 'online' would abort the
+ * fetch before the service worker ever saw it.
  */
 const DONORS_OFFLINE_OPTS = {
   meta: { persist: true } as const,
   gcTime: 30 * 24 * 60 * 60 * 1000,
   staleTime: 60 * 60 * 1000,
   refetchOnReconnect: true as const,
+  networkMode: 'offlineFirst' as const,
 };
 
 export default function BloodDonorsPage() {
   const [bloodGroup, setBloodGroup] = useState('');
   const [presentDistrict, setPresentDistrict] = useState('');
   const prefetchClient = useQueryClient();
+  const isRestoring = useIsRestoring();
 
   const filters: Record<string, string> = {};
   if (bloodGroup) filters.bloodGroup = bloodGroup;
   if (presentDistrict) filters.presentDistrict = presentDistrict;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: queryLoading } = useQuery({
     queryKey: queryKeys.users.bloodDonors(filters),
     queryFn: async () => {
       const params = new URLSearchParams(filters);
@@ -41,6 +46,11 @@ export default function BloodDonorsPage() {
     },
     ...DONORS_OFFLINE_OPTS,
   });
+
+  // Suppress the spinner while PersistQueryClientProvider is restoring from
+  // IndexedDB — otherwise we flash loading UI on cold offline launches even
+  // though persisted donor data is about to land in the cache.
+  const isLoading = queryLoading && !isRestoring && !data;
 
   // Eager prefetch — on first visit, warm the caches for:
   //   • the unfiltered donor list (fallback for offline filter resets)

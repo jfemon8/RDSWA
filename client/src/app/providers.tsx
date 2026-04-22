@@ -20,6 +20,16 @@ const queryClient = new QueryClient({
       gcTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
       refetchOnWindowFocus: false,
+      // Critical for PWA + service-worker caching. Default 'online' mode
+      // aborts the fetch entirely when navigator.onLine is false, which
+      // prevents Workbox from ever seeing the request and serving its
+      // cached response. 'offlineFirst' lets the queryFn run once so the
+      // SW can intercept; retries are paused only on a genuine cache miss.
+      // See https://tkdodo.eu/blog/offline-react-query.
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      networkMode: 'offlineFirst',
     },
   },
 });
