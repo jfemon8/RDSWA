@@ -638,11 +638,11 @@ function SocialTab({ settings: s }: { settings: any }) {
         <p className="text-sm text-muted-foreground -mt-2">
           Leave blank to hide that platform's download button in the footer.
         </p>
-        <Field label="Android (Play Store)" value={form.androidApp} onChange={(v) => setForm({ ...form, androidApp: v })} placeholder="https://play.google.com/store/apps/details?id=..." />
-        <Field label="iOS (App Store)" value={form.iosApp} onChange={(v) => setForm({ ...form, iosApp: v })} placeholder="https://apps.apple.com/app/id..." />
-        <Field label="Windows (Microsoft Store)" value={form.windowsApp} onChange={(v) => setForm({ ...form, windowsApp: v })} placeholder="https://apps.microsoft.com/detail/..." />
-        <Field label="macOS (Mac App Store)" value={form.macosApp} onChange={(v) => setForm({ ...form, macosApp: v })} placeholder="https://apps.apple.com/app/mac/id..." />
-        <Field label="Linux (direct / Snap / Flathub)" value={form.linuxApp} onChange={(v) => setForm({ ...form, linuxApp: v })} placeholder="https://snapcraft.io/... or https://flathub.org/apps/..." />
+        <Field label="Android App Link" value={form.androidApp} onChange={(v) => setForm({ ...form, androidApp: v })} placeholder="https://play.google.com/store/apps/details?id=..." />
+        <Field label="iOS App Link" value={form.iosApp} onChange={(v) => setForm({ ...form, iosApp: v })} placeholder="https://apps.apple.com/app/id..." />
+        <Field label="Windows App Link" value={form.windowsApp} onChange={(v) => setForm({ ...form, windowsApp: v })} placeholder="https://apps.microsoft.com/detail/..." />
+        <Field label="macOS App Link" value={form.macosApp} onChange={(v) => setForm({ ...form, macosApp: v })} placeholder="https://apps.apple.com/app/mac/id..." />
+        <Field label="Linux App Link" value={form.linuxApp} onChange={(v) => setForm({ ...form, linuxApp: v })} placeholder="https://snapcraft.io/... or https://flathub.org/apps/..." />
 
         <SaveButton mutation={mutation} />
       </div>

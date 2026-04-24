@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import {
-  PlayStoreIcon,
+  AndroidIcon,
   AppleIcon,
   WindowsIcon,
   LinuxIcon,
@@ -29,11 +29,11 @@ export default function AppDownloadButtons() {
   const sl = settings?.socialLinks;
 
   const buttons: ButtonDef[] = [
-    { key: 'android', href: sl?.androidApp, label: 'Play Store', Icon: PlayStoreIcon },
-    { key: 'ios', href: sl?.iosApp, label: 'App Store', Icon: AppleIcon },
-    { key: 'windows', href: sl?.windowsApp, label: 'Microsoft Store', Icon: WindowsIcon },
-    { key: 'macos', href: sl?.macosApp, label: 'Mac App Store', Icon: AppleIcon },
-    { key: 'linux', href: sl?.linuxApp, label: 'Linux', Icon: LinuxIcon },
+    { key: 'android', href: sl?.androidApp, label: 'Android App', Icon: AndroidIcon },
+    { key: 'ios', href: sl?.iosApp, label: 'iOS App', Icon: AppleIcon },
+    { key: 'windows', href: sl?.windowsApp, label: 'Windows App', Icon: WindowsIcon },
+    { key: 'macos', href: sl?.macosApp, label: 'macOS App', Icon: AppleIcon },
+    { key: 'linux', href: sl?.linuxApp, label: 'Linux App', Icon: LinuxIcon },
   ];
 
   const visible = buttons.filter((b) => !!b.href?.trim());
