@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import EmptyState from '@/components/ui/EmptyState';
+import { deriveEventStatus } from '@rdswa/shared';
 
 const EVENT_TYPES = ['event', 'meeting', 'workshop', 'seminar', 'social', 'other'];
 const STATUSES = ['', 'upcoming', 'ongoing', 'completed'];
@@ -197,7 +198,7 @@ export default function EventsPage() {
                           )}
                           <div className="p-4">
                             <div className="flex items-center gap-2 mb-2">
-                              <StatusBadge status={e.status} />
+                              <StatusBadge status={deriveEventStatus(e)} />
                               {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
                             </div>
                             <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
@@ -299,19 +300,22 @@ export default function EventsPage() {
                             {day.date}
                           </span>
                           <div className="space-y-0.5 mt-0.5">
-                            {day.events.slice(0, 2).map((e: any) => (
-                              <Link key={e._id} to={`/events/${e._id}`}>
-                                <div
-                                  className={`text-[10px] md:text-xs px-1 py-0.5 rounded truncate cursor-pointer ${
-                                    e.status === 'upcoming' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                    e.status === 'ongoing' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                    'bg-muted text-muted-foreground'
-                                  }`}
-                                >
-                                  {e.title}
-                                </div>
-                              </Link>
-                            ))}
+                            {day.events.slice(0, 2).map((e: any) => {
+                              const derived = deriveEventStatus(e);
+                              return (
+                                <Link key={e._id} to={`/events/${e._id}`}>
+                                  <div
+                                    className={`text-[10px] md:text-xs px-1 py-0.5 rounded truncate cursor-pointer ${
+                                      derived === 'upcoming' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                      derived === 'ongoing' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                      'bg-muted text-muted-foreground'
+                                    }`}
+                                  >
+                                    {e.title}
+                                  </div>
+                                </Link>
+                              );
+                            })}
                             {day.events.length > 2 && (
                               <span className="text-[10px] text-muted-foreground px-1">+{day.events.length - 2} more</span>
                             )}

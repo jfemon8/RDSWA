@@ -11,7 +11,7 @@ export async function runReminderSender(): Promise<void> {
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const upcomingEvents = await Event.find({
-      status: 'upcoming',
+      status: { $nin: ['draft', 'cancelled'] },
       startDate: { $gte: now, $lte: in24h },
       isDeleted: false,
       registrationRequired: true,

@@ -9,6 +9,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import { deriveEventStatus } from '@rdswa/shared';
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
@@ -83,7 +84,7 @@ export default function MeetingRecordsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <StatusBadge status={m.status} />
+                          <StatusBadge status={deriveEventStatus(m)} />
                           <h3 className="font-semibold truncate flex items-center gap-1">
                             <Calendar className="h-4 w-4 text-primary shrink-0" /> {m.title}
                           </h3>

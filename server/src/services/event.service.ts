@@ -4,6 +4,7 @@ import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import mongoose from 'mongoose';
 import QRCode from 'qrcode';
+import { deriveEventStatus } from '@rdswa/shared';
 
 interface ListEventsQuery {
   page?: string;
@@ -11,22 +12,98 @@ interface ListEventsQuery {
   type?: string;
   status?: string;
   search?: string;
+  upcoming?: string;
+}
+
+/**
+ * Status is derived from startDate/endDate at read time. `draft` and
+ * `cancelled` remain honored as admin overrides; 'upcoming' / 'ongoing' /
+ * 'completed' in the DB are ignored in favor of time-based derivation.
+ * Events without an endDate are treated as lasting until the end of their
+ * startDate's day.
+ */
+function buildStatusDateFilter(status: string, now: Date): FilterQuery<IEventDocument> | null {
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (status === 'upcoming') {
+    return { status: { $nin: ['draft', 'cancelled'] }, startDate: { $gt: now } };
+  }
+  if (status === 'ongoing') {
+    return {
+      status: { $nin: ['draft', 'cancelled'] },
+      startDate: { $lte: now },
+      $or: [
+        { endDate: { $gte: now } },
+        { $and: [{ endDate: { $in: [null, undefined] } }, { startDate: { $gte: startOfToday } }] },
+      ],
+    };
+  }
+  if (status === 'completed') {
+    return {
+      status: { $nin: ['draft', 'cancelled'] },
+      $or: [
+        { endDate: { $lt: now } },
+        { $and: [{ endDate: { $in: [null, undefined] } }, { startDate: { $lt: startOfToday } }] },
+      ],
+    };
+  }
+  if (status === 'draft' || status === 'cancelled') {
+    return { status };
+  }
+  return null;
+}
+
+/**
+ * Combine two filter objects, merging their `$or` clauses under `$and` to
+ * avoid key collision when both sides contribute an `$or`.
+ */
+function mergeFilters(a: FilterQuery<IEventDocument>, b: FilterQuery<IEventDocument>): FilterQuery<IEventDocument> {
+  const { $or: aOr, ...aRest } = a as any;
+  const { $or: bOr, ...bRest } = b as any;
+  const merged: any = { ...aRest, ...bRest };
+  const ors: any[] = [];
+  if (aOr) ors.push({ $or: aOr });
+  if (bOr) ors.push({ $or: bOr });
+  if (ors.length === 2) {
+    merged.$and = [...(merged.$and || []), ...ors];
+  } else if (ors.length === 1) {
+    merged.$or = ors[0].$or;
+  }
+  return merged;
+}
+
+function attachDerivedStatus<T extends { status?: string; startDate?: Date | string; endDate?: Date | string | null; toObject?: () => any }>(event: T, now: Date): any {
+  const plain = typeof (event as any).toObject === 'function' ? (event as any).toObject({ virtuals: true }) : { ...event };
+  plain.status = deriveEventStatus({
+    startDate: plain.startDate,
+    endDate: plain.endDate,
+    status: plain.status,
+    now,
+  });
+  return plain;
 }
 
 export class EventService {
   async list(query: ListEventsQuery, isPublicOnly = true) {
     const { page, limit } = parsePagination(query);
-    const filter: FilterQuery<IEventDocument> = { isDeleted: false };
+    const now = new Date();
+    let filter: FilterQuery<IEventDocument> = { isDeleted: false };
 
     if (isPublicOnly) filter.isPublic = true;
     if (query.type) filter.type = query.type;
-    if (query.status) filter.status = query.status;
     if (query.search) {
       filter.$or = [
         { title: { $regex: query.search, $options: 'i' } },
         { description: { $regex: query.search, $options: 'i' } },
       ];
     }
+
+    const statusFilter = query.status
+      ? buildStatusDateFilter(query.status, now)
+      : query.upcoming === 'true'
+        ? buildStatusDateFilter('upcoming', now)
+        : null;
+    if (statusFilter) filter = mergeFilters(filter, statusFilter);
 
     const [events, total] = await Promise.all([
       Event.find(filter)
@@ -38,10 +115,15 @@ export class EventService {
       Event.countDocuments(filter),
     ]);
 
-    return { events, total, page, limit };
+    return {
+      events: events.map((e) => attachDerivedStatus(e as any, now)),
+      total,
+      page,
+      limit,
+    };
   }
 
-  async getById(id: string): Promise<IEventDocument> {
+  async getById(id: string): Promise<any> {
     const event = await Event.findOne({ _id: id, isDeleted: false })
       .populate('createdBy', 'name avatar')
       .populate('committee', 'name')
@@ -50,7 +132,7 @@ export class EventService {
       .populate('attendance.verifiedBy', 'name')
       .populate('photos.taggedUsers', 'name avatar');
     if (!event) throw ApiError.notFound('Event not found');
-    return event;
+    return attachDerivedStatus(event as any, new Date());
   }
 
   async create(data: any, createdBy: string): Promise<IEventDocument> {
@@ -308,13 +390,19 @@ export class EventService {
       .select('title type status startDate endDate venue attendance')
       .sort({ startDate: -1 });
 
+    const now = new Date();
     return events.map((event) => {
       const myRecord = event.attendance.find((a) => a.user.toString() === userId);
       return {
         _id: event._id,
         title: event.title,
         type: event.type,
-        status: event.status,
+        status: deriveEventStatus({
+          startDate: event.startDate,
+          endDate: event.endDate,
+          status: event.status,
+          now,
+        }),
         startDate: event.startDate,
         endDate: event.endDate,
         venue: event.venue,

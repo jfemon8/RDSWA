@@ -14,6 +14,7 @@ import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
+import { deriveEventStatus } from '@rdswa/shared';
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
@@ -24,7 +25,7 @@ export default function AdminEventsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [form, setForm] = useState({
-    title: '', description: '', type: 'event', status: 'draft',
+    title: '', description: '', type: 'event', status: 'upcoming',
     startDate: '', endDate: '', venue: '', isOnline: false,
     registrationRequired: false, maxParticipants: '', feedbackEnabled: false,
     committee: '',
@@ -78,13 +79,13 @@ export default function AdminEventsPage() {
   const resetForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ title: '', description: '', type: 'event', status: 'draft', startDate: '', endDate: '', venue: '', isOnline: false, registrationRequired: false, maxParticipants: '', feedbackEnabled: false, committee: '' });
+    setForm({ title: '', description: '', type: 'event', status: 'upcoming', startDate: '', endDate: '', venue: '', isOnline: false, registrationRequired: false, maxParticipants: '', feedbackEnabled: false, committee: '' });
   };
 
   const startEdit = (e: any) => {
     setEditId(e._id);
     setForm({
-      title: e.title || '', description: e.description || '', type: e.type || 'event', status: e.status || 'draft',
+      title: e.title || '', description: e.description || '', type: e.type || 'event', status: e.status || 'upcoming',
       startDate: e.startDate ? toDateTimeLocal(e.startDate) : '',
       endDate: e.endDate ? toDateTimeLocal(e.endDate) : '',
       venue: e.venue || '', isOnline: e.isOnline || false,
@@ -142,12 +143,14 @@ export default function AdminEventsPage() {
                     <option value="seminar">Seminar</option>
                     <option value="social">Social</option>
                   </select>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
+                  <select
+                    value={['draft', 'cancelled'].includes(form.status) ? form.status : 'upcoming'}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                    title="Upcoming / Ongoing / Completed are determined automatically from the event's start and end dates."
+                  >
                     <option value="draft">Draft</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="ongoing">Ongoing</option>
-                    <option value="completed">Completed</option>
+                    <option value="upcoming">Published</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
@@ -235,7 +238,7 @@ export default function AdminEventsPage() {
                     </h3>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="capitalize">{e.type}</span>
-                      <span className="capitalize">{e.status}</span>
+                      <span className="capitalize">{deriveEventStatus(e)}</span>
                       <span>{formatDate(e.startDate)}</span>
                       {e.venue && <span className="truncate max-w-[160px]">{e.venue}</span>}
                       {e.committee && (

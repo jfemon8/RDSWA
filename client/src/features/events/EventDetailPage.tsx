@@ -12,6 +12,7 @@ import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import UserEventQr from '@/components/ui/UserEventQr';
 import Spinner from '@/components/ui/Spinner';
+import { deriveEventStatus } from '@rdswa/shared';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -59,9 +60,10 @@ export default function EventDetailPage() {
   const event = data?.data;
   if (!event) return <p className="text-center py-12 text-muted-foreground">Event not found</p>;
 
+  const derivedStatus = deriveEventStatus(event);
   const isRegistered = event.registeredUsers?.some?.((u: any) => (typeof u === 'string' ? u : u._id) === user?._id)
     || event.registeredUsers?.includes?.(user?._id);
-  const canRegister = isAuthenticated && event.registrationRequired && event.status === 'upcoming' && !isRegistered;
+  const canRegister = isAuthenticated && event.registrationRequired && derivedStatus === 'upcoming' && !isRegistered;
   const myAttendance = event.attendance?.find?.((a: any) => (typeof a.user === 'string' ? a.user : a.user?._id) === user?._id);
   const isCheckedIn = myAttendance?.status === 'approved';
   const isPendingCheckin = myAttendance?.status === 'pending';
@@ -85,7 +87,7 @@ export default function EventDetailPage() {
       <FadeIn delay={0.1} direction="up">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold">{event.title}</h1>
-          <StatusBadge status={event.status} />
+          <StatusBadge status={derivedStatus} />
         </div>
       </FadeIn>
 
@@ -150,7 +152,7 @@ export default function EventDetailPage() {
                 </span>
               )}
             </div>
-            {event.status === 'upcoming' && (
+            {derivedStatus === 'upcoming' && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -165,7 +167,7 @@ export default function EventDetailPage() {
       )}
 
       {/* Per-user QR Code for check-in */}
-      {event.status !== 'completed' && isRegistered && user && (
+      {derivedStatus !== 'completed' && isRegistered && user && (
         <FadeIn delay={0.25} direction="up">
           <div className="mb-6 p-4 border rounded-lg bg-card">
             <div className="flex items-center gap-2 mb-3">
@@ -181,7 +183,7 @@ export default function EventDetailPage() {
       )}
 
       {/* Self Check-in */}
-      {isAuthenticated && event && !['completed', 'cancelled'].includes(event.status) && (
+      {isAuthenticated && event && !['completed', 'cancelled'].includes(derivedStatus) && (
         <FadeIn delay={0.3}>
           <div className="border rounded-xl p-4 bg-card mb-6">
             <h3 className="font-semibold mb-3 flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Attendance</h3>
@@ -312,7 +314,7 @@ export default function EventDetailPage() {
       )}
 
       {/* Feedback form */}
-      {event.feedbackEnabled && event.status === 'completed' && isAuthenticated && !hasSubmittedFeedback && (
+      {event.feedbackEnabled && derivedStatus === 'completed' && isAuthenticated && !hasSubmittedFeedback && (
         <FadeIn delay={0.45} direction="up">
           <div className="border rounded-lg p-6 bg-card mb-8">
             <h3 className="font-semibold mb-4 flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> Submit Feedback</h3>
