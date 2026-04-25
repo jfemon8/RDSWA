@@ -18,6 +18,7 @@ const STATUSES = ['', 'upcoming', 'ongoing', 'completed'];
 export default function EventsPage() {
   const [status, setStatus] = useState('');
   const [type, setType] = useState('');
+  const [committee, setCommittee] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
@@ -26,7 +27,17 @@ export default function EventsPage() {
   const filters: Record<string, string> = { page: String(page), limit: '12' };
   if (status) filters.status = status;
   if (type) filters.type = type;
+  if (committee) filters.committee = committee;
   if (search) filters.search = search;
+
+  const { data: committeesData } = useQuery({
+    queryKey: queryKeys.committees.all,
+    queryFn: async () => {
+      const { data } = await api.get('/committees');
+      return data;
+    },
+  });
+  const committees: Array<{ _id: string; name: string; year?: string }> = committeesData?.data || [];
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.events.list(filters),
@@ -43,6 +54,7 @@ export default function EventsPage() {
   // Calendar data: fetch all events for the displayed month
   const calendarFilters: Record<string, string> = { limit: '100' };
   if (type) calendarFilters.type = type;
+  if (committee) calendarFilters.committee = committee;
   if (search) calendarFilters.search = search;
 
   const { data: calendarData } = useQuery({
@@ -148,6 +160,19 @@ export default function EventsPage() {
               <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
             ))}
           </select>
+          {/* Committee filter */}
+          <select
+            value={committee}
+            onChange={(e) => { setCommittee(e.target.value); setPage(1); }}
+            className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="">All Committees</option>
+            {committees.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}{c.year ? ` (${c.year})` : ''}
+              </option>
+            ))}
+          </select>
         </div>
       </FadeIn>
 
@@ -168,11 +193,11 @@ export default function EventsPage() {
               <EmptyState
                 icon={Calendar}
                 title="No Events Found"
-                description={search || status || type
+                description={search || status || type || committee
                   ? 'No events match your filters. Try clearing them to see all events.'
                   : 'No events have been scheduled yet. Check back soon — new events are posted regularly.'}
-                primary={search || status || type
-                  ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setStatus(''); setType(''); setPage(1); } }
+                primary={search || status || type || committee
+                  ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setStatus(''); setType(''); setCommittee(''); setPage(1); } }
                   : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
                 hint="Upcoming meetings, workshops, and social gatherings for RDSWA members appear here as soon as they are announced."
               />

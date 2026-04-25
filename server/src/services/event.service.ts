@@ -13,6 +13,7 @@ interface ListEventsQuery {
   status?: string;
   search?: string;
   upcoming?: string;
+  committee?: string;
 }
 
 /**
@@ -91,6 +92,9 @@ export class EventService {
 
     if (isPublicOnly) filter.isPublic = true;
     if (query.type) filter.type = query.type;
+    if (query.committee && mongoose.isValidObjectId(query.committee)) {
+      filter.committee = new mongoose.Types.ObjectId(query.committee);
+    }
     if (query.search) {
       filter.$or = [
         { title: { $regex: query.search, $options: 'i' } },
