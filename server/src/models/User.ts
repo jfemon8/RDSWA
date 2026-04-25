@@ -7,6 +7,16 @@ export interface IUserDocument extends Document {
   email: string;
   password: string;
   refreshTokens: string[];
+  // Short-lived rotation history. When a refresh token is rotated, the old
+  // value is recorded here so a concurrent refresh request that arrives
+  // within the grace window (a few seconds) gets the same replacement token
+  // back idempotently — instead of being mistaken for a stolen-token replay
+  // and triggering a session-wide family wipe. See auth.service.refreshToken.
+  recentlyRotated: Array<{
+    token: string;
+    replacedBy: string;
+    rotatedAt: Date;
+  }>;
 
   // Profile — Personal
   name: string;
@@ -180,6 +190,20 @@ const userSchema = new Schema<IUserDocument>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
     refreshTokens: { type: [String], default: [], select: false },
+    recentlyRotated: {
+      type: [
+        new Schema(
+          {
+            token: { type: String, required: true },
+            replacedBy: { type: String, required: true },
+            rotatedAt: { type: Date, default: Date.now },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+      select: false,
+    },
 
     // Profile — Personal
     name: { type: String, required: true, trim: true },

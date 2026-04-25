@@ -60,8 +60,12 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 
 export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
   const token = req.cookies?.refreshToken || req.body.refreshToken;
+  // Fail loudly when no cookie is present. Returning a 200 with `data: null`
+  // (the previous behavior) crashed the client interceptor on
+  // `data.data.accessToken` and was indistinguishable from an authenticated
+  // refresh — leading to spurious logout loops.
   if (!token) {
-    return ApiResponse.success(res, null, 'No refresh token provided');
+    throw ApiError.unauthorized('No refresh token provided');
   }
 
   const tokens = await authService.refreshToken(token);
