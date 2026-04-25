@@ -179,21 +179,72 @@ export class EventService {
     return event;
   }
 
-  async submitAttendance(eventId: string, userId: string, via: 'qr' | 'manual', verifiedBy?: string): Promise<void> {
+  /**
+   * Records an attendance check-in driven by a moderator (QR scan or manual
+   * entry). Has three branches:
+   *   - No prior record: creates an approved record.
+   *   - Pending self-checkin record exists: promotes it to approved and
+   *     stamps verifier + the actual via channel. This is what closes the
+   *     loop when a user submits a self check-in request and a moderator
+   *     then scans their QR — without this, the pending request would
+   *     linger forever and the QR scan would error with "already checked
+   *     in" while the user still saw "pending approval".
+   *   - Already approved: short-circuits with a structured "duplicate" so
+   *     the scanner can show a friendly warning instead of a hard error.
+   *
+   * Returns the populated attendance record so the scanner can display the
+   * attendee's name and status without an extra round trip.
+   */
+  async submitAttendance(
+    eventId: string,
+    userId: string,
+    via: 'qr' | 'manual',
+    verifiedBy?: string
+  ): Promise<{ status: 'approved' | 'duplicate'; record: any }> {
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
 
-    const alreadyCheckedIn = event.attendance.some((a) => a.user.toString() === userId);
-    if (alreadyCheckedIn) throw ApiError.conflict('Already checked in');
+    const existing = event.attendance.find((a) => a.user.toString() === userId);
+    const verifierOid = verifiedBy ? new mongoose.Types.ObjectId(verifiedBy) : undefined;
 
-    event.attendance.push({
-      user: new mongoose.Types.ObjectId(userId),
-      checkedInAt: new Date(),
-      checkedInVia: via,
-      verifiedBy: verifiedBy ? new mongoose.Types.ObjectId(verifiedBy) : undefined,
-      status: 'approved',
-    } as any);
-    await event.save();
+    let resultStatus: 'approved' | 'duplicate' = 'approved';
+
+    if (existing) {
+      if (existing.status === 'approved') {
+        resultStatus = 'duplicate';
+      } else {
+        // Promote pending → approved (the user previously self-requested).
+        existing.status = 'approved';
+        existing.checkedInVia = via;
+        existing.checkedInAt = new Date();
+        if (verifierOid) existing.verifiedBy = verifierOid;
+      }
+    } else {
+      event.attendance.push({
+        user: new mongoose.Types.ObjectId(userId),
+        checkedInAt: new Date(),
+        checkedInVia: via,
+        verifiedBy: verifierOid,
+        status: 'approved',
+      } as any);
+    }
+
+    if (resultStatus !== 'duplicate') {
+      await event.save();
+    }
+
+    // Re-fetch with population so the caller can show the attendee's name,
+    // batch, department, and verifier without a second query.
+    const populated = await Event.findById(eventId)
+      .select('attendance')
+      .populate('attendance.user', 'name avatar department batch studentId')
+      .populate('attendance.verifiedBy', 'name');
+
+    const record = populated?.attendance.find(
+      (a: any) => (a.user?._id?.toString() || a.user?.toString()) === userId
+    );
+
+    return { status: resultStatus, record };
   }
 
   async submitFeedback(eventId: string, userId: string, rating: number, comment?: string): Promise<void> {
@@ -258,17 +309,25 @@ export class EventService {
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
 
+    const verifierOid = new mongoose.Types.ObjectId(verifiedBy);
     for (const uid of userIds) {
-      const already = event.attendance.some((a) => a.user.toString() === uid);
-      if (!already) {
+      const existing = event.attendance.find((a) => a.user.toString() === uid);
+      if (!existing) {
         event.attendance.push({
           user: new mongoose.Types.ObjectId(uid),
           checkedInAt: new Date(),
           checkedInVia: 'manual',
-          verifiedBy: new mongoose.Types.ObjectId(verifiedBy),
+          verifiedBy: verifierOid,
           status: 'approved',
         } as any);
+      } else if (existing.status === 'pending') {
+        // Promote pending self-request into an approved manual check-in.
+        existing.status = 'approved';
+        existing.checkedInVia = 'manual';
+        existing.checkedInAt = new Date();
+        existing.verifiedBy = verifierOid;
       }
+      // status === 'approved' → already done, leave untouched.
     }
     await event.save();
     return event;

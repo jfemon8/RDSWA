@@ -469,7 +469,7 @@ function EventDetailPanel({ event }: { event: any }) {
           </h4>
           <p className="text-xs text-muted-foreground">Each registered user gets a unique QR code on the event page. Use the scanner to check them in.</p>
           <Link
-            to={`/events/${fullEvent._id}/checkin`}
+            to={`/admin/events/${fullEvent._id}/checkin`}
             className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90"
           >
             <ScanLine className="h-3.5 w-3.5" /> Open Scanner

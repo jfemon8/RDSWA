@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { eventService } from '../services/event.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -41,16 +42,42 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 export const checkin = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const { userId, method } = req.body;
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    throw ApiError.badRequest('Invalid user ID in QR / form payload');
+  }
   const via = method === 'manual' ? 'manual' : 'qr';
-  await eventService.submitAttendance(req.params.id as string, userId, via, (req.user._id as any).toString());
-  ApiResponse.success(res, null, 'Checked in');
+  const result = await eventService.submitAttendance(
+    req.params.id as string,
+    userId,
+    via,
+    (req.user._id as any).toString()
+  );
+  // 200 with status='duplicate' is intentional — the scanner UI uses it to
+  // render a warning ("already checked in: Name") instead of a hard error.
+  const message =
+    result.status === 'duplicate'
+      ? 'Already checked in'
+      : 'Checked in successfully';
+  ApiResponse.success(res, result, message);
 });
 
 export const submitAttendance = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const { userId } = req.body;
-  await eventService.submitAttendance(req.params.id as string, userId, 'manual', (req.user._id as any).toString());
-  ApiResponse.success(res, null, 'Attendance recorded');
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    throw ApiError.badRequest('Invalid user ID');
+  }
+  const result = await eventService.submitAttendance(
+    req.params.id as string,
+    userId,
+    'manual',
+    (req.user._id as any).toString()
+  );
+  const message =
+    result.status === 'duplicate'
+      ? 'Already checked in'
+      : 'Attendance recorded';
+  ApiResponse.success(res, result, message);
 });
 
 export const submitFeedback = asyncHandler(async (req: Request, res: Response) => {

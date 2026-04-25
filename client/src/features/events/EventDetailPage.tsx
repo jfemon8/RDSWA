@@ -143,12 +143,21 @@ export default function EventDetailPage() {
       {isRegistered && (
         <FadeIn delay={0.2} direction="up">
           <div className="mb-6 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CheckCircle2 className="h-4 w-4" />
               You are registered for this event
-              {myAttendance && (
+              {/* Only show the "Checked in" badge once a moderator approves
+                  the record. Pending self-requests are surfaced separately
+                  via the Attendance card below so the user understands
+                  their request hasn't landed yet. */}
+              {isCheckedIn && (
                 <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-800/30 rounded text-xs">
                   Checked in via {myAttendance.checkedInVia} at {formatTime(myAttendance.checkedInAt)}
+                </span>
+              )}
+              {isPendingCheckin && (
+                <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded text-xs">
+                  Check-in pending approval
                 </span>
               )}
             </div>
