@@ -10,7 +10,7 @@
       "destination": "https://rdswa.onrender.com/api/$1"
     },
     {
-      "source": "/((?!api/|assets/).*)",
+      "source": "/((?!api/|assets/|icons/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],
