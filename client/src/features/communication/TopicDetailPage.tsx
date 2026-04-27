@@ -17,6 +17,7 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import { formatDate } from '@/lib/date';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import { useToast } from '@/components/ui/Toast';
+import Promo from '@/components/promo/Promo';
 
 export default function TopicDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -232,6 +233,15 @@ export default function TopicDetailPage() {
               {formatDate(topic.createdAt)}
             </span>
           </div>
+        </div>
+      </FadeIn>
+
+      {/* In-article promo placed between the topic body and replies — the
+          natural break point on a Reddit-style thread, similar to how
+          discussion sites place their first ad. */}
+      <FadeIn delay={0.08} direction="up">
+        <div className="mb-4">
+          <Promo kind="inArticle" minHeight={250} />
         </div>
       </FadeIn>
 

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import EmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -30,7 +31,7 @@ export default function CommitteePage() {
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-32" />
             </div>
-            <div className="p-6 grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="p-6 grid grid-equal grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {Array.from({ length: 6 }).map((_, j) => (
                 <div key={j} className="flex items-center gap-3 p-3 border rounded-xl">
                   <Skeleton className="h-10 w-10 rounded-full" />
@@ -58,6 +59,11 @@ export default function CommitteePage() {
         direction="bottom"
       />
 
+      {/* lg+ split: committee cards on the left, sticky promo on the right.
+          On smaller screens the sidebar collapses and the committee grid
+          flows full-width identical to the previous layout. */}
+      <div className="lg:flex lg:gap-6">
+        <div className="flex-1 min-w-0">
       {committees.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -102,7 +108,7 @@ export default function CommitteePage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 * i }}
-                        className="w-full sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
+                        className="w-full sm:w-[calc(50%-0.375rem)] xl:w-[calc(33.333%-0.5rem)]"
                       >
                         <MemberCard member={m} />
                       </motion.div>
@@ -114,6 +120,11 @@ export default function CommitteePage() {
           ))}
         </div>
       )}
+        </div>
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+          <Promo kind="sidebar" minHeight={600} />
+        </aside>
+      </div>
     </div>
   );
 }

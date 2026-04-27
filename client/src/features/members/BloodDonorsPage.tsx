@@ -9,6 +9,7 @@ import { divisions, districts } from '@/data/bdGeo';
 import SEO from '@/components/SEO';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -227,6 +228,17 @@ export default function BloodDonorsPage() {
               </div>
             </FadeIn>
           ))}
+        </div>
+      )}
+
+      {/* Bottom-only multiplex. Blood donor lookup is a health-emergency
+          utility — keeping the upper portion of the page promo-free is an
+          intentional UX choice (and avoids any policy risk around mixing
+          monetization with health-emergency content). The promo only
+          surfaces after the user has already seen the donor list. */}
+      {donors.length > 0 && (
+        <div className="mt-10">
+          <Promo kind="multiplex" minHeight={300} />
         </div>
       )}
     </div>

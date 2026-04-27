@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -12,6 +12,9 @@ import SEO from '@/components/SEO';
 import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
+import Promo from '@/components/promo/Promo';
+
+const PROMO_EVERY = 6;
 
 export interface MemberDirectoryPageProps {
   /** Page title shown as heading and SEO title */
@@ -125,8 +128,12 @@ export default function MemberDirectoryPage({
         </div>
       </FadeIn>
 
+      {/* lg+ adds a sticky right-rail promo column. Below lg the layout
+          collapses to full-width and behaves identically to before. */}
+      <div className="lg:flex lg:gap-6">
+        <div className="flex-1 min-w-0">
       {isLoading ? (
-        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 9 }).map((_, i) => <ListItemSkeleton key={i} />)}
         </div>
       ) : members.length === 0 ? (
@@ -136,9 +143,10 @@ export default function MemberDirectoryPage({
         </div>
       ) : (
         <>
-          <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {members.map((m: any, i: number) => (
-              <FadeIn key={m._id} delay={i * 0.04} direction="up">
+              <Fragment key={m._id}>
+              <FadeIn delay={i * 0.04} direction="up">
                 <Link
                   to={`/members/${m._id}`}
                   className="block border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors"
@@ -224,6 +232,12 @@ export default function MemberDirectoryPage({
                   )}
                 </Link>
               </FadeIn>
+              {(i + 1) % PROMO_EVERY === 0 && i < members.length - 1 && (
+                <div className="sm:col-span-2 xl:col-span-3">
+                  <Promo kind="infeed" minHeight={160} />
+                </div>
+              )}
+              </Fragment>
             ))}
           </div>
 
@@ -250,6 +264,11 @@ export default function MemberDirectoryPage({
           )}
         </>
       )}
+        </div>
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+          <Promo kind="sidebar" minHeight={600} />
+        </aside>
+      </div>
     </div>
   );
 }

@@ -6,11 +6,9 @@
  * Google specifies — renaming/obfuscating those is a "Circumventing Systems"
  * policy violation that gets accounts permanently banned.
  *
- * SETUP CHECKLIST (after AdSense approval):
- *   1. Set VITE_ADSENSE_CLIENT in client/.env (and Vercel env vars)
- *   2. Create the ad units listed below in AdSense Console
- *   3. Replace each placeholder slot ID with the real 10-digit slot
- *   4. Verify no console warnings on `npm run build` then deploy
+ * Site: rdswa.info.bd · Publisher: ca-pub-1036044341182474
+ * Env: VITE_ADSENSE_CLIENT (set in Vercel for prod; leave blank in dev to
+ * suppress all AdSense network requests + impressions).
  */
 
 // Read at import time. Empty in dev → <Promo> renders nothing, layout is

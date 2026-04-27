@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -14,6 +14,9 @@ import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
+
+const PROMO_EVERY = 6;
 
 const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
 
@@ -129,7 +132,8 @@ export default function ForumPage() {
       ) : (
         <div className="space-y-2">
           {filteredTopics.map((topic: any, i: number) => (
-            <FadeIn key={topic._id} delay={i * 0.03} direction="up" distance={15}>
+            <Fragment key={topic._id}>
+            <FadeIn delay={i * 0.03} direction="up" distance={15}>
               <Link to={`/dashboard/forum/${topic._id}`}>
                 <div
                   className="p-4 rounded-lg border bg-card hover:bg-accent flex items-center gap-4 transition-colors"
@@ -164,6 +168,10 @@ export default function ForumPage() {
                 </div>
               </Link>
             </FadeIn>
+            {(i + 1) % PROMO_EVERY === 0 && i < filteredTopics.length - 1 && (
+              <Promo kind="infeed" minHeight={160} />
+            )}
+            </Fragment>
           ))}
         </div>
       )}

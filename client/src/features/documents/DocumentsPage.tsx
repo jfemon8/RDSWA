@@ -9,6 +9,7 @@ import RichContent from '@/components/ui/RichContent';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
@@ -96,6 +97,10 @@ export default function DocumentsPage() {
         </div>
       </FadeIn>
 
+      {/* lg+ adds a sticky right-rail promo. Below lg the sidebar is hidden
+          and the document list takes the full container width. */}
+      <div className="lg:flex lg:gap-6">
+        <div className="flex-1 min-w-0">
       {isLoading ? (
         <Spinner size="md" />
       ) : documents.length === 0 ? (
@@ -142,6 +147,20 @@ export default function DocumentsPage() {
           ))}
         </div>
       )}
+
+      {/* Bottom display banner — appears below the document list on every
+          breakpoint. Distinct from the sidebar promo so we get one
+          impression on mobile (where the sidebar is hidden). */}
+      {documents.length > 0 && (
+        <div className="mt-8">
+          <Promo kind="displayResponsive" minHeight={250} />
+        </div>
+      )}
+        </div>
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+          <Promo kind="sidebar" minHeight={600} />
+        </aside>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -13,6 +13,9 @@ import { FieldError } from '@/components/ui/FieldError';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
+import Promo from '@/components/promo/Promo';
+
+const PROMO_EVERY = 6;
 
 export default function AnnouncementsPage() {
   const { user } = useAuthStore();
@@ -87,7 +90,8 @@ export default function AnnouncementsPage() {
             const body = match ? match[2] : ann.content;
 
             return (
-              <FadeIn key={ann._id} delay={i * 0.04} direction="up" distance={15}>
+              <Fragment key={ann._id}>
+              <FadeIn delay={i * 0.04} direction="up" distance={15}>
                 <motion.div
                   whileHover={{ y: -2 }}
                   className="bg-card border rounded-lg p-5"
@@ -113,6 +117,10 @@ export default function AnnouncementsPage() {
                   </div>
                 </motion.div>
               </FadeIn>
+              {(i + 1) % PROMO_EVERY === 0 && i < announcements.length - 1 && (
+                <Promo kind="infeed" minHeight={160} />
+              )}
+              </Fragment>
             );
           })}
         </div>

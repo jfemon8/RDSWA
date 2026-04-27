@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Image, X, Mail, Calendar } from 'lucide-react';
@@ -9,6 +9,13 @@ import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import EmptyState from '@/components/ui/EmptyState';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import Promo from '@/components/promo/Promo';
+
+// Album grid is up to 3 cols on lg, so every 6 cards = every 2 rows. Photo
+// grid is up to 4 cols, so 12 keeps the visual flow uninterrupted while
+// still placing one promo per ~3 rows on long albums.
+const ALBUM_PROMO_EVERY = 6;
+const PHOTO_PROMO_EVERY = 12;
 
 export default function GalleryPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -62,13 +69,13 @@ export default function GalleryPage() {
 
           {albumDetail.photos?.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {albumDetail.photos.map((p: any) => (
-                // Caption overlays the image (absolute bottom) so tiles are
-                // uniformly 1:1 whether a photo has a caption or not —
-                // otherwise captioned/uncaptioned tiles in the same row
-                // produce different heights and the grid looks ragged.
+              {albumDetail.photos.map((p: any, i: number) => (
+                <Fragment key={p._id}>
+                {/* Caption overlays the image (absolute bottom) so tiles are
+                    uniformly 1:1 whether a photo has a caption or not —
+                    otherwise captioned/uncaptioned tiles in the same row
+                    produce different heights and the grid looks ragged. */}
                 <div
-                  key={p._id}
                   className="relative cursor-pointer group overflow-hidden rounded-lg aspect-square bg-muted"
                   onClick={() => setLightbox(p.url)}
                 >
@@ -84,6 +91,12 @@ export default function GalleryPage() {
                     </div>
                   )}
                 </div>
+                {(i + 1) % PHOTO_PROMO_EVERY === 0 && i < albumDetail.photos.length - 1 && (
+                  <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+                    <Promo kind="infeed" minHeight={180} />
+                  </div>
+                )}
+                </Fragment>
               ))}
             </div>
           ) : (
@@ -109,7 +122,8 @@ export default function GalleryPage() {
           ) : (
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {albums.map((a: any, i: number) => (
-                <FadeIn key={a._id} delay={i * 0.08} direction="up">
+                <Fragment key={a._id}>
+                <FadeIn delay={i * 0.08} direction="up">
                   <div onClick={() => setSelectedAlbum(a._id)}
                     className="border rounded-xl overflow-hidden bg-card cursor-pointer hover:border-primary/30 transition-colors">
                     {a.coverPhoto ? (
@@ -127,6 +141,12 @@ export default function GalleryPage() {
                     </div>
                   </div>
                 </FadeIn>
+                {(i + 1) % ALBUM_PROMO_EVERY === 0 && i < albums.length - 1 && (
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <Promo kind="infeed" minHeight={180} />
+                  </div>
+                )}
+                </Fragment>
               ))}
             </div>
           )}

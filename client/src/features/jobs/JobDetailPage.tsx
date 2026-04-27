@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/date';
+import Promo from '@/components/promo/Promo';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -142,6 +143,15 @@ export default function JobDetailPage() {
           <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none break-words">
             <RichContent html={job.description} />
           </div>
+        </div>
+      </FadeIn>
+
+      {/* In-article promo placed between description and requirements —
+          highest viewability point on a job-detail page. Career intent
+          contextual ads here typically have the strongest CPM. */}
+      <FadeIn delay={0.12} direction="up">
+        <div className="mb-4 sm:mb-6">
+          <Promo kind="inArticle" minHeight={250} />
         </div>
       </FadeIn>
 

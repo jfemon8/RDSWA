@@ -8,6 +8,7 @@ import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, S
 import type { LucideIcon } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { formatDate } from '@/lib/date';
+import Promo from '@/components/promo/Promo';
 
 const featureIconMap: Record<string, LucideIcon> = {
   Community: Users, Events: Calendar, Notices: Bell, Welfare: Heart,
@@ -352,6 +353,17 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Promo — multiplex placed just before the CTA so it sits above the
+          footer without breaking the hero/CTA composition. Home page is
+          flow-based (no main+sidebar grid), so the desktop "sidebar" promo
+          requested for richer pages is intentionally not used here — adding
+          a floating right-rail would clash with the centered hero. */}
+      <section className="container mx-auto py-8">
+        <FadeIn direction="up">
+          <Promo kind="multiplex" minHeight={300} />
+        </FadeIn>
+      </section>
 
       {/* CTA Section */}
       <section className="py-24 relative overflow-x-hidden">

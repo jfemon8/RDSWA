@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
+import Promo from '@/components/promo/Promo';
 
 // Lazy-load the PDF viewer so pdfjs (~600 KB) only ships when a notice
 // actually has a PDF attachment.
@@ -83,6 +84,15 @@ export default function NoticeDetailPage() {
 
       <FadeIn delay={0.25} direction="up">
         <RichContent html={notice.content} />
+      </FadeIn>
+
+      {/* In-article promo placed after the notice body so the reader has
+          finished the content before the ad. Above the attachment block
+          because attachments have their own visual frame. */}
+      <FadeIn delay={0.28} direction="up">
+        <div className="mt-8">
+          <Promo kind="inArticle" minHeight={250} />
+        </div>
       </FadeIn>
 
       {notice.attachments?.length > 0 && (

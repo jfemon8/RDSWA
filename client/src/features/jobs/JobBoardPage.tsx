@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -16,6 +16,11 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import EmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
+
+// Career-intent traffic — slightly tighter cadence than community pages
+// because contextual career ads on this surface have the highest CPM.
+const PROMO_EVERY = 5;
 
 function isJobExpired(job: any): boolean {
   if (!job?.deadline) return false;
@@ -302,7 +307,8 @@ export default function JobBoardPage() {
           {jobs.map((job: any, i: number) => {
             const expired = isJobExpired(job);
             return (
-            <FadeIn key={job._id} delay={i * 0.05} direction="up">
+            <Fragment key={job._id}>
+            <FadeIn delay={i * 0.05} direction="up">
               <Link to={`/dashboard/jobs/${job._id}`} className="block">
                 <motion.div
                   whileHover={{ y: expired ? 0 : -2 }}
@@ -409,6 +415,10 @@ export default function JobBoardPage() {
                 </motion.div>
               </Link>
             </FadeIn>
+            {(i + 1) % PROMO_EVERY === 0 && i < jobs.length - 1 && (
+              <Promo kind="infeed" minHeight={180} />
+            )}
+            </Fragment>
           );
           })}
         </div>

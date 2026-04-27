@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -11,6 +11,11 @@ import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import EmptyState from '@/components/ui/EmptyState';
 import { deriveEventStatus } from '@rdswa/shared';
+import Promo from '@/components/promo/Promo';
+
+// One in-feed promo per N event cards. 6 keeps density unobtrusive while
+// still hitting the 12-per-page list often enough to register impressions.
+const PROMO_EVERY = 6;
 
 const EVENT_TYPES = ['event', 'meeting', 'workshop', 'seminar', 'social', 'other'];
 const STATUSES = ['', 'upcoming', 'ongoing', 'completed'];
@@ -205,54 +210,65 @@ export default function EventsPage() {
               <>
                 <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {events.map((e: any, i: number) => (
-                    <FadeIn key={e._id} delay={i * 0.05} direction="up">
-                      <Link to={`/events/${e._id}`}>
-                        <div
-                          className="border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"
-                        >
-                          {e.coverImage && (
-                            <div className="overflow-hidden">
-                              <img
-                                src={e.coverImage}
-                                alt=""
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-40 object-cover"
-                              />
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <StatusBadge status={deriveEventStatus(e)} />
-                              {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
-                            </div>
-                            <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
-                              <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
-                            </h3>
-                            <div className="space-y-1 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3.5 w-3.5" />
-                                {formatDate(e.startDate)}
+                    <Fragment key={e._id}>
+                      <FadeIn delay={i * 0.05} direction="up">
+                        <Link to={`/events/${e._id}`}>
+                          <div
+                            className="border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"
+                          >
+                            {e.coverImage && (
+                              <div className="overflow-hidden">
+                                <img
+                                  src={e.coverImage}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="w-full h-40 object-cover"
+                                />
                               </div>
-                              {e.venue && (
+                            )}
+                            <div className="p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <StatusBadge status={deriveEventStatus(e)} />
+                                {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
+                              </div>
+                              <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
+                                <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
+                              </h3>
+                              <div className="space-y-1 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
-                                  <MapPin className="h-3.5 w-3.5" />
-                                  <span className="truncate">{e.venue}</span>
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {formatDate(e.startDate)}
                                 </div>
-                              )}
-                              {e.committee && (
-                                <div className="flex items-center gap-1">
-                                  <Building2 className="h-3.5 w-3.5" />
-                                  <span className="truncate">
-                                    {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
-                                  </span>
-                                </div>
-                              )}
+                                {e.venue && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3.5 w-3.5" />
+                                    <span className="truncate">{e.venue}</span>
+                                  </div>
+                                )}
+                                {e.committee && (
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="h-3.5 w-3.5" />
+                                    <span className="truncate">
+                                      {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
+                        </Link>
+                      </FadeIn>
+                      {/* In-feed promo every Nth card. Spans all grid columns
+                          via col-span so it reads as a content break, not a
+                          stray oversized card. Skipped on the very last card
+                          to avoid trailing the list with an ad. */}
+                      {(i + 1) % PROMO_EVERY === 0 && i < events.length - 1 && (
+                        <div className="sm:col-span-2 lg:col-span-3">
+                          <Promo kind="infeed" minHeight={180} />
                         </div>
-                      </Link>
-                    </FadeIn>
+                      )}
+                    </Fragment>
                   ))}
                 </div>
 

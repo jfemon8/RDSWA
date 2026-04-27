@@ -45,6 +45,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import SharedEmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
 
 const PAGE_LIMIT = 20;
 
@@ -401,6 +402,11 @@ export default function BusSchedulePage() {
         </motion.button>
       )}
 
+      {/* lg+ split: routes/schedules content on the left, sticky promo on
+          the right. Below lg the sidebar collapses so the schedule grid /
+          operator cards keep their full-width design unchanged. */}
+      <div className="lg:flex lg:gap-6">
+        <div className="flex-1 min-w-0">
       {isLoading ? (
         <Spinner size="md" />
       ) : (
@@ -639,7 +645,7 @@ export default function BusSchedulePage() {
               {filteredOperators.length === 0 ? (
                 <EmptyState text={search ? 'No operators found.' : 'No operators available.'} />
               ) : (
-                <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {filteredOperators.map((op: any, i: number) => (
                     <FadeIn key={op._id} delay={i * 0.04} direction="up">
                       <motion.button
@@ -690,6 +696,18 @@ export default function BusSchedulePage() {
           )}
         </AnimatePresence>
       )}
+
+      {/* Bottom display banner — full-width below the active view. Renders
+          on every breakpoint so mobile (where the sidebar is hidden) still
+          gets one impression per page view. */}
+      <div className="mt-8">
+        <Promo kind="displayResponsive" minHeight={250} />
+      </div>
+        </div>
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+          <Promo kind="sidebar" minHeight={600} />
+        </aside>
+      </div>
     </div>
   );
 }

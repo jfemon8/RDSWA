@@ -13,6 +13,7 @@ import RichContent from '@/components/ui/RichContent';
 import UserEventQr from '@/components/ui/UserEventQr';
 import Spinner from '@/components/ui/Spinner';
 import { deriveEventStatus } from '@rdswa/shared';
+import Promo from '@/components/promo/Promo';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -235,6 +236,15 @@ export default function EventDetailPage() {
       <FadeIn delay={0.3} direction="up">
         <div className="prose dark:prose-invert max-w-none mb-8">
           <RichContent html={event.description} />
+        </div>
+      </FadeIn>
+
+      {/* In-article promo placed after the description, before secondary
+          panels (attendance, photos, feedback). This is the natural reading
+          break and gets the highest viewability. */}
+      <FadeIn delay={0.32} direction="up">
+        <div className="mb-8">
+          <Promo kind="inArticle" minHeight={250} />
         </div>
       </FadeIn>
 

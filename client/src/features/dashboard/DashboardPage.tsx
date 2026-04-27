@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { stripHtml } from '@/lib/stripHtml';
+import Promo from '@/components/promo/Promo';
 
 const membershipStatusConfig: Record<string, { icon: typeof Clock; color: string; bgColor: string; label: string; description: string }> = {
   none: { icon: AlertCircle, color: 'text-muted-foreground', bgColor: 'bg-muted', label: 'Not Applied', description: 'You haven\'t applied for membership yet.' },
@@ -182,6 +183,18 @@ export default function DashboardPage() {
           </div>
         </FadeIn>
       )}
+
+      {/* Bottom-of-dashboard responsive display promo. Mobile anchor ad
+          (sticky bottom) is configured separately in AdSense Console →
+          Privacy & messaging → Ads → Auto ads → enable ONLY "Anchor" with
+          URL targeting `/dashboard` and device targeting "mobile" — that
+          UX cannot be implemented from React because anchor ads must be
+          owned by the AdSense auto-ads runtime to behave correctly. */}
+      <FadeIn delay={0.3} direction="up">
+        <div className="mt-8">
+          <Promo kind="displayResponsive" minHeight={250} />
+        </div>
+      </FadeIn>
     </div>
   );
 }

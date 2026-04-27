@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -10,6 +10,11 @@ import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { deriveEventStatus } from '@rdswa/shared';
+import Promo from '@/components/promo/Promo';
+
+// Meetings list reads like a long article — drop one in-article promo per
+// 5 entries so a typical screen has one ad without dominating the list.
+const PROMO_EVERY = 5;
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
@@ -76,7 +81,8 @@ export default function MeetingRecordsPage() {
         <>
           <div className="space-y-3">
             {meetings.map((m: any, i: number) => (
-              <FadeIn key={m._id} delay={i * 0.05} direction="up">
+              <Fragment key={m._id}>
+              <FadeIn delay={i * 0.05} direction="up">
                 <Link to={`/events/${m._id}`}>
                   <div
                     className="border rounded-lg p-4 bg-card hover:border-primary/30 transition-colors"
@@ -122,6 +128,10 @@ export default function MeetingRecordsPage() {
                   </div>
                 </Link>
               </FadeIn>
+              {(i + 1) % PROMO_EVERY === 0 && i < meetings.length - 1 && (
+                <Promo kind="inArticle" minHeight={250} />
+              )}
+              </Fragment>
             ))}
           </div>
 

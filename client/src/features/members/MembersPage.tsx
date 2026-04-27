@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
@@ -13,6 +13,11 @@ import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import EmptyState from '@/components/ui/EmptyState';
+import Promo from '@/components/promo/Promo';
+
+// In-feed promo cadence — once per 6 member cards. Lower than 6 starts to
+// dominate the grid; higher than 8 misses too many users on short pages.
+const PROMO_EVERY = 6;
 
 type CategoryKey = '' | 'alumni' | 'advisor' | 'senior_advisor';
 
@@ -156,8 +161,13 @@ export default function MembersPage() {
         </div>
       </FadeIn>
 
+      {/* Main + sidebar layout on lg+. Below lg the sidebar collapses and
+          the main column gets full width — design stays identical to the
+          pre-promo version for tablet/mobile. */}
+      <div className="lg:flex lg:gap-6">
+        <div className="flex-1 min-w-0">
       {isLoading ? (
-        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 9 }).map((_, i) => <ListItemSkeleton key={i} />)}
         </div>
       ) : members.length === 0 ? (
@@ -186,10 +196,11 @@ export default function MembersPage() {
         />
       ) : (
         <>
-          <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {members.map((m: any, i: number) => {
               return (
-                <FadeIn key={m._id} delay={i * 0.04} direction="up">
+                <Fragment key={m._id}>
+                <FadeIn delay={i * 0.04} direction="up">
                   <Link
                     to={`/members/${m._id}`}
                     className="block border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors"
@@ -284,6 +295,12 @@ export default function MembersPage() {
                     )}
                   </Link>
                 </FadeIn>
+                {(i + 1) % PROMO_EVERY === 0 && i < members.length - 1 && (
+                  <div className="sm:col-span-2 xl:col-span-3">
+                    <Promo kind="infeed" minHeight={160} />
+                  </div>
+                )}
+                </Fragment>
               );
             })}
           </div>
@@ -311,6 +328,15 @@ export default function MembersPage() {
           )}
         </>
       )}
+        </div>
+        {/* Right rail — sticky vertical promo on lg+. Hidden below lg so
+            the small-screen layout stays full-width and identical to the
+            previous design. `self-start` keeps the promo top-aligned in the
+            flex row regardless of how tall the member list grows. */}
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+          <Promo kind="sidebar" minHeight={600} />
+        </aside>
+      </div>
     </div>
   );
 }
