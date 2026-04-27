@@ -237,7 +237,7 @@ export default function BloodDonorsPage() {
           monetization with health-emergency content). The promo only
           surfaces after the user has already seen the donor list. */}
       {donors.length > 0 && (
-        <div className="mt-10">
+        <div className="mt-10 empty:hidden">
           <Promo kind="multiplex" minHeight={300} />
         </div>
       )}

@@ -264,7 +264,7 @@ export default function EventsPage() {
                           stray oversized card. Skipped on the very last card
                           to avoid trailing the list with an ad. */}
                       {(i + 1) % PROMO_EVERY === 0 && i < events.length - 1 && (
-                        <div className="sm:col-span-2 lg:col-span-3">
+                        <div className="sm:col-span-2 lg:col-span-3 empty:hidden">
                           <Promo kind="infeed" minHeight={180} />
                         </div>
                       )}

@@ -233,7 +233,7 @@ export default function MemberDirectoryPage({
                 </Link>
               </FadeIn>
               {(i + 1) % PROMO_EVERY === 0 && i < members.length - 1 && (
-                <div className="sm:col-span-2 xl:col-span-3">
+                <div className="sm:col-span-2 xl:col-span-3 empty:hidden">
                   <Promo kind="infeed" minHeight={160} />
                 </div>
               )}
@@ -265,7 +265,7 @@ export default function MemberDirectoryPage({
         </>
       )}
         </div>
-        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+        <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
           <Promo kind="sidebar" minHeight={600} />
         </aside>
       </div>

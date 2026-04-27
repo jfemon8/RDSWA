@@ -700,11 +700,11 @@ export default function BusSchedulePage() {
       {/* Bottom display banner — full-width below the active view. Renders
           on every breakpoint so mobile (where the sidebar is hidden) still
           gets one impression per page view. */}
-      <div className="mt-8">
+      <div className="mt-8 empty:hidden">
         <Promo kind="displayResponsive" minHeight={250} />
       </div>
         </div>
-        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+        <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
           <Promo kind="sidebar" minHeight={600} />
         </aside>
       </div>

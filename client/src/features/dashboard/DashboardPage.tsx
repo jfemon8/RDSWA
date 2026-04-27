@@ -190,11 +190,9 @@ export default function DashboardPage() {
           URL targeting `/dashboard` and device targeting "mobile" — that
           UX cannot be implemented from React because anchor ads must be
           owned by the AdSense auto-ads runtime to behave correctly. */}
-      <FadeIn delay={0.3} direction="up">
-        <div className="mt-8">
-          <Promo kind="displayResponsive" minHeight={250} />
-        </div>
-      </FadeIn>
+      <div className="mt-8 empty:hidden">
+        <Promo kind="displayResponsive" minHeight={250} />
+      </div>
     </div>
   );
 }

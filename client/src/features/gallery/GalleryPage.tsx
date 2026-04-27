@@ -92,7 +92,7 @@ export default function GalleryPage() {
                   )}
                 </div>
                 {(i + 1) % PHOTO_PROMO_EVERY === 0 && i < albumDetail.photos.length - 1 && (
-                  <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+                  <div className="col-span-2 sm:col-span-3 lg:col-span-4 empty:hidden">
                     <Promo kind="infeed" minHeight={180} />
                   </div>
                 )}
@@ -142,7 +142,7 @@ export default function GalleryPage() {
                   </div>
                 </FadeIn>
                 {(i + 1) % ALBUM_PROMO_EVERY === 0 && i < albums.length - 1 && (
-                  <div className="sm:col-span-2 lg:col-span-3">
+                  <div className="sm:col-span-2 lg:col-span-3 empty:hidden">
                     <Promo kind="infeed" minHeight={180} />
                   </div>
                 )}

@@ -152,12 +152,12 @@ export default function DocumentsPage() {
           breakpoint. Distinct from the sidebar promo so we get one
           impression on mobile (where the sidebar is hidden). */}
       {documents.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-8 empty:hidden">
           <Promo kind="displayResponsive" minHeight={250} />
         </div>
       )}
         </div>
-        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+        <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
           <Promo kind="sidebar" minHeight={600} />
         </aside>
       </div>

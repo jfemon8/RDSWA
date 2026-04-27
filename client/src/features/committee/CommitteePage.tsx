@@ -121,7 +121,7 @@ export default function CommitteePage() {
         </div>
       )}
         </div>
-        <aside className="hidden lg:block w-72 shrink-0 sticky top-20 self-start">
+        <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
           <Promo kind="sidebar" minHeight={600} />
         </aside>
       </div>

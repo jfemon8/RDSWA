@@ -86,14 +86,12 @@ export default function NoticeDetailPage() {
         <RichContent html={notice.content} />
       </FadeIn>
 
-      {/* In-article promo placed after the notice body so the reader has
-          finished the content before the ad. Above the attachment block
-          because attachments have their own visual frame. */}
-      <FadeIn delay={0.28} direction="up">
-        <div className="mt-8">
-          <Promo kind="inArticle" minHeight={250} />
-        </div>
-      </FadeIn>
+      {/* In-article promo after the notice body, above attachments. Promo
+          has its own fade animation; wrapping with FadeIn would block the
+          `empty:hidden` collapse when the slot is unfilled. */}
+      <div className="mt-8 empty:hidden">
+        <Promo kind="inArticle" minHeight={250} />
+      </div>
 
       {notice.attachments?.length > 0 && (
         <FadeIn delay={0.3} direction="up">

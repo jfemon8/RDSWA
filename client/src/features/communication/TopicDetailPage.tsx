@@ -236,14 +236,13 @@ export default function TopicDetailPage() {
         </div>
       </FadeIn>
 
-      {/* In-article promo placed between the topic body and replies — the
-          natural break point on a Reddit-style thread, similar to how
-          discussion sites place their first ad. */}
-      <FadeIn delay={0.08} direction="up">
-        <div className="mb-4">
-          <Promo kind="inArticle" minHeight={250} />
-        </div>
-      </FadeIn>
+      {/* In-article promo between topic body and replies — the natural
+          break point on a Reddit-style thread. No FadeIn wrapper because
+          Promo animates itself and the wrapper would block `empty:hidden`
+          collapse when the slot is unfilled. */}
+      <div className="mb-4 empty:hidden">
+        <Promo kind="inArticle" minHeight={250} />
+      </div>
 
       {/* Replies */}
       <div className="space-y-2 mb-4">

@@ -358,11 +358,12 @@ export default function HomePage() {
           footer without breaking the hero/CTA composition. Home page is
           flow-based (no main+sidebar grid), so the desktop "sidebar" promo
           requested for richer pages is intentionally not used here — adding
-          a floating right-rail would clash with the centered hero. */}
-      <section className="container mx-auto py-8">
-        <FadeIn direction="up">
-          <Promo kind="multiplex" minHeight={300} />
-        </FadeIn>
+          a floating right-rail would clash with the centered hero.
+          `empty:hidden` collapses the whole section (incl. py-8) when the
+          Promo returns null (dev / unfilled / blocked route) so no empty
+          padding band appears between Services and CTA. */}
+      <section className="container mx-auto py-8 empty:hidden">
+        <Promo kind="multiplex" minHeight={300} />
       </section>
 
       {/* CTA Section */}

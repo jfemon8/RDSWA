@@ -146,14 +146,14 @@ export default function JobDetailPage() {
         </div>
       </FadeIn>
 
-      {/* In-article promo placed between description and requirements —
-          highest viewability point on a job-detail page. Career intent
-          contextual ads here typically have the strongest CPM. */}
-      <FadeIn delay={0.12} direction="up">
-        <div className="mb-4 sm:mb-6">
-          <Promo kind="inArticle" minHeight={250} />
-        </div>
-      </FadeIn>
+      {/* In-article promo between description and requirements — highest
+          viewability point on a job-detail page. Career-intent contextual
+          ads here typically have the strongest CPM. No FadeIn wrapper:
+          Promo animates itself, and the wrapper would block `empty:hidden`
+          collapse when the slot is unfilled. */}
+      <div className="mb-4 sm:mb-6 empty:hidden">
+        <Promo kind="inArticle" minHeight={250} />
+      </div>
 
       {/* Requirements */}
       {job.requirements?.length > 0 && (
