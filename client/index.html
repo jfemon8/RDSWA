@@ -34,6 +34,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Google AdSense ownership verification.
+         Hardcoded as a static <meta> (NOT JS-injected) because the AdSense
+         site-review crawler issues a plain HTTP fetch and looks for this
+         tag in the raw HTML response — it does not reliably execute JS for
+         the verification step. The publisher ID is public information
+         (visible in every served page anyway), so committing it is safe. -->
+    <meta name="google-adsense-account" content="ca-pub-1036044341182474" />
+
+    <!-- Google AdSense script loader.
+         The script tag itself is env-gated — when VITE_ADSENSE_CLIENT is
+         unset (local dev), no network request is made and dev consoles
+         stay clean. In production the env var is set in Vercel and the
+         actual `adsbygoogle.js` script loads. The meta tag above is
+         independent of this gate so verification works in every env. -->
+    <script>
+      (function () {
+        var c = '%VITE_ADSENSE_CLIENT%';
+        if (!c || c.indexOf('ca-pub-') !== 0) return;
+        var s = document.createElement('script');
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + c;
+        document.head.appendChild(s);
+      })();
+    </script>
     <title>RDSWA - Rangpur Divisional Student Welfare Association</title>
     <!-- FOUC prevention: resolve theme BEFORE React hydrates so the very first
          paint uses the correct mode. Priority: localStorage → system → light.
