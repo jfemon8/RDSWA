@@ -8,7 +8,12 @@ import GuestGuard from '@/components/guards/GuestGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import AdminRoleGuard from '@/components/guards/AdminRoleGuard';
 import Spinner from '@/components/ui/Spinner';
-import { UserRole, BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
+import {
+  UserRole,
+  BACKUP_RESTRICTED_SUPER_ADMINS,
+  SETTINGS_RESTRICTED_SUPER_ADMINS,
+  CLARITY_RESTRICTED_SUPER_ADMINS,
+} from '@rdswa/shared';
 
 // Public pages
 const Home = lazy(() => import('@/features/home/HomePage'));
@@ -100,6 +105,7 @@ const AdminMentorship = lazy(() => import('@/features/admin/mentorship/AdminMent
 const AdminForum = lazy(() => import('@/features/admin/forum/AdminForumPage'));
 const AdminBudget = lazy(() => import('@/features/admin/budget/AdminBudgetPage'));
 const AdminBackup = lazy(() => import('@/features/admin/backup/AdminBackupPage'));
+const AdminClarity = lazy(() => import('@/features/admin/clarity/AdminClarityPage'));
 
 function LoadingFallback() {
   // Matches the `<Spinner />` component used by every page's loading state,
@@ -213,6 +219,7 @@ export default function AppRouter() {
               <Route path="/admin/finance" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminFinance /></AdminRoleGuard>} />
               <Route path="/admin/budgets" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBudget /></AdminRoleGuard>} />
               <Route path="/admin/backup" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={BACKUP_RESTRICTED_SUPER_ADMINS}><AdminBackup /></AdminRoleGuard>} />
+              <Route path="/admin/clarity" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={CLARITY_RESTRICTED_SUPER_ADMINS}><AdminClarity /></AdminRoleGuard>} />
               <Route path="/admin/bus" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminBus /></AdminRoleGuard>} />
               <Route path="/admin/reports" element={<AdminRoleGuard minRole={UserRole.MODERATOR}><AdminReports /></AdminRoleGuard>} />
               <Route path="/admin/logs" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminLogs /></AdminRoleGuard>} />

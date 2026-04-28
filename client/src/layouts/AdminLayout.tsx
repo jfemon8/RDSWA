@@ -5,12 +5,17 @@ import {
   LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, UserCheck, BarChart3, KeyRound, CreditCard, Settings2,
-  Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database, Inbox,
+  Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database, Inbox, Eye,
 } from 'lucide-react';
 import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
-import { UserRole, BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
+import {
+  UserRole,
+  BACKUP_RESTRICTED_SUPER_ADMINS,
+  SETTINGS_RESTRICTED_SUPER_ADMINS,
+  CLARITY_RESTRICTED_SUPER_ADMINS,
+} from '@rdswa/shared';
 import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -69,6 +74,7 @@ const adminLinks: AdminLink[] = [
 
   // ── SuperAdmin Only ──
   { label: 'Admins', href: '/admin/admins', icon: Crown, minRole: UserRole.SUPER_ADMIN },
+  { label: 'User Activity', href: '/admin/clarity', icon: Eye, minRole: UserRole.SUPER_ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.SUPER_ADMIN },
   { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.SUPER_ADMIN },
@@ -95,6 +101,7 @@ export default function AdminLayout() {
   const deniedPaths: Record<string, string[]> = {
     '/admin/backup': BACKUP_RESTRICTED_SUPER_ADMINS,
     '/admin/settings': SETTINGS_RESTRICTED_SUPER_ADMINS,
+    '/admin/clarity': CLARITY_RESTRICTED_SUPER_ADMINS,
   };
   const visibleLinks = adminLinks.filter((link) => {
     if (!user?.role || !hasMinRole(user.role, link.minRole)) return false;

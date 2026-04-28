@@ -118,6 +118,33 @@
         document.head.appendChild(s);
       })();
     </script>
+
+    <!-- Microsoft Clarity loader.
+         Env-gated by VITE_CLARITY_PROJECT_ID (10-char alphanumeric ID
+         issued by clarity.microsoft.com). When unset (local dev) the
+         tracker doesn't load and no recordings/heatmaps are sent —
+         keeps dev sessions out of production analytics.
+         The standard Clarity bootstrap snippet defines a queueing shim
+         on `window.clarity` so calls (event/set/identify/etc.) made
+         before clarity.js finishes loading are buffered and replayed.
+         SPA route changes are handled automatically — Clarity hooks the
+         History API and detects pushState/replaceState transitions, so
+         no manual page-view dispatch is required (unlike GA4). -->
+    <script>
+      (function () {
+        var id = "%VITE_CLARITY_PROJECT_ID%";
+        // Skip when the placeholder wasn't substituted (no env var set)
+        // or the ID is implausibly short. Clarity IDs are 10 chars but
+        // we keep the bound loose so the gate doesn't break if Microsoft
+        // ever changes the format.
+        if (!id || id.length < 6 || id.indexOf("VITE_") === 0) return;
+        (function (c, l, a, r, i, t, y) {
+          c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+          t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+          y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", id);
+      })();
+    </script>
     <title>RDSWA - Rangpur Divisional Student Welfare Association</title>
     <!-- FOUC prevention: resolve theme BEFORE React hydrates so the very first
          paint uses the correct mode. Priority: localStorage → system → light.

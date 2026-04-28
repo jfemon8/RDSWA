@@ -87,3 +87,14 @@ export const BACKUP_RESTRICTED_SUPER_ADMINS: string[] = [
 
 /** SuperAdmins who cannot access the Settings page / settings routes */
 export const SETTINGS_RESTRICTED_SUPER_ADMINS: string[] = [];
+
+/**
+ * SuperAdmins who cannot access the User Activity / Microsoft Clarity
+ * analytics page. Mirrors the BACKUP_/SETTINGS_-restricted pattern: even
+ * though these accounts are SuperAdmins for everything else, they should
+ * NOT see the Clarity surface (session recordings + heatmaps reveal user
+ * behaviour data that is intentionally scoped to specific admins).
+ */
+export const CLARITY_RESTRICTED_SUPER_ADMINS: string[] = [
+  'manikmia.phy@gmail.com',
+];
