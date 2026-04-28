@@ -107,8 +107,19 @@ api.interceptors.response.use(
         originalRequest.headers = originalRequest.headers || {};
         (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
-      } catch {
-        handleAuthFailure();
+      } catch (refreshError) {
+        // Only invalidate the session when the refresh endpoint explicitly
+        // refused us (401/403). Network errors, timeouts, and 5xx responses
+        // mean the backend is briefly unreachable — most commonly a Render
+        // free-tier cold start. Logging the user out in that case wipes a
+        // perfectly valid refresh-token cookie and forces a re-login over
+        // a transient infrastructure blip (the original "bar bar logout"
+        // bug). Let the request fail; the next user action will retry the
+        // refresh and recover automatically.
+        const refreshStatus = (refreshError as AxiosError)?.response?.status;
+        if (refreshStatus === 401 || refreshStatus === 403) {
+          handleAuthFailure();
+        }
         return Promise.reject(error);
       }
     }
