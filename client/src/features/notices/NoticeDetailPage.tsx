@@ -11,6 +11,7 @@ import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
 import Promo from '@/components/promo/Promo';
+import { buildArticleSchema, buildBreadcrumbSchema } from '@/components/seo/schemas';
 
 // Lazy-load the PDF viewer so pdfjs (~600 KB) only ships when a notice
 // actually has a PDF attachment.
@@ -35,9 +36,33 @@ export default function NoticeDetailPage() {
   const notice = data?.data;
   if (!notice) return <p className="text-center py-12 text-muted-foreground">Notice not found</p>;
 
+  const noticeUrl = `/notices/${notice._id || notice.id || id}`;
+  const cleanText = (notice.content || '').replace(/<[^>]*>/g, '').trim();
+  const noticeJsonLd = buildArticleSchema({
+    id: String(notice._id || notice.id || id),
+    title: notice.title,
+    description: cleanText.slice(0, 200),
+    body: cleanText,
+    publishedAt: notice.publishedAt || notice.createdAt,
+    updatedAt: notice.updatedAt,
+    authorName: notice.author?.name || notice.createdBy?.name,
+    image: notice.coverImage || notice.attachments?.[0]?.url,
+    url: noticeUrl,
+  });
+  const noticeBreadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Notices', url: '/notices' },
+    { name: notice.title, url: noticeUrl },
+  ]);
+
   return (
     <div className="container mx-auto py-8">
-      <SEO title={notice.title} description={notice.content?.replace(/<[^>]*>/g, '').slice(0, 160)} />
+      <SEO
+        title={notice.title}
+        description={cleanText.slice(0, 160)}
+        type="article"
+        jsonLd={[noticeJsonLd, noticeBreadcrumbJsonLd]}
+      />
       <FadeIn delay={0.05} direction="left">
         <Link to="/notices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to Notices

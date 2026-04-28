@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import BottomNav from '@/components/shared/BottomNav';
+import BaseJsonLd from '@/components/seo/BaseJsonLd';
 import { motion, AnimatePresence } from 'motion/react';
 import Spinner from '@/components/ui/Spinner';
 import { useIsAndroidApp } from '@/hooks/usePlatform';
@@ -13,6 +14,7 @@ export default function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <BaseJsonLd />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-primary-foreground"

@@ -42,7 +42,11 @@ export default function NoticesPage() {
 
   return (
     <div className="container mx-auto py-6 md:py-12">
-      <SEO title="Notices" description="Stay updated with the latest RDSWA notices, announcements, and important updates." />
+      <SEO
+        title="Notices & Announcements"
+        description="Latest RDSWA notices, announcements, and updates for University of Barishal Rangpur students. Read official statements, exam notices, scholarship announcements, and committee notifications. RDSWA নোটিশ ও ঘোষণা।"
+        keywords="RDSWA notices, RDSWA announcements, University of Barishal notice, BU Rangpur notice, ববি নোটিশ, RDSWA নোটিশ, student welfare announcements"
+      />
       <BlurText
         text="Notices"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"

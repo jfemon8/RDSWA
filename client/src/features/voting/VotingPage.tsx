@@ -30,7 +30,11 @@ export default function VotingPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <SEO title="Voting" description="Participate in RDSWA polls and elections — cast your vote on active polls." />
+      <SEO
+        title="Voting & Polls"
+        description="Participate in RDSWA polls, elections, and community decisions at the University of Barishal. Cast secure votes for committee elections and policy decisions. RDSWA ভোট ও জরিপ।"
+        keywords="RDSWA voting, RDSWA elections, BU student elections, RDSWA polls, RDSWA নির্বাচন, RDSWA ভোট"
+      />
       <BlurText text="Voting & Polls" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
       {active.length > 0 ? (

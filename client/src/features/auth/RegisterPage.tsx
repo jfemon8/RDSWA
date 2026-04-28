@@ -7,6 +7,7 @@ import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
+import SEO from '@/components/SEO';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -69,6 +70,11 @@ export default function RegisterPage() {
 
   return (
     <div className="container mx-auto min-h-[80vh] flex items-center justify-center py-8">
+      <SEO
+        title="Create account"
+        description="Register for RDSWA membership — Rangpur Divisional Student Welfare Association, University of Barishal. Join the network of Rangpur students at BU."
+        noindex
+      />
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
           <div className="bg-card border rounded-2xl p-5 sm:p-8 shadow-lg">

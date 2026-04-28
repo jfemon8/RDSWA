@@ -50,7 +50,11 @@ export default function CommitteePage() {
 
   return (
     <div className="container mx-auto py-6 md:py-12">
-      <SEO title="Committee" description="Meet the RDSWA committee members and leadership team." />
+      <SEO
+        title="Committee"
+        description="RDSWA committees and leadership team at the University of Barishal — President, General Secretary, Organizing Secretary, Treasurer and full executive lineup of every committee. Meet the people leading the Rangpur Divisional Student Welfare Association. RDSWA কমিটি ও নেতৃত্ব।"
+        keywords="RDSWA committee, RDSWA president, RDSWA general secretary, BU Rangpur committee, University of Barishal student committee, RDSWA executive, ববি কমিটি, RDSWA কমিটি"
+      />
       <BlurText
         text="Committees"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8 justify-center md:justify-start"

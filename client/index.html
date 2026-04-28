@@ -43,6 +43,12 @@
          (visible in every served page anyway), so committing it is safe. -->
     <meta name="google-adsense-account" content="ca-pub-1036044341182474" />
 
+    <!-- Google Search Console site ownership verification. Same constraint as
+         AdSense: GSC's verification crawler reads the raw HTML response, so
+         this MUST be a static tag (not injected by react-helmet at runtime).
+         Required to submit /sitemap.xml and view indexing reports. -->
+    <meta name="google-site-verification" content="fuobzYJ0CaxpVnoQthO1nUT2_EfKd445J8pPB3035lU" />
+
     <!-- Google AdSense script loader.
          The script tag itself is env-gated — when VITE_ADSENSE_CLIENT is
          unset (local dev), no network request is made and dev consoles

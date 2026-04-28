@@ -14,6 +14,7 @@ import UserEventQr from '@/components/ui/UserEventQr';
 import Spinner from '@/components/ui/Spinner';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
+import { buildEventSchema, buildBreadcrumbSchema } from '@/components/seo/schemas';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -71,9 +72,32 @@ export default function EventDetailPage() {
   const hasSubmittedFeedback = event.feedbacks?.some?.((f: any) => (typeof f.user === 'string' ? f.user : f.user?._id) === user?._id);
   const photos = event.photos || [];
 
+  const eventJsonLd = buildEventSchema({
+    id: String(event._id || event.id || id),
+    title: event.title,
+    description: event.description?.slice(0, 500),
+    startsAt: event.startDate || event.startsAt,
+    endsAt: event.endDate || event.endsAt,
+    location: event.location || event.venue,
+    coverImage: event.coverImage,
+    isOnline: event.isOnline || event.mode === 'online',
+    url: `/events/${event._id || event.id || id}`,
+  });
+  const eventBreadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Events', url: '/events' },
+    { name: event.title, url: `/events/${event._id || event.id || id}` },
+  ]);
+
   return (
     <div className="container mx-auto py-8">
-      <SEO title={event.title} description={event.description?.slice(0, 160)} image={event.coverImage} />
+      <SEO
+        title={event.title}
+        description={event.description?.slice(0, 160)}
+        image={event.coverImage}
+        type="event"
+        jsonLd={[eventJsonLd, eventBreadcrumbJsonLd]}
+      />
       {event.coverImage && (
         <motion.img
           src={event.coverImage}

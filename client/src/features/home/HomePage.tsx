@@ -73,7 +73,21 @@ export default function HomePage() {
 
   return (
     <div className="overflow-x-hidden">
-      <SEO description="Official platform of RDSWA — connecting students from Rangpur Division at University of Barishal. Events, notices, committees, and more." />
+      <SEO
+        description="RDSWA — Rangpur Divisional Student Welfare Association at the University of Barishal. Member directory, events, notices, blood donor network, Rangpur–Barishal bus schedule, scholarships, committees, alumni, and more for BU Rangpur students. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়।"
+        keywords="RDSWA, Rangpur Divisional Student Welfare Association, University of Barishal, BU Rangpur, রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়, Barishal University Rangpur students, Rangpur student association, BU student welfare, Bangladesh student welfare association, Rangpur to Barishal bus, BU blood donor"
+      />
+      {/*
+        Visually-hidden semantic <h1> for crawlers + screen readers. The
+        BlurText animated heading inside the hero is a <div>, so without
+        this every page would lose its primary heading anchor and
+        accessibility/SEO audits flag the issue. `sr-only` keeps the
+        rendered UI visually identical — only assistive tech and search
+        engines see this string.
+      */}
+      <h1 className="sr-only">
+        RDSWA — Rangpur Divisional Student Welfare Association, University of Barishal · রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়
+      </h1>
       {/* Hero Section */}
       <section className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center py-16 sm:py-20 md:py-32">
         <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
@@ -253,7 +267,13 @@ export default function HomePage() {
                     >
                       {e.coverImage && (
                         <div className="overflow-hidden">
-                          <img src={e.coverImage} alt="" className="w-full h-40 object-cover" />
+                          <img
+                            src={e.coverImage}
+                            alt={e.title || 'Event cover'}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-40 object-cover"
+                          />
                         </div>
                       )}
                       <div className="p-5">

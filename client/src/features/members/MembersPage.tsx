@@ -73,7 +73,11 @@ export default function MembersPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <SEO title={activeCategory.label} description="Browse the RDSWA member directory — students and alumni from Rangpur Division at University of Barishal." />
+      <SEO
+        title={`${activeCategory.label} — RDSWA Member Directory`}
+        description={`Browse the RDSWA ${activeCategory.label.toLowerCase()} directory — verified students and alumni of the University of Barishal from Rangpur Division. Find members by department, batch, district, and profession. RDSWA সদস্য ডিরেক্টরি।`}
+        keywords={`RDSWA members, ${activeCategory.label} RDSWA, BU Rangpur students, University of Barishal student directory, Rangpur students BU, ববি রংপুর শিক্ষার্থী, RDSWA সদস্য`}
+      />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <BlurText text={activeCategory.label} className="text-2xl sm:text-3xl md:text-4xl font-bold justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 

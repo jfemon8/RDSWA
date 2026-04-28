@@ -34,8 +34,9 @@ export default function UniversityPage() {
   return (
     <div className="container mx-auto py-8">
       <SEO
-        title={uni?.name || "University"}
-        description={`Learn about ${uni?.name || 'University of Barishal'} — overview, history, campus info, and admissions.`}
+        title={uni?.name || 'University of Barishal'}
+        description={`About ${uni?.name || 'University of Barishal'} (BU) — overview, history, campus information, departments, faculty, admissions, and campus life. Comprehensive university guide for Rangpur Division students. বরিশাল বিশ্ববিদ্যালয় সম্পর্কে জানুন।`}
+        keywords="University of Barishal, BU Bangladesh, Barishal University, ববি, বরিশাল বিশ্ববিদ্যালয়, BU admissions, BU departments, BU campus, Bangladesh public university"
       />
 
       {/* Header with logo + name */}

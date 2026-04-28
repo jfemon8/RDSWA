@@ -10,6 +10,10 @@
       "destination": "https://rdswa.onrender.com/api/$1"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "https://rdswa.onrender.com/api/sitemap.xml"
+    },
+    {
       "source": "/((?!api/|assets/|icons/|.*\\..*).*)",
       "destination": "/index.html"
     }
@@ -42,6 +46,14 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
         }
       ]
     }

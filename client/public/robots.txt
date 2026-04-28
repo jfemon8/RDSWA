@@ -1,0 +1,32 @@
+# robots.txt for RDSWA — Rangpur Divisional Student Welfare Association
+# University of Barishal
+
+User-agent: *
+Allow: /
+
+# Block authenticated/admin areas — these pages have no public content for
+# crawlers and would only consume crawl budget. Logged-out users hitting
+# them get redirected by the SPA, but that costs a JS execution for the bot.
+Disallow: /admin
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Internal Vercel/PWA artifacts that shouldn't appear in search.
+Disallow: /sw.js
+Disallow: /workbox-*.js
+Disallow: /manifest.webmanifest
+
+# Allow asset folders explicitly so image/icon search can find them.
+Allow: /icons/
+Allow: /assets/
+Allow: /og-image.png
+
+# Sitemap is served via the backend (proxied by Vercel) so it includes
+# dynamic content (latest notices, events, members). Updated on every
+# request, no stale sitemap.xml in version control.
+Sitemap: https://rdswa.info.bd/sitemap.xml

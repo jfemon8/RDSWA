@@ -11,6 +11,8 @@ import {
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/date';
 import Promo from '@/components/promo/Promo';
+import SEO from '@/components/SEO';
+import { buildJobPostingSchema, buildBreadcrumbSchema } from '@/components/seo/schemas';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -49,8 +51,34 @@ export default function JobDetailPage() {
   const job = data;
   const expired = !!(job.deadline && new Date(job.deadline).getTime() < Date.now());
 
+  const jobUrl = `/dashboard/jobs/${job._id || job.id || id}`;
+  const cleanJobDesc = (job.description || '').replace(/<[^>]*>/g, '').trim();
+  const jobJsonLd = buildJobPostingSchema({
+    id: String(job._id || job.id || id),
+    title: job.title,
+    description: cleanJobDesc || job.title,
+    postedAt: job.createdAt,
+    validThrough: job.deadline,
+    employerName: job.company,
+    location: job.location,
+    employmentType: (job.type || 'FULL_TIME').toString().toUpperCase().replace(/-/g, '_'),
+    url: jobUrl,
+  });
+  const jobBreadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Job Board', url: '/dashboard/jobs' },
+    { name: job.title, url: jobUrl },
+  ]);
+
   return (
     <div className="container mx-auto px-4 py-6 md:py-12">
+      <SEO
+        title={`${job.title}${job.company ? ' at ' + job.company : ''}`}
+        description={cleanJobDesc.slice(0, 160) || `Job opening: ${job.title}${job.location ? ' in ' + job.location : ''}.`}
+        type="article"
+        jsonLd={[jobJsonLd, jobBreadcrumbJsonLd]}
+        noindex={expired}
+      />
       {/* Back */}
       <button
         onClick={() => navigate(-1)}

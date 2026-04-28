@@ -55,7 +55,11 @@ export default function GalleryPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <SEO title="Gallery" description="Browse RDSWA photo albums — events, gatherings, and memorable moments." />
+      <SEO
+        title="Gallery"
+        description="RDSWA photo gallery — events, cultural programs, sports, social gatherings, and memorable moments of Rangpur Division students at the University of Barishal. RDSWA গ্যালারি ও ছবি।"
+        keywords="RDSWA gallery, RDSWA photos, BU Rangpur photos, University of Barishal events photos, RDSWA গ্যালারি, RDSWA ছবি"
+      />
       <BlurText text="Gallery" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start" delay={80} animateBy="words" direction="bottom" />
 
       {selectedAlbum && albumDetail ? (

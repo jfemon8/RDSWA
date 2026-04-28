@@ -42,7 +42,11 @@ export default function DonationsPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <SEO title="Donations" description="Support RDSWA through donations — view active campaigns and contribute to student welfare." />
+      <SEO
+        title="Donations"
+        description="Support RDSWA — donate to active scholarship, emergency-aid, and student-welfare campaigns at the University of Barishal. Help BU Rangpur students with education funding, blood-donor coordination, and community programs. RDSWA-কে দান করুন।"
+        keywords="RDSWA donation, donate to RDSWA, BU student scholarship, University of Barishal student welfare donation, Rangpur student fund, RDSWA দান, scholarship donation Bangladesh"
+      />
       <div className="flex items-center justify-between mb-6">
         <BlurText
           text="Donations"

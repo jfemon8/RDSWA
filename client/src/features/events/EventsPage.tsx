@@ -99,7 +99,11 @@ export default function EventsPage() {
 
   return (
     <div className="container mx-auto py-6 md:py-12">
-      <SEO title="Events" description="Browse upcoming and past RDSWA events, workshops, seminars, and social gatherings." />
+      <SEO
+        title="Events"
+        description="Upcoming and past RDSWA events at the University of Barishal — workshops, seminars, cultural programs, sports, scholarships, and social gatherings for Rangpur Division students. RDSWA ইভেন্টস ও কর্মসূচি।"
+        keywords="RDSWA events, BU events, University of Barishal events, Rangpur student events, RDSWA workshops, RDSWA seminars, ববি ইভেন্ট, RDSWA কর্মসূচি"
+      />
       <BlurText
         text="Events"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 justify-center md:justify-start"

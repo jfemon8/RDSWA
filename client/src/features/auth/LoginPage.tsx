@@ -11,6 +11,7 @@ import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
+import SEO from '@/components/SEO';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REMEMBER_EMAIL_KEY = 'rdswa_remember_email';
@@ -128,6 +129,11 @@ export default function LoginPage() {
 
   return (
     <div className="container mx-auto min-h-[80vh] flex items-center justify-center py-8">
+      <SEO
+        title="Login"
+        description="Sign in to RDSWA — Rangpur Divisional Student Welfare Association at the University of Barishal. Access events, notices, member directory, bus schedules, and more."
+        noindex
+      />
       <FadeIn direction="up" duration={0.5} blur>
         <div className="w-full max-w-md">
           <div

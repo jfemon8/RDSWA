@@ -65,7 +65,11 @@ export default function DocumentsPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <SEO title="Documents" description="Access RDSWA documents — policies, resolutions, reports, and forms." />
+      <SEO
+        title="Documents"
+        description="Official RDSWA documents — constitution, policies, meeting resolutions, financial reports, membership forms, and downloadable resources for the University of Barishal Rangpur student community. RDSWA ডকুমেন্টস ও ফরম।"
+        keywords="RDSWA documents, RDSWA constitution, RDSWA policies, RDSWA membership form, RDSWA financial report, BU Rangpur documents, RDSWA ডকুমেন্ট, RDSWA ফরম"
+      />
       <BlurText
         text="Documents"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6"

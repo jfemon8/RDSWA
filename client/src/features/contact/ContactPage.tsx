@@ -93,7 +93,8 @@ export default function ContactPage() {
     <div className="container mx-auto py-6 md:py-12">
       <SEO
         title="Contact Us"
-        description="Get in touch with the Rangpur Divisional Student Welfare Association at University of Barishal."
+        description="Get in touch with the Rangpur Divisional Student Welfare Association (RDSWA) at the University of Barishal — email, phone, social media, and the official feedback form. RDSWA-এর সাথে যোগাযোগ করুন।"
+        keywords="contact RDSWA, RDSWA email, RDSWA phone, University of Barishal contact, BU Rangpur contact, RDSWA যোগাযোগ"
       />
 
       <BlurText
