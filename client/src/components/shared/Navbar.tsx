@@ -93,7 +93,7 @@ export default function Navbar() {
     <>
     <header
       role="banner"
-      className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60"
+      className={`${mobileOpen ? 'fixed' : 'sticky'} top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60`}
     >
       <div className="container mx-auto px-4 flex h-16 items-center justify-between gap-2">
         <Link to="/" className="flex items-center space-x-2">

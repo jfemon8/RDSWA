@@ -62,7 +62,7 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Top bar */}
-      <header className="sticky top-0 z-50 h-16 border-b bg-background flex items-center justify-between px-3 sm:px-4 gap-2">
+      <header className={`${sidebarOpen ? 'fixed inset-x-0' : 'sticky'} top-0 z-50 h-16 border-b bg-background flex items-center justify-between px-3 sm:px-4 gap-2`}>
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             className="lg:hidden tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
