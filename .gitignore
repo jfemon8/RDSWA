@@ -40,6 +40,38 @@ playwright-report/
 # Project documents (confidential)
 FRS of RDSWA.pdf
 
+# ─── Android packaging — PWABuilder / Bubblewrap / Google Play output ───
+# These artifacts are generated outside the repo (typically via
+# PWABuilder.com → "Package for Stores"). Two categories:
+#
+#   SENSITIVE (must NEVER be committed):
+#     `signing.keystore` + `signing-key-info.txt` ARE the private signing
+#     identity. Anyone with these can forge updates that install on top
+#     of the legitimate app — and because Android refuses to install an
+#     "update" signed with a different key, a leak forces a brand-new app
+#     id and orphans every existing install. The general `*.keystore` /
+#     `*.jks` / `signing-key-info.txt` patterns below catch any similar
+#     file placed anywhere else in the tree as a safety net.
+#
+#   BUILD OUTPUTS:
+#     `RDSWA.aab` (~3 MB) is the Google Play upload bundle and is
+#     re-generated on every PWABuilder run, so it stays out of git.
+#     `RDSWA.apk` is INTENTIONALLY committable (sideload distribution,
+#     direct-download link from GitHub releases, etc.) — only the
+#     specific `.aab` and signing files inside the folder are ignored,
+#     not the folder itself.
+#
+# Keep the keystore + signing-key-info.txt backed up OFF-repo (password
+# manager, encrypted Google Drive folder, offline USB) — losing them
+# makes every future update of the published app impossible.
+/rdswa.vercel.app - Google Play Package/signing.keystore
+/rdswa.vercel.app - Google Play Package/signing-key-info.txt
+/rdswa.vercel.app - Google Play Package/RDSWA.aab
+*.keystore
+*.jks
+signing-key-info.txt
+*.aab
+
 # Misc
 *.pid
 *.seed
