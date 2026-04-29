@@ -48,6 +48,7 @@ export default function ProfilePage() {
     gender: user?.gender || '',
     bloodGroup: user?.bloodGroup || '',
     isBloodDonor: user?.isBloodDonor || false,
+    lastDonationDate: user?.lastDonationDate ? new Date(user.lastDonationDate).toISOString().split('T')[0] : '',
     presentAddress: user?.presentAddress || { division: '', district: '', upazila: '', details: '' },
     permanentAddress: user?.permanentAddress || { division: '', district: '', upazila: '', details: '' },
     studentId: user?.studentId || '',
@@ -130,6 +131,24 @@ export default function ProfilePage() {
   };
 
   const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  /**
+   * Blood-group setter with side-effects. The donor checkbox cannot be
+   * checked without a blood group selected (you can't donate an unknown
+   * group), so when the user clears the dropdown we also flip the
+   * `isBloodDonor` flag off — preventing the form from sitting in an
+   * impossible state where the checkbox is true but disabled. We
+   * intentionally LEAVE `lastDonationDate` intact: a user briefly
+   * clearing their group shouldn't lose their real donation history,
+   * and re-selecting a group restores everything as it was.
+   */
+  const setBloodGroup = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      bloodGroup: value,
+      ...(value === '' && prev.isBloodDonor ? { isBloodDonor: false } : {}),
+    }));
+  };
   const setNested = (parent: string, field: string, value: string) =>
     setForm((prev) => ({ ...prev, [parent]: { ...(prev as any)[parent], [field]: value } }));
   const setVisibility = (field: string, value: boolean) =>
@@ -199,9 +218,46 @@ export default function ProfilePage() {
               </VisibilityField>
               <SelectField label="Gender" value={form.gender} onChange={(v) => { set('gender', v); setErrors((prev) => { const { gender, ...rest } = prev; return rest; }); }} options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }, { label: 'Other', value: 'other' }]} error={errors.gender} />
               <VisibilityField label="Blood Group" isPublic={form.profileVisibility.bloodGroup ?? true} onToggle={(v) => setVisibility('bloodGroup', v)}>
-                <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => { set('bloodGroup', v); setErrors((prev) => { const { bloodGroup, ...rest } = prev; return rest; }); }} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} error={errors.bloodGroup} />
+                <SelectField label="Blood Group" value={form.bloodGroup} onChange={(v) => { setBloodGroup(v); setErrors((prev) => { const { bloodGroup, ...rest } = prev; return rest; }); }} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ label: v, value: v }))} error={errors.bloodGroup} />
               </VisibilityField>
-              <CheckboxField label="Available as Blood Donor" checked={form.isBloodDonor} onChange={(v) => set('isBloodDonor', v)} />
+              <CheckboxField
+                label="Available as Blood Donor"
+                checked={form.isBloodDonor}
+                onChange={(v) => set('isBloodDonor', v)}
+                disabled={!form.bloodGroup}
+                hint={!form.bloodGroup ? 'Select your blood group first to enable this option.' : undefined}
+              />
+              {/*
+                Last Donation Date is opt-in metadata only meaningful when
+                the user is actively offering as a donor — so it's nested
+                under the donor checkbox. AnimatePresence drives a smooth
+                expand/collapse so the form doesn't jump when the user
+                toggles the checkbox. Leaving the field empty keeps the
+                public donor card clean (the BloodDonorsPage already
+                conditionals the row on `lastDonationDate` truthy).
+              */}
+              <AnimatePresence initial={false}>
+                {form.isBloodDonor && (
+                  <motion.div
+                    key="last-donation-date"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-1">
+                      <InputField
+                        label="Last Donation Date (optional)"
+                        type="date"
+                        value={form.lastDonationDate}
+                        onChange={(v) => set('lastDonationDate', v)}
+                        placeholder="Shown on your public donor card"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <AddressFieldset
                 legend="Present Address"
                 address={form.presentAddress}
@@ -484,11 +540,36 @@ function AddressFieldset({ legend, address, onChange }: {
   );
 }
 
-function CheckboxField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function CheckboxField({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+  hint,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  hint?: string;
+}) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded" />
-      <span className="text-sm">{label}</span>
-    </label>
+    <div>
+      <label
+        className={`flex items-center gap-2 ${
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={disabled}
+          className="rounded"
+        />
+        <span className="text-sm">{label}</span>
+      </label>
+      {hint && <p className="text-xs text-muted-foreground mt-1 ml-6">{hint}</p>}
+    </div>
   );
 }
