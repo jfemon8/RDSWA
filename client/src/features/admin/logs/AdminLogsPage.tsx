@@ -277,7 +277,7 @@ function AuditLogsTab() {
                                   key === "before"
                                 )
                                   return null;
-                                let display: string | React.ReactNode = val;
+                                let display: React.ReactNode = null;
                                 let isComplex = false;
                                 let isHtmlString = false;
 
