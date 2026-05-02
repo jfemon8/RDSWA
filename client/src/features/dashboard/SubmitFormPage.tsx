@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
@@ -11,8 +11,16 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { useToast } from '@/components/ui/Toast';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import {
+  ACADEMIC_DOC_TYPES,
+  IDENTITY_DOC_TYPES,
+  DEFAULT_MEMBERSHIP_CRITERIA,
+  type MembershipCriteria,
+} from '@/lib/membershipDocs';
 
 interface UploadedFile {
+  /** Doc-type key (e.g. 'nid', 'student_id') for membership/alumni group uploads,
+   *  or a free-form label for legacy alumni uploads. Persisted on the Form. */
   name: string;
   url: string;
   uploading?: boolean;
@@ -35,7 +43,29 @@ export default function SubmitFormPage() {
   const alreadyPending = user?.membershipStatus === 'pending';
   const canApplyAlumni = user?.membershipStatus === 'approved';
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, label: string) => {
+  // Pull live criteria so the form mirrors whatever an admin has configured.
+  const { data: criteriaData } = useQuery<MembershipCriteria>({
+    queryKey: ['settings', 'membership-criteria'],
+    queryFn: async () => {
+      const { data } = await api.get('/settings/membership-criteria');
+      return { ...DEFAULT_MEMBERSHIP_CRITERIA, ...(data.data || {}) };
+    },
+    enabled: isMembershipForm,
+  });
+  const criteria: MembershipCriteria = criteriaData ?? DEFAULT_MEMBERSHIP_CRITERIA;
+
+  // Per-group selected doc type (only meaningful while picking a file).
+  const [academicDocType, setAcademicDocType] = useState<string>('');
+  const [identityDocType, setIdentityDocType] = useState<string>('');
+
+  const academicAccepted = ACADEMIC_DOC_TYPES.filter((d) =>
+    criteria.academicDocs.accepted.includes(d.key),
+  );
+  const identityAccepted = IDENTITY_DOC_TYPES.filter((d) =>
+    criteria.identityDocs.accepted.includes(d.key),
+  );
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, attachmentName: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -59,12 +89,16 @@ export default function SubmitFormPage() {
       const { data } = await api.post('/upload/document', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setAttachments((prev) => [...prev, { name: label, url: data.data.url }]);
+      // Replace any previous attachment with the same name (e.g. switching
+      // from passport to NID within the identity group).
+      setAttachments((prev) => [
+        ...prev.filter((a) => a.name !== attachmentName),
+        { name: attachmentName, url: data.data.url },
+      ]);
     } catch {
       toast.error('File upload failed');
     } finally {
       setUploading(false);
-      // Reset input
       e.target.value = '';
     }
   };
@@ -72,6 +106,14 @@ export default function SubmitFormPage() {
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
+
+  // Whether each group is currently satisfied by an uploaded file.
+  const academicUpload = attachments.find((a) =>
+    academicAccepted.some((d) => d.key === a.name),
+  );
+  const identityUpload = attachments.find((a) =>
+    identityAccepted.some((d) => d.key === a.name),
+  );
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -113,9 +155,14 @@ export default function SubmitFormPage() {
     }
 
     // Validate required attachments
-    if (isMembershipForm && attachments.length < 2) {
-      setErrors({ attachments: 'Please upload both your NID/Passport/Birth Certificate and University ID Card' });
-      return;
+    if (isMembershipForm) {
+      const missing: string[] = [];
+      if (criteria.academicDocs.enabled && !academicUpload) missing.push('an academic document');
+      if (criteria.identityDocs.enabled && !identityUpload) missing.push('an identity document');
+      if (missing.length > 0) {
+        setErrors({ attachments: `Please upload ${missing.join(' and ')}.` });
+        return;
+      }
     }
     if (isAlumniForm && attachments.length < 1) {
       setErrors({ attachments: 'Please upload your Business ID Card/Trade Licence/Employee ID Card' });
@@ -125,18 +172,12 @@ export default function SubmitFormPage() {
     mutation.mutate();
   };
 
-  // Membership upload fields
-  const membershipUploads = [
-    { label: 'NID / Passport / Birth Certificate', key: 'nid' },
-    { label: 'University ID Card', key: 'university_id' },
-  ];
-
-  // Alumni upload fields
+  // Alumni upload fields (legacy single-file flow — unchanged)
   const alumniUploads = [
     { label: 'Business ID Card / Trade Licence / Employee ID Card', key: 'work_id' },
   ];
 
-  const currentUploads = isMembershipForm ? membershipUploads : isAlumniForm ? alumniUploads : [];
+  const currentUploads = isAlumniForm ? alumniUploads : [];
 
   return (
     <FadeIn direction="up" blur duration={0.5}>
@@ -159,7 +200,13 @@ export default function SubmitFormPage() {
                 <div>
                   <p className="font-medium text-sm">Join RDSWA</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Submit your membership application with required documents below. You must upload your NID/Passport/Birth Certificate and University ID Card.
+                    Submit your membership application with required documents below.
+                    {criteria.academicDocs.enabled && (
+                      <> You must upload one academic document ({academicAccepted.map((d) => d.label).join(' / ')}).</>
+                    )}
+                    {criteria.identityDocs.enabled && (
+                      <> You must also upload one identity document ({identityAccepted.map((d) => d.label).join(' / ')}).</>
+                    )}
                   </p>
                 </div>
               </div>
@@ -255,7 +302,49 @@ export default function SubmitFormPage() {
                 <FieldError message={errors.reason} />
               </motion.div>
 
-              {/* File uploads for membership & alumni */}
+              {/* Grouped uploads for membership — one of each accepted type */}
+              {isMembershipForm && (criteria.academicDocs.enabled || criteria.identityDocs.enabled) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.4 }}
+                  className="space-y-3"
+                >
+                  <label className="block text-sm font-medium">Required Documents</label>
+
+                  {criteria.academicDocs.enabled && academicAccepted.length > 0 && (
+                    <DocGroupUpload
+                      title="Academic Document"
+                      hint="Upload one of the following:"
+                      acceptedDocs={academicAccepted}
+                      selectedDocType={academicDocType}
+                      setSelectedDocType={setAcademicDocType}
+                      uploaded={academicUpload}
+                      uploading={uploading}
+                      onUpload={handleFileUpload}
+                      onRemove={() => academicUpload && removeAttachment(attachments.indexOf(academicUpload))}
+                    />
+                  )}
+
+                  {criteria.identityDocs.enabled && identityAccepted.length > 0 && (
+                    <DocGroupUpload
+                      title="Identity Document"
+                      hint="Upload one of the following:"
+                      acceptedDocs={identityAccepted}
+                      selectedDocType={identityDocType}
+                      setSelectedDocType={setIdentityDocType}
+                      uploaded={identityUpload}
+                      uploading={uploading}
+                      onUpload={handleFileUpload}
+                      onRemove={() => identityUpload && removeAttachment(attachments.indexOf(identityUpload))}
+                    />
+                  )}
+
+                  <FieldError message={errors.attachments} />
+                </motion.div>
+              )}
+
+              {/* Legacy single-file uploads (alumni form) */}
               {currentUploads.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
@@ -327,5 +416,103 @@ export default function SubmitFormPage() {
         </form>
       </div>
     </FadeIn>
+  );
+}
+
+/**
+ * Doc-group upload UI: pick a doc type from the accepted list, then upload.
+ * The selected doc-type key is what gets stored as `attachment.name`.
+ */
+function DocGroupUpload({
+  title,
+  hint,
+  acceptedDocs,
+  selectedDocType,
+  setSelectedDocType,
+  uploaded,
+  uploading,
+  onUpload,
+  onRemove,
+}: {
+  title: string;
+  hint: string;
+  acceptedDocs: ReadonlyArray<{ key: string; label: string }>;
+  selectedDocType: string;
+  setSelectedDocType: (k: string) => void;
+  uploaded: UploadedFile | undefined;
+  uploading: boolean;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>, attachmentName: string) => void;
+  onRemove: () => void;
+}) {
+  const uploadedLabel = acceptedDocs.find((d) => d.key === uploaded?.name)?.label ?? '';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="border rounded-lg p-3 bg-background space-y-2"
+    >
+      <p className="text-sm font-medium">{title}</p>
+
+      {uploaded ? (
+        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+          <FileText className="h-4 w-4" />
+          <span className="truncate flex-1">{uploadedLabel} uploaded</span>
+          <motion.button
+            type="button"
+            onClick={onRemove}
+            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="Remove uploaded document"
+          >
+            <X className="h-4 w-4" />
+          </motion.button>
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">{hint}</p>
+          <div className="flex flex-wrap gap-2">
+            {acceptedDocs.map((d) => (
+              <button
+                key={d.key}
+                type="button"
+                onClick={() => setSelectedDocType(d.key)}
+                className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                  selectedDocType === d.key
+                    ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                    : 'hover:bg-accent'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <label
+            className={`flex items-center gap-2 px-3 py-2 border border-dashed rounded-md text-sm transition-colors ${
+              selectedDocType
+                ? 'cursor-pointer hover:border-primary hover:bg-primary/5 text-muted-foreground'
+                : 'opacity-50 cursor-not-allowed text-muted-foreground'
+            }`}
+          >
+            <Upload className="h-4 w-4" />
+            <span>
+              {uploading
+                ? 'Uploading...'
+                : selectedDocType
+                  ? 'Choose file (JPEG, PNG, PDF — max 5MB)'
+                  : 'Select a document type first'}
+            </span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              className="hidden"
+              onChange={(e) => selectedDocType && onUpload(e, selectedDocType)}
+              disabled={uploading || !selectedDocType}
+            />
+          </label>
+        </>
+      )}
+    </motion.div>
   );
 }

@@ -8,6 +8,12 @@ import { useToast } from '@/components/ui/Toast';
 import { Save, Loader2, Vote, Users, Shield } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
+import {
+  ACADEMIC_DOC_TYPES,
+  IDENTITY_DOC_TYPES,
+  DEFAULT_MEMBERSHIP_CRITERIA,
+  type MembershipCriteria,
+} from '@/lib/membershipDocs';
 
 type Tab = 'voting' | 'membership' | 'autoRole';
 const TABS: readonly Tab[] = ['voting', 'membership', 'autoRole'];
@@ -163,20 +169,19 @@ function MembershipCriteriaConfig() {
     },
   });
 
-  const [form, setForm] = useState({
-    requireStudentId: true,
-    requireNidUpload: true,
-    requireUniversityIdUpload: true,
-    allowedDivisions: ['Rangpur'],
-    minBatch: 1,
-    maxPendingDays: 7,
-    autoRejectAfterDays: 30,
-    requireEmailVerification: false,
-    requirePhoneVerification: false,
-  });
+  const [form, setForm] = useState<MembershipCriteria>(DEFAULT_MEMBERSHIP_CRITERIA);
 
   useEffect(() => {
-    if (data) setForm({ ...form, ...data });
+    if (!data) return;
+    // Merge loaded settings on top of defaults so older DB rows that don't
+    // yet have the new doc-group fields still render with sensible values.
+    setForm({
+      ...DEFAULT_MEMBERSHIP_CRITERIA,
+      ...data,
+      academicDocs: { ...DEFAULT_MEMBERSHIP_CRITERIA.academicDocs, ...(data.academicDocs || {}) },
+      identityDocs: { ...DEFAULT_MEMBERSHIP_CRITERIA.identityDocs, ...(data.identityDocs || {}) },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   const mutation = useMutation({
@@ -187,27 +192,89 @@ function MembershipCriteriaConfig() {
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
+  const toggleAccepted = (group: 'academicDocs' | 'identityDocs', key: string) => {
+    const current = form[group].accepted;
+    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+    setForm({ ...form, [group]: { ...form[group], accepted: next } });
+  };
+
   return (
     <FadeIn direction="up" delay={0.1}>
-      <div className="border rounded-lg p-5 bg-card space-y-4 ">
+      <div className="border rounded-lg p-5 bg-card space-y-5 ">
         <div className="flex items-center gap-2 mb-2">
           <Users className="h-5 w-5 text-primary" />
           <h3 className="font-semibold text-foreground">Membership Criteria</h3>
         </div>
 
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.requireStudentId} onChange={(e) => setForm({ ...form, requireStudentId: e.target.checked })} className="rounded" />
-            Require Student ID during application
+        {/* Academic Documents group */}
+        <div className="space-y-2 p-3 rounded-md border bg-background/50">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={form.academicDocs.enabled}
+              onChange={(e) => setForm({ ...form, academicDocs: { ...form.academicDocs, enabled: e.target.checked } })}
+              className="rounded"
+            />
+            Require Academic Document (one of selected types)
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.requireNidUpload} onChange={(e) => setForm({ ...form, requireNidUpload: e.target.checked })} className="rounded" />
-            Require NID/Passport/Birth Certificate upload
+          <p className="text-xs text-muted-foreground">
+            Applicant must upload one document of any selected type below.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {ACADEMIC_DOC_TYPES.map((d) => {
+              const active = form.academicDocs.accepted.includes(d.key);
+              return (
+                <button
+                  key={d.key}
+                  type="button"
+                  disabled={!form.academicDocs.enabled}
+                  onClick={() => toggleAccepted('academicDocs', d.key)}
+                  className={`px-3 py-1 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                    active ? 'bg-primary/10 border-primary/30 text-primary font-medium' : 'hover:bg-accent'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Identity Documents group */}
+        <div className="space-y-2 p-3 rounded-md border bg-background/50">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={form.identityDocs.enabled}
+              onChange={(e) => setForm({ ...form, identityDocs: { ...form.identityDocs, enabled: e.target.checked } })}
+              className="rounded"
+            />
+            Require Identity Document (one of selected types)
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.requireUniversityIdUpload} onChange={(e) => setForm({ ...form, requireUniversityIdUpload: e.target.checked })} className="rounded" />
-            Require University ID Card upload
-          </label>
+          <p className="text-xs text-muted-foreground">
+            Applicant must upload one document of any selected type below.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {IDENTITY_DOC_TYPES.map((d) => {
+              const active = form.identityDocs.accepted.includes(d.key);
+              return (
+                <button
+                  key={d.key}
+                  type="button"
+                  disabled={!form.identityDocs.enabled}
+                  onClick={() => toggleAccepted('identityDocs', d.key)}
+                  className={`px-3 py-1 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                    active ? 'bg-primary/10 border-primary/30 text-primary font-medium' : 'hover:bg-accent'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.requireEmailVerification} onChange={(e) => setForm({ ...form, requireEmailVerification: e.target.checked })} className="rounded" />
             Require email verification before membership application
@@ -231,9 +298,13 @@ function MembershipCriteriaConfig() {
               className="w-full px-3 py-2 border rounded-md bg-background text-sm" min={1} />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Max Pending Review Days</label>
+            <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              Max Pending Review Days
+              <span title="SLA warning threshold. Pending forms older than this show an 'overdue' badge in the review queue. No automated action is taken." className="text-muted-foreground/70 cursor-help">ⓘ</span>
+            </label>
             <input type="number" value={form.maxPendingDays} onChange={(e) => setForm({ ...form, maxPendingDays: parseInt(e.target.value) || 7 })}
               className="w-full px-3 py-2 border rounded-md bg-background text-sm" min={1} />
+            <p className="text-[11px] text-muted-foreground mt-1">SLA target — overdue badge only, no auto-action.</p>
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Auto-Reject After Days (0 = disabled)</label>
