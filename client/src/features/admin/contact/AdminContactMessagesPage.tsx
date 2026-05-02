@@ -5,6 +5,7 @@ import {
   CheckCircle2, Loader2, ExternalLink, User, Calendar,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -66,7 +67,7 @@ export default function AdminContactMessagesPage() {
 
   const [statusFilter, setStatusFilter] = useState<Status | ''>('');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const filters: Record<string, string> = { page: String(page), limit: '20' };

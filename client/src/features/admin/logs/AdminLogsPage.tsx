@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
+import { usePageParam } from "@/hooks/usePageParam";
 import api from "@/lib/api";
 import {
   Shield,
@@ -70,7 +71,7 @@ export default function AdminLogsPage() {
 
 function AuditLogsTab() {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam("auditPage");
   const [action, setAction] = useState("");
   const [resource, setResource] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -196,7 +197,6 @@ function AuditLogsTab() {
 
                               const routes: Record<string, string> = {
                                 users: `/admin/users`,
-                                members: `/admin/members`,
                                 committees: `/admin/committees`,
                                 events: `/admin/events`,
                                 notices: `/admin/notices`,
@@ -205,6 +205,18 @@ function AuditLogsTab() {
                                 albums: `/admin/gallery`,
                                 site_settings: `/admin/settings`,
                                 votes: `/admin/voting`,
+                                donations: `/admin/donations`,
+                                donation_campaigns: `/admin/donations`,
+                                bus_schedules: `/admin/bus`,
+                                bus_routes: `/admin/bus`,
+                                bus_operators: `/admin/bus`,
+                                bus_counters: `/admin/bus`,
+                                bus_reviews: `/admin/bus`,
+                                expenses: `/admin/finance`,
+                                budgets: `/admin/budgets`,
+                                reports: `/admin/reports`,
+                                contact_message: `/admin/contact-messages`,
+                                system: `/admin/backup`,
                               };
 
                               const path = routes[resourceType] || `/admin`;
@@ -400,7 +412,7 @@ function AuditLogsTab() {
 }
 
 function LoginHistoryTab() {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam("loginPage");
   const [statusFilter, setStatusFilter] = useState("");
 
   const { data, isLoading } = useQuery({

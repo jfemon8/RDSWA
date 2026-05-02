@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePageParam } from '@/hooks/usePageParam';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { FadeIn } from '@/components/reactbits';
@@ -21,7 +22,7 @@ export default function AdminFormsPage() {
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 

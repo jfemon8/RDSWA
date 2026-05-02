@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FadeIn } from '@/components/reactbits';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -159,7 +160,7 @@ function HistoryPanel() {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [typeFilter, setTypeFilter] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data, isLoading } = useQuery({

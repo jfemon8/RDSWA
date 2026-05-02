@@ -1,6 +1,7 @@
 import { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import {
   MessageSquare, Plus, Pin, Lock, Loader2, Search,
@@ -26,7 +27,7 @@ export default function ForumPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const { data, isLoading } = useQuery({
     queryKey: ['forum-topics', page, filterCategory],

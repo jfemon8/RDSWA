@@ -1,6 +1,7 @@
 import { useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { FileText, AlertTriangle, Search, Archive, Mail, X } from 'lucide-react';
@@ -21,7 +22,7 @@ export default function NoticesPage() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const filters: Record<string, string> = { page: String(page), limit: '12' };
   if (category) filters.category = category;

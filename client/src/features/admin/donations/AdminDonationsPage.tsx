@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -20,7 +21,7 @@ export default function AdminDonationsPage() {
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({

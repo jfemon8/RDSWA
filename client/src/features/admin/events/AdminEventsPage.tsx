@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -24,7 +25,7 @@ export default function AdminEventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [form, setForm] = useState({
     title: '', description: '', type: 'event', status: 'upcoming',
     startDate: '', endDate: '', venue: '', isOnline: false,

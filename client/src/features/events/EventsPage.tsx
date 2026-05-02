@@ -1,6 +1,7 @@
 import { useState, useMemo, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
@@ -26,7 +27,7 @@ export default function EventsPage() {
   const [type, setType] = useState('');
   const [committee, setCommittee] = useState('');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -16,7 +17,7 @@ export default function AdminJobsPage() {
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-jobs', search, typeFilter, page],

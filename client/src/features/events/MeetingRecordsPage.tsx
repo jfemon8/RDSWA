@@ -1,6 +1,7 @@
 import { useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
@@ -19,7 +20,7 @@ const PROMO_EVERY = 5;
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const filters: Record<string, string> = {
     page: String(page), limit: '20', type: 'meeting',

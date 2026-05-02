@@ -1,6 +1,7 @@
 import { useMemo, useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User, X } from 'lucide-react';
@@ -38,7 +39,7 @@ export default function MembersPage() {
   const [homeDistrict, setHomeDistrict] = useState('');
   const [profession, setProfession] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryKey>('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const filters: Record<string, string> = { page: String(page), limit: '20' };
   if (search) filters.search = search;

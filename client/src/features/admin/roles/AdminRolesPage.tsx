@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { usePageParam } from '@/hooks/usePageParam';
 import {
   Shield, Check, X, History, ArrowRight,
   GraduationCap, Award, Star, Zap,
@@ -299,7 +300,7 @@ export default function AdminRolesPage() {
 }
 
 function RoleHistorySection() {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [typeFilter, setTypeFilter] = useState('');
 
   const filters: Record<string, string> = { page: String(page), limit: '15' };

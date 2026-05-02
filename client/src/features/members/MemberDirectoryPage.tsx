@@ -1,6 +1,7 @@
 import { useMemo, useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Users, GraduationCap, Briefcase, MapPin, User, Award, Star } from 'lucide-react';
@@ -44,7 +45,7 @@ export default function MemberDirectoryPage({
   const [department, setDepartment] = useState('');
   const [homeDistrict, setHomeDistrict] = useState('');
   const [profession, setProfession] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const filters: Record<string, string> = {
     page: String(page),

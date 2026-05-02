@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { usePageParam } from '@/hooks/usePageParam';
 import { Search, Ban, ExternalLink, Users, Clock, ShieldOff, Mail, Award, Star, UserCog, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
@@ -28,7 +29,7 @@ export default function AdminMembersPage() {
   const [search, setSearch] = useState('');
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [showBulkEmail, setShowBulkEmail] = useState(false);
   const [bulkEmail, setBulkEmail] = useState({ subject: '', body: '' });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

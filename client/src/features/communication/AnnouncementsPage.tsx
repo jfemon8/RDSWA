@@ -1,6 +1,7 @@
 import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
@@ -22,7 +23,7 @@ export default function AnnouncementsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
 

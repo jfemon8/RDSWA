@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useIsRestoring } from '@tanstack/react-query';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 
 /**
@@ -67,7 +68,7 @@ export default function BusSchedulePage() {
   const [departureAfter, setDepartureAfter] = useState('');
   const [departureBefore, setDepartureBefore] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [selectedRoute, setSelectedRoute] = useState<any>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);

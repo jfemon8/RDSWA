@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
@@ -24,7 +25,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [bulkEmail, setBulkEmail] = useState({ subject: '', body: '' });

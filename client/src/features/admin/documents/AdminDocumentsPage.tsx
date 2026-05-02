@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -29,7 +30,7 @@ export default function AdminDocumentsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-documents', page],
