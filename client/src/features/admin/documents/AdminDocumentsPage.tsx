@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
@@ -6,13 +6,16 @@ import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import { Plus, Loader2, Trash2, Edit2, FileText, Download, X, Upload } from 'lucide-react';
+import RichContent from '@/components/ui/RichContent';
+import { Plus, Loader2, Trash2, Edit2, FileText, Download, X, Upload, ChevronDown, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import Pagination from '@/components/ui/Pagination';
+import { proxyFileUrl } from '@/lib/fileProxy';
+import { formatDateTime } from '@/lib/date';
 
 const CATEGORIES = ['policy', 'resolution', 'report', 'form', 'other'] as const;
 const ROLES = ['user', 'member', 'alumni', 'advisor', 'senior_advisor', 'moderator', 'admin'] as const;
@@ -88,6 +91,7 @@ export default function AdminDocumentsPage() {
   // Not persisted to the server (existing docs don't have this on edit).
   const [originalFileName, setOriginalFileName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = usePageParam();
 
   const { data, isLoading } = useQuery({
@@ -162,6 +166,90 @@ export default function AdminDocumentsPage() {
 
   const docs = data?.data || [];
   const pagination = data?.pagination;
+
+  const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
+
+  const renderDetails = (doc: any) => {
+    const filename = doc.fileUrl ? doc.fileUrl.split('/').pop() : '';
+    const previewUrl = doc.fileUrl ? proxyFileUrl(doc.fileUrl, doc.title || filename, true) : '';
+    const downloadUrl = doc.fileUrl ? proxyFileUrl(doc.fileUrl, doc.title || filename, false) : '';
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="space-y-3">
+          {doc.description ? (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
+              <div className="rounded border bg-background p-2.5">
+                <RichContent html={doc.description} />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
+              <p className="text-xs text-muted-foreground italic">No description</p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Access</p>
+            {doc.isPublic ? (
+              <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Public</span>
+            ) : doc.accessRoles?.length ? (
+              <div className="flex flex-wrap gap-1">
+                {doc.accessRoles.map((r: string) => (
+                  <span key={r} className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 capitalize">{r.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+            ) : (
+              <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Restricted</span>
+            )}
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">File</p>
+            <div className="rounded border bg-background p-2.5">
+              <p className="text-xs text-foreground break-all" title={filename}>{filename || '—'}</p>
+              {(doc.fileType || doc.fileSize > 0) && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {doc.fileType ? doc.fileType.toUpperCase() : ''}{doc.fileType && doc.fileSize > 0 ? ' · ' : ''}{fmtSize(doc.fileSize)}
+                </p>
+              )}
+              {doc.fileUrl && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border hover:bg-accent text-foreground">
+                    <ExternalLink className="h-3 w-3" /> Preview
+                  </a>
+                  <a href={downloadUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border hover:bg-accent text-foreground">
+                    <Download className="h-3 w-3" /> Download
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Downloads</p>
+              <p className="text-xs text-foreground">{doc.downloadCount || 0}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Uploaded by</p>
+              <p className="text-xs text-foreground">{doc.uploadedBy?.name || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Created</p>
+              <p className="text-xs text-foreground">{doc.createdAt ? formatDateTime(doc.createdAt) : '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Updated</p>
+              <p className="text-xs text-foreground">{doc.updatedAt ? formatDateTime(doc.updatedAt) : '—'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
@@ -340,20 +428,26 @@ export default function AdminDocumentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {docs.map((doc: any, i: number) => (
+                  {docs.map((doc: any, i: number) => {
+                    const isExpanded = expandedId === doc._id;
+                    return (
+                    <Fragment key={doc._id}>
                     <motion.tr
-                      key={doc._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.03 }}
-                      className="border-t hover:bg-accent/30"
+                      className={`border-t hover:bg-accent/30 cursor-pointer ${isExpanded ? 'bg-accent/20' : ''}`}
+                      onClick={() => toggleExpand(doc._id)}
                     >
                       <td className="p-3">
                         <p className="font-medium text-foreground flex items-start gap-1.5 min-w-0">
+                          <motion.span animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }} className="inline-flex shrink-0 mt-0.5 text-muted-foreground">
+                            <ChevronDown className="h-4 w-4" />
+                          </motion.span>
                           <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                           <span className="truncate" title={doc.title}>{doc.title}</span>
                         </p>
-                        {doc.description && <p className="text-xs text-muted-foreground line-clamp-1">{stripHtml(doc.description)}</p>}
+                        {doc.description && <p className="text-xs text-muted-foreground line-clamp-1 ml-[1.625rem]">{stripHtml(doc.description)}</p>}
                       </td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary capitalize whitespace-nowrap">{doc.category}</span>
@@ -369,7 +463,7 @@ export default function AdminDocumentsPage() {
                       <td className="p-3 text-muted-foreground">
                         <span className="inline-flex items-center gap-1 whitespace-nowrap"><Download className="h-3 w-3" /> {doc.downloadCount || 0}</span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-1">
                           <button onClick={() => startEdit(doc)} title="Edit"
                             className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground">
@@ -385,14 +479,41 @@ export default function AdminDocumentsPage() {
                         </div>
                       </td>
                     </motion.tr>
-                  ))}
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.tr
+                          key={`${doc._id}-details`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="border-t bg-muted/30"
+                        >
+                          <td colSpan={6} className="p-4">
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.25 }}
+                              className="overflow-hidden"
+                            >
+                              {renderDetails(doc)}
+                            </motion.div>
+                          </td>
+                        </motion.tr>
+                      )}
+                    </AnimatePresence>
+                    </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile card list */}
             <div className="lg:hidden space-y-3">
-              {docs.map((doc: any, i: number) => (
+              {docs.map((doc: any, i: number) => {
+                const isExpanded = expandedId === doc._id;
+                return (
                 <motion.div
                   key={doc._id}
                   initial={{ opacity: 0, y: 6 }}
@@ -400,13 +521,22 @@ export default function AdminDocumentsPage() {
                   transition={{ delay: i * 0.03 }}
                   className="border rounded-lg p-4 bg-card"
                 >
-                  <div className="flex items-start gap-2 mb-2">
-                    <FileText className="h-4 w-4 text-primary shrink-0 mt-1" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground break-words">{doc.title}</p>
-                      {doc.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{stripHtml(doc.description)}</p>}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(doc._id)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-start gap-2 mb-2">
+                      <motion.span animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }} className="inline-flex shrink-0 mt-1 text-muted-foreground">
+                        <ChevronDown className="h-4 w-4" />
+                      </motion.span>
+                      <FileText className="h-4 w-4 text-primary shrink-0 mt-1" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground break-words">{doc.title}</p>
+                        {doc.description && !isExpanded && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{stripHtml(doc.description)}</p>}
+                      </div>
                     </div>
-                  </div>
+                  </button>
                   <div className="flex flex-wrap gap-2 mb-3 text-xs">
                     <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize whitespace-nowrap">{doc.category}</span>
                     {doc.fileType && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground break-all">{doc.fileType}</span>}
@@ -418,6 +548,21 @@ export default function AdminDocumentsPage() {
                       </span>
                     )}
                   </div>
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-2 pb-3 border-t mb-2">
+                          {renderDetails(doc)}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div className="flex items-center justify-between pt-2 border-t">
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Download className="h-3 w-3" /> {doc.downloadCount || 0} downloads
@@ -437,7 +582,8 @@ export default function AdminDocumentsPage() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </FadeIn>
 

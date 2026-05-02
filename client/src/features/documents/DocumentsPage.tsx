@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { FileText, Download, Search, Mail, X } from 'lucide-react';
+import { FileText, Download, Search, Mail, X, ChevronDown, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
-import { formatDate } from '@/lib/date';
+import { formatDate, formatDateTime } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
+import { proxyFileUrl } from '@/lib/fileProxy';
 
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const toast = useToast();
+
+  const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
   /**
    * Hit the counter endpoint then open the file via our proxy so the browser
@@ -121,34 +126,127 @@ export default function DocumentsPage() {
         />
       ) : (
         <div className="space-y-3">
-          {documents.map((doc: any, index: number) => (
+          {documents.map((doc: any, index: number) => {
+            const isExpanded = expandedId === doc._id;
+            const filename = doc.fileUrl ? doc.fileUrl.split('/').pop() : '';
+            const previewUrl = doc.fileUrl ? proxyFileUrl(doc.fileUrl, doc.title || filename, true) : '';
+            return (
             <FadeIn key={doc._id} delay={0.05 * index} direction="up">
-              <div
-                className="border rounded-lg p-4 bg-card flex items-center gap-4"
-              >
-                {getFileIcon(doc.fileType)}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium truncate text-foreground">{doc.title}</h3>
-                  {doc.description && <RichContent html={doc.description} className="text-sm text-muted-foreground line-clamp-1 mt-0.5" />}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
-                    <span className="capitalize">{doc.category}</span>
-                    {doc.fileType && <span className="uppercase">{doc.fileType}</span>}
-                    {doc.fileSize && <span>{formatSize(doc.fileSize)}</span>}
-                    {doc.downloadCount > 0 && <span>{doc.downloadCount} downloads</span>}
-                    <span>{formatDate(doc.createdAt)}</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownload(doc._id, doc.fileUrl, doc.title)}
-                  className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md"
-                  title="Download"
+              <div className="border rounded-lg bg-card overflow-hidden">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => toggleExpand(doc._id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(doc._id); } }}
+                  className="w-full p-4 flex items-center gap-4 text-left hover:bg-accent/30 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  aria-expanded={isExpanded}
                 >
-                  <Download className="h-5 w-5" />
-                </button>
+                  {getFileIcon(doc.fileType)}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate text-foreground">{doc.title}</h3>
+                    {doc.description && !isExpanded && (
+                      <RichContent html={doc.description} className="text-sm text-muted-foreground line-clamp-1 mt-0.5" />
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
+                      <span className="capitalize">{doc.category}</span>
+                      {doc.fileType && <span className="uppercase">{doc.fileType}</span>}
+                      {doc.fileSize && <span>{formatSize(doc.fileSize)}</span>}
+                      {doc.downloadCount > 0 && <span>{doc.downloadCount} downloads</span>}
+                      <span>{formatDate(doc.createdAt)}</span>
+                    </div>
+                  </div>
+                  <motion.span
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    className="shrink-0 text-muted-foreground"
+                  >
+                    <ChevronDown className="h-5 w-5" />
+                  </motion.span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDownload(doc._id, doc.fileUrl, doc.title); }}
+                    className="shrink-0 p-2 text-primary hover:bg-primary/10 rounded-md"
+                    title="Download"
+                  >
+                    <Download className="h-5 w-5" />
+                  </button>
+                </div>
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-3 border-t bg-muted/20 space-y-3 text-sm">
+                        {doc.description ? (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
+                            <div className="rounded border bg-background p-3">
+                              <RichContent html={doc.description} />
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">No description provided.</p>
+                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                          <div>
+                            <p className="font-medium text-muted-foreground mb-0.5">Category</p>
+                            <p className="text-foreground capitalize">{doc.category}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-muted-foreground mb-0.5">File type</p>
+                            <p className="text-foreground uppercase">{doc.fileType || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-muted-foreground mb-0.5">Size</p>
+                            <p className="text-foreground">{formatSize(doc.fileSize) || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-muted-foreground mb-0.5">Downloads</p>
+                            <p className="text-foreground">{doc.downloadCount || 0}</p>
+                          </div>
+                          <div className="col-span-2 sm:col-span-2">
+                            <p className="font-medium text-muted-foreground mb-0.5">Uploaded</p>
+                            <p className="text-foreground">{doc.createdAt ? formatDateTime(doc.createdAt) : '—'}</p>
+                          </div>
+                          {doc.uploadedBy?.name && (
+                            <div className="col-span-2 sm:col-span-2">
+                              <p className="font-medium text-muted-foreground mb-0.5">Uploaded by</p>
+                              <p className="text-foreground">{doc.uploadedBy.name}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {previewUrl && (
+                            <a
+                              href={previewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent text-foreground"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" /> Preview
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleDownload(doc._id, doc.fileUrl, doc.title); }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            <Download className="h-3.5 w-3.5" /> Download
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </FadeIn>
-          ))}
+            );
+          })}
         </div>
       )}
 
