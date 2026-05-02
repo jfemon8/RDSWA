@@ -192,13 +192,13 @@ function FinanceReport() {
     <div className="space-y-6">
       {/* Year Filter + Summary */}
       <FadeIn direction="up" delay={0.1}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-stretch gap-3">
           <select value={year} onChange={(e) => setYear(e.target.value)}
-            className="px-3 py-2 border rounded-md text-sm bg-card text-foreground">
+            className="w-full sm:w-auto sm:shrink-0 px-3 py-2 border rounded-md text-sm bg-card text-foreground">
             <option value="">All Years</option>
             {years.map((y: string) => <option key={y} value={y}>{y}</option>)}
           </select>
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:flex-1 w-full">
             <div className="border rounded-lg px-4 py-3 bg-card">
               <span className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3 shrink-0" /> Total Donations</span>
               <p className="text-lg font-bold text-green-600 flex items-center gap-1"><Banknote className="h-4 w-4 shrink-0" /> BDT <CountUp to={d.totalDonations || 0} separator="," duration={1.5} /></p>
