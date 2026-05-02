@@ -9,6 +9,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
 
@@ -137,13 +138,7 @@ export default function MeetingRecordsPage() {
 
           {pagination && pagination.totalPages > 1 && (
             <FadeIn>
-              <div className="flex justify-center gap-2 mt-6">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent">Prev</button>
-                <span className="px-4 py-2 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-                <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-accent">Next</button>
-              </div>
+              <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} size="md" />
             </FadeIn>
           )}
         </>

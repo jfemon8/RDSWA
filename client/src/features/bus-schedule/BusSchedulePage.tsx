@@ -31,7 +31,7 @@ const BUS_OFFLINE_OPTS = {
 };
 import {
   Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink,
-  ChevronLeft, ChevronRight, AlertTriangle, ArrowLeft, Info, Star, Building2,
+  AlertTriangle, ArrowLeft, Info, Star, Building2,
   MessageSquare, Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -45,6 +45,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import SharedEmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
 import Promo from '@/components/promo/Promo';
 
 const PAGE_LIMIT = 20;
@@ -614,21 +615,7 @@ export default function BusSchedulePage() {
                   </FadeIn>
 
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-4">
-                      <p className="text-sm text-muted-foreground">Page {page} of {totalPages} ({pagination?.total} schedules)</p>
-                      <div className="flex items-center gap-2">
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                          onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                          className="flex items-center gap-1 px-3 py-1.5 border rounded-md text-sm hover:bg-accent disabled:opacity-40">
-                          <ChevronLeft className="h-4 w-4" /> Previous
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                          className="flex items-center gap-1 px-3 py-1.5 border rounded-md text-sm hover:bg-accent disabled:opacity-40">
-                          Next <ChevronRight className="h-4 w-4" />
-                        </motion.button>
-                      </div>
-                    </div>
+                    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
                   )}
                 </>
               )}

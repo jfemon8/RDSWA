@@ -13,6 +13,7 @@ import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
 import Promo from '@/components/promo/Promo';
 
 // In-feed promo cadence — once per 6 member cards. Lower than 6 starts to
@@ -310,25 +311,7 @@ export default function MembersPage() {
           </div>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-6">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent"
-              >
-                Prev
-              </button>
-              <span className="px-3 py-1 text-sm text-muted-foreground">
-                Page {page} of {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent"
-              >
-                Next
-              </button>
-            </div>
+            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
           )}
         </>
       )}

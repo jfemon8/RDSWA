@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2, UserMinus, Search, Plus, X, Briefcase, Building2 } from 'lucide-react';
 import Spinner from '@/components/ui/Spinner';
+import Pagination from '@/components/ui/Pagination';
 
 /** Which boolean flag this page manages */
 type TagFlag = 'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor';
@@ -310,13 +311,7 @@ export default function AdminRoleTagManagerPage({
             </div>
 
             {pagination && pagination.totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-4">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent text-foreground">Prev</button>
-                <span className="px-3 py-1 text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-                <button onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.totalPages}
-                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent text-foreground">Next</button>
-              </div>
+              <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
             )}
           </>
         )}

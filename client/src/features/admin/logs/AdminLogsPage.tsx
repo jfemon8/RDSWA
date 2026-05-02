@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { formatDateTime } from "@/lib/date";
 import Spinner from "@/components/ui/Spinner";
+import Pagination from "@/components/ui/Pagination";
 
 type Tab = "audit" | "login" | "suspicious";
 
@@ -386,25 +387,11 @@ function AuditLogsTab() {
           </FadeIn>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent"
-              >
-                Prev
-              </button>
-              <span className="px-3 py-1 text-sm text-muted-foreground">
-                Page {page} of {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent"
-              >
-                Next
-              </button>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              onChange={setPage}
+            />
           )}
         </>
       )}
@@ -420,20 +407,14 @@ function LoginHistoryTab() {
     queryKey: ["admin", "login-history", page, statusFilter],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: "30" });
+      if (statusFilter) params.set("status", statusFilter);
       const { data } = await api.get(`/admin/login-history?${params}`);
       return data;
     },
   });
 
-  const allHistory = data?.data || [];
+  const history = data?.data || [];
   const pagination = data?.pagination;
-
-  // Client-side status filter (backend doesn't have success filter)
-  const history = statusFilter
-    ? allHistory.filter((h: any) =>
-        statusFilter === "success" ? h.success !== false : h.success === false,
-      )
-    : allHistory;
 
   return (
     <>
@@ -621,25 +602,11 @@ function LoginHistoryTab() {
           </FadeIn>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent"
-              >
-                Prev
-              </button>
-              <span className="px-3 py-1 text-sm text-muted-foreground">
-                Page {page} of {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 hover:bg-accent"
-              >
-                Next
-              </button>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              onChange={setPage}
+            />
           )}
         </>
       )}

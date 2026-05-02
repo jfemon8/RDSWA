@@ -259,6 +259,8 @@ router.get('/login-history', authenticate(), authorize(UserRole.SUPER_ADMIN), as
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = {};
   if (req.query.userId) filter.user = req.query.userId;
+  if (req.query.status === 'success') filter.success = { $ne: false };
+  else if (req.query.status === 'failed') filter.success = false;
 
   const [history, total] = await Promise.all([
     LoginHistory.find(filter).populate('user', 'name email')

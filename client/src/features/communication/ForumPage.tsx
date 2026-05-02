@@ -14,6 +14,7 @@ import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
 import Promo from '@/components/promo/Promo';
 
 const PROMO_EVERY = 6;
@@ -178,19 +179,7 @@ export default function ForumPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-6">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`w-8 h-8 rounded-md text-sm ${
-                page === i + 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
       )}
     </div>
   );

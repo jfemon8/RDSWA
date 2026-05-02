@@ -13,6 +13,7 @@ import { stripHtml } from '@/lib/stripHtml';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
+import Pagination from '@/components/ui/Pagination';
 
 type Tab = 'send' | 'history';
 
@@ -290,23 +291,7 @@ function HistoryPanel() {
           </div>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 text-foreground"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-muted-foreground">Page {page} of {pagination.totalPages}</span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 text-foreground"
-              >
-                Next
-              </button>
-            </div>
+            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
           )}
         </>
       )}
