@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,6 +15,18 @@ import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 
+interface Campaign {
+  _id: string;
+  title: string;
+  description?: string;
+  targetAmount: number;
+  raisedAmount: number;
+  startDate: string;
+  endDate?: string;
+  status: 'active' | 'completed' | 'cancelled';
+  coverImage?: string;
+}
+
 interface PaymentMethod {
   provider: string;
   number?: string;
@@ -28,7 +40,9 @@ interface PaymentMethod {
 
 export default function DonationsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   const queryClient = useQueryClient();
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   const { data: campaignsData } = useQuery({
     queryKey: ['donations', 'campaigns'],
@@ -38,7 +52,23 @@ export default function DonationsPage() {
     },
   });
 
-  const campaigns = campaignsData?.data || [];
+  const campaigns: Campaign[] = campaignsData?.data || [];
+  const activeCampaigns = campaigns.filter((c) => c.status === 'active');
+
+  const openFormForCampaign = (campaignId: string) => {
+    setSelectedCampaignId(campaignId);
+    setShowForm(true);
+  };
+
+  // Scroll the donation form into view when it opens (esp. after clicking
+  // "Donate" on a campaign card lower on the page).
+  useEffect(() => {
+    if (showForm) {
+      requestAnimationFrame(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [showForm]);
 
   return (
     <div className="container mx-auto py-8">
@@ -57,7 +87,14 @@ export default function DonationsPage() {
         />
         <FadeIn delay={0.3} direction="right">
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+              } else {
+                setSelectedCampaignId('');
+                setShowForm(true);
+              }
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-sm"
           >
             <Heart className="h-4 w-4" /> Make a Donation
@@ -65,36 +102,39 @@ export default function DonationsPage() {
         </FadeIn>
       </div>
 
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <DonationForm
-              onClose={() => setShowForm(false)}
-              onSuccess={() => {
-                setShowForm(false);
-                queryClient.invalidateQueries({ queryKey: ['donations'] });
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div ref={formRef}>
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              <DonationForm
+                campaigns={activeCampaigns}
+                initialCampaignId={selectedCampaignId}
+                onClose={() => setShowForm(false)}
+                onSuccess={() => {
+                  setShowForm(false);
+                  setSelectedCampaignId('');
+                  queryClient.invalidateQueries({ queryKey: ['donations'] });
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Active campaigns */}
-      {campaigns.length > 0 && (
+      {activeCampaigns.length > 0 && (
         <FadeIn delay={0.2} direction="up">
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Active Campaigns</h2>
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 gap-4">
-              {campaigns.filter((c: any) => c.status === 'active').map((c: any, index: number) => (
+              {activeCampaigns.map((c, index) => (
                 <FadeIn key={c._id} delay={0.1 * index} direction="up">
-                  <div
-                    className="border rounded-lg p-5 bg-card"
-                  >
+                  <div className="border rounded-lg p-5 bg-card flex flex-col h-full">
                     {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-32 object-cover rounded-md mb-3" />}
                     <h3 className="font-semibold mb-2 text-foreground flex items-center gap-2">
                       <Target className="h-4 w-4 text-primary shrink-0" /> {c.title}
@@ -117,6 +157,14 @@ export default function DonationsPage() {
                         <CalendarX className="h-3 w-3 shrink-0" /> Ends {formatDate(c.endDate)}
                       </p>
                     )}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => openFormForCampaign(c._id)}
+                      className="mt-4 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+                    >
+                      <Heart className="h-4 w-4" /> Donate to this Campaign
+                    </motion.button>
                   </div>
                 </FadeIn>
               ))}
@@ -133,7 +181,17 @@ export default function DonationsPage() {
   );
 }
 
-function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function DonationForm({
+  onClose,
+  onSuccess,
+  campaigns = [],
+  initialCampaignId = '',
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+  campaigns?: Campaign[];
+  initialCampaignId?: string;
+}) {
   const { isAuthenticated } = useAuthStore();
   const toast = useToast();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -141,6 +199,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   const [form, setForm] = useState({
     amount: '',
     type: 'one-time',
+    campaign: initialCampaignId,
     paymentMethod: 'bkash',
     transactionId: '',
     senderNumber: '',
@@ -156,6 +215,14 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     isRecurring: false,
     recurringInterval: 'monthly' as 'monthly' | 'yearly',
   });
+
+  // Sync the campaign field when the parent supplies a different initial id
+  // (e.g. user clicked "Donate" on a different campaign card while form is open).
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, campaign: initialCampaignId }));
+  }, [initialCampaignId]);
+
+  const selectedCampaign = campaigns.find((c) => c._id === form.campaign);
 
   const isMobile = ['bkash', 'nagad', 'rocket'].includes(form.paymentMethod);
   const isBank = form.paymentMethod === 'bank';
@@ -187,6 +254,7 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
         visibility: form.visibility,
         isRecurring: form.isRecurring,
       };
+      if (form.campaign) payload.campaign = form.campaign;
       if (isMobile) {
         payload.transactionId = form.transactionId;
         payload.senderNumber = form.senderNumber;
@@ -361,6 +429,37 @@ function DonationForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             <option value="construction-fund">Construction Fund</option>
           </select>
         </div>
+
+        {/* Campaign selector — donations tied to a campaign update its
+            collected amount on admin approval. */}
+        {campaigns.length > 0 && (
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <Target className="h-3.5 w-3.5" /> Campaign (optional)
+            </label>
+            <select
+              value={form.campaign}
+              onChange={(e) => setForm({ ...form, campaign: e.target.value })}
+              className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+            >
+              <option value="">— General donation (no campaign) —</option>
+              {campaigns.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.title} (BDT {c.raisedAmount?.toLocaleString()} / {c.targetAmount?.toLocaleString()})
+                </option>
+              ))}
+            </select>
+            {selectedCampaign && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-[11px] text-primary mt-1"
+              >
+                Your donation will be added to this campaign's collected amount once a moderator approves it.
+              </motion.p>
+            )}
+          </div>
+        )}
         <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
           className="w-full px-3 py-2 border rounded-md bg-background text-sm">
           <option value="bkash">bKash</option>
