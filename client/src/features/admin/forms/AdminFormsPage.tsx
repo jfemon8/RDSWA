@@ -72,34 +72,31 @@ export default function AdminFormsPage() {
       <div className="container mx-auto">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-6">Form Submissions</h1>
 
-        <div className="flex flex-col sm:flex-row gap-2 mb-4">
-          {['', 'pending', 'under_review', 'approved', 'rejected'].map((s) => (
-            <button
-              key={s}
-              onClick={() => { setStatusFilter(s); setPage(1); }}
-              className={`px-3 py-1.5 text-sm rounded-md border capitalize ${
-                statusFilter === s ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
-              }`}>
-              {s ? s.replace('_', ' ') : 'All'}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 mb-6">
-          {[
-            { key: '', label: 'All Types' },
-            { key: 'membership', label: 'Membership' },
-            { key: 'construction_fund', label: 'Construction Fund' },
-            { key: 'alumni', label: 'Alumni' },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => { setTypeFilter(t.key); setPage(1); }}
-              className={`px-3 py-1.5 text-sm rounded-md border ${
-                typeFilter === t.key ? 'bg-muted font-medium border-foreground/20' : 'hover:bg-accent'
-              }`}>
-              {t.label}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-2 mb-6">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
+            {['', 'pending', 'under_review', 'approved', 'rejected'].map((s) => (
+              <button
+                key={s}
+                onClick={() => { setStatusFilter(s); setPage(1); }}
+                className={`flex items-center justify-center px-3 py-2 sm:py-1.5 text-sm rounded-md border capitalize whitespace-nowrap transition-colors ${
+                  statusFilter === s ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
+                }`}>
+                {s ? s.replace('_', ' ') : 'All'}
+              </button>
+            ))}
+          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            className={`w-full sm:w-auto sm:ml-auto px-3 py-2 sm:py-1.5 border rounded-md bg-card text-foreground text-sm transition-colors ${
+              typeFilter ? 'font-medium border-foreground/30' : ''
+            }`}
+          >
+            <option value="">All Types</option>
+            <option value="membership">Membership</option>
+            <option value="construction_fund">Construction Fund</option>
+            <option value="alumni">Alumni</option>
+          </select>
         </div>
 
         {isLoading ? (
