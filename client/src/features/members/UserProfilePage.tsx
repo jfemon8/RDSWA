@@ -1,23 +1,46 @@
-import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
+import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 import {
-  User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap,
-  Briefcase, Globe, Facebook, Linkedin, Building2, ArrowLeft, MessageSquare, ThumbsUp,
-  Users, Heart, Hash, IdCard, Clock, Award, Star, Pencil, Save, X, Loader2 as Loader2Icon,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, BlurText } from '@/components/reactbits';
-import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
-import { UserRole } from '@rdswa/shared';
-import { useToast } from '@/components/ui/Toast';
-import Spinner from '@/components/ui/Spinner';
-import { formatDate as formatDateBST } from '@/lib/date';
+  User,
+  Phone,
+  Mail,
+  Calendar,
+  Droplets,
+  MapPin,
+  GraduationCap,
+  Briefcase,
+  Globe,
+  Facebook,
+  Linkedin,
+  Building2,
+  ArrowLeft,
+  MessageSquare,
+  ThumbsUp,
+  Users,
+  Heart,
+  Hash,
+  IdCard,
+  Clock,
+  Award,
+  Star,
+  Pencil,
+  Save,
+  X,
+  Loader2 as Loader2Icon,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { FadeIn, BlurText } from "@/components/reactbits";
+import { getEffectiveRoles, getRoleConfig } from "@/lib/roles";
+import { UserRole } from "@rdswa/shared";
+import { useToast } from "@/components/ui/Toast";
+import Spinner from "@/components/ui/Spinner";
+import { formatDate as formatDateBST } from "@/lib/date";
 
 function getOrdinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
+  const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return s[(v - 20) % 10] || s[v] || s[0];
 }
@@ -29,11 +52,13 @@ export default function UserProfilePage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
-  const [editing, setEditing] = useState(searchParams.get('edit') === 'true' && isSuperAdmin);
+  const [editing, setEditing] = useState(
+    searchParams.get("edit") === "true" && isSuperAdmin,
+  );
   const [editForm, setEditForm] = useState<Record<string, any>>({});
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['user-profile', id],
+    queryKey: ["user-profile", id],
     queryFn: async () => {
       const res = await api.get(`/users/${id}`);
       return res.data.data;
@@ -43,48 +68,63 @@ export default function UserProfilePage() {
 
   const endorseMutation = useMutation({
     mutationFn: (skill: string) => api.post(`/users/${id}/endorse`, { skill }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['user-profile', id] }); toast.success('Skill endorsed'); },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to endorse skill'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
+      toast.success("Skill endorsed");
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Failed to endorse skill"),
   });
 
   const unendorseMutation = useMutation({
-    mutationFn: (skill: string) => api.delete(`/users/${id}/endorse`, { data: { skill } }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['user-profile', id] }); toast.success('Endorsement removed'); },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to remove endorsement'),
+    mutationFn: (skill: string) =>
+      api.delete(`/users/${id}/endorse`, { data: { skill } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
+      toast.success("Endorsement removed");
+    },
+    onError: (err: any) =>
+      toast.error(
+        err.response?.data?.message || "Failed to remove endorsement",
+      ),
   });
 
   const editMutation = useMutation({
-    mutationFn: (updates: Record<string, any>) => api.patch(`/users/${id}/profile`, updates),
+    mutationFn: (updates: Record<string, any>) =>
+      api.patch(`/users/${id}/profile`, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-profile', id] });
-      toast.success('Profile updated');
+      queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
+      toast.success("Profile updated");
       setEditing(false);
       setSearchParams({});
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to update profile'),
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Failed to update profile"),
   });
 
   const startEdit = (user: any) => {
     setEditForm({
-      name: user.name || '',
-      nameBn: user.nameBn || '',
-      nickName: user.nickName || '',
-      phone: user.phone || '',
-      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
-      gender: user.gender || '',
-      bloodGroup: user.bloodGroup || '',
-      studentId: user.studentId || '',
-      registrationNumber: user.registrationNumber || '',
-      batch: user.batch || '',
-      session: user.session || '',
-      faculty: user.faculty || '',
-      department: user.department || '',
-      profession: user.profession || '',
-      earningSource: user.earningSource || '',
-      homeDistrict: user.homeDistrict || '',
-      facebook: user.facebook || '',
-      linkedin: user.linkedin || '',
-      website: user.website || '',
+      name: user.name || "",
+      nameBn: user.nameBn || "",
+      nickName: user.nickName || "",
+      phone: user.phone || "",
+      dateOfBirth: user.dateOfBirth
+        ? new Date(user.dateOfBirth).toISOString().split("T")[0]
+        : "",
+      gender: user.gender || "",
+      bloodGroup: user.bloodGroup || "",
+      studentId: user.studentId || "",
+      registrationNumber: user.registrationNumber || "",
+      batch: user.batch || "",
+      session: user.session || "",
+      faculty: user.faculty || "",
+      department: user.department || "",
+      profession: user.profession || "",
+      earningSource: user.earningSource || "",
+      homeDistrict: user.homeDistrict || "",
+      facebook: user.facebook || "",
+      linkedin: user.linkedin || "",
+      website: user.website || "",
     });
     setEditing(true);
   };
@@ -99,8 +139,12 @@ export default function UserProfilePage() {
         <div className="text-center py-20">
           <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-xl font-bold mb-2">User Not Found</h2>
-          <p className="text-muted-foreground mb-4">This profile doesn't exist or has been removed.</p>
-          <Link to="/members" className="text-primary hover:underline">Back to Members</Link>
+          <p className="text-muted-foreground mb-4">
+            This profile doesn't exist or has been removed.
+          </p>
+          <Link to="/members" className="text-primary hover:underline">
+            Back to Members
+          </Link>
         </div>
       </FadeIn>
     );
@@ -123,17 +167,26 @@ export default function UserProfilePage() {
     if (!addr) return null;
     const parts = [addr.upazila, addr.district, addr.division].filter(Boolean);
     if (addr.details) parts.unshift(addr.details);
-    return parts.length > 0 ? parts.join(', ') : null;
+    return parts.length > 0 ? parts.join(", ") : null;
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto py-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <div className="flex items-center gap-3">
-          <Link to="/members" className="p-2 rounded-lg hover:bg-accent transition-colors">
+          <Link
+            to="/members"
+            className="p-2 rounded-lg hover:bg-accent transition-colors"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <BlurText text={u.name || 'User Profile'} className="text-2xl sm:text-3xl font-bold" delay={80} animateBy="words" direction="bottom" />
+          <BlurText
+            text={u.name || "User Profile"}
+            className="text-2xl sm:text-3xl font-bold"
+            delay={80}
+            animateBy="words"
+            direction="bottom"
+          />
         </div>
         <FadeIn delay={0.3}>
           <div className="flex gap-2">
@@ -170,57 +223,95 @@ export default function UserProfilePage() {
         {editing && isSuperAdmin && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-6 overflow-hidden"
           >
             <div className="border-2 border-purple-500/30 rounded-xl p-5 bg-card">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <Pencil className="h-4 w-4 text-purple-500" /> Edit User Profile
+                  <Pencil className="h-4 w-4 text-purple-500" /> Edit User
+                  Profile
                 </h3>
-                <button onClick={() => { setEditing(false); setSearchParams({}); }} className="p-1.5 hover:bg-accent rounded">
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                    setSearchParams({});
+                  }}
+                  className="p-1.5 hover:bg-accent rounded"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[
-                  { key: 'name', label: 'Name' },
-                  { key: 'nameBn', label: 'Name (Bangla)' },
-                  { key: 'nickName', label: 'Nick Name' },
-                  { key: 'phone', label: 'Phone' },
-                  { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
-                  { key: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'] },
-                  { key: 'bloodGroup', label: 'Blood Group', type: 'select', options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] },
-                  { key: 'studentId', label: 'Student ID' },
-                  { key: 'registrationNumber', label: 'Registration No.' },
-                  { key: 'batch', label: 'Batch', type: 'number' },
-                  { key: 'session', label: 'Session' },
-                  { key: 'faculty', label: 'Faculty' },
-                  { key: 'department', label: 'Department' },
-                  { key: 'profession', label: 'Profession' },
-                  { key: 'earningSource', label: 'Earning Source' },
-                  { key: 'homeDistrict', label: 'Home District' },
-                  { key: 'facebook', label: 'Facebook URL' },
-                  { key: 'linkedin', label: 'LinkedIn URL' },
-                  { key: 'website', label: 'Website' },
+                  { key: "name", label: "Name" },
+                  { key: "nameBn", label: "Name (Bangla)" },
+                  { key: "nickName", label: "Nick Name" },
+                  { key: "phone", label: "Phone" },
+                  { key: "dateOfBirth", label: "Date of Birth", type: "date" },
+                  {
+                    key: "gender",
+                    label: "Gender",
+                    type: "select",
+                    options: ["male", "female", "other"],
+                  },
+                  {
+                    key: "bloodGroup",
+                    label: "Blood Group",
+                    type: "select",
+                    options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+                  },
+                  { key: "studentId", label: "Student ID" },
+                  { key: "registrationNumber", label: "Registration No." },
+                  { key: "batch", label: "Batch", type: "number" },
+                  { key: "session", label: "Session" },
+                  { key: "faculty", label: "Faculty" },
+                  { key: "department", label: "Department" },
+                  { key: "profession", label: "Profession" },
+                  { key: "earningSource", label: "Earning Source" },
+                  { key: "homeDistrict", label: "Home District" },
+                  { key: "facebook", label: "Facebook URL" },
+                  { key: "linkedin", label: "LinkedIn URL" },
+                  { key: "website", label: "Website" },
                 ].map((f) => (
                   <div key={f.key}>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">{f.label}</label>
-                    {f.type === 'select' ? (
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                      {f.label}
+                    </label>
+                    {f.type === "select" ? (
                       <select
-                        value={editForm[f.key] || ''}
-                        onChange={(e) => setEditForm((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                        value={editForm[f.key] || ""}
+                        onChange={(e) =>
+                          setEditForm((p: any) => ({
+                            ...p,
+                            [f.key]: e.target.value,
+                          }))
+                        }
                         className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                       >
                         <option value="">—</option>
-                        {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                        {f.options?.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
                       </select>
                     ) : (
                       <input
-                        type={f.type || 'text'}
-                        value={editForm[f.key] || ''}
-                        onChange={(e) => setEditForm((p: any) => ({ ...p, [f.key]: f.type === 'number' ? (e.target.value ? Number(e.target.value) : '') : e.target.value }))}
+                        type={f.type || "text"}
+                        value={editForm[f.key] || ""}
+                        onChange={(e) =>
+                          setEditForm((p: any) => ({
+                            ...p,
+                            [f.key]:
+                              f.type === "number"
+                                ? e.target.value
+                                  ? Number(e.target.value)
+                                  : ""
+                                : e.target.value,
+                          }))
+                        }
                         className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                       />
                     )}
@@ -234,11 +325,18 @@ export default function UserProfilePage() {
                   disabled={editMutation.isPending}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
                 >
-                  {editMutation.isPending ? <Loader2Icon className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {editMutation.isPending ? (
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   Save Changes
                 </motion.button>
                 <button
-                  onClick={() => { setEditing(false); setSearchParams({}); }}
+                  onClick={() => {
+                    setEditing(false);
+                    setSearchParams({});
+                  }}
                   className="px-4 py-2 border rounded-md text-sm hover:bg-accent"
                 >
                   Cancel
@@ -260,14 +358,14 @@ export default function UserProfilePage() {
                 className="h-24 w-24 rounded-full object-cover border-2 border-primary/20"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
               />
             ) : (
               <motion.div
                 className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold border-2 border-primary/20"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
               >
                 {u.name?.[0]}
               </motion.div>
@@ -276,25 +374,36 @@ export default function UserProfilePage() {
               <h2 className="text-xl font-bold">{u.name}</h2>
               {u.nameBn && <p className="text-muted-foreground">{u.nameBn}</p>}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                {u.role && getEffectiveRoles(u.role).map((r: string, i: number) => {
-                  const rc = getRoleConfig(r);
-                  return (
-                    <motion.span
-                      key={r}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 20, delay: i * 0.04 }}
-                      className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${rc.bg} ${rc.text}`}
-                    >
-                      {rc.label}
-                    </motion.span>
-                  );
-                })}
+                {u.role &&
+                  getEffectiveRoles(u.role).map((r: string, i: number) => {
+                    const rc = getRoleConfig(r);
+                    return (
+                      <motion.span
+                        key={r}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 260,
+                          damping: 20,
+                          delay: i * 0.04,
+                        }}
+                        className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${rc.bg} ${rc.text}`}
+                      >
+                        {rc.label}
+                      </motion.span>
+                    );
+                  })}
                 {u.isAlumni && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20,
+                      delay: 0.3,
+                    }}
                     className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full"
                   >
                     <GraduationCap className="h-3 w-3" /> Alumni
@@ -304,7 +413,12 @@ export default function UserProfilePage() {
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.32 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20,
+                      delay: 0.32,
+                    }}
                     className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-full"
                   >
                     <Award className="h-3 w-3" /> Advisor
@@ -314,7 +428,12 @@ export default function UserProfilePage() {
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.34 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20,
+                      delay: 0.34,
+                    }}
                     className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full"
                   >
                     <Star className="h-3 w-3" /> Senior Advisor
@@ -329,62 +448,164 @@ export default function UserProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Info */}
         <FadeIn delay={0.15} direction="up">
-          <Section title="Personal Information" icon={<User className="h-4 w-4" />}>
-            <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={u.email} />
-            <InfoRow icon={<Phone className="h-4 w-4" />} label="Phone" value={u.phone} />
-            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Date of Birth" value={formatDate(u.dateOfBirth)} />
-            <InfoRow icon={<Users className="h-4 w-4" />} label="Gender" value={u.gender ? u.gender.charAt(0).toUpperCase() + u.gender.slice(1) : null} />
-            <InfoRow icon={<Droplets className="h-4 w-4" />} label="Blood Group" value={u.bloodGroup} />
-            <InfoRow icon={<Heart className="h-4 w-4" />} label="Blood Donor" value={u.isBloodDonor ? 'Yes' : 'No'} />
-            {u.lastDonationDate && <InfoRow icon={<Clock className="h-4 w-4" />} label="Last Donation" value={formatDate(u.lastDonationDate)} />}
+          <Section
+            title="Personal Information"
+            icon={<User className="h-4 w-4" />}
+          >
+            <InfoRow
+              icon={<Mail className="h-4 w-4" />}
+              label="Email"
+              value={u.email}
+            />
+            <InfoRow
+              icon={<Phone className="h-4 w-4" />}
+              label="Phone"
+              value={u.phone}
+            />
+            <InfoRow
+              icon={<Calendar className="h-4 w-4" />}
+              label="Date of Birth"
+              value={formatDate(u.dateOfBirth)}
+            />
+            <InfoRow
+              icon={<Users className="h-4 w-4" />}
+              label="Gender"
+              value={
+                u.gender
+                  ? u.gender.charAt(0).toUpperCase() + u.gender.slice(1)
+                  : null
+              }
+            />
+            <InfoRow
+              icon={<Droplets className="h-4 w-4" />}
+              label="Blood Group"
+              value={u.bloodGroup}
+            />
+            <InfoRow
+              icon={<Heart className="h-4 w-4" />}
+              label="Blood Donor"
+              value={u.isBloodDonor ? "Yes" : "No"}
+            />
+            {u.lastDonationDate && (
+              <InfoRow
+                icon={<Clock className="h-4 w-4" />}
+                label="Last Donation"
+                value={formatDate(u.lastDonationDate)}
+              />
+            )}
           </Section>
         </FadeIn>
 
         {/* Academic Info */}
         <FadeIn delay={0.2} direction="up">
-          <Section title="Academic Information" icon={<GraduationCap className="h-4 w-4" />}>
-            <InfoRow icon={<IdCard className="h-4 w-4" />} label="Student ID / Roll Number" value={u.studentId} />
-            <InfoRow icon={<Hash className="h-4 w-4" />} label="Registration Number" value={u.registrationNumber} />
-            <InfoRow icon={<Users className="h-4 w-4" />} label="University Batch" value={u.batch ? `${u.batch}${getOrdinal(u.batch)}` : null} />
-            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Session" value={u.session} />
-            <InfoRow icon={<Building2 className="h-4 w-4" />} label="Faculty" value={u.faculty} />
-            <InfoRow icon={<GraduationCap className="h-4 w-4" />} label="Department" value={u.department} />
+          <Section
+            title="Academic Information"
+            icon={<GraduationCap className="h-4 w-4" />}
+          >
+            <InfoRow
+              icon={<IdCard className="h-4 w-4" />}
+              label="Student ID / Roll Number"
+              value={u.studentId}
+            />
+            <InfoRow
+              icon={<Hash className="h-4 w-4" />}
+              label="Registration Number"
+              value={u.registrationNumber}
+            />
+            <InfoRow
+              icon={<Users className="h-4 w-4" />}
+              label="University Batch"
+              value={u.batch ? `${u.batch}${getOrdinal(u.batch)}` : null}
+            />
+            <InfoRow
+              icon={<Calendar className="h-4 w-4" />}
+              label="Session"
+              value={u.session}
+            />
+            <InfoRow
+              icon={<Building2 className="h-4 w-4" />}
+              label="Faculty"
+              value={u.faculty}
+            />
+            <InfoRow
+              icon={<GraduationCap className="h-4 w-4" />}
+              label="Department"
+              value={u.department}
+            />
           </Section>
         </FadeIn>
 
         {/* Address */}
         <FadeIn delay={0.25} direction="up">
           <Section title="Address" icon={<MapPin className="h-4 w-4" />}>
-            <InfoRow icon={<MapPin className="h-4 w-4" />} label="Present Address" value={formatAddress(u.presentAddress)} />
-            <InfoRow icon={<MapPin className="h-4 w-4" />} label="Permanent Address" value={formatAddress(u.permanentAddress)} />
-            {u.homeDistrict && <InfoRow icon={<MapPin className="h-4 w-4" />} label="Home District" value={u.homeDistrict} />}
+            <InfoRow
+              icon={<MapPin className="h-4 w-4" />}
+              label="Present Address"
+              value={formatAddress(u.presentAddress)}
+            />
+            <InfoRow
+              icon={<MapPin className="h-4 w-4" />}
+              label="Permanent Address"
+              value={formatAddress(u.permanentAddress)}
+            />
+            {u.homeDistrict && (
+              <InfoRow
+                icon={<MapPin className="h-4 w-4" />}
+                label="Home District"
+                value={u.homeDistrict}
+              />
+            )}
           </Section>
         </FadeIn>
 
         {/* Professional Info */}
         <FadeIn delay={0.3} direction="up">
-          <Section title="Professional Information" icon={<Briefcase className="h-4 w-4" />}>
-            <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Profession" value={u.profession} />
-            <InfoRow icon={<Heart className="h-4 w-4" />} label="Earning Source" value={u.earningSource} />
+          <Section
+            title="Professional Information"
+            icon={<Briefcase className="h-4 w-4" />}
+          >
+            <InfoRow
+              icon={<Briefcase className="h-4 w-4" />}
+              label="Profession"
+              value={u.profession}
+            />
+            <InfoRow
+              icon={<Heart className="h-4 w-4" />}
+              label="Earning Source"
+              value={u.earningSource}
+            />
             {u.skills?.length > 0 && (
               <div className="py-2">
                 <p className="text-xs text-muted-foreground mb-1.5">Skills</p>
                 <div className="flex flex-wrap gap-1.5">
                   {u.skills.map((s: string, i: number) => {
-                    const endorsements = u.skillEndorsements?.filter((e: any) => e.skill === s) || [];
+                    const endorsements =
+                      u.skillEndorsements?.filter((e: any) => e.skill === s) ||
+                      [];
                     const endorseCount = endorsements.length;
                     const canEndorse = currentUser && !isSelf;
-                    const hasEndorsed = endorsements.some((e: any) => String(e.endorsedBy?._id || e.endorsedBy) === currentUser?._id);
+                    const hasEndorsed = endorsements.some(
+                      (e: any) =>
+                        String(e.endorsedBy?._id || e.endorsedBy) ===
+                        currentUser?._id,
+                    );
 
                     return (
                       <motion.div
                         key={i}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 + i * 0.03 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 260,
+                          damping: 20,
+                          delay: 0.3 + i * 0.03,
+                        }}
                         className="flex items-center gap-1"
                       >
-                        <span className="px-2 py-0.5 text-xs bg-muted rounded-full">{s}</span>
+                        <span className="px-2 py-0.5 text-xs bg-muted rounded-full">
+                          {s}
+                        </span>
                         <AnimatePresence>
                           {endorseCount > 0 && (
                             <motion.span
@@ -400,12 +621,25 @@ export default function UserProfilePage() {
                           <motion.button
                             whileHover={{ scale: 1.15 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={() => hasEndorsed ? unendorseMutation.mutate(s) : endorseMutation.mutate(s)}
-                            disabled={endorseMutation.isPending || unendorseMutation.isPending}
-                            title={hasEndorsed ? 'Remove endorsement' : 'Endorse this skill'}
-                            className={`p-0.5 rounded transition-colors ${hasEndorsed ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                            onClick={() =>
+                              hasEndorsed
+                                ? unendorseMutation.mutate(s)
+                                : endorseMutation.mutate(s)
+                            }
+                            disabled={
+                              endorseMutation.isPending ||
+                              unendorseMutation.isPending
+                            }
+                            title={
+                              hasEndorsed
+                                ? "Remove endorsement"
+                                : "Endorse this skill"
+                            }
+                            className={`p-0.5 rounded transition-colors ${hasEndorsed ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                           >
-                            <ThumbsUp className={`h-3 w-3 ${hasEndorsed ? 'fill-primary' : ''}`} />
+                            <ThumbsUp
+                              className={`h-3 w-3 ${hasEndorsed ? "fill-primary" : ""}`}
+                            />
                           </motion.button>
                         )}
                       </motion.div>
@@ -420,7 +654,10 @@ export default function UserProfilePage() {
         {/* Job History */}
         {u.jobHistory?.length > 0 && (
           <FadeIn delay={0.35} direction="up">
-            <Section title="Job History" icon={<Building2 className="h-4 w-4" />}>
+            <Section
+              title="Job History"
+              icon={<Building2 className="h-4 w-4" />}
+            >
               <div className="space-y-3">
                 {u.jobHistory.map((job: any, i: number) => (
                   <motion.div
@@ -430,12 +667,24 @@ export default function UserProfilePage() {
                     transition={{ delay: 0.35 + i * 0.05 }}
                     className="p-3 border rounded-lg bg-background"
                   >
-                    <p className="font-medium text-sm">{job.position || 'N/A'}</p>
-                    <p className="text-xs text-muted-foreground">{job.company || 'N/A'}</p>
+                    <p className="font-medium text-sm">
+                      {job.position || "N/A"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {job.company || "N/A"}
+                    </p>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      {job.startDate && <span>{formatDate(job.startDate)}</span>}
+                      {job.startDate && (
+                        <span>{formatDate(job.startDate)}</span>
+                      )}
                       {job.startDate && <span>-</span>}
-                      <span>{job.isCurrent ? 'Present' : job.endDate ? formatDate(job.endDate) : 'N/A'}</span>
+                      <span>
+                        {job.isCurrent
+                          ? "Present"
+                          : job.endDate
+                            ? formatDate(job.endDate)
+                            : "N/A"}
+                      </span>
                     </div>
                   </motion.div>
                 ))}
@@ -447,7 +696,10 @@ export default function UserProfilePage() {
         {/* Business Info */}
         {u.businessInfo?.length > 0 && (
           <FadeIn delay={0.4} direction="up">
-            <Section title="Business Info" icon={<Briefcase className="h-4 w-4" />}>
+            <Section
+              title="Business Info"
+              icon={<Briefcase className="h-4 w-4" />}
+            >
               <div className="space-y-3">
                 {u.businessInfo.map((biz: any, i: number) => (
                   <motion.div
@@ -457,11 +709,19 @@ export default function UserProfilePage() {
                     transition={{ delay: 0.4 + i * 0.05 }}
                     className="p-3 border rounded-lg bg-background"
                   >
-                    <p className="font-medium text-sm">{biz.businessName || 'N/A'}</p>
-                    <p className="text-xs text-muted-foreground">{biz.type || 'N/A'}</p>
+                    <p className="font-medium text-sm">
+                      {biz.businessName || "N/A"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {biz.type || "N/A"}
+                    </p>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      {biz.startDate && <span>Since {formatDate(biz.startDate)}</span>}
-                      {biz.isCurrent && <span className="text-green-600">Active</span>}
+                      {biz.startDate && (
+                        <span>Since {formatDate(biz.startDate)}</span>
+                      )}
+                      {biz.isCurrent && (
+                        <span className="text-green-600">Active</span>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -523,7 +783,15 @@ export default function UserProfilePage() {
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border rounded-xl p-5 bg-card h-full">
       <div className="flex items-center gap-2 mb-4">
@@ -535,16 +803,33 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
   );
 }
 
-function InfoRow({ icon, label, value, isLink }: { icon?: React.ReactNode; label: string; value: any; isLink?: boolean }) {
-  if (value === null || value === undefined || value === '') return null;
+function InfoRow({
+  icon,
+  label,
+  value,
+  isLink,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: any;
+  isLink?: boolean;
+}) {
+  if (value === null || value === undefined || value === "") return null;
 
   return (
     <div className="flex items-start gap-3 py-2">
-      {icon && <span className="text-muted-foreground mt-0.5 shrink-0">{icon}</span>}
+      {icon && (
+        <span className="text-muted-foreground mt-0.5 shrink-0">{icon}</span>
+      )}
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
         {isLink ? (
-          <a href={String(value)} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
+          <a
+            href={String(value)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline break-all"
+          >
             {String(value)}
           </a>
         ) : (

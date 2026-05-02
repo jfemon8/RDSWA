@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
@@ -12,6 +13,7 @@ export default function AdminAdminsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const [showPromote, setShowPromote] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -151,16 +153,29 @@ export default function AdminAdminsPage() {
             <FadeIn key={admin._id} direction="up" delay={i * 0.05}>
               <div className="border rounded-lg p-4 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0 w-full">
-                  {admin.avatar ? (
-                    <img src={admin.avatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground shrink-0">
-                      {admin.name?.[0]?.toUpperCase() || '?'}
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/members/${admin._id}`)}
+                    className="shrink-0 cursor-pointer"
+                    aria-label={`Open ${admin.name}'s profile`}
+                  >
+                    {admin.avatar ? (
+                      <img src={admin.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-medium text-foreground">
+                        {admin.name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                  </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-foreground break-words">{admin.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/members/${admin._id}`)}
+                        className="font-medium text-primary hover:underline text-left break-words cursor-pointer"
+                      >
+                        {admin.name}
+                      </button>
                       <span className={`px-2 py-0.5 text-xs rounded-full font-medium whitespace-nowrap ${
                         admin.role === 'super_admin'
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
