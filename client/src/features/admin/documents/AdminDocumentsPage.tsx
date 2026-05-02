@@ -17,6 +17,61 @@ import Pagination from '@/components/ui/Pagination';
 const CATEGORIES = ['policy', 'resolution', 'report', 'form', 'other'] as const;
 const ROLES = ['user', 'member', 'alumni', 'advisor', 'senior_advisor', 'moderator', 'admin'] as const;
 
+// Common file extensions we recognize when swapping the title's extension.
+// If the title currently ends with one of these and the user uploads a
+// different format, the extension is replaced cleanly instead of stacking.
+const KNOWN_EXTS = new Set([
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg',
+  '.txt', '.csv', '.zip', '.rar', '.7z',
+]);
+
+/** Lowercase extension with leading dot, or empty string if none. */
+function getExt(filename: string): string {
+  if (!filename) return '';
+  const idx = filename.lastIndexOf('.');
+  if (idx <= 0 || idx === filename.length - 1) return '';
+  return filename.slice(idx).toLowerCase();
+}
+
+function stripExt(filename: string): string {
+  const idx = filename.lastIndexOf('.');
+  return idx > 0 ? filename.slice(0, idx) : filename;
+}
+
+/** "annual-report_2025" → "Annual Report 2025" */
+function humanize(name: string): string {
+  return name
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Ensure the title ends with the given extension. If the title already
+ * ends with a different KNOWN extension, swap it. If it ends with the
+ * same extension (case-insensitive), leave alone. Otherwise append.
+ */
+function applyExt(title: string, ext: string): string {
+  const t = title.trim();
+  if (!ext || !t) return t;
+  if (t.toLowerCase().endsWith(ext)) return t;
+  const lastDot = t.lastIndexOf('.');
+  if (lastDot > 0) {
+    const existing = t.slice(lastDot).toLowerCase();
+    if (KNOWN_EXTS.has(existing)) return t.slice(0, lastDot) + ext;
+  }
+  return t + ext;
+}
+
+function fmtSize(bytes: number): string {
+  if (!bytes || bytes < 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 const defaultForm = {
   title: '', description: '', category: 'other' as string,
   fileUrl: '', fileType: '', fileSize: 0, isPublic: true, accessRoles: [] as string[],
@@ -29,6 +84,9 @@ export default function AdminDocumentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
+  // UI-only: original filename of the just-uploaded file, for display.
+  // Not persisted to the server (existing docs don't have this on edit).
+  const [originalFileName, setOriginalFileName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [page, setPage] = usePageParam();
 
@@ -71,6 +129,7 @@ export default function AdminDocumentsPage() {
     setShowForm(false);
     setEditId(null);
     setForm(defaultForm);
+    setOriginalFileName('');
     setErrors({});
   };
 
@@ -86,6 +145,7 @@ export default function AdminDocumentsPage() {
       isPublic: doc.isPublic ?? true,
       accessRoles: doc.accessRoles || [],
     });
+    setOriginalFileName('');
     setShowForm(true);
     setErrors({});
   };
@@ -146,11 +206,24 @@ export default function AdminDocumentsPage() {
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">Upload File (max 10MB — PDF, Word, Excel, or Image)</p>
                   {form.fileUrl ? (
-                    <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                    <div className="flex items-center gap-2 p-2.5 border rounded-md bg-muted/50">
                       <FileText className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-xs text-foreground truncate flex-1">{form.fileUrl.split('/').pop() || form.fileUrl}</span>
-                      <button type="button" onClick={() => setForm({ ...form, fileUrl: '', fileType: '', fileSize: 0 })}
-                        className="p-1 hover:bg-accent rounded"><X className="h-3.5 w-3.5" /></button>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-foreground truncate" title={originalFileName || form.fileUrl}>
+                          {originalFileName || form.fileUrl.split('/').pop() || form.fileUrl}
+                        </p>
+                        {(form.fileType || form.fileSize > 0) && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {form.fileType?.toUpperCase()}{form.fileType && form.fileSize > 0 ? ' · ' : ''}{fmtSize(form.fileSize)}
+                          </p>
+                        )}
+                      </div>
+                      <button type="button"
+                        onClick={() => { setForm({ ...form, fileUrl: '', fileType: '', fileSize: 0 }); setOriginalFileName(''); }}
+                        className="p-1 hover:bg-accent rounded shrink-0"
+                        title="Remove file">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors">
@@ -166,12 +239,26 @@ export default function AdminDocumentsPage() {
                           fd.append('file', file);
                           try {
                             const { data } = await api.post('/upload/document', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-                            setForm((f) => ({
-                              ...f,
-                              fileUrl: data.data.url,
-                              fileType: data.data.fileType || file.type.split('/').pop() || '',
-                              fileSize: data.data.fileSize || file.size,
-                            }));
+                            const ext = getExt(file.name);
+                            setForm((f) => {
+                              // Smart title logic:
+                              //  - If title is empty → derive a humanized title from the filename + extension.
+                              //  - If title already has the same extension → leave as-is.
+                              //  - If title has a different known extension → swap it.
+                              //  - Otherwise → append the extension.
+                              const nextTitle = f.title.trim()
+                                ? applyExt(f.title, ext)
+                                : applyExt(humanize(stripExt(file.name)), ext);
+                              return {
+                                ...f,
+                                title: nextTitle,
+                                fileUrl: data.data.url,
+                                fileType: data.data.fileType || file.type.split('/').pop() || '',
+                                fileSize: data.data.fileSize || file.size,
+                              };
+                            });
+                            setOriginalFileName(file.name);
+                            setErrors((p) => { const { title, ...r } = p; return r; });
                           } catch (err: any) {
                             setErrors({ fileUrl: err.response?.data?.message || 'Upload failed' });
                           }
