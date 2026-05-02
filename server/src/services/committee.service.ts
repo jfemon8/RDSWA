@@ -1,20 +1,9 @@
 import { Committee, ICommitteeDocument, User, RoleAssignment, Notification } from '../models';
 import { ApiError } from '../utils/ApiError';
 import { resolveBaseRole } from '../utils/resolveBaseRole';
-import {
-  UserRole,
-  CommitteePosition,
-  ADMIN_AUTO_POSITIONS,
-  MODERATOR_AUTO_POSITIONS,
-  ALL_AUTO_POSITIONS,
-} from '@rdswa/shared';
+import { getAutoRoleConfig } from '../utils/getAutoRoleConfig';
+import { UserRole } from '@rdswa/shared';
 import mongoose from 'mongoose';
-
-/** Positions that auto-grant the Advisor tag on committee archive */
-const ADVISOR_AUTO_POSITIONS: string[] = [
-  CommitteePosition.PRESIDENT,
-  CommitteePosition.GENERAL_SECRETARY,
-];
 
 interface CreateCommitteeInput {
   name: string;
@@ -150,9 +139,10 @@ export class CommitteeService {
 
     // Auto-assign role if qualifying position in current committee
     if (committee.isCurrent) {
-      if (ADMIN_AUTO_POSITIONS.includes(memberInput.position)) {
+      const cfg = await getAutoRoleConfig();
+      if (cfg.adminPositions.includes(memberInput.position)) {
         await this.setAutoAdminRole(memberInput.user, true, memberInput.position);
-      } else if (MODERATOR_AUTO_POSITIONS.includes(memberInput.position)) {
+      } else if (cfg.moderatorPositions.includes(memberInput.position)) {
         await this.setAutoModeratorRole(memberInput.user, true, memberInput.position);
       }
     }
@@ -172,13 +162,16 @@ export class CommitteeService {
     memberEntry.leftAt = new Date();
     await committee.save();
 
-    if (committee.isCurrent && ALL_AUTO_POSITIONS.includes(memberEntry.position)) {
-      if (ADMIN_AUTO_POSITIONS.includes(memberEntry.position)) {
-        // President/GS removed from current → lose Admin, become Moderator (ex-officer)
-        await this.transitionAdminToModerator(userId, `removed_from_${memberEntry.position}`);
-      } else {
-        // OS/Treasurer removed from current → lose Moderator
-        await this.setAutoModeratorRole(userId, false, `removed_from_${memberEntry.position}`);
+    if (committee.isCurrent) {
+      const cfg = await getAutoRoleConfig();
+      if (cfg.allAutoPositions.includes(memberEntry.position)) {
+        if (cfg.adminPositions.includes(memberEntry.position)) {
+          // Admin position removed from current → lose Admin, become Moderator (ex-officer)
+          await this.transitionAdminToModerator(userId, `removed_from_${memberEntry.position}`);
+        } else {
+          // Moderator position removed from current → lose Moderator
+          await this.setAutoModeratorRole(userId, false, `removed_from_${memberEntry.position}`);
+        }
       }
     }
 
@@ -201,31 +194,34 @@ export class CommitteeService {
   /**
    * Apply role transitions for a committee transitioning to archived state.
    *
-   *  - President / GS → lose Admin, become Moderator (ex-officer) + Advisor tag
-   *  - OS / Treasurer → lose Moderator entirely
+   * Driven by the editable auto-role config:
+   *  - Members at admin-auto positions → lose Admin, become Moderator (ex-officer)
+   *  - Members at moderator-auto positions → lose Moderator entirely
+   *  - Members at advisor-on-archive positions → gain Advisor tag
    */
   private async applyArchiveTransitions(committee: ICommitteeDocument): Promise<void> {
+    const cfg = await getAutoRoleConfig();
     for (const member of committee.members) {
       if (member.leftAt) continue;
 
-      // Grant Advisor tag to ex-President/GS
-      if (ADVISOR_AUTO_POSITIONS.includes(member.position)) {
+      // Advisor tag for configured archive positions
+      if (cfg.advisorOnArchivePositions.includes(member.position)) {
         await this.grantAdvisorTag(
           member.user.toString(),
           `committee_archived_${member.position}`
         );
       }
 
-      // President/GS: Admin → Moderator transition
-      if (ADMIN_AUTO_POSITIONS.includes(member.position)) {
+      // Admin position: Admin → Moderator transition
+      if (cfg.adminPositions.includes(member.position)) {
         await this.transitionAdminToModerator(
           member.user.toString(),
           `committee_archived_${member.position}`
         );
       }
 
-      // OS/Treasurer: lose Moderator
-      if (MODERATOR_AUTO_POSITIONS.includes(member.position)) {
+      // Moderator position: lose Moderator
+      if (cfg.moderatorPositions.includes(member.position)) {
         await this.setAutoModeratorRole(
           member.user.toString(),
           false,
@@ -236,14 +232,15 @@ export class CommitteeService {
   }
 
   /**
-   * Auto-assign roles to qualifying positions in a new current committee.
-   * President/GS → Admin, OS/Treasurer → Moderator.
+   * Auto-assign roles to qualifying positions in a new current committee,
+   * based on the editable auto-role config.
    */
   private async assignAutoRoles(committee: ICommitteeDocument): Promise<void> {
+    const cfg = await getAutoRoleConfig();
     for (const member of committee.members) {
-      if (ADMIN_AUTO_POSITIONS.includes(member.position)) {
+      if (cfg.adminPositions.includes(member.position)) {
         await this.setAutoAdminRole(member.user.toString(), true, member.position);
-      } else if (MODERATOR_AUTO_POSITIONS.includes(member.position)) {
+      } else if (cfg.moderatorPositions.includes(member.position)) {
         await this.setAutoModeratorRole(member.user.toString(), true, member.position);
       }
     }
@@ -301,7 +298,8 @@ export class CommitteeService {
     if (user.role !== UserRole.ADMIN || user.moderatorAssignment?.type !== 'auto') return;
 
     // Check if user still qualifies as Admin via another current committee
-    const stillAdmin = await this.stillQualifiesForRole(userId, ADMIN_AUTO_POSITIONS);
+    const cfg = await getAutoRoleConfig();
+    const stillAdmin = await this.stillQualifiesForRole(userId, cfg.adminPositions);
     if (stillAdmin) return;
 
     const previousRole = user.role;
@@ -368,7 +366,8 @@ export class CommitteeService {
       });
     } else if (!grant && user.isModerator) {
       // Check if user still qualifies via another committee
-      const stillModerator = await this.stillQualifiesForRole(userId, MODERATOR_AUTO_POSITIONS);
+      const cfg = await getAutoRoleConfig();
+      const stillModerator = await this.stillQualifiesForRole(userId, cfg.moderatorPositions);
       if (stillModerator) return;
 
       // Only revoke if assignment was auto

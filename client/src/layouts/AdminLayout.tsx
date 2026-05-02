@@ -70,9 +70,9 @@ const adminLinks: AdminLink[] = [
   { label: 'Alumni', href: '/admin/alumni-monitor', icon: GraduationCap, minRole: UserRole.ADMIN },
   { label: 'Advisors', href: '/admin/advisors', icon: Award, minRole: UserRole.ADMIN },
   { label: 'Senior Advisors', href: '/admin/senior-advisors', icon: Star, minRole: UserRole.ADMIN },
-  { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.ADMIN },
 
   // ── SuperAdmin Only ──
+  { label: 'System Config', href: '/admin/system-config', icon: Settings2, minRole: UserRole.SUPER_ADMIN },
   { label: 'Admins', href: '/admin/admins', icon: Crown, minRole: UserRole.SUPER_ADMIN },
   { label: 'User Activity', href: '/admin/clarity', icon: Eye, minRole: UserRole.SUPER_ADMIN },
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },

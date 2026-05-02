@@ -1,11 +1,7 @@
 import { Committee, User, RoleAssignment } from '../models';
 import { resolveBaseRole } from '../utils/resolveBaseRole';
-import {
-  UserRole,
-  SUPER_ADMIN_EMAILS,
-  ADMIN_AUTO_POSITIONS,
-  MODERATOR_AUTO_POSITIONS,
-} from '@rdswa/shared';
+import { getAutoRoleConfig } from '../utils/getAutoRoleConfig';
+import { UserRole, SUPER_ADMIN_EMAILS } from '@rdswa/shared';
 
 /**
  * One-time role sync on server start.
@@ -41,6 +37,7 @@ export async function syncRolesOnStart(): Promise<void> {
     }
 
     // ── 2. Sync current committee auto-roles ──
+    const cfg = await getAutoRoleConfig();
     const currentCommittees = await Committee.find({ isCurrent: true, isDeleted: false });
 
     for (const committee of currentCommittees) {
@@ -53,8 +50,8 @@ export async function syncRolesOnStart(): Promise<void> {
         // Don't touch SuperAdmins
         if (SUPER_ADMIN_EMAILS.includes(user.email)) continue;
 
-        // President/GS → should be Admin
-        if (ADMIN_AUTO_POSITIONS.includes(member.position)) {
+        // Admin-auto position → should be Admin
+        if (cfg.adminPositions.includes(member.position)) {
           if (user.role !== UserRole.ADMIN) {
             const previousRole = user.role;
             user.role = UserRole.ADMIN;
@@ -78,8 +75,8 @@ export async function syncRolesOnStart(): Promise<void> {
           }
         }
 
-        // OS/Treasurer → should be Moderator (if not already Admin+)
-        if (MODERATOR_AUTO_POSITIONS.includes(member.position)) {
+        // Moderator-auto position → should be Moderator (if not already Admin+)
+        if (cfg.moderatorPositions.includes(member.position)) {
           if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.MODERATOR) {
             const previousRole = user.role;
             user.role = UserRole.MODERATOR;

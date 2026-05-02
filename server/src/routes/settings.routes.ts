@@ -9,7 +9,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { SiteSettings, User, Event, ContactMessage } from '../models';
-import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
+import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS, CommitteePosition } from '@rdswa/shared';
 import { cacheResponse } from '../middlewares/cache.middleware';
 import { sendEmail } from '../config/mail';
 import { env } from '../config/env';
@@ -276,7 +276,7 @@ router.patch('/payment', authenticate(), authorize(UserRole.MODERATOR), auditLog
 }));
 
 // Update voting rules (Admin+)
-router.patch('/voting-rules', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_voting_rules', 'site_settings'), asyncHandler(async (req, res) => {
+router.patch('/voting-rules', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_voting_rules', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const settings = await SiteSettings.findOneAndUpdate(
     {},
@@ -292,8 +292,8 @@ router.get('/voting-rules', asyncHandler(async (_req, res) => {
   ApiResponse.success(res, settings?.votingRules || {});
 }));
 
-// Update membership criteria (Admin+)
-router.patch('/membership-criteria', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_membership_criteria', 'site_settings'), asyncHandler(async (req, res) => {
+// Update membership criteria (SuperAdmin only — only reachable from System Config UI)
+router.patch('/membership-criteria', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_membership_criteria', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const settings = await SiteSettings.findOneAndUpdate(
     {},
@@ -312,10 +312,37 @@ router.get('/membership-criteria', asyncHandler(async (_req, res) => {
 // Update auto-role assignment config (SuperAdmin only)
 router.patch('/auto-role-config', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_auto_role', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { moderatorPositions, retainPositions } = req.body;
+  const { adminPositions, moderatorPositions, advisorOnArchivePositions } = req.body;
+
+  // Validate: each field, when present, must be an array of CommitteePosition values.
+  const validPositions = new Set(Object.values(CommitteePosition));
+  const checkArray = (label: string, val: unknown) => {
+    if (val === undefined) return;
+    if (!Array.isArray(val)) throw ApiError.badRequest(`${label} must be an array`);
+    for (const p of val) {
+      if (typeof p !== 'string' || !validPositions.has(p as CommitteePosition)) {
+        throw ApiError.badRequest(`${label} contains invalid position: ${p}`);
+      }
+    }
+  };
+  checkArray('adminPositions', adminPositions);
+  checkArray('moderatorPositions', moderatorPositions);
+  checkArray('advisorOnArchivePositions', advisorOnArchivePositions);
+
+  // No-overlap rule: a single position cannot grant both Admin and Moderator.
+  if (Array.isArray(adminPositions) && Array.isArray(moderatorPositions)) {
+    const overlap = adminPositions.filter((p) => moderatorPositions.includes(p));
+    if (overlap.length > 0) {
+      throw ApiError.badRequest(
+        `Positions cannot grant both Admin and Moderator: ${overlap.join(', ')}`
+      );
+    }
+  }
+
   const update: any = { updatedBy: req.user._id };
+  if (Array.isArray(adminPositions)) update['autoRoleConfig.adminPositions'] = adminPositions;
   if (Array.isArray(moderatorPositions)) update['autoRoleConfig.moderatorPositions'] = moderatorPositions;
-  if (Array.isArray(retainPositions)) update['autoRoleConfig.retainPositions'] = retainPositions;
+  if (Array.isArray(advisorOnArchivePositions)) update['autoRoleConfig.advisorOnArchivePositions'] = advisorOnArchivePositions;
   const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
   ApiResponse.success(res, settings.autoRoleConfig, 'Auto-role config updated');
 }));
@@ -323,7 +350,11 @@ router.patch('/auto-role-config', authenticate(), authorize(UserRole.SUPER_ADMIN
 // Get auto-role config
 router.get('/auto-role-config', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
   const settings = await SiteSettings.findOne();
-  ApiResponse.success(res, settings?.autoRoleConfig || { moderatorPositions: [], retainPositions: [] });
+  ApiResponse.success(res, settings?.autoRoleConfig || {
+    adminPositions: [],
+    moderatorPositions: [],
+    advisorOnArchivePositions: [],
+  });
 }));
 
 // Public contact form — throttled: 5 submissions / 15 min / IP

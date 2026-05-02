@@ -95,8 +95,12 @@ export interface ISiteSettingsDocument extends Document {
   membershipCriteria?: Record<string, unknown>;
   votingRules?: Record<string, unknown>;
   autoRoleConfig?: {
-    moderatorPositions: string[];
-    retainPositions: string[];
+    /** Positions that auto-grant Admin role in the current committee. */
+    adminPositions?: string[];
+    /** Positions that auto-grant Moderator role in the current committee. */
+    moderatorPositions?: string[];
+    /** Positions that auto-grant the Advisor tag when their committee archives. */
+    advisorOnArchivePositions?: string[];
   };
   updatedBy?: mongoose.Types.ObjectId;
   updatedAt: Date;
@@ -283,8 +287,9 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
     membershipCriteria: Schema.Types.Mixed,
     votingRules: Schema.Types.Mixed,
     autoRoleConfig: {
-      moderatorPositions: { type: [String], default: ['president', 'general_secretary', 'organizing_secretary', 'treasurer'] },
-      retainPositions: { type: [String], default: ['president', 'general_secretary'] },
+      adminPositions: { type: [String], default: ['president', 'general_secretary'] },
+      moderatorPositions: { type: [String], default: ['organizing_secretary', 'treasurer'] },
+      advisorOnArchivePositions: { type: [String], default: ['president', 'general_secretary'] },
     },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },

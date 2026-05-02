@@ -226,7 +226,7 @@ export default function AppRouter() {
 
               {/* SuperAdmin only */}
               <Route path="/admin/settings" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={SETTINGS_RESTRICTED_SUPER_ADMINS}><AdminSettings /></AdminRoleGuard>} />
-              <Route path="/admin/system-config" element={<AdminRoleGuard minRole={UserRole.ADMIN}><AdminSystemConfig /></AdminRoleGuard>} />
+              <Route path="/admin/system-config" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminSystemConfig /></AdminRoleGuard>} />
               <Route path="/admin/admins" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminAdmins /></AdminRoleGuard>} />
             </Route>
           </Route>
