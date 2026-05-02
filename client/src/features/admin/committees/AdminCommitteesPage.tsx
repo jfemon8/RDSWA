@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -238,10 +239,16 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [position, setPosition] = useState(CommitteePosition.MEMBER);
+
+  // Active members only — members who have left should not be counted in the
+  // header or rendered in the list. Keeps the count consistent with the
+  // collapsed-row label (which already filters by `!leftAt`).
+  const activeMembers = members.filter((m: any) => !m.leftAt);
 
   const { data: searchData } = useQuery({
     queryKey: ['users', 'committee-search', search],
@@ -276,7 +283,7 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-foreground">Members ({members.length})</h4>
+        <h4 className="text-sm font-semibold text-foreground">Members ({activeMembers.length})</h4>
         <button
           onClick={() => setShowAdd(!showAdd)}
           className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md"
@@ -343,11 +350,11 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
         )}
       </AnimatePresence>
 
-      {members.filter((m: any) => !m.leftAt).length === 0 ? (
+      {activeMembers.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">No members in this committee</p>
       ) : (
         <div className="space-y-1.5">
-          {members.filter((m: any) => !m.leftAt).map((m: any, i: number) => (
+          {activeMembers.map((m: any, i: number) => (
             <motion.div
               key={m.user?._id || i}
               initial={{ opacity: 0, x: -10 }}
@@ -355,16 +362,41 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
               transition={{ delay: i * 0.03 }}
               className="flex items-center justify-between p-2.5 rounded-md hover:bg-accent/50 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                {m.user?.avatar ? (
-                  <img src={m.user.avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {m.user?._id ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/members/${m.user._id}`)}
+                    className="shrink-0 cursor-pointer"
+                    aria-label={`Open ${m.user?.name || 'member'}'s profile`}
+                  >
+                    {m.user?.avatar ? (
+                      <img src={m.user.avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-foreground">
+                        {m.user?.name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                  </button>
+                ) : m.user?.avatar ? (
+                  <img src={m.user.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-foreground">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-foreground shrink-0">
                     {m.user?.name?.[0]?.toUpperCase() || '?'}
                   </div>
                 )}
-                <div>
-                  <p className="text-sm font-medium text-foreground">{m.user?.name || 'Unknown'}</p>
+                <div className="min-w-0">
+                  {m.user?._id ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/members/${m.user._id}`)}
+                      className="text-sm font-medium text-primary hover:underline text-left break-words cursor-pointer"
+                    >
+                      {m.user?.name || 'Unknown'}
+                    </button>
+                  ) : (
+                    <p className="text-sm font-medium text-foreground">{m.user?.name || 'Unknown'}</p>
+                  )}
                   <p className="text-xs text-muted-foreground capitalize">{m.position?.replace('_', ' ')}</p>
                 </div>
               </div>
