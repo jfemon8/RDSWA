@@ -2,6 +2,7 @@ import { useState, useMemo, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { usePageParam } from '@/hooks/usePageParam';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
@@ -22,13 +23,16 @@ const PROMO_EVERY = 6;
 const EVENT_TYPES = ['event', 'meeting', 'workshop', 'seminar', 'social', 'other'];
 const STATUSES = ['', 'upcoming', 'ongoing', 'completed'];
 
+type EventViewMode = 'grid' | 'calendar';
+const EVENT_VIEW_MODES: readonly EventViewMode[] = ['grid', 'calendar'];
+
 export default function EventsPage() {
   const [status, setStatus] = useState('');
   const [type, setType] = useState('');
   const [committee, setCommittee] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = usePageParam();
-  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [viewMode, setViewMode] = useTabParam<EventViewMode>(EVENT_VIEW_MODES, 'grid', 'viewMode');
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   const filters: Record<string, string> = { page: String(page), limit: '12' };

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useTabParam } from '@/hooks/useTabParam';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { BlurText, FadeIn } from '@/components/reactbits';
@@ -16,6 +17,9 @@ import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/date';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import EmptyState from '@/components/ui/EmptyState';
+
+type MentorshipTab = 'mentors' | 'my-mentors' | 'my-trainees';
+const MENTORSHIP_TABS: readonly MentorshipTab[] = ['mentors', 'my-mentors', 'my-trainees'];
 
 function timeAgo(date: string | Date): string {
   const now = Date.now();
@@ -34,7 +38,7 @@ export default function MentorshipPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
-  const [tab, setTab] = useState<'mentors' | 'my-mentors' | 'my-trainees'>('mentors');
+  const [tab, setTab] = useTabParam<MentorshipTab>(MENTORSHIP_TABS, 'mentors');
   const [areaSearch, setAreaSearch] = useState('');
   const [requestArea, setRequestArea] = useState('');
   const [requestingId, setRequestingId] = useState<string | null>(null);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { Save, Loader2, Plus, Trash2, GraduationCap, Palette, RotateCcw } from 'lucide-react';
@@ -23,7 +24,7 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 export default function AdminSettingsPage() {
-  const [tab, setTab] = useState<Tab>('general');
+  const [tab, setTab] = useTabParam<Tab>(TABS, 'general');
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings', 'admin'],

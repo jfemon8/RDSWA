@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -50,8 +51,11 @@ function ExportButtons({ type, label }: { type: string; label: string }) {
   );
 }
 
+type AdminBusTab = 'operators' | 'routes' | 'schedules' | 'counters' | 'import';
+const ADMIN_BUS_TABS: readonly AdminBusTab[] = ['operators', 'routes', 'schedules', 'counters', 'import'];
+
 export default function AdminBusPage() {
-  const [tab, setTab] = useState<'operators' | 'routes' | 'schedules' | 'counters' | 'import'>('operators');
+  const [tab, setTab] = useTabParam<AdminBusTab>(ADMIN_BUS_TABS, 'operators');
 
   return (
     <FadeIn direction="up">

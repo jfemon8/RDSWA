@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { usePageParam } from '@/hooks/usePageParam';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 
 /**
@@ -52,6 +53,7 @@ import Promo from '@/components/promo/Promo';
 const PAGE_LIMIT = 20;
 
 type Tab = 'university' | 'intercity' | 'all';
+const TABS: readonly Tab[] = ['university', 'intercity', 'all'];
 type View = 'routes' | 'schedules' | 'schedule-detail' | 'operators' | 'operator-detail';
 
 interface ScheduleBus {
@@ -61,7 +63,7 @@ interface ScheduleBus {
 }
 
 export default function BusSchedulePage() {
-  const [tab, setTab] = useState<Tab>('university');
+  const [tab, setTab] = useTabParam<Tab>(TABS, 'university');
   const [view, setView] = useState<View>('routes');
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
+import { useTabParam } from '@/hooks/useTabParam';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, Plus, Trash2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,12 +20,15 @@ interface AcademicConfig {
   faculties: Array<{ name: string; departments: string[] }>;
 }
 
+type ProfileTab = 'personal' | 'academic' | 'professional' | 'social';
+const PROFILE_TABS: readonly ProfileTab[] = ['personal', 'academic', 'professional', 'social'];
+
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'professional' | 'social'>('personal');
+  const [activeTab, setActiveTab] = useTabParam<ProfileTab>(PROFILE_TABS, 'personal');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: academicData } = useQuery({

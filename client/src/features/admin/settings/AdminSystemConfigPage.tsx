@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { Save, Loader2, Vote, Users, Shield } from 'lucide-react';
@@ -9,11 +10,12 @@ import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 
 type Tab = 'voting' | 'membership' | 'autoRole';
+const TABS: readonly Tab[] = ['voting', 'membership', 'autoRole'];
 
 export default function AdminSystemConfigPage() {
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
-  const [tab, setTab] = useState<Tab>('voting');
+  const [tab, setTab] = useTabParam<Tab>(TABS, 'voting');
 
   const tabs: { key: Tab; label: string; icon: any; superOnly?: boolean }[] = [
     { key: 'voting', label: 'Voting Rules', icon: Vote },

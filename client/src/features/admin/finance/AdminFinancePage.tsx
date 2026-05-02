@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
+import { useTabParam } from '@/hooks/useTabParam';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -23,9 +24,10 @@ import {
 const CHART_COLORS = ['#2563eb', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
 type FinanceTab = 'donations' | 'expenses' | 'campaigns' | 'events';
+const FINANCE_TABS: readonly FinanceTab[] = ['donations', 'expenses', 'campaigns', 'events'];
 
 export default function AdminFinancePage() {
-  const [tab, setTab] = useState<FinanceTab>('donations');
+  const [tab, setTab] = useTabParam<FinanceTab>(FINANCE_TABS, 'donations');
   const [yearFilter, setYearFilter] = useState<string>('');
 
   const { data: reportData } = useQuery({

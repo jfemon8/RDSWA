@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
+import { useTabParam } from '@/hooks/useTabParam';
 import { useAuthStore } from '@/stores/authStore';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
@@ -26,13 +27,16 @@ const GROUP_TYPE_LABELS: Record<string, string> = {
   custom: 'Custom',
 };
 
+type GroupsTab = 'my' | 'browse';
+const GROUPS_TABS: readonly GroupsTab[] = ['my', 'browse'];
+
 export default function GroupsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'my' | 'browse'>('my');
+  const [tab, setTab] = useTabParam<GroupsTab>(GROUPS_TABS, 'my');
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
 

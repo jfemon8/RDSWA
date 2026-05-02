@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FadeIn } from '@/components/reactbits';
 import { usePageParam } from '@/hooks/usePageParam';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -17,11 +18,12 @@ import Spinner from '@/components/ui/Spinner';
 import Pagination from '@/components/ui/Pagination';
 
 type Tab = 'send' | 'history';
+const TABS: readonly Tab[] = ['send', 'history'];
 
 export default function AdminNotificationsPage() {
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
-  const [tab, setTab] = useState<Tab>('send');
+  const [tab, setTab] = useTabParam<Tab>(TABS, 'send');
 
   return (
     <div className="container mx-auto">

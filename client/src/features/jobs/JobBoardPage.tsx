@@ -2,6 +2,7 @@ import { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
+import { useTabParam } from '@/hooks/useTabParam';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
@@ -42,6 +43,9 @@ const EMPTY_JOB = {
 
 const JOB_TYPES = ['full-time', 'part-time', 'internship', 'remote', 'contract'] as const;
 
+type JobView = 'all' | 'mine';
+const JOB_VIEWS: readonly JobView[] = ['all', 'mine'];
+
 export default function JobBoardPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
@@ -49,7 +53,7 @@ export default function JobBoardPage() {
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [view, setView] = useState<'all' | 'mine'>('all');
+  const [view, setView] = useTabParam<JobView>(JOB_VIEWS, 'all', 'view');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newJob, setNewJob] = useState({ ...EMPTY_JOB });

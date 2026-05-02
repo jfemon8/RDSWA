@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
+import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { Loader2, Users, TrendingUp, TrendingDown, Calendar, BarChart3, Vote, Wrench, Download, FileText, Banknote, Scale, Send, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -16,11 +17,12 @@ import Spinner from '@/components/ui/Spinner';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
 type Tab = 'members' | 'finance' | 'events' | 'donations' | 'voting' | 'custom' | 'published';
+const TABS: readonly Tab[] = ['members', 'finance', 'events', 'donations', 'voting', 'custom', 'published'];
 
 export default function AdminReportsPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.role ? hasMinRole(user.role, UserRole.ADMIN) : false;
-  const [tab, setTab] = useState<Tab>('members');
+  const [tab, setTab] = useTabParam<Tab>(TABS, 'members');
 
   const allTabs: { key: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
     { key: 'members', label: 'Members', icon: Users },

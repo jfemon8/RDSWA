@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
 import { usePageParam } from "@/hooks/usePageParam";
+import { useTabParam } from "@/hooks/useTabParam";
 import api from "@/lib/api";
 import {
   Shield,
@@ -17,9 +18,10 @@ import Spinner from "@/components/ui/Spinner";
 import Pagination from "@/components/ui/Pagination";
 
 type Tab = "audit" | "login" | "suspicious";
+const TABS: readonly Tab[] = ["audit", "login", "suspicious"];
 
 export default function AdminLogsPage() {
-  const [tab, setTab] = useState<Tab>("audit");
+  const [tab, setTab] = useTabParam<Tab>(TABS, "audit");
 
   return (
     <FadeIn direction="up">
@@ -412,6 +414,7 @@ function AuditLogsTab() {
 }
 
 function LoginHistoryTab() {
+  const navigate = useNavigate();
   const [page, setPage] = usePageParam("loginPage");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -498,12 +501,22 @@ function LoginHistoryTab() {
                   {history.map((h: any) => (
                     <tr key={h._id} className="border-t hover:bg-accent/30">
                       <td className="p-3">
-                        <p
-                          className="font-medium text-sm text-foreground truncate"
-                          title={h.user?.name || "Unknown"}
-                        >
-                          {h.user?.name || "Unknown"}
-                        </p>
+                        {h.user?._id ? (
+                          <button
+                            onClick={() => navigate(`/members/${h.user._id}`)}
+                            className="font-medium text-sm text-primary hover:underline truncate text-left max-w-full cursor-pointer"
+                            title={h.user?.name || "Unknown"}
+                          >
+                            {h.user?.name || "Unknown"}
+                          </button>
+                        ) : (
+                          <p
+                            className="font-medium text-sm text-foreground truncate"
+                            title={h.user?.name || "Unknown"}
+                          >
+                            {h.user?.name || "Unknown"}
+                          </p>
+                        )}
                         <p
                           className="text-xs text-muted-foreground truncate"
                           title={h.user?.email || ""}
@@ -555,9 +568,18 @@ function LoginHistoryTab() {
                 <div key={h._id} className="border rounded-lg p-4 bg-card">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm text-foreground break-words">
-                        {h.user?.name || "Unknown"}
-                      </p>
+                      {h.user?._id ? (
+                        <button
+                          onClick={() => navigate(`/members/${h.user._id}`)}
+                          className="font-medium text-sm text-primary hover:underline break-words text-left cursor-pointer"
+                        >
+                          {h.user?.name || "Unknown"}
+                        </button>
+                      ) : (
+                        <p className="font-medium text-sm text-foreground break-words">
+                          {h.user?.name || "Unknown"}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground break-all">
                         {h.user?.email || ""}
                       </p>
