@@ -152,9 +152,9 @@ export default function AdminRoleTagManagerPage({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => { setShowAdd((v) => !v); setAddSearch(''); }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium min-h-[40px]"
+            className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium min-h-[40px] w-full sm:w-auto whitespace-nowrap"
           >
-            {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showAdd ? <X className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
             {showAdd ? 'Close' : `Add ${roleLabel}`}
           </motion.button>
         </div>

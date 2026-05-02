@@ -93,31 +93,33 @@ export default function AdminFinancePage() {
 
   return (
     <div className="container mx-auto">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Finance</h1>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
-            className="px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
+            className="px-3 py-2 sm:py-1.5 border rounded-md bg-card text-foreground text-sm w-full sm:w-auto"
           >
             <option value="">All Years</option>
             {yearOptions.map((y: number) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <button
-            onClick={() => exportCSV('donations')}
-            className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
-          >
-            <Download className="h-3.5 w-3.5" /> Donations CSV
-          </button>
-          <button
-            onClick={() => exportCSV('expenses')}
-            className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
-          >
-            <Download className="h-3.5 w-3.5" /> Expenses CSV
-          </button>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+            <button
+              onClick={() => exportCSV('donations')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 border rounded-md text-sm hover:bg-accent whitespace-nowrap"
+            >
+              <Download className="h-3.5 w-3.5 shrink-0" /> Donations CSV
+            </button>
+            <button
+              onClick={() => exportCSV('expenses')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 border rounded-md text-sm hover:bg-accent whitespace-nowrap"
+            >
+              <Download className="h-3.5 w-3.5 shrink-0" /> Expenses CSV
+            </button>
+          </div>
         </div>
       </div>
 

@@ -210,7 +210,7 @@ export default function AdminBudgetPage() {
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
             <Wallet className="h-6 w-6 text-primary" /> Budgets
@@ -221,18 +221,18 @@ export default function AdminBudgetPage() {
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap"
         >
-          <Plus className="h-4 w-4" /> New Budget
+          <Plus className="h-4 w-4 shrink-0" /> New Budget
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mb-4">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+          className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-foreground text-sm"
         >
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
@@ -244,7 +244,7 @@ export default function AdminBudgetPage() {
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
           placeholder="Fiscal year (e.g. 2026)"
-          className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+          className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-foreground text-sm"
         />
       </div>
 

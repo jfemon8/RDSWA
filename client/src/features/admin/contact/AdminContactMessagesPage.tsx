@@ -184,7 +184,7 @@ export default function AdminContactMessagesPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value as Status | ''); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+            className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-foreground text-sm"
           >
             <option value="">All Statuses</option>
             <option value="new">New</option>

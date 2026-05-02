@@ -147,13 +147,13 @@ export default function AdminVotingPage() {
   return (
     <FadeIn direction="up">
       <div className="container mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Voting & Polls</h1>
           {!showForm && (
             <button
               onClick={() => { setEditingId(null); setForm({ ...emptyForm }); setErrors({}); setShowForm(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
-              <Plus className="h-4 w-4" /> New Poll
+              className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap">
+              <Plus className="h-4 w-4 shrink-0" /> New Poll
             </button>
           )}
         </div>

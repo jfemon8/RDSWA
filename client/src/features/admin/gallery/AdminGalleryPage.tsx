@@ -72,15 +72,15 @@ export default function AdminGalleryPage() {
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gallery</h1>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => { setShowForm(true); setForm({ title: '', description: '', coverPhoto: '' }); setErrors({}); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap"
         >
-          <Plus className="h-4 w-4" /> New Album
+          <Plus className="h-4 w-4 shrink-0" /> New Album
         </motion.button>
       </div>
 
@@ -209,7 +209,7 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div className="flex items-center gap-3">
           <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={onBack}
             className="p-2 rounded-lg hover:bg-accent transition-colors">
@@ -224,9 +224,9 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap"
         >
-          <Upload className="h-4 w-4" /> Add Photo
+          <Upload className="h-4 w-4 shrink-0" /> Add Photo
         </motion.button>
       </div>
 

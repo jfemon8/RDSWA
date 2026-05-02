@@ -51,7 +51,7 @@ export default function AdminJobsPage() {
               placeholder="Search jobs..." className="w-full pl-10 pr-3 py-2.5 border rounded-md bg-card text-sm" />
           </div>
           <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2.5 border rounded-md bg-card text-sm">
+            className="w-full sm:w-auto px-3 py-2.5 border rounded-md bg-card text-sm">
             <option value="">All Types</option>
             <option value="full-time">Full Time</option>
             <option value="part-time">Part Time</option>

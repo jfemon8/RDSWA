@@ -71,7 +71,7 @@ export default function AdminForumPage() {
               placeholder="Search topics..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-sm" />
           </div>
           <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-card text-sm">
+            className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-sm">
             <option value="">All Categories</option>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>

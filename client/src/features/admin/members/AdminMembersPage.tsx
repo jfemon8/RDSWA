@@ -161,7 +161,7 @@ export default function AdminMembersPage() {
     <div className="container mx-auto py-4 sm:py-6">
       <SEO title="Member Management" description="Manage active members of RDSWA." />
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <BlurText
             text="Member Management"
@@ -172,7 +172,7 @@ export default function AdminMembersPage() {
           />
           <p className="text-sm text-muted-foreground">Manage and review approved members of RDSWA.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-2 w-full sm:w-auto">
           {([
             { fmt: 'csv', label: 'CSV', icon: FileSpreadsheet },
             { fmt: 'json', label: 'JSON', icon: Download },
@@ -183,9 +183,9 @@ export default function AdminMembersPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleExport(fmt)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground whitespace-nowrap"
             >
-              <Icon className="h-3.5 w-3.5" /> {label}
+              <Icon className="h-3.5 w-3.5 shrink-0" /> {label}
             </motion.button>
           ))}
         </div>

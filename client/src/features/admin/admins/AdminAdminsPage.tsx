@@ -58,13 +58,13 @@ export default function AdminAdminsPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Management</h1>
         <button
           onClick={() => setShowPromote(!showPromote)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm w-full sm:w-auto whitespace-nowrap"
         >
-          <UserPlus className="h-4 w-4" /> Promote to Admin
+          <UserPlus className="h-4 w-4 shrink-0" /> Promote to Admin
         </button>
       </div>
 

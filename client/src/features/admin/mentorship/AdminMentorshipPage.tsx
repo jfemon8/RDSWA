@@ -51,7 +51,7 @@ export default function AdminMentorshipPage() {
       <FadeIn direction="up">
         <div className="flex gap-2 mb-6">
           <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border rounded-md bg-card text-sm">
+            className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-sm">
             <option value="">All Status</option>
             <option value="pending">Pending</option>
             <option value="active">Active</option>

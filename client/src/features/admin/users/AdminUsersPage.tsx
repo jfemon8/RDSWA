@@ -118,10 +118,10 @@ export default function AdminUsersPage() {
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">User Management</h1>
         {isAdmin && (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-2 w-full sm:w-auto">
             {([
               { fmt: 'csv', label: 'Excel/CSV', icon: FileSpreadsheet },
               { fmt: 'json', label: 'JSON', icon: Download },
@@ -144,9 +144,9 @@ export default function AdminUsersPage() {
                     toast.success(`Exported as ${label}`);
                   } catch { toast.error('Export failed'); }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground whitespace-nowrap"
               >
-                <Icon className="h-3.5 w-3.5" /> {label}
+                <Icon className="h-3.5 w-3.5 shrink-0" /> {label}
               </motion.button>
             ))}
             <motion.button
@@ -159,9 +159,9 @@ export default function AdminUsersPage() {
                   toast.success('PDF download started');
                 } catch { toast.error('Export failed'); }
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-xs font-medium border rounded-md hover:bg-accent transition-colors text-foreground whitespace-nowrap"
             >
-              <FileText className="h-3.5 w-3.5" /> Download PDF
+              <FileText className="h-3.5 w-3.5 shrink-0" /> PDF
             </motion.button>
           </div>
         )}
