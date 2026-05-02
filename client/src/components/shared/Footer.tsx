@@ -3,6 +3,7 @@ import { FadeIn, GradientText } from '@/components/reactbits';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useThemeStore } from '@/stores/themeStore';
 import AppDownloadButtons from '@/components/shared/AppDownloadButtons';
+import SocialIcons from '@/components/shared/SocialIcons';
 
 export default function Footer() {
   const { settings } = useSiteSettings();
@@ -43,6 +44,8 @@ export default function Footer() {
               </p>
               {/* Conditional — renders nothing if no app links are configured */}
               <AppDownloadButtons />
+              {/* Conditional — renders nothing if no social links are configured */}
+              <SocialIcons />
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>
