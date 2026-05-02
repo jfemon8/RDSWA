@@ -110,7 +110,7 @@ export default function AdminPaymentConfigPage() {
 
   return (
     <FadeIn direction="up">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="container mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <motion.div
             initial={{ scale: 0 }}
