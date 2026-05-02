@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
-import { Plus, Loader2, Trash2, Image, ArrowLeft, Upload, X } from 'lucide-react';
+import { Plus, Loader2, Trash2, Image, ArrowLeft, Upload, X, Pencil } from 'lucide-react';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -18,6 +18,7 @@ export default function AdminGalleryPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', description: '', coverPhoto: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -31,16 +32,24 @@ export default function AdminGalleryPage() {
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: () => api.post('/gallery/albums', form),
+  const saveMutation = useMutation({
+    mutationFn: () => editId ? api.patch(`/gallery/albums/${editId}`, form) : api.post('/gallery/albums', form),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
       setShowForm(false);
+      setEditId(null);
       setForm({ title: '', description: '', coverPhoto: '' });
-      toast.success('Album created');
+      toast.success(editId ? 'Album updated' : 'Album created');
     },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create album'); } },
+    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || `Failed to ${editId ? 'update' : 'create'} album`); } },
   });
+
+  const startEdit = (a: any) => {
+    setEditId(a._id);
+    setForm({ title: a.title || '', description: a.description || '', coverPhoto: a.coverPhoto || '' });
+    setErrors({});
+    setShowForm(true);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/gallery/albums/${id}`),
@@ -77,7 +86,7 @@ export default function AdminGalleryPage() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => { setShowForm(true); setForm({ title: '', description: '', coverPhoto: '' }); setErrors({}); }}
+          onClick={() => { setShowForm(true); setEditId(null); setForm({ title: '', description: '', coverPhoto: '' }); setErrors({}); }}
           className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap"
         >
           <Plus className="h-4 w-4 shrink-0" /> New Album
@@ -94,7 +103,8 @@ export default function AdminGalleryPage() {
             className="overflow-hidden"
           >
             <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
-              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); if (!form.title.trim()) { setErrors({ title: 'Album title is required' }); return; } createMutation.mutate(); }} className="space-y-3">
+              <h3 className="font-semibold mb-3 text-foreground">{editId ? 'Edit Album' : 'New Album'}</h3>
+              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); if (!form.title.trim()) { setErrors({ title: 'Album title is required' }); return; } saveMutation.mutate(); }} className="space-y-3">
                 <div>
                   <input placeholder="Album Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                     className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
@@ -108,11 +118,11 @@ export default function AdminGalleryPage() {
                   label="Cover Photo (optional, max 5MB)"
                 />
                 <div className="flex gap-2">
-                  <button type="submit" disabled={createMutation.isPending}
+                  <button type="submit" disabled={saveMutation.isPending}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50">
-                    Create
+                    {saveMutation.isPending ? (editId ? 'Saving...' : 'Creating...') : (editId ? 'Save Changes' : 'Create')}
                   </button>
-                  <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
+                  <button type="button" onClick={() => { setShowForm(false); setEditId(null); }} className="px-4 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Cancel</button>
                 </div>
               </form>
             </div>
@@ -143,21 +153,31 @@ export default function AdminGalleryPage() {
                     <Image className="h-8 w-8 text-muted-foreground/30" />
                   </div>
                 )}
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-sm text-foreground">{a.title}</h3>
+                <div className="p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-sm text-foreground truncate" title={a.title}>{a.title}</h3>
                     <p className="text-xs text-muted-foreground">{a.photoCount || 0} photos</p>
                   </div>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const ok = await confirm({ title: 'Delete Album', message: `Delete album "${a.title}" and all its photos? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
-                      if (ok) deleteMutation.mutate(a._id);
-                    }}
-                    className="p-1.5 hover:bg-destructive/10 text-destructive rounded"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startEdit(a); }}
+                      className="p-1.5 hover:bg-accent text-foreground rounded"
+                      title="Edit album"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const ok = await confirm({ title: 'Delete Album', message: `Delete album "${a.title}" and all its photos? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
+                        if (ok) deleteMutation.mutate(a._id);
+                      }}
+                      className="p-1.5 hover:bg-destructive/10 text-destructive rounded"
+                      title="Delete album"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </FadeIn>
