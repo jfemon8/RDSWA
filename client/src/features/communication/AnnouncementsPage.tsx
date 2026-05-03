@@ -40,16 +40,18 @@ export default function AnnouncementsPage() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div className="container mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <BlurText text="Announcements" className="text-2xl sm:text-3xl font-bold" delay={50} />
+    <div className="container mx-auto py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+        <BlurText text="Announcements" className="text-xl sm:text-2xl md:text-3xl font-bold" delay={50} />
         {isMod && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => setShowCreate(!showCreate)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+            className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm w-full sm:w-auto whitespace-nowrap"
           >
-            <Plus className="h-4 w-4" /> New Announcement
-          </button>
+            <Plus className="h-4 w-4 shrink-0" /> New Announcement
+          </motion.button>
         )}
       </div>
 
@@ -96,22 +98,22 @@ export default function AnnouncementsPage() {
               <FadeIn delay={i * 0.04} direction="up" distance={15}>
                 <motion.div
                   whileHover={{ y: -2 }}
-                  className="bg-card border rounded-lg p-5"
+                  className="bg-card border rounded-lg p-4 sm:p-5 overflow-hidden"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
                       <Megaphone className="h-5 w-5 text-amber-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm mb-1">{title}</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{body}</p>
-                      <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground pt-2 border-t">
-                        <Link to={`/members/${ann.sender?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors">
-                          <UserIcon className="h-3 w-3" />
-                          {ann.sender?.name || 'Unknown'}
+                      <h3 className="font-semibold text-sm mb-1 break-words">{title}</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere]">{body}</p>
+                      <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground pt-2 border-t flex-wrap">
+                        <Link to={`/members/${ann.sender?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors min-w-0">
+                          <UserIcon className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{ann.sender?.name || 'Unknown'}</span>
                         </Link>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Clock className="h-3 w-3 shrink-0" />
                           {formatDate(ann.createdAt)}
                         </span>
                       </div>
