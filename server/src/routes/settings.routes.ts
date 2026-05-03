@@ -13,6 +13,7 @@ import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS, CommitteePosition } from '@
 import { cacheResponse } from '../middlewares/cache.middleware';
 import { sendEmail } from '../config/mail';
 import { env } from '../config/env';
+import { syncDepartmentGroups } from '../jobs/groupInitializer';
 
 const router = Router();
 
@@ -135,6 +136,15 @@ router.patch('/academic-config', authenticate(), authorize(UserRole.ADMIN), audi
     }));
   }
   const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+
+  // Reconcile department chat groups against the new configuration: create
+  // groups for newly-added departments, archive groups for removed ones.
+  // The faculties list is the single source of truth for which department
+  // groups are allowed to exist.
+  if (faculties !== undefined) {
+    syncDepartmentGroups().catch((err) => console.error('Department group sync failed:', err));
+  }
+
   ApiResponse.success(res, settings.academicConfig, 'Academic config updated');
 }));
 
