@@ -6,7 +6,7 @@ import { Bell, Shield, Users, Briefcase, GraduationCap, Clock, CheckCircle, XCir
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
-import { stripHtml } from '@/lib/stripHtml';
+import RichContent from '@/components/ui/RichContent';
 import Promo from '@/components/promo/Promo';
 
 const membershipStatusConfig: Record<string, { icon: typeof Clock; color: string; bgColor: string; label: string; description: string }> = {
@@ -176,7 +176,13 @@ export default function DashboardPage() {
                   <p className="font-medium flex items-center gap-1.5">
                     <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
                   </p>
-                  <p className="text-muted-foreground">{stripHtml(n.message)}</p>
+                  {/<[a-z][\s\S]*>/i.test(n.message || '') ? (
+                    <RichContent html={n.message} className="text-muted-foreground text-justify" />
+                  ) : (
+                    <p className="text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere] text-justify">
+                      {n.message}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
