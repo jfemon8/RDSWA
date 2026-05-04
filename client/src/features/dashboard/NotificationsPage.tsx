@@ -6,10 +6,10 @@ import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
-import { stripHtml } from '@/lib/stripHtml';
 import { normalizeNotificationLink } from '@/lib/notificationLink';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
+import RichContent from '@/components/ui/RichContent';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -122,7 +122,19 @@ export default function NotificationsPage() {
                     )}
                     <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">{stripHtml(n.message)}</p>
+                  {/* Notification messages may be plain text (with \n line
+                      breaks and tabs) or rich HTML. RichContent's prose
+                      styling collapses whitespace, so plain text with
+                      newlines would render as one flowing paragraph. Detect
+                      HTML by looking for any tag — fall back to a
+                      whitespace-preserving paragraph otherwise. */}
+                  {/<[a-z][\s\S]*>/i.test(n.message || '') ? (
+                    <RichContent html={n.message} className="text-sm text-muted-foreground mt-1 text-justify" />
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap [overflow-wrap:anywhere] text-justify">
+                      {n.message}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatDate(n.createdAt)}
                     {' '}
