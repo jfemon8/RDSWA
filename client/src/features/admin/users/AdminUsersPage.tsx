@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePageParam } from '@/hooks/usePageParam';
 import api from '@/lib/api';
@@ -7,7 +7,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
-import { Search, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star, ExternalLink, Pencil } from 'lucide-react';
+import { Search, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star, ExternalLink, Pencil, KeyRound, Eye, EyeOff, X, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
@@ -29,6 +29,8 @@ export default function AdminUsersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [bulkEmail, setBulkEmail] = useState({ subject: '', body: '' });
+  // Force-password modal state — { user } when open, null when closed.
+  const [forcePwdTarget, setForcePwdTarget] = useState<any | null>(null);
 
   const filters: Record<string, string> = { page: String(page), limit: '20' };
   if (search) filters.search = search;
@@ -66,6 +68,19 @@ export default function AdminUsersPage() {
     mutationFn: (id: string) => api.delete(`/users/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); toast.success('User deleted'); },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed to delete user'); },
+  });
+
+  // SuperAdmin only — force-set a user's password, overriding the current one.
+  const forcePwdMutation = useMutation({
+    mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
+      api.patch(`/users/${id}/force-password`, { newPassword }),
+    onSuccess: () => {
+      toast.success('Password updated. The user has been notified.');
+      setForcePwdTarget(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to set password');
+    },
   });
 
   const isSuperAdmin = currentUser ? hasMinRole(currentUser.role, UserRole.SUPER_ADMIN) : false;
@@ -348,6 +363,15 @@ export default function AdminUsersPage() {
                   )}
                   {isSuperAdmin && u.role !== 'super_admin' && (
                     <button
+                      onClick={() => setForcePwdTarget(u)}
+                      title="Set password (override current)"
+                      className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </button>
+                  )}
+                  {isSuperAdmin && u.role !== 'super_admin' && (
+                    <button
                       onClick={async () => {
                         const ok = await confirm({
                           title: 'Delete User',
@@ -511,6 +535,148 @@ export default function AdminUsersPage() {
           )}
         </>
       )}
+
+      {/* SuperAdmin force-password modal — overrides target user's password */}
+      <ForcePasswordModal
+        target={forcePwdTarget}
+        onClose={() => setForcePwdTarget(null)}
+        onSubmit={(newPassword) =>
+          forcePwdMutation.mutate({ id: forcePwdTarget._id, newPassword })
+        }
+        isPending={forcePwdMutation.isPending}
+      />
     </div>
+  );
+}
+
+function ForcePasswordModal({
+  target,
+  onClose,
+  onSubmit,
+  isPending,
+}: {
+  target: any | null;
+  onClose: () => void;
+  onSubmit: (newPassword: string) => void;
+  isPending: boolean;
+}) {
+  const [pwd, setPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState('');
+
+  // Reset on close so a previous attempt doesn't leak into the next one.
+  const open = !!target;
+  useEffect(() => {
+    if (!open) {
+      setPwd('');
+      setConfirmPwd('');
+      setError('');
+      setShow(false);
+    }
+  }, [open]);
+
+  const handleSubmit = () => {
+    setError('');
+    if (pwd.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (pwd !== confirmPwd) { setError('Passwords do not match'); return; }
+    onSubmit(pwd);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, y: 10 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 10 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="bg-card border rounded-lg w-full max-w-md p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-amber-600" />
+                Set Password
+              </h2>
+              <button onClick={onClose} className="p-1 hover:bg-accent rounded" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+              You are setting a new password for <span className="font-medium text-foreground">{target?.name}</span>
+              {' '}(<span className="font-mono break-all">{target?.email}</span>). Their existing password will be overridden immediately. They will be notified by email and in-app.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">New password</label>
+                <div className="relative">
+                  <input
+                    type={show ? 'text' : 'password'}
+                    value={pwd}
+                    onChange={(e) => { setPwd(e.target.value); setError(''); }}
+                    autoFocus
+                    minLength={6}
+                    className="w-full px-3 py-2 pr-9 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                    placeholder="At least 6 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                    aria-label={show ? 'Hide password' : 'Show password'}
+                  >
+                    {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Confirm password</label>
+                <input
+                  type={show ? 'text' : 'password'}
+                  value={confirmPwd}
+                  onChange={(e) => { setConfirmPwd(e.target.value); setError(''); }}
+                  className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                  placeholder="Re-enter the password"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+                />
+              </div>
+              {error && <p className="text-xs text-destructive">{error}</p>}
+            </div>
+
+            <div className="flex gap-2 justify-end mt-5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isPending}
+                className="px-3 py-1.5 text-sm border rounded-md hover:bg-accent disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={handleSubmit}
+                disabled={isPending || !pwd || !confirmPwd}
+                className="px-4 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+                Set Password
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

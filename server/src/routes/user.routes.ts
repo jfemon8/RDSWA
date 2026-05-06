@@ -13,7 +13,9 @@ import {
   changeRoleSchema,
   memberActionSchema,
   listUsersQuerySchema,
+  forceSetPasswordSchema,
 } from '../validators/user.validator';
+import { sendEmail } from '../config/mail';
 
 const router = Router();
 
@@ -73,6 +75,66 @@ router.patch('/:id/approve', authenticate(), authorize(UserRole.MODERATOR), audi
 router.patch('/:id/reject', authenticate(), authorize(UserRole.MODERATOR), validate({ body: memberActionSchema }), auditLog('user.reject', 'users'), userController.rejectMembership);
 router.patch('/:id/suspend', authenticate(), authorize(UserRole.ADMIN), validate({ body: memberActionSchema }), auditLog('user.suspend', 'users'), userController.suspendUser);
 router.patch('/:id/unsuspend', authenticate(), authorize(UserRole.ADMIN), auditLog('user.unsuspend', 'users'), userController.unsuspendUser);
+
+// SuperAdmin: force-set any user's password (overrides existing password).
+// Sensitive action — audited, notifies the target user, and emails them so
+// they're never left wondering why their old password stopped working.
+// Guard: a SuperAdmin cannot force-set another SuperAdmin's password (would
+// allow one SuperAdmin to lock another out). A SuperAdmin can still
+// force-set their own via the normal "change password" flow if needed.
+router.patch(
+  '/:id/force-password',
+  authenticate(),
+  authorize(UserRole.SUPER_ADMIN),
+  validate({ body: forceSetPasswordSchema }),
+  auditLog('user.force_password_set', 'users'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const { User, Notification } = await import('../models');
+    const id = req.params.id as string;
+    const { newPassword } = req.body as { newPassword: string };
+
+    if ((req.user._id as any).toString() === id) {
+      throw ApiError.badRequest('Use the standard change-password flow for your own account');
+    }
+
+    const target = await User.findById(id).select('+password');
+    if (!target) throw ApiError.notFound('User not found');
+    if (target.isDeleted) throw ApiError.badRequest('Cannot set password for a deleted user');
+    if (target.role === UserRole.SUPER_ADMIN) {
+      throw ApiError.forbidden('Cannot force-set another SuperAdmin\'s password');
+    }
+
+    // The User pre-save hook hashes when `password` is modified.
+    target.password = newPassword;
+    target.passwordResetToken = undefined;
+    target.passwordResetExpiry = undefined;
+    await target.save();
+
+    // Notify the target so they know their password was changed by an admin.
+    await Notification.create({
+      recipient: target._id,
+      type: 'password_reset_by_admin',
+      title: 'Your password was reset',
+      message: `Your account password was reset by ${req.user.name || 'an administrator'}. If you did not expect this, contact RDSWA support immediately.`,
+      link: '/dashboard/profile',
+    });
+
+    // Email the user too — async, doesn't block the response.
+    void sendEmail(
+      target.email,
+      'Your RDSWA password was reset',
+      `<h2>Your password was reset</h2>
+       <p>Hello ${target.name},</p>
+       <p>Your RDSWA account password was reset by an administrator.</p>
+       <p>You can now sign in with the new password provided to you. If you did not expect this change, please contact RDSWA support immediately.</p>`
+    ).catch((err: any) => {
+      console.error(`[forcePasswordSet] Email failed to ${target.email}:`, err?.code || '', err?.message || err);
+    });
+
+    ApiResponse.success(res, null, 'Password updated');
+  })
+);
 
 // SuperAdmin: soft-delete user
 router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('user.delete', 'users'), asyncHandler(async (req, res) => {

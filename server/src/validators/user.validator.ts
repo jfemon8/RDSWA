@@ -100,6 +100,13 @@ export const memberActionSchema = z.object({
   reason: z.string().optional(),
 });
 
+/** SuperAdmin force-set password — overrides target user's existing password. */
+export const forceSetPasswordSchema = z.object({
+  newPassword: z.string()
+    .min(6, 'Password must be at least 6 characters')
+    .max(128, 'Password is too long'),
+});
+
 export const listUsersQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
