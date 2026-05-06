@@ -311,7 +311,14 @@ export class AuthService {
     await user.save();
 
     const resetUrl = `${env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    await sendEmail(
+
+    // Don't block the API response on SMTP. If Gmail is slow, throttling,
+    // or the App Password has been revoked, the user previously waited
+    // up to 10 minutes for a reset request to complete (Nodemailer's
+    // default socket timeout). Now: persist the token, return a 200
+    // immediately, and let the email send in the background. Failures
+    // are logged with enough detail to diagnose (recipient + error code).
+    void sendEmail(
       user.email,
       'Reset your RDSWA password',
       `<h2>Password Reset</h2>
@@ -319,7 +326,13 @@ export class AuthService {
        <p>Click the link below to reset your password:</p>
        <a href="${resetUrl}">${resetUrl}</a>
        <p>This link expires in 1 hour.</p>`
-    ).catch((err) => console.error('Email send error:', err));
+    ).catch((err: any) => {
+      console.error(
+        `[forgotPassword] Email send failed to ${user.email}:`,
+        err?.code || '',
+        err?.message || err
+      );
+    });
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

@@ -65,7 +65,25 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // Anything that should NOT fall back to index.html. Without this,
+        // returning visitors with the SW installed get index.html served
+        // for paths like /ads.txt, /robots.txt, /sitemap.xml — which then
+        // appear as "404" or as HTML content where text was expected.
+        // AdSense crawlers don't run a SW, so they don't hit this — but
+        // the user-visible 404 / wrong content is still real and
+        // misleads any manual verification.
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/ads\.txt$/,
+          /^\/app-ads\.txt$/,
+          /^\/robots\.txt$/,
+          /^\/sitemap\.xml$/,
+          /^\/manifest\.webmanifest$/,
+          /^\/_vercel\//,
+          // Catch-all: any path with a non-HTML file extension shouldn't
+          // be treated as an SPA route.
+          /\.(?:txt|xml|json|webmanifest|map|ico|png|jpg|jpeg|gif|svg|webp|woff2?|ttf|otf|eot|mp3|mp4|webm|pdf|css|js)$/i,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

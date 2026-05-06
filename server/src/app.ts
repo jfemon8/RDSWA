@@ -24,6 +24,7 @@ import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
 import { syncRolesOnStart } from './jobs/roleSyncOnStart';
+import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
 if (env.NODE_ENV !== 'test') {
@@ -70,6 +71,11 @@ async function start() {
   // Initialize Socket.IO & Web Push
   initSocket(httpServer);
   initWebPush();
+
+  // Verify SMTP credentials so revoked App Passwords / blocked ports
+  // surface in logs at boot instead of silently failing forgot-password
+  // and other email-dependent flows.
+  verifyMailTransport();
 
   // Initialize central + department groups
   initializeGroups();
