@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
-  LayoutDashboard, Users, Building2, Calendar, FileText, Image, FolderOpen,
+  LayoutDashboard, Users, Building2, Calendar, CalendarDays, FileText, Image, FolderOpen,
   Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, UserCheck, BarChart3, KeyRound, CreditCard, Settings2,
   Briefcase, MessageSquare, Heart, Award, Star, Wallet, Database, Inbox, Eye,
@@ -44,6 +44,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Notices', href: '/admin/notices', icon: FileText, minRole: UserRole.MODERATOR },
   { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
   { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
+  { label: 'Vacation', href: '/admin/vacation', icon: CalendarDays, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
   { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },

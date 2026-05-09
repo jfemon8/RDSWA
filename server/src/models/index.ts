@@ -87,3 +87,6 @@ export type { IMentorshipDocument } from './Mentorship';
 
 export { ContactMessage } from './ContactMessage';
 export type { IContactMessageDocument, ContactMessageStatus } from './ContactMessage';
+
+export { Vacation } from './Vacation';
+export type { IVacationDocument, IVacationEntry, IVacationAttachment } from './Vacation';

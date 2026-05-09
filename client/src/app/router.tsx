@@ -36,6 +36,7 @@ const MeetingRecords = lazy(() => import('@/features/events/MeetingRecordsPage')
 const Notices = lazy(() => import('@/features/notices/NoticesPage'));
 const NoticeDetail = lazy(() => import('@/features/notices/NoticeDetailPage'));
 const Documents = lazy(() => import('@/features/documents/DocumentsPage'));
+const Vacation = lazy(() => import('@/features/vacation/VacationPage'));
 const Donations = lazy(() => import('@/features/donations/DonationsPage'));
 const Voting = lazy(() => import('@/features/voting/VotingPage'));
 const BusSchedule = lazy(() => import('@/features/bus-schedule/BusSchedulePage'));
@@ -85,6 +86,7 @@ const AdminCommittees = lazy(() => import('@/features/admin/committees/AdminComm
 const AdminEvents = lazy(() => import('@/features/admin/events/AdminEventsPage'));
 const AdminNotices = lazy(() => import('@/features/admin/notices/AdminNoticesPage'));
 const AdminDocuments = lazy(() => import('@/features/admin/documents/AdminDocumentsPage'));
+const AdminVacation = lazy(() => import('@/features/admin/vacation/AdminVacationPage'));
 const AdminGallery = lazy(() => import('@/features/admin/gallery/AdminGalleryPage'));
 const AdminFinance = lazy(() => import('@/features/admin/finance/AdminFinancePage'));
 const AdminVoting = lazy(() => import('@/features/admin/voting/AdminVotingPage'));
@@ -150,6 +152,7 @@ export default function AppRouter() {
           <Route path="/notices" element={<Notices />} />
           <Route path="/notices/:id" element={<NoticeDetail />} />
           <Route path="/documents" element={<Documents />} />
+          <Route path="/vacation" element={<Vacation />} />
           <Route path="/donations" element={<Donations />} />
           <Route path="/bus-schedule" element={<BusSchedule />} />
           <Route path="/gallery" element={<Gallery />} />
@@ -200,6 +203,7 @@ export default function AppRouter() {
               <Route path="/admin/events/:id/checkin" element={<CheckInScanner />} />
               <Route path="/admin/notices" element={<AdminNotices />} />
               <Route path="/admin/documents" element={<AdminDocuments />} />
+              <Route path="/admin/vacation" element={<AdminVacation />} />
               <Route path="/admin/gallery" element={<AdminGallery />} />
               <Route path="/admin/voting" element={<AdminVoting />} />
               <Route path="/admin/forms" element={<AdminForms />} />
