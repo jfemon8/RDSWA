@@ -8,7 +8,7 @@
 
 রংপুর বিভাগীয় ছাত্র কল্যাণ সংসদ, বরিশাল বিশ্ববিদ্যালয়
 
-[![Live Site](https://img.shields.io/badge/live-rdswa.info.bd-22c55e?style=flat-square)](https://www.rdswa.vercel.app/)
+[![Live Site](https://img.shields.io/badge/live-rdswa.info.bd-22c55e?style=flat-square)](https://rdswa.vercel.app/)
 [![Stack](https://img.shields.io/badge/stack-MERN%20%2B%20TypeScript-3b82f6?style=flat-square)](#-tech-stack)
 [![Frontend](https://img.shields.io/badge/frontend-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com)
 [![Backend](https://img.shields.io/badge/backend-Render-46e3b7?style=flat-square&logo=render)](https://render.com)
@@ -17,7 +17,7 @@
 [![Node](https://img.shields.io/badge/node-≥18-339933?style=flat-square&logo=node.js)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-private-lightgrey?style=flat-square)](#-license)
 
-[Live Demo](https://www.rdswa.vercel.app/) · [Android App](https://apkpure.com/p/app.vercel.rdswa.twa) · [Report Issue](https://github.com/jfemon8/RDSWA/issues)
+[Live Demo](https://rdswa.vercel.app/) · [Android App](https://apkpure.com/p/app.vercel.rdswa.twa) · [Report Issue](https://github.com/jfemon8/RDSWA/issues)
 
 </div>
 
