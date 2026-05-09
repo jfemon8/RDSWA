@@ -91,6 +91,11 @@ export interface ISiteSettingsDocument extends Document {
     sessions: string[];
     faculties: Array<{ name: string; departments: string[] }>;
   };
+  /** Editable copy for the public /vacation page. */
+  vacationPageContent?: {
+    title?: string;
+    subtitle?: string;
+  };
   otherOrganizations: Array<{ name: string; description: string; website?: string; logo?: string }>;
   membershipCriteria?: Record<string, unknown>;
   votingRules?: Record<string, unknown>;
@@ -278,6 +283,13 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
           { name: 'Faculty of Engineering', departments: ['Computer Science & Engineering'] },
           { name: 'Faculty of Biological Science', departments: ['Biochemistry & Molecular Biology'] },
         ],
+      },
+    },
+    vacationPageContent: {
+      title: { type: String, default: 'Vacation Calendar' },
+      subtitle: {
+        type: String,
+        default: 'Yearly vacation, holiday and break schedule for University of Barishal.',
       },
     },
     otherOrganizations: {

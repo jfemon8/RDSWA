@@ -10,6 +10,8 @@ import SEO from '@/components/SEO';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import ImageLightbox from '@/components/chat/ImageLightbox';
+import Promo from '@/components/promo/Promo';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 // PdfViewer pulls in `react-pdf` + the worker — lazy-load so the bundle stays
 // small for visitors viewing years that have no PDF attachments. Same pattern
@@ -49,6 +51,12 @@ function formatRange(start: string, end: string): string {
 }
 
 export default function VacationPage() {
+  const { settings } = useSiteSettings();
+  const pageTitle = settings?.vacationPageContent?.title || 'Vacation Calendar';
+  const pageSubtitle =
+    settings?.vacationPageContent?.subtitle ||
+    'Yearly vacation, holiday and break schedule for University of Barishal.';
+
   const { data, isLoading } = useQuery({
     queryKey: ['vacations'],
     queryFn: async () => {
@@ -71,15 +79,15 @@ export default function VacationPage() {
   return (
     <div className="container mx-auto py-8">
       <SEO
-        title="Vacation Calendar"
-        description="Academic year vacation calendar for RDSWA — University of Barishal Rangpur students. Yearly holiday schedules, breaks, and observed days with date ranges and total days."
+        title={pageTitle}
+        description={pageSubtitle}
         keywords="RDSWA vacation, BU Rangpur vacation, academic calendar, holiday schedule, Barishal university vacation"
       />
 
       <div className="flex items-center gap-2 mb-2">
         <Calendar className="h-6 w-6 text-primary" />
         <BlurText
-          text="Vacation Calendar"
+          text={pageTitle}
           className="text-2xl sm:text-3xl md:text-4xl font-bold"
           delay={80}
           animateBy="words"
@@ -87,86 +95,110 @@ export default function VacationPage() {
         />
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Yearly vacation, holiday and break schedule for RDSWA members.
+        {pageSubtitle}
       </p>
 
-      {isLoading ? (
-        <Spinner size="md" />
-      ) : vacations.length === 0 ? (
-        <EmptyState
-          icon={Calendar}
-          title="No Vacation Calendars Yet"
-          description="The vacation calendar has not been published yet. Check back soon."
-        />
-      ) : (
-        <div className="space-y-8">
-          {/* Latest year — table + attachments shown directly. */}
-          <FadeIn direction="up">
-            <YearCard vacation={latest} highlight />
-          </FadeIn>
+      {/* lg+ adds a sticky right-rail promo. Below lg the sidebar is hidden
+          and the main column takes the full container width. Same layout
+          pattern used by DocumentsPage / HomePage. */}
+      <div className="lg:flex lg:gap-6">
+        <div className="flex-1 min-w-0">
+          {isLoading ? (
+            <Spinner size="md" />
+          ) : vacations.length === 0 ? (
+            <EmptyState
+              icon={Calendar}
+              title="No Vacation Calendars Yet"
+              description="The vacation calendar has not been published yet. Check back soon."
+            />
+          ) : (
+            <div className="space-y-8">
+              {/* Latest year — table + attachments shown directly. */}
+              <FadeIn direction="up">
+                <YearCard vacation={latest} highlight />
+              </FadeIn>
 
-          {/* Older years — collapsible buttons. */}
-          {older.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Previous Academic Years
-              </p>
-              <div className="space-y-2">
-                {older.map((v, i) => {
-                  const isOpen = openYearId === v._id;
-                  return (
-                    <FadeIn key={v._id} direction="up" delay={i * 0.04}>
-                      <div className="border rounded-lg overflow-hidden bg-card">
-                        <button
-                          type="button"
-                          onClick={() => setOpenYearId(isOpen ? null : v._id)}
-                          aria-expanded={isOpen}
-                          className="w-full flex items-center justify-between p-4 text-left hover:bg-accent/40 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Calendar className="h-4 w-4 text-primary shrink-0" />
-                            <div className="min-w-0">
-                              <p className="font-medium text-foreground">
-                                Academic Year {v.academicYear}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {v.entries.length} {v.entries.length === 1 ? 'entry' : 'entries'}
-                                {v.attachments.length > 0 && ` · ${v.attachments.length} attachment${v.attachments.length === 1 ? '' : 's'}`}
-                              </p>
-                            </div>
-                          </div>
-                          <motion.span
-                            animate={{ rotate: isOpen ? 180 : 0 }}
-                            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                            className="shrink-0 text-muted-foreground"
-                          >
-                            <ChevronDown className="h-5 w-5" />
-                          </motion.span>
-                        </button>
-                        <AnimatePresence initial={false}>
-                          {isOpen && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25 }}
-                              className="overflow-hidden border-t"
+              {/* In-flow display ad between the latest year and the archive
+                  list. Returns null when AdSense env vars aren't configured,
+                  so the layout collapses cleanly in dev. */}
+              {older.length > 0 && (
+                <Promo kind="displayResponsive" minHeight={250} />
+              )}
+
+              {/* Older years — collapsible buttons. */}
+              {older.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                    Previous Academic Years
+                  </p>
+                  <div className="space-y-2">
+                    {older.map((v, i) => {
+                      const isOpen = openYearId === v._id;
+                      return (
+                        <FadeIn key={v._id} direction="up" delay={i * 0.04}>
+                          <div className="border rounded-lg overflow-hidden bg-card">
+                            <button
+                              type="button"
+                              onClick={() => setOpenYearId(isOpen ? null : v._id)}
+                              aria-expanded={isOpen}
+                              className="w-full flex items-center justify-between p-4 text-left hover:bg-accent/40 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
                             >
-                              <div className="p-4">
-                                <YearCard vacation={v} />
+                              <div className="flex items-center gap-3 min-w-0">
+                                <Calendar className="h-4 w-4 text-primary shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="font-medium text-foreground">
+                                    Academic Year {v.academicYear}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {v.entries.length} {v.entries.length === 1 ? 'entry' : 'entries'}
+                                    {v.attachments.length > 0 && ` · ${v.attachments.length} attachment${v.attachments.length === 1 ? '' : 's'}`}
+                                  </p>
+                                </div>
                               </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </FadeIn>
-                  );
-                })}
-              </div>
+                              <motion.span
+                                animate={{ rotate: isOpen ? 180 : 0 }}
+                                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                                className="shrink-0 text-muted-foreground"
+                              >
+                                <ChevronDown className="h-5 w-5" />
+                              </motion.span>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {isOpen && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.25 }}
+                                  className="overflow-hidden border-t"
+                                >
+                                  <div className="p-4">
+                                    <YearCard vacation={v} />
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </FadeIn>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom display ad — second impression for visitors who
+                  scroll through all years. */}
+              <Promo kind="displayResponsive" minHeight={250} />
             </div>
           )}
         </div>
-      )}
+
+        {/* lg+ sticky right-rail promo. Hidden on mobile; lg:empty:hidden
+            collapses the slot when AdSense returns no fill. */}
+        <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
+          <Promo kind="sidebar" minHeight={600} />
+        </aside>
+      </div>
     </div>
   );
 }

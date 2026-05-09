@@ -51,6 +51,7 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       universityInfo: settings.universityInfo,
       foundedYear: settings.foundedYear,
       homePageContent: settings.homePageContent,
+      vacationPageContent: settings.vacationPageContent,
       academicConfig: settings.academicConfig,
       otherOrganizations: settings.otherOrganizations,
       faq: settings.faq,
@@ -156,6 +157,25 @@ router.patch('/homepage', authenticate(), authorize(UserRole.SUPER_ADMIN), denyR
   const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
   ApiResponse.success(res, settings, 'Homepage content updated');
 }));
+
+// Update vacation page content (SuperAdmin) — title + subtitle for /vacation.
+router.patch(
+  '/vacation-page',
+  authenticate(),
+  authorize(UserRole.SUPER_ADMIN),
+  denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS),
+  auditLog('settings.update_vacation_page', 'site_settings'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const update: any = { updatedBy: req.user._id };
+    if (req.body.vacationPageContent !== undefined) {
+      const { _id, ...clean } = req.body.vacationPageContent || {};
+      update.vacationPageContent = clean;
+    }
+    const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+    ApiResponse.success(res, settings.vacationPageContent, 'Vacation page content updated');
+  })
+);
 
 // Update university info (SuperAdmin)
 router.patch('/university', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_university', 'site_settings'), asyncHandler(async (req, res) => {

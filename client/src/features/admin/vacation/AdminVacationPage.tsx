@@ -7,6 +7,7 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import {
   Plus, Pencil, Trash2, X, Calendar, Loader2, GripVertical,
   Upload, FileText, Image as ImageIcon, ExternalLink, Download,
+  Save, ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -14,6 +15,9 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import { formatDate, toDateInput } from '@/lib/date';
 import { proxyFileUrl } from '@/lib/fileProxy';
+import { useAuthStore } from '@/stores/authStore';
+import { hasMinRole } from '@/lib/roles';
+import { UserRole } from '@rdswa/shared';
 
 interface Entry {
   event: string;
@@ -53,6 +57,12 @@ export default function AdminVacationPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
+  const { user: currentUser } = useAuthStore();
+  // Page title/subtitle CRUD is locked to SuperAdmin per the requirement;
+  // Moderators/Admins can still manage academic-year entries below.
+  const isSuperAdmin = currentUser
+    ? hasMinRole(currentUser.role, UserRole.SUPER_ADMIN)
+    : false;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(blankForm);
@@ -185,6 +195,11 @@ export default function AdminVacationPage() {
           <Plus className="h-4 w-4 shrink-0" /> New Academic Year
         </motion.button>
       </div>
+
+      {/* Page-content editor — SuperAdmin only. Lives on this page so admins
+          who manage vacation calendars find the related copy editor in the
+          same place, instead of buried under /admin/settings. */}
+      {isSuperAdmin && <VacationPageContentSection />}
 
       <AnimatePresence>
         {showForm && (
@@ -575,5 +590,129 @@ function AttachmentUpload({ onAdd }: { onAdd: (a: Attachment) => void }) {
         }}
       />
     </label>
+  );
+}
+
+/**
+ * SuperAdmin-only editor for the public /vacation page heading and intro.
+ * Persists via the dedicated /settings/vacation-page PATCH endpoint, which
+ * already enforces SuperAdmin + denyRestricted on the server side.
+ */
+function VacationPageContentSection() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const { data: settingsData, isLoading } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const { data } = await api.get('/settings');
+      return data;
+    },
+  });
+  const s = settingsData?.data;
+
+  const [form, setForm] = useState({ title: '', subtitle: '' });
+  const [collapsed, setCollapsed] = useState(true);
+
+  useEffect(() => {
+    const v = s?.vacationPageContent || {};
+    setForm({
+      title: v.title || '',
+      subtitle: v.subtitle || '',
+    });
+  }, [s]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/vacation-page', { vacationPageContent: form }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success('Vacation page content saved');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  return (
+    <div className="border rounded-lg bg-card mb-6">
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-accent/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-lg"
+        aria-expanded={!collapsed}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Pencil className="h-4 w-4 text-primary shrink-0" />
+          <div className="min-w-0">
+            <p className="font-medium text-foreground">Page Title & Subtitle</p>
+            <p className="text-xs text-muted-foreground">
+              Heading and intro shown at the top of the public /vacation page.
+            </p>
+          </div>
+        </div>
+        <motion.span
+          animate={{ rotate: collapsed ? 0 : 180 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          className="shrink-0 text-muted-foreground"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden border-t"
+          >
+            <div className="p-4 space-y-3">
+              {isLoading ? (
+                <Spinner size="sm" />
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Page Title</label>
+                    <input
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="Vacation Calendar"
+                      className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Page Subtitle</label>
+                    <textarea
+                      value={form.subtitle}
+                      onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                      rows={2}
+                      placeholder="Yearly vacation, holiday and break schedule for University of Barishal."
+                      className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <motion.button
+                      type="button"
+                      onClick={() => mutation.mutate()}
+                      disabled={mutation.isPending}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50 inline-flex items-center gap-1.5"
+                    >
+                      {mutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      Save Page Content
+                    </motion.button>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
