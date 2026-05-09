@@ -120,8 +120,8 @@ export default function EventDetailPage() {
         <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            {formatDate(event.startDate, 'long')}
-            {event.endDate && ` - ${formatDate(event.endDate, 'long')}`}
+            {formatDate(event.startDate, 'long')} {formatTime(event.startDate)}
+            {event.endDate && ` - ${formatDate(event.endDate, 'long')} ${formatTime(event.endDate)}`}
           </div>
           {event.venue && (
             <div className="flex items-center gap-1">

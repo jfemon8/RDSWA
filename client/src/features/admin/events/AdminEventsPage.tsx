@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
-import { formatDate, formatTime, toDateTimeLocal } from '@/lib/date';
+import { formatDate, formatTime, toDateTimeLocal, fromDateTimeLocal } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Plus, Pencil, Trash2, QrCode, Users, Image, ChevronDown, ChevronUp, UserCheck, X, ScanLine, Star, MessageCircle, FileText, Search, Tag, Building2, Calendar, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -60,6 +60,13 @@ export default function AdminEventsPage() {
       // Empty string would fail the ObjectId cast on the server; drop it so
       // the committee simply stays unset.
       if (!payload.committee) delete payload.committee;
+      // The datetime-local inputs emit timezone-less strings. We treat
+      // them as Asia/Dhaka (BST) wall-clock time and convert to a proper
+      // UTC ISO string before sending — otherwise the server (running in
+      // UTC) re-interprets them and the displayed time shifts by 6h.
+      payload.startDate = fromDateTimeLocal(payload.startDate);
+      if (payload.endDate) payload.endDate = fromDateTimeLocal(payload.endDate);
+      else delete payload.endDate;
       if (editId) return (await api.patch(`/events/${editId}`, payload)).data;
       return (await api.post('/events', payload)).data;
     },
@@ -126,7 +133,23 @@ export default function AdminEventsPage() {
           >
             <div className="border rounded-lg p-4 sm:p-5 bg-card mb-6">
               <h3 className="font-semibold mb-4 text-foreground">{editId ? 'Edit' : 'Create'} Event</h3>
-              <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Event title is required'; if (!form.description.trim()) errs.description = 'Description is required'; if (!form.startDate) errs.startDate = 'Start date is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+              <form noValidate onSubmit={(e) => {
+                e.preventDefault();
+                setErrors({});
+                const errs: Record<string, string> = {};
+                if (!form.title.trim()) errs.title = 'Event title is required';
+                if (!form.description.trim()) errs.description = 'Description is required';
+                if (!form.startDate) errs.startDate = 'Start date is required';
+                // End date must be strictly after start when provided. Compare
+                // the datetime-local strings directly — they're lexicographically
+                // ordered for the same format (YYYY-MM-DDTHH:mm), so no Date
+                // parsing needed and no timezone ambiguity.
+                if (form.endDate && form.startDate && form.endDate <= form.startDate) {
+                  errs.endDate = 'End date must be after the start date';
+                }
+                if (Object.keys(errs).length) { setErrors(errs); return; }
+                saveMutation.mutate();
+              }} className="space-y-3">
                 <div>
                   <input placeholder="Event Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                     className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
@@ -165,8 +188,14 @@ export default function AdminEventsPage() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">End Date</label>
-                    <input type="datetime-local" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                    <input type="datetime-local" value={form.endDate}
+                      // Browser-level guard: the picker won't allow a value at
+                      // or before start. Server + JS validation still enforce
+                      // the rule for users who bypass the picker.
+                      min={form.startDate || undefined}
+                      onChange={(e) => { setForm({ ...form, endDate: e.target.value }); setErrors((prev) => { const { endDate, ...rest } = prev; return rest; }); }}
+                      className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.endDate ? 'border-red-500' : ''}`} />
+                    <FieldError message={errors.endDate} />
                   </div>
                 </div>
                 <input placeholder="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })}
@@ -436,7 +465,7 @@ function EventDetailPanel({ event }: { event: any }) {
         <span className="flex items-center gap-1">
           <Calendar className="h-3.5 w-3.5" />
           {formatDate(fullEvent.startDate)} {formatTime(fullEvent.startDate)}
-          {fullEvent.endDate && ` – ${formatDate(fullEvent.endDate)}`}
+          {fullEvent.endDate && ` – ${formatDate(fullEvent.endDate)} ${formatTime(fullEvent.endDate)}`}
         </span>
         {fullEvent.venue && (
           <span className="flex items-center gap-1">
