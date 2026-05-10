@@ -35,16 +35,15 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
-      - key: SMTP_HOST
+      # Resend HTTP API — works on Render free tier (port 443).
+      # The KEY is committed; the VALUE is set once in the Render dashboard
+      # and never touches git.
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
+      # Non-secret — committed directly so it's auto-applied on push.
+      # Domain verified on Resend.
       - key: EMAIL_FROM
-        sync: false
+        value: RDSWA <noreply@rdswa.info.bd>
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

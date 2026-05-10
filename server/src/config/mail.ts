@@ -19,6 +19,15 @@ import { env } from './env';
 
 const useResend = !!env.RESEND_API_KEY;
 
+// Boot-time visibility — prints which transport will be used the moment
+// the module loads. Saves a round of "is the env var actually set?"
+// guessing on PaaS providers.
+console.log(
+  `[Mail] Active transport: ${useResend ? 'Resend HTTP API' : 'SMTP'} ` +
+  `(RESEND_API_KEY ${useResend ? 'detected' : 'NOT detected'}, ` +
+  `SMTP_HOST=${env.SMTP_HOST || '<unset>'})`
+);
+
 const smtpTransporter = useResend
   ? null
   : nodemailer.createTransport({
