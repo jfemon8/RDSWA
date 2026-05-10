@@ -1,6 +1,7 @@
 import { Notification, User } from '../models';
 import { getIO } from '../socket';
 import { sendEmail } from '../config/mail';
+import { renderEmailLayout, getAppUrl } from '../utils/emailTemplate';
 import { sendPushNotification } from '../config/webpush';
 import { sendSms } from '../config/sms';
 import mongoose from 'mongoose';
@@ -168,15 +169,12 @@ export class NotificationService {
    */
   private async sendEmailSafe(to: string, subject: string, body: string, link?: string): Promise<void> {
     try {
-      const html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">${subject}</h2>
-          <p style="color: #555; line-height: 1.6;">${body}</p>
-          ${link ? `<p><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}${link}" style="color: #3b82f6;">View Details</a></p>` : ''}
-          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #999;">RDSWA — University of Barishal</p>
-        </div>
-      `;
+      const html = renderEmailLayout({
+        heading: subject,
+        preheader: body.slice(0, 110),
+        intro: body,
+        cta: link ? { label: 'View Details', url: `${getAppUrl()}${link}` } : undefined,
+      });
       await sendEmail(to, subject, html);
     } catch (err) {
       console.error('Notification email failed:', err);

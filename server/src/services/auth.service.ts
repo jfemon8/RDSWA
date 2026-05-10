@@ -11,6 +11,7 @@ import { SUPER_ADMIN_EMAILS } from '../config/constants';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { sendEmail } from '../config/mail';
 import { env } from '../config/env';
+import { renderEmailLayout, getAppUrl, getCanonicalAppUrl } from '../utils/emailTemplate';
 import { ensureCentralGroup } from '../jobs/groupInitializer';
 
 interface RegisterInput {
@@ -72,15 +73,22 @@ export class AuthService {
     }
 
     // Send verification email
-    const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${emailVerificationToken}`;
+    const buttonUrl = `${getAppUrl()}/verify-email?token=${emailVerificationToken}`;
+    const fallbackUrl = `${getCanonicalAppUrl()}/verify-email?token=${emailVerificationToken}`;
+    const html = renderEmailLayout({
+      heading: 'Welcome to RDSWA!',
+      preheader: 'Verify your email to activate your RDSWA account.',
+      greeting: `Hello ${user.name},`,
+      intro: 'Thanks for joining RDSWA. Please verify your email address by clicking the button below:',
+      cta: { label: 'Verify Email', url: buttonUrl },
+      fallbackUrl,
+      footerNote:
+        'This link expires in 24 hours. If you didn\'t create an RDSWA account, you can safely ignore this email.',
+    });
     await sendEmail(
       user.email,
       'Verify your RDSWA account',
-      `<h2>Welcome to RDSWA!</h2>
-       <p>Hello ${user.name},</p>
-       <p>Please verify your email by clicking the link below:</p>
-       <a href="${verifyUrl}">${verifyUrl}</a>
-       <p>This link expires in 24 hours.</p>`
+      html
     ).catch((err) => console.error('Email send error:', err));
 
     return user;
@@ -310,7 +318,22 @@ export class AuthService {
     user.passwordResetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    const resetUrl = `${env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    // CLIENT_URL is a comma-separated CORS allowlist; pick concrete URLs
+    // for the email link (button = primary deployment, fallback = canonical
+    // custom domain). Both routes resolve to the same SPA so either works.
+    const buttonUrl = `${getAppUrl()}/reset-password?token=${resetToken}`;
+    const fallbackUrl = `${getCanonicalAppUrl()}/reset-password?token=${resetToken}`;
+
+    const html = renderEmailLayout({
+      heading: 'Password Reset',
+      preheader: 'Reset your RDSWA password — link expires in 1 hour.',
+      greeting: `Hello ${user.name},`,
+      intro: 'Please click the button below to reset your password:',
+      cta: { label: 'Reset Password', url: buttonUrl },
+      fallbackUrl,
+      footerNote:
+        'This link expires in 1 hour. If you didn\'t request a password reset, please ignore this email — your account is safe.',
+    });
 
     // Don't block the API response on SMTP. If Gmail is slow, throttling,
     // or the App Password has been revoked, the user previously waited
@@ -321,11 +344,7 @@ export class AuthService {
     void sendEmail(
       user.email,
       'Reset your RDSWA password',
-      `<h2>Password Reset</h2>
-       <p>Hello ${user.name},</p>
-       <p>Click the link below to reset your password:</p>
-       <a href="${resetUrl}">${resetUrl}</a>
-       <p>This link expires in 1 hour.</p>`
+      html
     ).catch((err: any) => {
       console.error(
         `[forgotPassword] Email send failed to ${user.email}:`,
@@ -394,15 +413,19 @@ export class AuthService {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
+    const html = renderEmailLayout({
+      heading: 'Email Verification',
+      preheader: `Your RDSWA verification code: ${otp}`,
+      greeting: `Hello ${user.name},`,
+      intro: 'Use the verification code below to confirm your email address:',
+      code: otp,
+      footerNote:
+        'This code expires in 10 minutes. If you didn\'t request this, please ignore this email.',
+    });
     await sendEmail(
       user.email,
       'RDSWA Email Verification OTP',
-      `<h2>Email Verification</h2>
-       <p>Hello ${user.name},</p>
-       <p>Your OTP for email verification is:</p>
-       <h1 style="letter-spacing: 8px; font-size: 32px; text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px;">${otp}</h1>
-       <p>This OTP expires in 10 minutes.</p>
-       <p>If you did not request this, please ignore this email.</p>`
+      html
     ).catch((err) => console.error('OTP email send error:', err));
   }
 

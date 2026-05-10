@@ -16,6 +16,7 @@ import {
   forceSetPasswordSchema,
 } from '../validators/user.validator';
 import { sendEmail } from '../config/mail';
+import { renderEmailLayout, getAppUrl, escapeHtml } from '../utils/emailTemplate';
 
 const router = Router();
 
@@ -121,13 +122,23 @@ router.patch(
     });
 
     // Email the user too — async, doesn't block the response.
+    const adminName = req.user.name || 'an administrator';
+    const html = renderEmailLayout({
+      heading: 'Your password was reset',
+      preheader: 'An admin reset your RDSWA password.',
+      greeting: `Hello ${target.name},`,
+      intro: [
+        `Your RDSWA account password was reset by ${escapeHtml(adminName)}.`,
+        'You can now sign in with the new password that was provided to you.',
+      ],
+      cta: { label: 'Open RDSWA', url: `${getAppUrl()}/login` },
+      footerNote:
+        'If you did not expect this change, please contact RDSWA support immediately.',
+    });
     void sendEmail(
       target.email,
       'Your RDSWA password was reset',
-      `<h2>Your password was reset</h2>
-       <p>Hello ${target.name},</p>
-       <p>Your RDSWA account password was reset by an administrator.</p>
-       <p>You can now sign in with the new password provided to you. If you did not expect this change, please contact RDSWA support immediately.</p>`
+      html
     ).catch((err: any) => {
       console.error(`[forcePasswordSet] Email failed to ${target.email}:`, err?.code || '', err?.message || err);
     });
