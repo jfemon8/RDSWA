@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { proxyFileUrl } from '@/lib/fileProxy';
 
 interface Props {
   images: Array<{ url: string; name?: string }>;
@@ -41,8 +42,12 @@ export default function ImageLightbox({ images, index, onClose, onIndexChange }:
         >
           <X className="h-5 w-5" />
         </button>
+        {/* Routes through the backend proxy for cross-origin (Cloudinary)
+            URLs so `Content-Disposition: attachment` is set server-side —
+            the HTML `download` attribute alone is ignored by browsers on
+            cross-origin links. Same-origin URLs pass through unchanged. */}
         <a
-          href={current.url}
+          href={proxyFileUrl(current.url, current.name, false)}
           download={current.name}
           onClick={(e) => e.stopPropagation()}
           className="absolute top-4 right-16 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"

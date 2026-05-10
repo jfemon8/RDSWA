@@ -7,7 +7,7 @@ import { extractFieldErrors } from '@/lib/formErrors';
 import {
   Plus, Pencil, Trash2, X, Calendar, Loader2, GripVertical,
   Upload, FileText, Image as ImageIcon, ExternalLink, Download,
-  Save, ChevronDown,
+  Save, ChevronDown, Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
@@ -65,6 +65,7 @@ export default function AdminVacationPage() {
     : false;
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState(blankForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -75,16 +76,28 @@ export default function AdminVacationPage() {
       return data;
     },
   });
-  const vacations: Vacation[] = data?.data || [];
+  // Server already returns descending by academicYear; lock that order
+  // locally too in case ordering changes upstream or on optimistic updates.
+  const vacations: Vacation[] = ((data?.data || []) as Vacation[])
+    .slice()
+    .sort((a, b) => b.academicYear.localeCompare(a.academicYear));
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       // Convert YYYY-MM-DD to a stable timezone-anchored ISO string. Using
       // `T00:00:00` (no Z) and letting the server parse it works for date-
       // only fields where time-of-day doesn't matter.
+      // Sort entries ascending by start date before persisting so the DB
+      // is always canonically ordered. Read paths can rely on this without
+      // re-sorting; admin form opens in date order on next edit.
+      const sortedEntries = [...form.entries].sort((a, b) => {
+        if (!a.startDate || !b.startDate) return 0;
+        if (a.startDate !== b.startDate) return a.startDate.localeCompare(b.startDate);
+        return (a.endDate || '').localeCompare(b.endDate || '');
+      });
       const payload = {
         ...form,
-        entries: form.entries.map((e) => ({
+        entries: sortedEntries.map((e) => ({
           event: e.event.trim(),
           startDate: e.startDate,
           endDate: e.endDate,
@@ -128,10 +141,19 @@ export default function AdminVacationPage() {
 
   const startEdit = (v: Vacation) => {
     setEditId(v._id);
+    // Open the editor with entries in chronological order so admins always
+    // see the same canonical order, regardless of how rows were originally
+    // entered. Save also re-sorts (defence in depth).
+    const sortedEntries = [...(v.entries || [])].sort((a, b) => {
+      const sa = new Date(a.startDate).getTime();
+      const sb = new Date(b.startDate).getTime();
+      if (sa !== sb) return sa - sb;
+      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+    });
     setForm({
       academicYear: v.academicYear,
       notes: v.notes || '',
-      entries: (v.entries || []).map((e) => ({
+      entries: sortedEntries.map((e) => ({
         event: e.event,
         startDate: toDateInput(e.startDate),
         endDate: toDateInput(e.endDate),
@@ -406,15 +428,17 @@ export default function AdminVacationPage() {
       ) : (
         <FadeIn direction="up" delay={0.1}>
           <div className="space-y-3">
-            {vacations.map((v, i) => (
+            {vacations.map((v, i) => {
+              const isExpanded = expandedId === v._id;
+              return (
               <motion.div
                 key={v._id}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="border rounded-lg p-4 bg-card"
+                className="border rounded-lg bg-card overflow-hidden"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <h3 className="font-medium text-foreground flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary shrink-0" />
@@ -428,6 +452,21 @@ export default function AdminVacationPage() {
                     </p>
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : v._id)}
+                      className="p-2 hover:bg-accent rounded text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                      title={isExpanded ? 'Hide details' : 'View details'}
+                      aria-expanded={isExpanded}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <motion.span
+                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                        className="inline-flex"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </motion.span>
+                    </button>
                     <button
                       onClick={() => startEdit(v)}
                       className="p-2 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
@@ -452,8 +491,23 @@ export default function AdminVacationPage() {
                     </button>
                   </div>
                 </div>
+
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden border-t bg-muted/20"
+                    >
+                      <VacationDetails vacation={v} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         </FadeIn>
       )}
@@ -713,6 +767,152 @@ function VacationPageContentSection() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Read-only details panel for an academic year — entries (always sorted
+ * ascending by start date) + notes + attachments. Rendered inline in the
+ * admin list when an item is expanded.
+ */
+function VacationDetails({ vacation }: { vacation: Vacation }) {
+  // Always show entries in chronological order regardless of insertion
+  // sequence. Stable sort by start, falls back to end if starts are equal.
+  const sortedEntries = [...vacation.entries].sort((a, b) => {
+    const sa = new Date(a.startDate).getTime();
+    const sb = new Date(b.startDate).getTime();
+    if (sa !== sb) return sa - sb;
+    return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+  });
+
+  const totalDays = sortedEntries.reduce(
+    (sum, e) => sum + (e.totalDays ?? inclusiveDays(e.startDate, e.endDate)),
+    0,
+  );
+
+  return (
+    <div className="p-4 sm:p-5 space-y-4">
+      {vacation.notes && (
+        <div className="text-sm text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere] p-3 rounded-md bg-card border-l-2 border-primary/40">
+          {vacation.notes}
+        </div>
+      )}
+
+      {sortedEntries.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic text-center py-4">
+          No vacation entries listed for this year.
+        </p>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden sm:block border rounded-md overflow-hidden bg-card">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/60 border-b">
+                  <th className="text-left p-2.5 font-medium text-foreground w-10">#</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">Event</th>
+                  <th className="text-left p-2.5 font-medium text-foreground">Date Range</th>
+                  <th className="text-right p-2.5 font-medium text-foreground w-20">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedEntries.map((e, i) => {
+                  const days = e.totalDays ?? inclusiveDays(e.startDate, e.endDate);
+                  const range =
+                    formatDate(e.startDate) === formatDate(e.endDate)
+                      ? formatDate(e.startDate)
+                      : `${formatDate(e.startDate)} – ${formatDate(e.endDate)}`;
+                  return (
+                    <tr key={i} className="border-t hover:bg-accent/20">
+                      <td className="p-2.5 text-muted-foreground tabular-nums">{i + 1}</td>
+                      <td className="p-2.5 text-foreground font-medium">{e.event}</td>
+                      <td className="p-2.5 text-muted-foreground">{range}</td>
+                      <td className="p-2.5 text-right font-semibold text-foreground tabular-nums">{days}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/40 border-t font-semibold">
+                  <td colSpan={3} className="p-2.5 text-right text-foreground">Total</td>
+                  <td className="p-2.5 text-right text-primary tabular-nums">{totalDays}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Mobile list */}
+          <div className="sm:hidden space-y-2">
+            {sortedEntries.map((e, i) => {
+              const days = e.totalDays ?? inclusiveDays(e.startDate, e.endDate);
+              const range =
+                formatDate(e.startDate) === formatDate(e.endDate)
+                  ? formatDate(e.startDate)
+                  : `${formatDate(e.startDate)} – ${formatDate(e.endDate)}`;
+              return (
+                <div key={i} className="border rounded-md p-3 bg-card">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground break-words">{e.event}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{range}</p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium whitespace-nowrap">
+                      {days}d
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="text-right pt-1 px-1 text-xs font-semibold text-primary">
+              Total: {totalDays} days
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Attachments */}
+      {vacation.attachments.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Attachments ({vacation.attachments.length})
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {vacation.attachments.map((a, i) => {
+              const isImage = /^image\//i.test(a.type) || /\.(jpe?g|png|webp|gif|svg)(\?|$)/i.test(a.url);
+              const previewUrl = proxyFileUrl(a.url, a.name, true);
+              const downloadUrl = proxyFileUrl(a.url, a.name, false);
+              return (
+                <div key={i} className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                  {isImage ? (
+                    <img src={a.url} alt={a.name} className="h-10 w-10 rounded object-cover shrink-0" />
+                  ) : (
+                    <div className="h-10 w-10 rounded bg-muted grid place-items-center shrink-0">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-foreground truncate" title={a.name}>{a.name}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">{a.type}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+                      className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                      title="Preview">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                    <a href={downloadUrl}
+                      className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                      title="Download">
+                      <Download className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

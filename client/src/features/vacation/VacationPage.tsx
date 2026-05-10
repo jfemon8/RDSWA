@@ -204,6 +204,17 @@ export default function VacationPage() {
 }
 
 function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlight?: boolean }) {
+  // Always render entries in chronological order regardless of how the
+  // admin entered them. Stable sort by start, then end as a tie-breaker.
+  const sortedEntries = useMemo(() => {
+    return [...vacation.entries].sort((a, b) => {
+      const sa = new Date(a.startDate).getTime();
+      const sb = new Date(b.startDate).getTime();
+      if (sa !== sb) return sa - sb;
+      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+    });
+  }, [vacation.entries]);
+
   // Pre-classify so the lightbox gets a flat list of just the images (with
   // proper extensions) and PDFs/others stay rendered inline below.
   const classified = useMemo(() => {
@@ -238,7 +249,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
         </p>
       )}
 
-      {vacation.entries.length === 0 ? (
+      {sortedEntries.length === 0 ? (
         <p className="text-sm text-muted-foreground italic py-4 text-center">
           No vacation entries listed yet for this year.
         </p>
@@ -256,7 +267,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
                 </tr>
               </thead>
               <tbody>
-                {vacation.entries.map((e, i) => (
+                {sortedEntries.map((e, i) => (
                   <motion.tr
                     key={i}
                     initial={{ opacity: 0 }}
@@ -277,7 +288,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
                 <tr className="bg-muted/50 border-t font-medium">
                   <td colSpan={3} className="p-3 text-right text-foreground">Total</td>
                   <td className="p-3 text-right text-foreground">
-                    {vacation.entries.reduce(
+                    {sortedEntries.reduce(
                       (sum, e) => sum + (e.totalDays ?? inclusiveDays(e.startDate, e.endDate)),
                       0
                     )}
@@ -289,7 +300,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
 
           {/* Mobile card list */}
           <div className="sm:hidden space-y-2">
-            {vacation.entries.map((e, i) => (
+            {sortedEntries.map((e, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 6 }}
