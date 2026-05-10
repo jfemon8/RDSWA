@@ -53,29 +53,37 @@ const smtpTransporter = useResend
  */
 export async function verifyMailTransport(): Promise<void> {
   if (useResend) {
-    // Resend has no dedicated "verify" endpoint, but a GET on /domains
-    // round-trips the API key and confirms network reachability.
+    // Resend has no dedicated `verify` endpoint. We POST to /emails with
+    // an intentionally empty body — auth runs *before* validation, so:
+    //   - 401  → bad / revoked / mistyped API key
+    //   - 422  → auth OK, request validation failed (the success signal here)
+    //   - 5xx / network error → upstream issue, log it
+    // A send-only "Sending access" key cannot hit /domains or /api-keys, so
+    // POST /emails is the only endpoint that round-trips both the network
+    // and the credentials without actually delivering mail.
     try {
-      const res = await fetch('https://api.resend.com/domains', {
-        method: 'GET',
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
         },
+        body: '{}',
       });
-      if (res.ok) {
-        console.log('[Mail] Resend HTTP API verified — ready to send.');
-      } else {
+      if (res.status === 401) {
         const body = await res.text().catch(() => '');
         console.error(
-          `[Mail] Resend verification FAILED: HTTP ${res.status} ${body.slice(0, 200)}`
+          `[Mail] Resend verification FAILED: 401 Unauthorized — ${body.slice(0, 200)}`
         );
-        console.error(
-          '[Mail] Email-dependent flows will fail until this is fixed.\n' +
-          '       Check that RESEND_API_KEY is correct and not revoked.'
-        );
+        console.error('[Mail] The RESEND_API_KEY is wrong, revoked, or restricted in a way that blocks even sending.');
+      } else if (res.status >= 500) {
+        console.error(`[Mail] Resend verification: upstream returned ${res.status} (transient)`);
+      } else {
+        // 200 / 422 / 4xx-other — auth is fine, transport is reachable.
+        console.log('[Mail] Resend HTTP API verified — ready to send.');
       }
     } catch (err: any) {
-      console.error('[Mail] Resend verification FAILED:', err?.message || err);
+      console.error('[Mail] Resend verification FAILED (network):', err?.message || err);
     }
     return;
   }
