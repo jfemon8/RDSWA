@@ -21,7 +21,10 @@ const envSchema = z.object({
   // A silent refresh renews the access token while the refresh token is alive.
   JWT_REFRESH_EXPIRY: z.string().default('365d'),
 
-  // Email
+  // Email — when RESEND_API_KEY is set, Resend's HTTP API is used (works on
+  // free Render plans where outbound SMTP ports 25/465/587 are blocked).
+  // Otherwise the SMTP transport is used (good for local dev with Gmail).
+  RESEND_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().default('smtp.gmail.com'),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
