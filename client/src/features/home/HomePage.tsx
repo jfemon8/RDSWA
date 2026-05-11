@@ -1,25 +1,56 @@
-import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { queryKeys } from '@/lib/queryKeys';
-import { useAuthStore } from '@/stores/authStore';
-import { ArrowRight, Users, Calendar, Bell, Heart, GraduationCap, Droplets, MapPin, Vote, FileText, AlertTriangle, Image, Bus } from 'lucide-react';
-import { BlurText, GradientText, CountUp, RotatingText, SpotlightCard, FadeIn, ShinyText } from '@/components/reactbits';
-import type { LucideIcon } from 'lucide-react';
-import SEO from '@/components/SEO';
-import { formatDate } from '@/lib/date';
-import Promo from '@/components/promo/Promo';
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { queryKeys } from "@/lib/queryKeys";
+import { useAuthStore } from "@/stores/authStore";
+import {
+  ArrowRight,
+  Users,
+  Calendar,
+  Bell,
+  Heart,
+  GraduationCap,
+  Droplets,
+  MapPin,
+  Vote,
+  FileText,
+  AlertTriangle,
+  Image,
+  Bus,
+} from "lucide-react";
+import {
+  BlurText,
+  GradientText,
+  CountUp,
+  RotatingText,
+  SpotlightCard,
+  FadeIn,
+  ShinyText,
+} from "@/components/reactbits";
+import type { LucideIcon } from "lucide-react";
+import SEO from "@/components/SEO";
+import { formatDate } from "@/lib/date";
+import Promo from "@/components/promo/Promo";
 
 const featureIconMap: Record<string, LucideIcon> = {
-  Community: Users, Events: Calendar, Notices: Bell, Welfare: Heart,
+  Community: Users,
+  Events: Calendar,
+  Notices: Bell,
+  Welfare: Heart,
 };
 const serviceIconMap: Record<string, LucideIcon> = {
-  'Blood Donors': Droplets, 'Voting & Polls': Vote, 'Bus Schedule': Bus,
-  'Alumni Network': GraduationCap, 'Photo Gallery': Image, Donations: Heart,
+  "Blood Donors": Droplets,
+  "Voting & Polls": Vote,
+  "Bus Schedule": Bus,
+  "Alumni Network": GraduationCap,
+  "Photo Gallery": Image,
+  Donations: Heart,
 };
 const featureColorMap: Record<string, string> = {
-  Community: 'rgba(59, 130, 246, 0.15)', Events: 'rgba(139, 92, 246, 0.15)',
-  Notices: 'rgba(236, 72, 153, 0.15)', Welfare: 'rgba(34, 197, 94, 0.15)',
+  Community: "rgba(59, 130, 246, 0.15)",
+  Events: "rgba(139, 92, 246, 0.15)",
+  Notices: "rgba(236, 72, 153, 0.15)",
+  Welfare: "rgba(34, 197, 94, 0.15)",
 };
 
 export default function HomePage() {
@@ -27,33 +58,35 @@ export default function HomePage() {
   const { data: settingsData } = useQuery({
     queryKey: queryKeys.settings.all,
     queryFn: async () => {
-      const { data } = await api.get('/settings');
+      const { data } = await api.get("/settings");
       return data;
     },
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: statsData } = useQuery({
-    queryKey: ['settings', 'public-stats'],
+    queryKey: ["settings", "public-stats"],
     queryFn: async () => {
-      const { data } = await api.get('/settings/public-stats');
+      const { data } = await api.get("/settings/public-stats");
       return data;
     },
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: noticesData } = useQuery({
-    queryKey: queryKeys.notices.list({ limit: '5' }),
+    queryKey: queryKeys.notices.list({ limit: "5" }),
     queryFn: async () => {
-      const { data } = await api.get('/notices?limit=5&sort=-publishedAt');
+      const { data } = await api.get("/notices?limit=5&sort=-publishedAt");
       return data;
     },
   });
 
   const { data: eventsData } = useQuery({
-    queryKey: queryKeys.events.list({ limit: '4', upcoming: 'true' }),
+    queryKey: queryKeys.events.list({ limit: "4", upcoming: "true" }),
     queryFn: async () => {
-      const { data } = await api.get('/events?limit=4&sort=startDate&upcoming=true');
+      const { data } = await api.get(
+        "/events?limit=4&sort=startDate&upcoming=true",
+      );
       return data;
     },
   });
@@ -67,9 +100,17 @@ export default function HomePage() {
   const foundedYear = settings?.foundedYear || 2021;
   const yearsOfService = new Date().getFullYear() - foundedYear;
 
-  const features: Array<{ title: string; description: string }> = hp?.features || [];
-  const services: Array<{ title: string; description: string; link: string }> = hp?.services || [];
-  const rotatingWords: string[] = hp?.rotatingWords || ['Community', 'Friendships', 'Success', 'Unity', 'Future'];
+  const features: Array<{ title: string; description: string }> =
+    hp?.features || [];
+  const services: Array<{ title: string; description: string; link: string }> =
+    hp?.services || [];
+  const rotatingWords: string[] = hp?.rotatingWords || [
+    "Community",
+    "Friendships",
+    "Success",
+    "Unity",
+    "Future",
+  ];
 
   return (
     <div className="overflow-x-hidden">
@@ -86,7 +127,8 @@ export default function HomePage() {
         engines see this string.
       */}
       <h1 className="sr-only">
-        RDSWA — Rangpur Divisional Student Welfare Association, University of Barishal · রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়
+        RDSWA — Rangpur Divisional Student Welfare Association, University of
+        Barishal · রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়
       </h1>
       {/* Hero Section */}
       <section className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center py-16 sm:py-20 md:py-32">
@@ -119,7 +161,7 @@ export default function HomePage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
               <ShinyText
-                text={hp?.heroBadgeText || 'Welcome to RDSWA'}
+                text={hp?.heroBadgeText || "Welcome to RDSWA"}
                 speed={3}
                 className="text-sm font-medium"
                 color="hsl(var(--primary))"
@@ -129,7 +171,7 @@ export default function HomePage() {
           </FadeIn>
 
           <BlurText
-            text={hp?.heroTitle || 'Rangpur Divisional Student'}
+            text={hp?.heroTitle || "Rangpur Divisional Student"}
             className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2 justify-center"
             delay={100}
             animateBy="words"
@@ -138,23 +180,24 @@ export default function HomePage() {
 
           <div className="flex items-center justify-center mb-6">
             <GradientText
-              colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
+              colors={["#3b82f6", "#8b5cf6", "#ec4899", "#3b82f6"]}
               animationSpeed={4}
               className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight"
             >
-              {hp?.heroTitleGradient || 'Welfare Association'}
+              {hp?.heroTitleGradient || "Welfare Association"}
             </GradientText>
           </div>
 
           <FadeIn delay={0.6} blur>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
-              {hp?.heroSubtitle || 'Connecting students from Rangpur Division at University of Barishal.'}
+              {hp?.heroSubtitle ||
+                "Connecting students from Rangpur Division at University of Barishal."}
             </p>
           </FadeIn>
 
           <FadeIn delay={0.8}>
             <div className="flex items-center justify-center gap-2 text-lg md:text-xl text-muted-foreground mb-10">
-              <span>{hp?.heroTagline || 'Building'}</span>
+              <span>{hp?.heroTagline || "Building"}</span>
               <RotatingText
                 texts={rotatingWords}
                 mainClassName="text-primary font-semibold overflow-hidden"
@@ -169,10 +212,13 @@ export default function HomePage() {
           <FadeIn delay={1.0} scale>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to={isAuthenticated ? '/dashboard' : '/register'}
+                to={isAuthenticated ? "/dashboard" : "/register"}
                 className="inline-flex items-center bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
               >
-                {isAuthenticated ? 'Go to Dashboard' : (hp?.ctaButtonText || 'Get Started')} <ArrowRight className="ml-2 h-4 w-4" />
+                {isAuthenticated
+                  ? "Go to Dashboard"
+                  : hp?.ctaButtonText || "Get Started"}{" "}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 to="/about"
@@ -190,10 +236,30 @@ export default function HomePage() {
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { label: 'Active Members', value: stats?.totalMembers || 0, suffix: '+', icon: Users },
-              { label: 'Events Organized', value: stats?.totalEvents || 0, suffix: '+', icon: Calendar },
-              { label: 'Districts Connected', value: stats?.totalDistricts || 8, suffix: '', icon: MapPin },
-              { label: 'Years of Service', value: yearsOfService, suffix: '+', icon: GraduationCap },
+              {
+                label: "Active Members",
+                value: stats?.totalMembers || 0,
+                suffix: "+",
+                icon: Users,
+              },
+              {
+                label: "Events Organized",
+                value: stats?.totalEvents || 0,
+                suffix: "+",
+                icon: Calendar,
+              },
+              {
+                label: "Districts Connected",
+                value: stats?.totalDistricts || 8,
+                suffix: "",
+                icon: MapPin,
+              },
+              {
+                label: "Years of Service",
+                value: yearsOfService,
+                suffix: "+",
+                icon: GraduationCap,
+              },
             ].map((stat, i) => (
               <FadeIn key={stat.label} delay={i * 0.15} direction="up">
                 <div className="text-center">
@@ -216,8 +282,13 @@ export default function HomePage() {
           <div className="container mx-auto">
             <FadeIn>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-2">
-                <h2 className="text-2xl sm:text-3xl font-bold">Latest Notices</h2>
-                <Link to="/notices" className="text-sm text-primary hover:underline flex items-center gap-1">
+                <h2 className="text-2xl sm:text-3xl font-bold">
+                  Latest Notices
+                </h2>
+                <Link
+                  to="/notices"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
                   View All <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -228,26 +299,37 @@ export default function HomePage() {
                   <Link to={`/notices/${n._id}`}>
                     <div
                       className={`p-4 border rounded-xl bg-card hover:border-primary/30 transition-colors ${
-                        n.priority === 'urgent' ? 'border-red-300 dark:border-red-800' : ''
+                        n.priority === "urgent"
+                          ? "border-red-300 dark:border-red-800"
+                          : ""
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            {n.priority === 'urgent' && <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />}
+                            {n.priority === "urgent" && (
+                              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                            )}
                             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <h3 className="font-semibold truncate">{n.title}</h3>
+                            <h3 className="font-semibold truncate">
+                              {n.title}
+                            </h3>
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             <span className="capitalize">{n.category}</span>
-                            <span>{formatDate(n.publishedAt || n.createdAt)}</span>
+                            <span>
+                              {formatDate(n.publishedAt || n.createdAt)}
+                            </span>
                           </div>
                         </div>
-                        {n.priority !== 'normal' && (
-                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                            n.priority === 'urgent' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          }`}>
+                        {n.priority !== "normal" && (
+                          <span
+                            className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                              n.priority === "urgent"
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            }`}
+                          >
                             {n.priority}
                           </span>
                         )}
@@ -267,8 +349,13 @@ export default function HomePage() {
           <div className="container mx-auto">
             <FadeIn>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-2">
-                <h2 className="text-2xl sm:text-3xl font-bold">Upcoming Events</h2>
-                <Link to="/events" className="text-sm text-primary hover:underline flex items-center gap-1">
+                <h2 className="text-2xl sm:text-3xl font-bold">
+                  Upcoming Events
+                </h2>
+                <Link
+                  to="/events"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
                   View All <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -276,37 +363,37 @@ export default function HomePage() {
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 gap-6">
               {events.map((e: any, i: number) => (
                 <FadeIn key={e._id} delay={i * 0.08} direction="up">
-                  <Link to={`/events/${e._id}`}>
-                    <div
-                      className="group bg-card border rounded-xl overflow-hidden hover:border-primary/30 transition-colors"
-                    >
-                      {e.coverImage && (
-                        <div className="overflow-hidden">
-                          <img
-                            src={e.coverImage}
-                            alt={e.title || 'Event cover'}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-40 object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="p-5">
-                        <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors flex items-center gap-1.5">
-                          <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
-                        </h3>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <Link
+                    to={`/events/${e._id}`}
+                    className="group block bg-card border rounded-xl overflow-hidden hover:border-primary/30 transition-colors"
+                  >
+                    {e.coverImage && (
+                      <div className="overflow-hidden">
+                        <img
+                          src={e.coverImage}
+                          alt={e.title || "Event cover"}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-40 object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4 text-primary shrink-0" />{" "}
+                        {e.title}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(e.startDate)}
+                        </span>
+                        {e.location && (
                           <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {formatDate(e.startDate)}
+                            <MapPin className="h-3.5 w-3.5" />
+                            {e.location}
                           </span>
-                          {e.location && (
-                            <span className="flex items-center gap-1.5">
-                              <MapPin className="h-3.5 w-3.5" />
-                              {e.location}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </Link>
@@ -322,27 +409,38 @@ export default function HomePage() {
         <section className="py-20">
           <div className="container mx-auto">
             <FadeIn>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4">{hp?.featuresHeading || 'What We Offer'}</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4">
+                {hp?.featuresHeading || "What We Offer"}
+              </h2>
             </FadeIn>
             <FadeIn delay={0.15}>
               <p className="text-muted-foreground text-center max-w-xl mx-auto mb-14">
-                {hp?.featuresSubheading || 'A comprehensive platform for Rangpur Division students to connect, grow, and support each other.'}
+                {hp?.featuresSubheading ||
+                  "A comprehensive platform for Rangpur Division students to connect, grow, and support each other."}
               </p>
             </FadeIn>
 
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, i) => {
                 const Icon = featureIconMap[feature.title] || Heart;
-                const color = featureColorMap[feature.title] || 'rgba(59, 130, 246, 0.15)';
+                const color =
+                  featureColorMap[feature.title] || "rgba(59, 130, 246, 0.15)";
                 return (
                   <FadeIn key={i} delay={i * 0.1} direction="up" scale>
-                    <SpotlightCard className="bg-card border-border p-6 h-full" spotlightColor={color}>
+                    <SpotlightCard
+                      className="bg-card border-border p-6 h-full"
+                      spotlightColor={color}
+                    >
                       <div>
                         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                           <Icon className="h-6 w-6 text-primary" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                        <p className="text-sm text-muted-foreground">{feature.description}</p>
+                        <h3 className="text-lg font-semibold mb-2">
+                          {feature.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {feature.description}
+                        </p>
                       </div>
                     </SpotlightCard>
                   </FadeIn>
@@ -358,7 +456,9 @@ export default function HomePage() {
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto">
             <FadeIn>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-14">{hp?.servicesHeading || 'Everything You Need'}</h2>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-14">
+                {hp?.servicesHeading || "Everything You Need"}
+              </h2>
             </FadeIn>
 
             <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -366,19 +466,20 @@ export default function HomePage() {
                 const Icon = serviceIconMap[service.title] || Heart;
                 return (
                   <FadeIn key={i} delay={i * 0.08} direction="up">
-                    <Link to={service.link}>
-                      <div
-                        className="group bg-card border rounded-xl p-6 hover:border-primary/50 transition-colors"
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <Icon className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">{service.title}</h3>
-                            <p className="text-sm text-muted-foreground">{service.description}</p>
-                          </div>
-                        </div>
+                    <Link
+                      to={service.link}
+                      className="group flex items-start gap-4 border rounded-xl p-4 bg-card hover:border-primary/30 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
+                          {service.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {service.description}
+                        </p>
                       </div>
                     </Link>
                   </FadeIn>
@@ -410,27 +511,30 @@ export default function HomePage() {
         <div className="container mx-auto text-center">
           <FadeIn scale blur>
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-6">
-              {isAuthenticated ? 'Welcome Back to' : 'Ready to'}{' '}
+              {isAuthenticated ? "Welcome Back to" : "Ready to"}{" "}
               <GradientText
-                colors={['#3b82f6', '#8b5cf6', '#ec4899', '#3b82f6']}
+                colors={["#3b82f6", "#8b5cf6", "#ec4899", "#3b82f6"]}
                 animationSpeed={3}
                 className="text-2xl sm:text-3xl md:text-5xl font-bold"
               >
-                {isAuthenticated ? 'RDSWA' : (hp?.ctaTitle || 'Join Us')}
+                {isAuthenticated ? "RDSWA" : hp?.ctaTitle || "Join Us"}
               </GradientText>
-              {isAuthenticated ? '!' : '?'}
+              {isAuthenticated ? "!" : "?"}
             </h2>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto mb-10">
               {isAuthenticated
-                ? 'Explore your dashboard, connect with members, and stay updated with the community.'
-                : (hp?.introText || 'Become a part of the largest Rangpur Division student community at University of Barishal.')
-              }
+                ? "Explore your dashboard, connect with members, and stay updated with the community."
+                : hp?.introText ||
+                  "Become a part of the largest Rangpur Division student community at University of Barishal."}
             </p>
             <Link
-              to={isAuthenticated ? '/dashboard' : '/register'}
+              to={isAuthenticated ? "/dashboard" : "/register"}
               className="inline-flex items-center bg-primary text-primary-foreground px-10 py-4 rounded-xl font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30"
             >
-              {isAuthenticated ? 'Go to Dashboard' : (hp?.ctaButtonText || 'Get Started')} <ArrowRight className="ml-2 h-5 w-5" />
+              {isAuthenticated
+                ? "Go to Dashboard"
+                : hp?.ctaButtonText || "Get Started"}{" "}
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </FadeIn>
         </div>

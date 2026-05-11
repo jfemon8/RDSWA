@@ -218,53 +218,55 @@ export default function EventsPage() {
               />
             ) : (
               <>
-                <div className="grid grid-equal grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-equal auto-rows-fr grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {events.map((e: any, i: number) => (
                     <Fragment key={e._id}>
-                      <FadeIn delay={i * 0.05} direction="up">
-                        <Link to={`/events/${e._id}`}>
-                          <div
-                            className="border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"
-                          >
-                            {e.coverImage && (
-                              <div className="overflow-hidden">
-                                <img
-                                  src={e.coverImage}
-                                  alt=""
-                                  loading="lazy"
-                                  decoding="async"
-                                  className="w-full h-40 object-cover"
-                                />
+                      <FadeIn delay={i * 0.05} direction="up" className="h-full">
+                        {/* Native CSS Grid equal-height pattern: `auto-rows-fr`
+                            on the grid + `flex flex-col h-full` on the card so
+                            the card stretches to fill the row regardless of
+                            content length. `<a>` defaults to inline — `flex`
+                            (which implies block-level) makes it respect height. */}
+                        <Link
+                          to={`/events/${e._id}`}
+                          className="flex flex-col h-full border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"
+                        >
+                          {e.coverImage && (
+                            <img
+                              src={e.coverImage}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-40 object-cover"
+                            />
+                          )}
+                          <div className="p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <StatusBadge status={deriveEventStatus(e)} />
+                              {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
+                            </div>
+                            <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
+                              <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
+                            </h3>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5" />
+                                {formatDate(e.startDate)}
                               </div>
-                            )}
-                            <div className="p-4">
-                              <div className="flex items-center gap-2 mb-2">
-                                <StatusBadge status={deriveEventStatus(e)} />
-                                {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
-                              </div>
-                              <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
-                                <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}
-                              </h3>
-                              <div className="space-y-1 text-sm text-muted-foreground">
+                              {e.venue && (
                                 <div className="flex items-center gap-1">
-                                  <Calendar className="h-3.5 w-3.5" />
-                                  {formatDate(e.startDate)}
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  <span className="truncate">{e.venue}</span>
                                 </div>
-                                {e.venue && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3.5 w-3.5" />
-                                    <span className="truncate">{e.venue}</span>
-                                  </div>
-                                )}
-                                {e.committee && (
-                                  <div className="flex items-center gap-1">
-                                    <Building2 className="h-3.5 w-3.5" />
-                                    <span className="truncate">
-                                      {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                              )}
+                              {e.committee && (
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-3.5 w-3.5" />
+                                  <span className="truncate">
+                                    {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </Link>
