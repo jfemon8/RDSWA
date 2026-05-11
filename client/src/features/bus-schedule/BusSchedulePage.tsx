@@ -227,9 +227,13 @@ export default function BusSchedulePage() {
   const hasActiveFilters = filterCategory || departureAfter || departureBefore;
 
   const handleTabChange = (newTab: Tab) => {
+    // setPage MUST be called before setTab — both write to the same URL
+    // search params, and the later call wins. If setTab fired first, the
+    // setPage call would overwrite it with a stale URL snapshot and the
+    // tab change would silently revert to default.
+    setPage(1);
     setTab(newTab);
     setSearch('');
-    setPage(1);
     setSelectedRoute(null);
     setSelectedSchedule(null);
     setSelectedOperatorId(null);
