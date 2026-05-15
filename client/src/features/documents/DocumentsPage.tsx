@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { FileText, Download, Search, Mail, X, ChevronDown, ExternalLink } from 'lucide-react';
+import { FileText, Download, Search, Mail, X, ChevronDown, Eye, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate, formatDateTime } from '@/lib/date';
@@ -13,34 +13,39 @@ import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
 import { proxyFileUrl } from '@/lib/fileProxy';
 
+// PdfViewer pulls in react-pdf + worker (~600 KB) — lazy so it only ships
+// when a visitor actually opens the preview modal.
+const PdfViewer = lazy(() => import('@/components/ui/PdfViewer'));
+
 export default function DocumentsPage() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // When set, renders the in-app PDF modal for the chosen document.
+  const [preview, setPreview] = useState<{ fileUrl: string; title?: string } | null>(null);
   const queryClient = useQueryClient();
   const toast = useToast();
 
   const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
   /**
-   * Hit the counter endpoint then open the file via our proxy so the browser
-   * sees the proper Content-Type (PDFs preview inline instead of downloading
-   * as opaque binary blobs).
+   * Hit the counter endpoint, then open the proxy URL with `inline=false`.
+   * The server replies with `Content-Disposition: attachment; filename=...`,
+   * which is what actually triggers the browser save dialog for Cloudinary
+   * files — the HTML `download` attribute alone is ignored cross-origin.
    */
   const handleDownload = async (docId: string, fileUrl: string, title?: string) => {
-    try {
-      await api.get(`/documents/${docId}/download`);
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-    } catch {
-      /* non-fatal — still open the file */
-    }
     if (!fileUrl) {
       toast.error('File URL is missing');
       return;
     }
-    const params = new URLSearchParams({ url: fileUrl, inline: 'true' });
-    if (title) params.set('name', title);
-    window.open(`/api/upload/proxy?${params.toString()}`, '_blank', 'noopener');
+    try {
+      await api.get(`/documents/${docId}/download`);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    } catch {
+      /* non-fatal — still attempt the download */
+    }
+    window.open(proxyFileUrl(fileUrl, title, false), '_blank', 'noopener');
   };
 
   const { data, isLoading } = useQuery({
@@ -128,8 +133,14 @@ export default function DocumentsPage() {
         <div className="space-y-3">
           {documents.map((doc: any, index: number) => {
             const isExpanded = expandedId === doc._id;
-            const filename = doc.fileUrl ? doc.fileUrl.split('/').pop() : '';
-            const previewUrl = doc.fileUrl ? proxyFileUrl(doc.fileUrl, doc.title || filename, true) : '';
+            // Accept any of: 'pdf', 'application/pdf', a URL ending in .pdf,
+            // or a title that ends in .pdf. fileType is stored as the original
+            // MIME type for some uploads, plain 'pdf' for others.
+            const isPdf =
+              (doc.fileType || '').toLowerCase().includes('pdf') ||
+              (doc.fileUrl || '').toLowerCase().includes('.pdf') ||
+              (doc.title || '').toLowerCase().endsWith('.pdf');
+            const canPreview = !!doc.fileUrl && isPdf;
             return (
             <FadeIn key={doc._id} delay={0.05 * index} direction="up">
               <div className="border rounded-lg bg-card overflow-hidden">
@@ -220,24 +231,26 @@ export default function DocumentsPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap gap-2 pt-1">
-                          {previewUrl && (
-                            <a
-                              href={previewUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
+                          {canPreview && (
+                            <motion.button
+                              type="button"
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={(e) => { e.stopPropagation(); setPreview({ fileUrl: doc.fileUrl, title: doc.title }); }}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent text-foreground"
                             >
-                              <ExternalLink className="h-3.5 w-3.5" /> Preview
-                            </a>
+                              <Eye className="h-3.5 w-3.5" /> Preview
+                            </motion.button>
                           )}
-                          <button
+                          <motion.button
                             type="button"
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
                             onClick={(e) => { e.stopPropagation(); handleDownload(doc._id, doc.fileUrl, doc.title); }}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
                           >
                             <Download className="h-3.5 w-3.5" /> Download
-                          </button>
+                          </motion.button>
                         </div>
                       </div>
                     </motion.div>
@@ -263,6 +276,66 @@ export default function DocumentsPage() {
           <Promo kind="sidebar" minHeight={600} />
         </aside>
       </div>
+
+      <PdfPreviewModal target={preview} onClose={() => setPreview(null)} />
     </div>
+  );
+}
+
+/** Full-screen modal wrapping the project's PdfViewer. Click outside / X / Esc to close. */
+function PdfPreviewModal({
+  target,
+  onClose,
+}: {
+  target: { fileUrl: string; title?: string } | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!target) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [target, onClose]);
+
+  return (
+    <AnimatePresence>
+      {target && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.96, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.96, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="relative w-full max-w-5xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 z-10 p-2 rounded-full bg-background text-foreground shadow-lg border hover:bg-accent"
+              aria-label="Close preview"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center gap-2 py-24 border rounded-xl bg-card text-sm text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Loading PDF viewer…
+                </div>
+              }
+            >
+              <PdfViewer url={target.fileUrl} fileName={target.title} height={720} />
+            </Suspense>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
