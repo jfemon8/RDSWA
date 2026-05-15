@@ -107,6 +107,14 @@ export interface ISiteSettingsDocument extends Document {
     /** Positions that auto-grant the Advisor tag when their committee archives. */
     advisorOnArchivePositions?: string[];
   };
+  /**
+   * Global kill-switch for all Google AdSense slots. When `false`, every
+   * <Promo> on the client returns null regardless of route / configuration,
+   * so the page renders with no ad reservations or "Sponsored" labels.
+   * Default is `true` so existing deployments keep showing ads as before.
+   * Togglable only by SuperAdmin (minus ADSENSE_RESTRICTED_SUPER_ADMINS).
+   */
+  adsenseEnabled: boolean;
   updatedBy?: mongoose.Types.ObjectId;
   updatedAt: Date;
 }
@@ -303,6 +311,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       moderatorPositions: { type: [String], default: ['organizing_secretary', 'treasurer'] },
       advisorOnArchivePositions: { type: [String], default: ['president', 'general_secretary'] },
     },
+    adsenseEnabled: { type: Boolean, default: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

@@ -5,26 +5,37 @@ import { FadeIn } from '@/components/reactbits';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Save, Loader2, Plus, Trash2, GraduationCap, Palette, RotateCcw } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, GraduationCap, Palette, RotateCcw, Megaphone } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Spinner from '@/components/ui/Spinner';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, ADSENSE_RESTRICTED_SUPER_ADMINS } from '@rdswa/shared';
 import { isValidHex } from '@/lib/colorUtils';
 import { DEFAULT_BRAND_COLORS } from '@/hooks/useBrandColors';
 
-const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social', 'academic'] as const;
+const TABS = ['general', 'homepage', 'content', 'university', 'organizations', 'legal', 'social', 'academic', 'adsense'] as const;
 type Tab = typeof TABS[number];
 const TAB_LABELS: Record<Tab, string> = {
   general: 'General & Branding', homepage: 'Home Page', content: 'About & Content',
   university: 'University', organizations: 'Organizations', legal: 'Legal', social: 'Social Links',
-  academic: 'Academic Config',
+  academic: 'Academic Config', adsense: 'Google AdSense',
 };
 
 export default function AdminSettingsPage() {
   const [tab, setTab] = useTabParam<Tab>(TABS, 'general');
+  const { user } = useAuthStore();
+
+  // The AdSense kill-switch is scoped to SuperAdmins minus the restricted
+  // list. Hide both the tab button and the panel itself; if a restricted
+  // user lands on it via deep-link, fall back to General.
+  const canManageAdsense =
+    user?.role === UserRole.SUPER_ADMIN &&
+    !ADSENSE_RESTRICTED_SUPER_ADMINS.includes(user.email.toLowerCase());
+
+  const visibleTabs = TABS.filter((t) => t !== 'adsense' || canManageAdsense);
+  const effectiveTab: Tab = tab === 'adsense' && !canManageAdsense ? 'general' : tab;
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings', 'admin'],
@@ -48,24 +59,107 @@ export default function AdminSettingsPage() {
             -mx + px restores edge padding so the first/last tab don't hug
             the screen edge while scrolling. */}
         <div className="flex flex-nowrap gap-1.5 mb-6 border-b pb-2 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-thin">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
-                tab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                effectiveTab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               }`}>
               {TAB_LABELS[t]}
             </button>
           ))}
         </div>
 
-        {tab === 'general' && <GeneralTab settings={settings} />}
-        {tab === 'homepage' && <HomepageTab settings={settings} />}
-        {tab === 'content' && <ContentTab settings={settings} />}
-        {tab === 'university' && <UniversityTab settings={settings} />}
-        {tab === 'organizations' && <OrganizationsTab settings={settings} />}
-        {tab === 'legal' && <LegalTab settings={settings} />}
-        {tab === 'social' && <SocialTab settings={settings} />}
-        {tab === 'academic' && <AcademicConfigSection />}
+        {effectiveTab === 'general' && <GeneralTab settings={settings} />}
+        {effectiveTab === 'homepage' && <HomepageTab settings={settings} />}
+        {effectiveTab === 'content' && <ContentTab settings={settings} />}
+        {effectiveTab === 'university' && <UniversityTab settings={settings} />}
+        {effectiveTab === 'organizations' && <OrganizationsTab settings={settings} />}
+        {effectiveTab === 'legal' && <LegalTab settings={settings} />}
+        {effectiveTab === 'social' && <SocialTab settings={settings} />}
+        {effectiveTab === 'academic' && <AcademicConfigSection />}
+        {effectiveTab === 'adsense' && canManageAdsense && <AdsenseTab settings={settings} />}
+      </div>
+    </FadeIn>
+  );
+}
+
+// ═══════════════════════════════════════════
+// Google AdSense Visibility Toggle
+// ═══════════════════════════════════════════
+
+function AdsenseTab({ settings: s }: { settings: any }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [enabled, setEnabled] = useState<boolean>(s.adsenseEnabled !== false);
+
+  useEffect(() => {
+    setEnabled(s.adsenseEnabled !== false);
+  }, [s.adsenseEnabled]);
+
+  const mutation = useMutation({
+    mutationFn: (next: boolean) => api.patch('/settings/adsense', { adsenseEnabled: next }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success(variables ? 'AdSense is now visible site-wide' : 'AdSense is now hidden site-wide');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to update'),
+  });
+
+  const dirty = enabled !== (s.adsenseEnabled !== false);
+
+  return (
+    <FadeIn direction="up" delay={0.05}>
+      <div className="border rounded-lg p-5 bg-card space-y-4">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-foreground">Google AdSense Visibility</h3>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Site-wide kill-switch for every Google AdSense slot. When disabled,
+          all sponsored cards and banner placements are hidden across the
+          public site and the original content reflows to use the full width.
+          The AdSense script loader remains intact for ownership verification.
+        </p>
+
+        <AnimatePresence mode="wait">
+          <motion.label
+            key={String(enabled)}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center gap-3 p-4 rounded-md border bg-background/50 cursor-pointer hover:border-primary/30 transition-colors"
+          >
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              className="h-4 w-4 rounded accent-primary"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-foreground">
+                {enabled ? 'AdSense is enabled' : 'AdSense is disabled'}
+              </span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {enabled
+                  ? 'Sponsored ad slots are rendered on eligible public pages.'
+                  : 'No ad slots are rendered — the site shows its original content only.'}
+              </p>
+            </div>
+          </motion.label>
+        </AnimatePresence>
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => mutation.mutate(enabled)}
+          disabled={mutation.isPending || !dirty}
+          className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+        >
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {dirty ? 'Save Visibility' : 'No changes'}
+        </motion.button>
       </div>
     </FadeIn>
   );

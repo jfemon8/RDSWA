@@ -98,3 +98,12 @@ export const SETTINGS_RESTRICTED_SUPER_ADMINS: string[] = [];
 export const CLARITY_RESTRICTED_SUPER_ADMINS: string[] = [
   'manikmia.phy@gmail.com',
 ];
+
+/**
+ * SuperAdmins who cannot toggle the site-wide Google AdSense visibility.
+ * Same pattern as CLARITY_RESTRICTED_SUPER_ADMINS — revenue / ad-policy
+ * decisions are intentionally scoped to specific admins.
+ */
+export const ADSENSE_RESTRICTED_SUPER_ADMINS: string[] = [
+  'manikmia.phy@gmail.com',
+];

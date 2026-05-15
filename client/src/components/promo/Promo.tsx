@@ -8,6 +8,7 @@ import {
   isPromoConfigured,
   type PromoKind,
 } from '@/lib/promoSlots';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 declare global {
   interface Window {
@@ -67,12 +68,18 @@ export default function Promo({
   const pushed = useRef(false);
   const [unfilled, setUnfilled] = useState(false);
   const { pathname } = useLocation();
+  const { settings } = useSiteSettings();
+
+  // Treat missing/loading settings as enabled so existing deployments keep
+  // showing ads before the first /settings response arrives. The flag is
+  // only respected once it's explicitly `false` in the DB.
+  const adsenseEnabled = settings?.adsenseEnabled !== false;
 
   const allowedHere = isPromoAllowedOnRoute(pathname);
   const configured = isPromoConfigured(kind);
 
   useEffect(() => {
-    if (!allowedHere || !configured) return;
+    if (!adsenseEnabled || !allowedHere || !configured) return;
     if (pushed.current || !insRef.current) return;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -91,8 +98,9 @@ export default function Promo({
     });
     observer.observe(node, { attributes: true, attributeFilter: ['data-ad-status'] });
     return () => observer.disconnect();
-  }, [allowedHere, configured, pathname]);
+  }, [adsenseEnabled, allowedHere, configured, pathname]);
 
+  if (!adsenseEnabled) return null;
   if (!allowedHere) return null;
   if (!configured) return null;
   if (unfilled) return null;

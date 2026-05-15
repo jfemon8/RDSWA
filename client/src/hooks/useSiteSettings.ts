@@ -40,6 +40,8 @@ export interface SiteSettings {
     website?: string;
     address?: string;
   };
+  /** Site-wide kill-switch for all Google AdSense slots. */
+  adsenseEnabled?: boolean;
   [key: string]: any;
 }
 

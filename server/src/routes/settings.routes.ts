@@ -9,7 +9,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { SiteSettings, User, Event, ContactMessage } from '../models';
-import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS, CommitteePosition } from '@rdswa/shared';
+import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS, ADSENSE_RESTRICTED_SUPER_ADMINS, CommitteePosition } from '@rdswa/shared';
 import { cacheResponse } from '../middlewares/cache.middleware';
 import { sendEmail } from '../config/mail';
 import { env } from '../config/env';
@@ -57,6 +57,7 @@ router.get('/', authenticate(true), asyncHandler(async (req, res) => {
       faq: settings.faq,
       privacyPolicy: settings.privacyPolicy,
       termsConditions: settings.termsConditions,
+      adsenseEnabled: settings.adsenseEnabled,
       updatedAt: settings.updatedAt,
     };
     return ApiResponse.success(res, publicFields);
@@ -386,6 +387,31 @@ router.get('/auto-role-config', authenticate(), authorize(UserRole.ADMIN), async
     advisorOnArchivePositions: [],
   });
 }));
+
+// Toggle Google AdSense site-wide. SuperAdmin only, with the AdSense-restricted
+// list blocked — keeps revenue / ad-policy decisions scoped to specific admins.
+const adsenseToggleSchema = z.object({
+  adsenseEnabled: z.boolean(),
+});
+
+router.patch(
+  '/adsense',
+  authenticate(),
+  authorize(UserRole.SUPER_ADMIN),
+  denyRestricted(ADSENSE_RESTRICTED_SUPER_ADMINS),
+  validate({ body: adsenseToggleSchema }),
+  auditLog('settings.update_adsense', 'site_settings'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const { adsenseEnabled } = req.body as z.infer<typeof adsenseToggleSchema>;
+    const settings = await SiteSettings.findOneAndUpdate(
+      {},
+      { $set: { adsenseEnabled, updatedBy: req.user._id } },
+      { new: true, upsert: true }
+    );
+    ApiResponse.success(res, { adsenseEnabled: settings.adsenseEnabled }, 'AdSense visibility updated');
+  })
+);
 
 // Public contact form — throttled: 5 submissions / 15 min / IP
 const contactLimiter = rateLimit({
