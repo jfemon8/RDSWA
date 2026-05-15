@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
@@ -194,9 +195,13 @@ export default function BloodDonorsPage() {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate flex items-center gap-1">
-                      <User className="h-3.5 w-3.5 text-primary shrink-0" /> {d.name}
-                    </p>
+                    <Link
+                      to={`/members/${d._id}`}
+                      className="font-medium truncate flex items-center gap-1 text-foreground hover:text-primary hover:underline transition-colors"
+                    >
+                      <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="truncate">{d.name}</span>
+                    </Link>
                     <span className="inline-block px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded mt-0.5">
                       {d.bloodGroup}
                     </span>
