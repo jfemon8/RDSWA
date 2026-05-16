@@ -474,7 +474,7 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
         <div className="border rounded-lg p-3 bg-card">
           <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
             <Users className="h-3 w-3" /> Voters ({stats.voters?.length || 0})
-            {!isSuperAdmin && <span className="text-muted-foreground/60 ml-1">(vote choices visible to SuperAdmin only)</span>}
+            {!isSuperAdmin && <span className="text-muted-foreground/60 ml-1">(individual vote choices restricted)</span>}
           </h4>
           {stats.voters?.length > 0 ? (
             <div className="max-h-48 overflow-y-auto space-y-1">

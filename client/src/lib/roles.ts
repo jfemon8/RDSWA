@@ -13,7 +13,22 @@ const ROLE_CONFIG: Record<string, { label: string; bg: string; text: string }> =
   [UserRole.GUEST]: { label: 'Guest', bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-500 dark:text-gray-400' },
 };
 
+/**
+ * Display config for a role string.
+ *
+ * SECURITY NOTE: `super_admin` is intentionally collapsed to the same
+ * label + styling as `admin` here. The role itself stays valid for every
+ * access check (`hasMinRole`, RBAC middleware, route guards) — but it's
+ * hidden in the UI so the existence of the SuperAdmin tier isn't
+ * advertised. Any badge / role chip rendered through this helper will
+ * therefore show "Admin" for a SuperAdmin user.
+ *
+ * To distinguish tiers internally (e.g., for conditional admin actions),
+ * call `hasMinRole(role, UserRole.SUPER_ADMIN)` directly — that compares
+ * raw values and is unaffected by this display masking.
+ */
 export function getRoleConfig(role: string) {
+  if (role === UserRole.SUPER_ADMIN) return ROLE_CONFIG[UserRole.ADMIN];
   return ROLE_CONFIG[role] || { label: role.replace('_', ' '), bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-700 dark:text-gray-400' };
 }
 

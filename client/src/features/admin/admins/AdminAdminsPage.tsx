@@ -71,7 +71,7 @@ export default function AdminAdminsPage() {
       <FadeIn direction="up" delay={0.05}>
         <div className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/40">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            Only Super Admins can manage admin roles. Super Admin status is assigned to hardcoded emails and cannot be modified here.
+            Top-tier admin status is assigned through hardcoded emails and cannot be modified here. Other admin roles are managed below.
           </p>
         </div>
       </FadeIn>
@@ -176,12 +176,13 @@ export default function AdminAdminsPage() {
                       >
                         {admin.name}
                       </button>
-                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium whitespace-nowrap ${
-                        admin.role === 'super_admin'
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      }`}>
-                        {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                      {/* SuperAdmins and Admins are both shown as "Admin" — the
+                          super_admin tier is intentionally hidden from UI for
+                          confidentiality. The demote button below still keys off
+                          `admin.role === 'super_admin'` so the underlying tier
+                          gates the action correctly. */}
+                      <span className="px-2 py-0.5 text-xs rounded-full font-medium whitespace-nowrap bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                        Admin
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground break-all">{admin.email}</p>

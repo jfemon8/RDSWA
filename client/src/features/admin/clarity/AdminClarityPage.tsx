@@ -54,7 +54,7 @@ export default function AdminClarityPage() {
 
   return (
     <div className="space-y-6">
-      <SEO title="User Activity" description="Microsoft Clarity user-activity monitoring for RDSWA SuperAdmins." noindex />
+      <SEO title="User Activity" description="Microsoft Clarity user-activity monitoring for RDSWA administrators." noindex />
 
       <FadeIn direction="up" delay={0}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
@@ -223,7 +223,7 @@ export default function AdminClarityPage() {
             <li className="flex gap-2">
               <span className="text-primary mt-0.5">•</span>
               <span>
-                To grant another SuperAdmin direct access to the Clarity dashboard, open <code className="text-xs">clarity.microsoft.com</code> → Settings → Team → <em>Add team member</em> → enter their email → role <strong>Admin</strong> or <strong>Team Member</strong> → Add. They'll get an invite email.
+                To grant another administrator direct access to the Clarity dashboard, open <code className="text-xs">clarity.microsoft.com</code> → Settings → Team → <em>Add team member</em> → enter their email → role <strong>Admin</strong> or <strong>Team Member</strong> → Add. They'll get an invite email.
               </span>
             </li>
             <li className="flex gap-2">

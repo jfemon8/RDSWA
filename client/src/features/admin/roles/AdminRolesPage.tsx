@@ -49,7 +49,7 @@ const TAG_DESCRIPTIONS: Record<string, { label: string; description: string; ico
   },
   senior_advisor: {
     label: 'Senior Advisor',
-    description: 'Elevated advisory status. Manual assignment only by Admin or SuperAdmin.',
+    description: 'Elevated advisory status. Manual assignment by Admin only.',
     icon: Star,
     color: 'text-indigo-500',
   },
@@ -172,7 +172,7 @@ export default function AdminRolesPage() {
             <h2 className="font-semibold text-lg text-foreground">Auto-Assignment Rules</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Roles automatically assigned based on committee positions. Admin and SuperAdmin can also manually assign/remove Moderator roles.
+            Roles automatically assigned based on committee positions. Admins can also manually assign/remove Moderator roles.
           </p>
           <div className="space-y-3">
             {AUTO_ASSIGNMENT_INFO.map((info, i) => (

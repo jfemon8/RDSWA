@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
-import { hasMinRole } from '@/lib/roles';
+import { hasMinRole, getPrimaryRoleLabel } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import { Search, UserCheck, UserX, Ban, Download, FileText, FileSpreadsheet, Mail, Trash2, Award, Star, ExternalLink, Pencil, KeyRound, Eye, EyeOff, X, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -197,7 +197,9 @@ export default function AdminUsersPage() {
               <option value="member">Member</option>
               <option value="moderator">Moderator</option>
               <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
+              {/* `super_admin` is intentionally NOT exposed as a filter option —
+                  the tier is hidden from UI. Filtering by `admin` returns
+                  super_admins too via the backend's tier-aware role match. */}
             </select>
             <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">
@@ -283,8 +285,10 @@ export default function AdminUsersPage() {
                     {isSuperAdmin && <option value="admin">Admin</option>}
                   </select>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-muted text-muted-foreground whitespace-nowrap">
-                    {u.role}
+                  // Use the centralised label so a super_admin user reads
+                  // as "Admin" here, matching the rest of the UI.
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground whitespace-nowrap">
+                    {getPrimaryRoleLabel(u.role)}
                   </span>
                 )
               );

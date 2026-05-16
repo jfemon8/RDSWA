@@ -282,7 +282,7 @@ function BrandColorsSection({ settings }: { settings: any }) {
           <Palette className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold text-foreground">Brand Colors</h2>
           {readOnly && (
-            <span className="ml-auto text-xs text-muted-foreground italic">Super Admin only</span>
+            <span className="ml-auto text-xs text-muted-foreground italic">Read-only</span>
           )}
         </div>
         <p className="text-sm text-muted-foreground -mt-2">
