@@ -1475,22 +1475,37 @@ function CutoffsSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
-  const [showForm, setShowForm] = useState(false);
+
   const [form, setForm] = useState<CutoffForm>(emptyCutoff);
+  const [editingSession, setEditingSession] = useState<string | null>(null);
+
+  // Client-only stub sessions — same trick as Seats: a session label that
+  // exists in the UI but has no rows in the DB yet, so admins can open the
+  // inline form inside a brand-new session before the first row is saved.
+  const [pendingSessions, setPendingSessions] = useState<string[]>([]);
+
+  // New Session dialog state.
+  const [newSessionOpen, setNewSessionOpen] = useState(false);
+  const [newSessionLabel, setNewSessionLabel] = useState('');
+
+  // Clone Session dialog state.
+  const [cloneOpen, setCloneOpen] = useState(false);
+  const [cloneFrom, setCloneFrom] = useState('');
+  const [cloneTo, setCloneTo] = useState('');
+
+  // Rename dialog state (only the 'session' kind applies here — cut-off rows
+  // don't have a category-level grouping admins can rename).
+  const [renameTarget, setRenameTarget] = useState<RenameTarget>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   // Faculty + Department dropdowns are driven by SiteSettings.academicConfig
-  // — the same source the rest of the platform uses, so a department added
-  // in Settings → Academic Config is immediately available here.
+  // — the same source the rest of the platform uses.
   const { data: academicResp } = useQuery({
     queryKey: ['settings', 'academic-config'],
     queryFn: async () => (await api.get('/settings/academic-config')).data,
     staleTime: 30 * 60 * 1000,
   });
   const faculties: Array<{ name: string; departments: string[] }> = academicResp?.data?.faculties || [];
-  const facultyDepartments = useMemo(() => {
-    const f = faculties.find((x) => x.name === form.faculty);
-    return f?.departments || [];
-  }, [faculties, form.faculty]);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.admission.cutoffs(),
@@ -1498,16 +1513,20 @@ function CutoffsSection() {
   });
   const rows: any[] = data?.data || [];
 
+  // Bucket rows by session and merge in pending stubs.
   const bySession = useMemo(() => {
     const map = new Map<string, any[]>();
     for (const r of rows) {
       if (!map.has(r.session)) map.set(r.session, []);
       map.get(r.session)!.push(r);
     }
+    for (const s of pendingSessions) {
+      if (!map.has(s)) map.set(s, []);
+    }
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [rows]);
+  }, [rows, pendingSessions]);
 
-  const reset = () => { setForm(emptyCutoff); setShowForm(false); };
+  const closeForm = () => { setForm(emptyCutoff); setEditingSession(null); };
 
   const saveMutation = useMutation({
     mutationFn: async (payload: CutoffForm) => {
@@ -1527,10 +1546,11 @@ function CutoffsSection() {
       if (payload._id) return api.patch(`/admissions/cutoffs/${payload._id}`, body);
       return api.post('/admissions/cutoffs', body);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admission'] });
       toast.success('Cut-off row saved');
-      reset();
+      setPendingSessions((prev) => prev.filter((s) => s !== variables.session));
+      closeForm();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
@@ -1541,6 +1561,43 @@ function CutoffsSection() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete'),
   });
 
+  // ── Bulk session mutations (mirror the Seats ones) ──────
+  const cloneMutation = useMutation({
+    mutationFn: (body: { sourceSession: string; targetSession: string }) =>
+      api.post('/admissions/cutoffs/sessions/clone', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admission'] });
+      toast.success('Cut-off session cloned');
+      setCloneOpen(false);
+      setCloneFrom('');
+      setCloneTo('');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Clone failed'),
+  });
+
+  const sessionRenameMutation = useMutation({
+    mutationFn: (body: { from: string; to: string }) =>
+      api.patch('/admissions/cutoffs/sessions/rename', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admission'] });
+      toast.success('Session renamed');
+      setRenameTarget(null);
+      setRenameValue('');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Rename failed'),
+  });
+
+  const sessionDeleteMutation = useMutation({
+    mutationFn: (session: string) =>
+      api.delete('/admissions/cutoffs/sessions', { data: { session } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admission'] });
+      toast.success('Session deleted');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Delete failed'),
+  });
+
+  // ── Handlers ────────────────────────────────────────────
   const handleEdit = (r: any) => {
     setForm({
       _id: r._id, faculty: r.faculty, department: r.department, unit: r.unit,
@@ -1551,139 +1608,330 @@ function CutoffsSection() {
       dataSource: r.dataSource || '',
       session: r.session, sortOrder: r.sortOrder || 0,
     });
-    setShowForm(true);
+    setEditingSession(r.session);
   };
 
   const handleAddTo = (session: string) => {
     setForm({ ...emptyCutoff, session });
-    setShowForm(true);
+    setEditingSession(session);
+  };
+
+  const submitNewSession = () => {
+    const label = newSessionLabel.trim();
+    if (!label) { toast.error('Session label required'); return; }
+    if (bySession.some(([s]) => s === label)) {
+      toast.error(`Session "${label}" already exists`);
+      return;
+    }
+    setPendingSessions((prev) => (prev.includes(label) ? prev : [...prev, label]));
+    setNewSessionOpen(false);
+    setNewSessionLabel('');
+    handleAddTo(label);
+  };
+
+  const handleSessionDelete = async (session: string, count: number) => {
+    const ok = await confirm({
+      title: 'Delete entire session?',
+      message: `Session "${session}" and all ${count} cut-off row${count === 1 ? '' : 's'} under it will be removed. This cannot be undone.`,
+      confirmLabel: 'Delete session',
+      variant: 'danger',
+      requireTypeToConfirm: session,
+    });
+    if (ok) sessionDeleteMutation.mutate(session);
+  };
+
+  const openSessionRename = (session: string) => {
+    setRenameTarget({ kind: 'session', session });
+    setRenameValue(session);
+  };
+
+  const submitRename = () => {
+    if (!renameTarget || renameTarget.kind !== 'session') return;
+    const next = renameValue.trim();
+    if (!next) { toast.error('Name cannot be empty'); return; }
+    if (next === renameTarget.session) { setRenameTarget(null); return; }
+    sessionRenameMutation.mutate({ from: renameTarget.session, to: next });
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm text-muted-foreground">
-          Cut-off marks are grouped by admission session. Faculties &amp; departments come from
-          <span className="font-medium text-foreground"> Settings → Academic Config</span>, so any change there is reflected here.
+          Cut-off marks are grouped by admission session. The session is implicit when adding rows — no need
+          to retype it. Faculties &amp; departments come from{' '}
+          <span className="font-medium text-foreground">Settings → Academic Config</span>. Use{' '}
+          <span className="font-medium text-foreground">Clone Session</span> to copy an existing year forward.
         </p>
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => handleAddTo('')}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground"
-        >
-          <Plus className="h-4 w-4" /> New Session
-        </motion.button>
+        <div className="flex gap-2 flex-wrap">
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => { setCloneFrom(bySession[0]?.[0] || ''); setCloneTo(''); setCloneOpen(true); }}
+            disabled={bySession.filter(([, r]) => r.length > 0).length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border hover:bg-accent disabled:opacity-50"
+            title={bySession.length === 0 ? 'Create a session first to clone from' : 'Clone an existing session'}
+          >
+            <Copy className="h-4 w-4" /> Clone Session
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => { setNewSessionLabel(''); setNewSessionOpen(true); }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground"
+          >
+            <Plus className="h-4 w-4" /> New Session
+          </motion.button>
+        </div>
       </div>
-
-      <AnimatePresence>
-        {showForm && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }} className="overflow-hidden">
-            <div className="border rounded-lg p-4 bg-card space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">{form._id ? 'Edit Cut-off Row' : 'New Cut-off Row'}</h3>
-                <button type="button" onClick={reset} className="p-1 rounded hover:bg-accent text-muted-foreground"><X className="h-4 w-4" /></button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Faculty *">
-                  <select value={form.faculty} onChange={(e) => setForm({ ...form, faculty: e.target.value, department: '' })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                    <option value="">Select faculty</option>
-                    {faculties.map((f) => <option key={f.name} value={f.name}>{f.name}</option>)}
-                  </select>
-                </Field>
-                <Field label="Department *">
-                  <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} disabled={!form.faculty}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50">
-                    <option value="">Select department</option>
-                    {facultyDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </Field>
-                <Field label="Unit *">
-                  <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value as 'A' | 'B' | 'C' })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                    <option value="A">A Unit</option>
-                    <option value="B">B Unit</option>
-                    <option value="C">C Unit</option>
-                  </select>
-                </Field>
-                <Field label="Session *" hint="e.g., 2024-25">
-                  <input list="cutoffs-existing-sessions" value={form.session} onChange={(e) => setForm({ ...form, session: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-                  <datalist id="cutoffs-existing-sessions">
-                    {bySession.map(([s]) => <option key={s} value={s} />)}
-                  </datalist>
-                </Field>
-                <Field label="1st Position — Merit"><input type="number" value={form.firstPositionMerit}
-                  onChange={(e) => setForm({ ...form, firstPositionMerit: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" /></Field>
-                <Field label="1st Position — Score"><input type="number" step="0.01" value={form.firstPositionScore}
-                  onChange={(e) => setForm({ ...form, firstPositionScore: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" /></Field>
-                <Field label="Last Position — Merit"><input type="number" value={form.lastPositionMerit}
-                  onChange={(e) => setForm({ ...form, lastPositionMerit: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" /></Field>
-                <Field label="Last Position — Score"><input type="number" step="0.01" value={form.lastPositionScore}
-                  onChange={(e) => setForm({ ...form, lastPositionScore: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" /></Field>
-                <Field label="Data Source" hint="Contributor or reference name (optional)">
-                  <input value={form.dataSource} onChange={(e) => setForm({ ...form, dataSource: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-                </Field>
-                <Field label="Sort Order">
-                  <NumberInput value={form.sortOrder} onChange={(v) => setForm({ ...form, sortOrder: v })} />
-                </Field>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  onClick={() => saveMutation.mutate(form)}
-                  disabled={saveMutation.isPending || !form.faculty || !form.department || !form.session}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50">
-                  {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {form._id ? 'Update' : 'Create'}
-                </motion.button>
-                <button onClick={reset} className="px-4 py-2 text-sm rounded-md border hover:bg-accent">Cancel</button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {isLoading ? (
         <Spinner size="md" />
       ) : bySession.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">
-          No cut-off data yet — click "New Session" above to add the first row.
+          No cut-off data yet — click "New Session" above to add the first session.
         </p>
       ) : (
         <div className="space-y-3">
-          {bySession.map(([session, sessionRows], idx) => (
-            <AdminSessionAccordion
-              key={session}
-              session={session}
-              count={sessionRows.length}
-              defaultOpen={idx === 0}
-              icon={Target}
-              onAddRow={() => handleAddTo(session)}
-            >
-              <CutoffsAdminTable
-                rows={sessionRows}
-                onEdit={handleEdit}
-                onDelete={async (r) => {
-                  const ok = await confirm({
-                    title: 'Delete cut-off row?',
-                    message: `${r.faculty} — ${r.department} (Unit ${r.unit}) for session ${r.session} will be removed.`,
-                    confirmLabel: 'Delete',
-                    variant: 'danger',
-                  });
-                  if (ok) deleteMutation.mutate(r._id);
-                }}
-              />
-            </AdminSessionAccordion>
-          ))}
+          {bySession.map(([session, sessionRows], idx) => {
+            const formActive = editingSession === session;
+            return (
+              <AdminSessionAccordion
+                key={session}
+                session={session}
+                count={sessionRows.length}
+                defaultOpen={idx === 0 || formActive}
+                icon={Target}
+                onAddRow={() => handleAddTo(session)}
+                extraActions={
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button"
+                      onClick={(e) => { e.stopPropagation(); openSessionRename(session); }}
+                      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md border hover:bg-accent"
+                      title="Rename session"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button"
+                      onClick={(e) => { e.stopPropagation(); handleSessionDelete(session, sessionRows.length); }}
+                      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md border text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Delete entire session"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </motion.button>
+                  </>
+                }
+              >
+                <AnimatePresence initial={false}>
+                  {formActive && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <InlineCutoffForm
+                        session={session}
+                        faculties={faculties}
+                        form={form}
+                        onChange={setForm}
+                        onSubmit={() => saveMutation.mutate(form)}
+                        onCancel={closeForm}
+                        submitting={saveMutation.isPending}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {sessionRows.length === 0 && !formActive ? (
+                  <p className="text-center text-xs text-muted-foreground py-6">
+                    No cut-off rows in this session yet — click "Add Row" above to add one.
+                  </p>
+                ) : (
+                  <CutoffsAdminTable
+                    rows={sessionRows}
+                    onEdit={handleEdit}
+                    onDelete={async (r) => {
+                      const ok = await confirm({
+                        title: 'Delete cut-off row?',
+                        message: `${r.faculty} — ${r.department} (Unit ${r.unit}) for session ${r.session} will be removed.`,
+                        confirmLabel: 'Delete',
+                        variant: 'danger',
+                      });
+                      if (ok) deleteMutation.mutate(r._id);
+                    }}
+                  />
+                )}
+              </AdminSessionAccordion>
+            );
+          })}
         </div>
       )}
+
+      <NewSessionDialog
+        open={newSessionOpen}
+        value={newSessionLabel}
+        existing={bySession.map(([s]) => s)}
+        onChange={setNewSessionLabel}
+        onClose={() => setNewSessionOpen(false)}
+        onSubmit={submitNewSession}
+      />
+
+      <CloneSessionDialog
+        open={cloneOpen}
+        sessions={bySession.filter(([, r]) => r.length > 0).map(([s]) => s)}
+        sourceSession={cloneFrom}
+        targetSession={cloneTo}
+        onSourceChange={setCloneFrom}
+        onTargetChange={setCloneTo}
+        onClose={() => setCloneOpen(false)}
+        onSubmit={() => cloneMutation.mutate({ sourceSession: cloneFrom.trim(), targetSession: cloneTo.trim() })}
+        submitting={cloneMutation.isPending}
+      />
+
+      <RenameDialog
+        target={renameTarget}
+        value={renameValue}
+        onChange={setRenameValue}
+        onClose={() => setRenameTarget(null)}
+        onSubmit={submitRename}
+        submitting={sessionRenameMutation.isPending}
+      />
+    </div>
+  );
+}
+
+/**
+ * Inline cut-off form rendered INSIDE a session accordion. Session is
+ * locked from context. Faculty + Department dropdowns are driven by
+ * SiteSettings.academicConfig (passed in by the parent so we don't fetch
+ * twice). Department options narrow once a faculty is picked.
+ */
+function InlineCutoffForm({
+  session,
+  faculties,
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+  submitting,
+}: {
+  session: string;
+  faculties: Array<{ name: string; departments: string[] }>;
+  form: CutoffForm;
+  onChange: (next: CutoffForm) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  submitting: boolean;
+}) {
+  const facultyDepartments = useMemo(() => {
+    const f = faculties.find((x) => x.name === form.faculty);
+    return f?.departments || [];
+  }, [faculties, form.faculty]);
+
+  return (
+    <div className="border-b bg-muted/20 p-4 sm:p-5 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-semibold text-foreground text-sm">
+          {form._id ? 'Edit cut-off row in' : 'Add cut-off row to'}{' '}
+          <span className="text-primary">Session {session}</span>
+        </h3>
+        <button type="button" onClick={onCancel} className="p-1 rounded hover:bg-accent text-muted-foreground">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="Faculty *">
+          <select
+            value={form.faculty}
+            onChange={(e) => onChange({ ...form, faculty: e.target.value, department: '' })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          >
+            <option value="">Select faculty</option>
+            {faculties.map((f) => <option key={f.name} value={f.name}>{f.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Department *">
+          <select
+            value={form.department}
+            onChange={(e) => onChange({ ...form, department: e.target.value })}
+            disabled={!form.faculty}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
+          >
+            <option value="">Select department</option>
+            {facultyDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </Field>
+        <Field label="Unit *">
+          <select
+            value={form.unit}
+            onChange={(e) => onChange({ ...form, unit: e.target.value as 'A' | 'B' | 'C' })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          >
+            <option value="A">A Unit</option>
+            <option value="B">B Unit</option>
+            <option value="C">C Unit</option>
+          </select>
+        </Field>
+        <Field label="Data Source" hint="Contributor or reference name (optional)">
+          <input
+            value={form.dataSource}
+            onChange={(e) => onChange({ ...form, dataSource: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          />
+        </Field>
+        <Field label="1st Position — Merit">
+          <input
+            type="number"
+            value={form.firstPositionMerit}
+            onChange={(e) => onChange({ ...form, firstPositionMerit: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          />
+        </Field>
+        <Field label="1st Position — Score">
+          <input
+            type="number" step="0.01"
+            value={form.firstPositionScore}
+            onChange={(e) => onChange({ ...form, firstPositionScore: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          />
+        </Field>
+        <Field label="Last Position — Merit">
+          <input
+            type="number"
+            value={form.lastPositionMerit}
+            onChange={(e) => onChange({ ...form, lastPositionMerit: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          />
+        </Field>
+        <Field label="Last Position — Score">
+          <input
+            type="number" step="0.01"
+            value={form.lastPositionScore}
+            onChange={(e) => onChange({ ...form, lastPositionScore: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+          />
+        </Field>
+        <Field label="Sort Order">
+          <NumberInput value={form.sortOrder} onChange={(v) => onChange({ ...form, sortOrder: v })} />
+        </Field>
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          onClick={onSubmit}
+          disabled={submitting || !form.faculty || !form.department}
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50"
+        >
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {form._id ? 'Update' : 'Add Row'}
+        </motion.button>
+        <button onClick={onCancel} className="px-4 py-2 text-sm rounded-md border hover:bg-accent">Cancel</button>
+      </div>
     </div>
   );
 }

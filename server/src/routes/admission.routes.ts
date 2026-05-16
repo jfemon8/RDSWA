@@ -477,4 +477,102 @@ router.delete(
   })
 );
 
+// ── Cut-off session-level bulk ops (Moderator+) ──────────
+//
+// Same shape as the Seats session ops: sessions are plain strings on rows
+// rather than first-class entities, so these endpoints provide bulk
+// operations across all rows of a given session.
+
+const cutoffCloneSchema = z.object({
+  sourceSession: z.string().trim().min(2).max(20),
+  targetSession: z.string().trim().min(2).max(20),
+});
+
+router.post(
+  '/cutoffs/sessions/clone',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  validate({ body: cutoffCloneSchema }),
+  auditLog('admission.cutoff_session_clone', 'admission_cutoffs'),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const { sourceSession, targetSession } = req.body as z.infer<typeof cutoffCloneSchema>;
+    if (sourceSession === targetSession) {
+      throw ApiError.badRequest('Target session must differ from source session.');
+    }
+    const existing = await AdmissionCutoff.countDocuments({ session: targetSession, isDeleted: false });
+    if (existing > 0) {
+      throw ApiError.conflict(`Session "${targetSession}" already has cut-off data — pick a different label.`);
+    }
+    const source = await AdmissionCutoff.find({ session: sourceSession, isDeleted: false }).lean();
+    if (source.length === 0) {
+      throw ApiError.notFound(`No cut-off rows found in source session "${sourceSession}".`);
+    }
+    const userId = req.user._id;
+    const clones = source.map((row) => ({
+      faculty: row.faculty,
+      department: row.department,
+      unit: row.unit,
+      firstPositionMerit: row.firstPositionMerit,
+      firstPositionScore: row.firstPositionScore,
+      lastPositionMerit: row.lastPositionMerit,
+      lastPositionScore: row.lastPositionScore,
+      dataSource: row.dataSource,
+      sortOrder: row.sortOrder,
+      session: targetSession,
+      createdBy: userId,
+    }));
+    const inserted = await AdmissionCutoff.insertMany(clones);
+    ApiResponse.created(res, { count: inserted.length, session: targetSession }, 'Cut-off session cloned');
+  })
+);
+
+const cutoffSessionRenameSchema = z.object({
+  from: z.string().trim().min(2).max(20),
+  to: z.string().trim().min(2).max(20),
+});
+
+router.patch(
+  '/cutoffs/sessions/rename',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  validate({ body: cutoffSessionRenameSchema }),
+  auditLog('admission.cutoff_session_rename', 'admission_cutoffs'),
+  asyncHandler(async (req, res) => {
+    const { from, to } = req.body as z.infer<typeof cutoffSessionRenameSchema>;
+    if (from === to) throw ApiError.badRequest('New session label must differ from the old one.');
+    const collision = await AdmissionCutoff.countDocuments({ session: to, isDeleted: false });
+    if (collision > 0) {
+      throw ApiError.conflict(`Session "${to}" already exists — cannot merge by renaming.`);
+    }
+    const result = await AdmissionCutoff.updateMany(
+      { session: from, isDeleted: false },
+      { $set: { session: to } }
+    );
+    if (result.matchedCount === 0) throw ApiError.notFound(`No cut-off rows found in session "${from}".`);
+    ApiResponse.success(res, { matched: result.matchedCount, modified: result.modifiedCount }, 'Session renamed');
+  })
+);
+
+const cutoffSessionDeleteSchema = z.object({
+  session: z.string().trim().min(2).max(20),
+});
+
+router.delete(
+  '/cutoffs/sessions',
+  authenticate(),
+  authorize(UserRole.MODERATOR),
+  validate({ body: cutoffSessionDeleteSchema }),
+  auditLog('admission.cutoff_session_delete', 'admission_cutoffs'),
+  asyncHandler(async (req, res) => {
+    const { session } = req.body as z.infer<typeof cutoffSessionDeleteSchema>;
+    const result = await AdmissionCutoff.updateMany(
+      { session, isDeleted: false },
+      { $set: { isDeleted: true } }
+    );
+    if (result.matchedCount === 0) throw ApiError.notFound(`No cut-off rows found in session "${session}".`);
+    ApiResponse.success(res, { deleted: result.modifiedCount }, `Cut-off session "${session}" deleted`);
+  })
+);
+
 export default router;
