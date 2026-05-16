@@ -45,6 +45,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Events', href: '/admin/events', icon: Calendar, minRole: UserRole.MODERATOR },
   { label: 'Documents', href: '/admin/documents', icon: FolderOpen, minRole: UserRole.MODERATOR },
   { label: 'Vacation', href: '/admin/vacation', icon: CalendarDays, minRole: UserRole.MODERATOR },
+  { label: 'Admission', href: '/admin/admission', icon: GraduationCap, minRole: UserRole.MODERATOR },
   { label: 'Gallery', href: '/admin/gallery', icon: Image, minRole: UserRole.MODERATOR },
   { label: 'Forum', href: '/admin/forum', icon: MessageSquare, minRole: UserRole.MODERATOR },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell, minRole: UserRole.MODERATOR },

@@ -29,6 +29,7 @@ const moreLinks = [
   { label: 'Gallery', href: '/gallery' },
   { label: 'Documents', href: '/documents' },
   { label: 'Vacation', href: '/vacation' },
+  { label: 'Admission', href: '/admission' },
   { label: 'Donations', href: '/donations' },
   { label: 'Voting', href: '/voting' },
   { label: 'Blood Donors', href: '/blood-donors' },

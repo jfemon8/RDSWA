@@ -90,3 +90,16 @@ export type { IContactMessageDocument, ContactMessageStatus } from './ContactMes
 
 export { Vacation } from './Vacation';
 export type { IVacationDocument, IVacationEntry, IVacationAttachment } from './Vacation';
+
+export { AdmissionCircular } from './AdmissionCircular';
+export type {
+  IAdmissionCircularDocument,
+  IAdmissionCircularAttachment,
+  IAdmissionCircularExternalLink,
+} from './AdmissionCircular';
+
+export { AdmissionSeat } from './AdmissionSeat';
+export type { IAdmissionSeatDocument } from './AdmissionSeat';
+
+export { AdmissionCutoff } from './AdmissionCutoff';
+export type { IAdmissionCutoffDocument, AdmissionUnit } from './AdmissionCutoff';

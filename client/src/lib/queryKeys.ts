@@ -62,4 +62,12 @@ export const queryKeys = {
     list: (filters: Record<string, string>) => ['budgets', 'list', filters] as const,
     detail: (id: string) => ['budgets', 'detail', id] as const,
   },
+  admission: {
+    circulars: (session?: string) => ['admission', 'circulars', session ?? ''] as const,
+    circularsAdmin: (session?: string) => ['admission', 'circulars-admin', session ?? ''] as const,
+    seats: (session?: string) => ['admission', 'seats', session ?? ''] as const,
+    seatsSessions: ['admission', 'seats', 'sessions'] as const,
+    cutoffs: (session?: string) => ['admission', 'cutoffs', session ?? ''] as const,
+    cutoffsSessions: ['admission', 'cutoffs', 'sessions'] as const,
+  },
 };
