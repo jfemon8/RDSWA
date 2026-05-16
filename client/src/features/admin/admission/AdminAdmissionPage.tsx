@@ -1450,26 +1450,47 @@ function RenameDialog({
 // Cut-offs CRUD
 // ═══════════════════════════════════════════════════════
 
-interface CutoffForm {
+/** Numeric fields are stored as strings so empty inputs round-trip cleanly
+ *  without becoming the number `0`. An optional `_id` flags an existing row
+ *  fetched from the server vs. a new row being drafted. */
+interface CutoffUnitFields {
   _id?: string;
-  faculty: string;
-  department: string;
-  unit: 'A' | 'B' | 'C';
-  firstPositionMerit: string;
-  firstPositionScore: string;
-  lastPositionMerit: string;
-  lastPositionScore: string;
-  dataSource: string;
-  session: string;
-  sortOrder: number;
+  firstMerit: string;
+  firstScore: string;
+  lastMerit: string;
+  lastScore: string;
 }
 
+/** Department-centric form: Faculty + Department picked once, then per-unit
+ *  sections (A / B / C) below. Each filled unit becomes one DB row on save;
+ *  empty units are skipped on create. On edit, all of the department's
+ *  existing rows for this session are loaded into the matching sections. */
+interface CutoffForm {
+  session: string;
+  faculty: string;
+  department: string;
+  dataSource: string;
+  sortOrder: number;
+  units: {
+    A: CutoffUnitFields;
+    B: CutoffUnitFields;
+    C: CutoffUnitFields;
+  };
+}
+
+const emptyUnit: CutoffUnitFields = { firstMerit: '', firstScore: '', lastMerit: '', lastScore: '' };
+
 const emptyCutoff: CutoffForm = {
-  faculty: '', department: '', unit: 'A',
-  firstPositionMerit: '', firstPositionScore: '',
-  lastPositionMerit: '', lastPositionScore: '',
-  dataSource: '', session: '', sortOrder: 0,
+  session: '', faculty: '', department: '', dataSource: '', sortOrder: 0,
+  units: { A: { ...emptyUnit }, B: { ...emptyUnit }, C: { ...emptyUnit } },
 };
+
+/** True when every field in a unit section is empty — drives the "create
+ *  only when filled" skip rule. Does NOT consider `_id` (caller checks that
+ *  separately to differentiate "skip new row" from "keep existing row"). */
+function isEmptyUnit(u: CutoffUnitFields): boolean {
+  return !u.firstMerit.trim() && !u.firstScore.trim() && !u.lastMerit.trim() && !u.lastScore.trim();
+}
 
 function CutoffsSection() {
   const queryClient = useQueryClient();
@@ -1528,27 +1549,53 @@ function CutoffsSection() {
 
   const closeForm = () => { setForm(emptyCutoff); setEditingSession(null); };
 
+  /** Dispatch one POST or PATCH per non-empty unit section. New rows are
+   *  skipped when their section has no data (the "optional skip" rule);
+   *  existing rows are always PATCHed so admins can clear individual
+   *  fields. Unit deletion is intentionally NOT handled here — admins use
+   *  the per-row delete button in the table for that. */
   const saveMutation = useMutation({
     mutationFn: async (payload: CutoffForm) => {
       const numOrUndef = (s: string) => (s === '' || s === null || s === undefined ? undefined : Number(s));
-      const body = {
-        faculty: payload.faculty,
-        department: payload.department,
-        unit: payload.unit,
-        firstPositionMerit: numOrUndef(payload.firstPositionMerit),
-        firstPositionScore: numOrUndef(payload.firstPositionScore),
-        lastPositionMerit: numOrUndef(payload.lastPositionMerit),
-        lastPositionScore: numOrUndef(payload.lastPositionScore),
-        dataSource: payload.dataSource || undefined,
-        session: payload.session,
-        sortOrder: payload.sortOrder || 0,
-      };
-      if (payload._id) return api.patch(`/admissions/cutoffs/${payload._id}`, body);
-      return api.post('/admissions/cutoffs', body);
+      const ops: Array<Promise<unknown>> = [];
+      (['A', 'B', 'C'] as const).forEach((unitKey) => {
+        const u = payload.units[unitKey];
+        const empty = isEmptyUnit(u);
+        if (u._id) {
+          // Existing row → PATCH (allow clearing fields).
+          ops.push(api.patch(`/admissions/cutoffs/${u._id}`, {
+            firstPositionMerit: numOrUndef(u.firstMerit),
+            firstPositionScore: numOrUndef(u.firstScore),
+            lastPositionMerit: numOrUndef(u.lastMerit),
+            lastPositionScore: numOrUndef(u.lastScore),
+            dataSource: payload.dataSource || undefined,
+            sortOrder: payload.sortOrder || 0,
+          }));
+        } else if (!empty) {
+          // New row → POST only when the section actually has data.
+          ops.push(api.post('/admissions/cutoffs', {
+            session: payload.session,
+            faculty: payload.faculty,
+            department: payload.department,
+            unit: unitKey,
+            firstPositionMerit: numOrUndef(u.firstMerit),
+            firstPositionScore: numOrUndef(u.firstScore),
+            lastPositionMerit: numOrUndef(u.lastMerit),
+            lastPositionScore: numOrUndef(u.lastScore),
+            dataSource: payload.dataSource || undefined,
+            sortOrder: payload.sortOrder || 0,
+          }));
+        }
+      });
+      if (ops.length === 0) {
+        // Nothing changed — let the UI close gracefully without hitting the API.
+        return [];
+      }
+      return Promise.all(ops);
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admission'] });
-      toast.success('Cut-off row saved');
+      toast.success('Cut-off data saved');
       setPendingSessions((prev) => prev.filter((s) => s !== variables.session));
       closeForm();
     },
@@ -1598,21 +1645,44 @@ function CutoffsSection() {
   });
 
   // ── Handlers ────────────────────────────────────────────
+  /** Clicking Edit on ANY of a department's rows loads the WHOLE department
+   *  (every unit it has data for) into the form. Empty unit sections are
+   *  drafts that admins can fill in to add a missing unit alongside the edit. */
   const handleEdit = (r: any) => {
+    const peers = rows.filter(
+      (x) => x.session === r.session && x.faculty === r.faculty && x.department === r.department
+    );
+    const units: CutoffForm['units'] = {
+      A: { ...emptyUnit }, B: { ...emptyUnit }, C: { ...emptyUnit },
+    };
+    let dataSource = '';
+    let sortOrder = 0;
+    for (const p of peers) {
+      const key = p.unit as 'A' | 'B' | 'C';
+      units[key] = {
+        _id: p._id,
+        firstMerit: p.firstPositionMerit?.toString() || '',
+        firstScore: p.firstPositionScore?.toString() || '',
+        lastMerit: p.lastPositionMerit?.toString() || '',
+        lastScore: p.lastPositionScore?.toString() || '',
+      };
+      // Last writer wins for shared metadata — peers usually agree on these.
+      if (p.dataSource) dataSource = p.dataSource;
+      sortOrder = p.sortOrder || 0;
+    }
     setForm({
-      _id: r._id, faculty: r.faculty, department: r.department, unit: r.unit,
-      firstPositionMerit: r.firstPositionMerit?.toString() || '',
-      firstPositionScore: r.firstPositionScore?.toString() || '',
-      lastPositionMerit: r.lastPositionMerit?.toString() || '',
-      lastPositionScore: r.lastPositionScore?.toString() || '',
-      dataSource: r.dataSource || '',
-      session: r.session, sortOrder: r.sortOrder || 0,
+      session: r.session,
+      faculty: r.faculty,
+      department: r.department,
+      dataSource,
+      sortOrder,
+      units,
     });
     setEditingSession(r.session);
   };
 
   const handleAddTo = (session: string) => {
-    setForm({ ...emptyCutoff, session });
+    setForm({ ...emptyCutoff, session, units: { A: { ...emptyUnit }, B: { ...emptyUnit }, C: { ...emptyUnit } } });
     setEditingSession(session);
   };
 
@@ -1804,10 +1874,11 @@ function CutoffsSection() {
 }
 
 /**
- * Inline cut-off form rendered INSIDE a session accordion. Session is
- * locked from context. Faculty + Department dropdowns are driven by
- * SiteSettings.academicConfig (passed in by the parent so we don't fetch
- * twice). Department options narrow once a faculty is picked.
+ * Department-centric inline cut-off form. Faculty + Department are picked
+ * once at the top, then the A / B / C unit sections share that scope.
+ * Skipping is "soft": an empty unit section just doesn't create a row.
+ * For edits, every existing unit for the department is preloaded so the
+ * admin sees the complete picture and can add a missing unit alongside.
  */
 function InlineCutoffForm({
   session,
@@ -1831,11 +1902,23 @@ function InlineCutoffForm({
     return f?.departments || [];
   }, [faculties, form.faculty]);
 
+  const isEditing = !!(form.units.A._id || form.units.B._id || form.units.C._id);
+  const setUnit = (key: 'A' | 'B' | 'C', patch: Partial<CutoffUnitFields>) => {
+    onChange({ ...form, units: { ...form.units, [key]: { ...form.units[key], ...patch } } });
+  };
+
+  // Save is disabled until the admin picks both faculty and department AND
+  // at least one unit either already exists (editing) or has data (new).
+  const anyUnitHasData =
+    !!form.units.A._id || !!form.units.B._id || !!form.units.C._id ||
+    !isEmptyUnit(form.units.A) || !isEmptyUnit(form.units.B) || !isEmptyUnit(form.units.C);
+  const canSave = !!form.faculty && !!form.department && anyUnitHasData;
+
   return (
-    <div className="border-b bg-muted/20 p-4 sm:p-5 space-y-3">
+    <div className="border-b bg-muted/20 p-4 sm:p-5 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold text-foreground text-sm">
-          {form._id ? 'Edit cut-off row in' : 'Add cut-off row to'}{' '}
+          {isEditing ? 'Edit cut-off data in' : 'Add cut-off data to'}{' '}
           <span className="text-primary">Session {session}</span>
         </h3>
         <button type="button" onClick={onCancel} className="p-1 rounded hover:bg-accent text-muted-foreground">
@@ -1843,12 +1926,14 @@ function InlineCutoffForm({
         </button>
       </div>
 
+      {/* Shared department-level fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Faculty *">
           <select
             value={form.faculty}
             onChange={(e) => onChange({ ...form, faculty: e.target.value, department: '' })}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+            disabled={isEditing}
+            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
           >
             <option value="">Select faculty</option>
             {faculties.map((f) => <option key={f.name} value={f.name}>{f.name}</option>)}
@@ -1858,79 +1943,128 @@ function InlineCutoffForm({
           <select
             value={form.department}
             onChange={(e) => onChange({ ...form, department: e.target.value })}
-            disabled={!form.faculty}
+            disabled={!form.faculty || isEditing}
             className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
           >
             <option value="">Select department</option>
             {facultyDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </Field>
-        <Field label="Unit *">
-          <select
-            value={form.unit}
-            onChange={(e) => onChange({ ...form, unit: e.target.value as 'A' | 'B' | 'C' })}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-          >
-            <option value="A">A Unit</option>
-            <option value="B">B Unit</option>
-            <option value="C">C Unit</option>
-          </select>
-        </Field>
-        <Field label="Data Source" hint="Contributor or reference name (optional)">
+        <Field label="Data Source" hint="Contributor or reference (applies to all units)">
           <input
             value={form.dataSource}
             onChange={(e) => onChange({ ...form, dataSource: e.target.value })}
             className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
           />
         </Field>
-        <Field label="1st Position — Merit">
-          <input
-            type="number"
-            value={form.firstPositionMerit}
-            onChange={(e) => onChange({ ...form, firstPositionMerit: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-          />
-        </Field>
-        <Field label="1st Position — Score">
-          <input
-            type="number" step="0.01"
-            value={form.firstPositionScore}
-            onChange={(e) => onChange({ ...form, firstPositionScore: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-          />
-        </Field>
-        <Field label="Last Position — Merit">
-          <input
-            type="number"
-            value={form.lastPositionMerit}
-            onChange={(e) => onChange({ ...form, lastPositionMerit: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-          />
-        </Field>
-        <Field label="Last Position — Score">
-          <input
-            type="number" step="0.01"
-            value={form.lastPositionScore}
-            onChange={(e) => onChange({ ...form, lastPositionScore: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-          />
-        </Field>
-        <Field label="Sort Order">
+        <Field label="Sort Order" hint="Lower numbers appear first">
           <NumberInput value={form.sortOrder} onChange={(v) => onChange({ ...form, sortOrder: v })} />
         </Field>
+      </div>
+
+      {/* Per-unit sections — empty ones are skipped on save. */}
+      <p className="text-xs text-muted-foreground">
+        Fill the unit sections that apply to this department — leave the rest empty and they will be skipped.
+      </p>
+      <div className="space-y-3">
+        {(['A', 'B', 'C'] as const).map((key) => (
+          <UnitFieldset
+            key={key}
+            unitKey={key}
+            data={form.units[key]}
+            disabled={!form.faculty || !form.department}
+            onPatch={(patch) => setUnit(key, patch)}
+          />
+        ))}
       </div>
 
       <div className="flex gap-2 pt-1">
         <motion.button
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
           onClick={onSubmit}
-          disabled={submitting || !form.faculty || !form.department}
+          disabled={submitting || !canSave}
           className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {form._id ? 'Update' : 'Add Row'}
+          {isEditing ? 'Save Changes' : 'Save Cut-off Data'}
         </motion.button>
         <button onClick={onCancel} className="px-4 py-2 text-sm rounded-md border hover:bg-accent">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+/** Compact fieldset for a single unit's 1st-position / last-position pair.
+ *  Highlights when the unit has existing data so admins know which sections
+ *  will be PATCHed vs. POSTed. */
+function UnitFieldset({
+  unitKey,
+  data,
+  disabled,
+  onPatch,
+}: {
+  unitKey: 'A' | 'B' | 'C';
+  data: CutoffUnitFields;
+  disabled: boolean;
+  onPatch: (patch: Partial<CutoffUnitFields>) => void;
+}) {
+  const hasExisting = !!data._id;
+  const empty = isEmptyUnit(data);
+  return (
+    <div
+      className={`rounded-md border p-3 transition-colors ${
+        hasExisting ? 'border-primary/30 bg-primary/5' : empty ? 'bg-background/40' : 'bg-background'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">
+          {unitKey} Unit
+        </p>
+        <span className="text-[10px] text-muted-foreground">
+          {hasExisting
+            ? 'Existing — will be updated'
+            : empty
+              ? 'Empty — will be skipped'
+              : 'New — will be added'}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Field label="1st — Merit">
+          <input
+            type="number"
+            value={data.firstMerit}
+            onChange={(e) => onPatch({ firstMerit: e.target.value })}
+            disabled={disabled}
+            className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
+          />
+        </Field>
+        <Field label="1st — Score">
+          <input
+            type="number" step="0.01"
+            value={data.firstScore}
+            onChange={(e) => onPatch({ firstScore: e.target.value })}
+            disabled={disabled}
+            className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
+          />
+        </Field>
+        <Field label="Last — Merit">
+          <input
+            type="number"
+            value={data.lastMerit}
+            onChange={(e) => onPatch({ lastMerit: e.target.value })}
+            disabled={disabled}
+            className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
+          />
+        </Field>
+        <Field label="Last — Score">
+          <input
+            type="number" step="0.01"
+            value={data.lastScore}
+            onChange={(e) => onPatch({ lastScore: e.target.value })}
+            disabled={disabled}
+            className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
+          />
+        </Field>
       </div>
     </div>
   );
