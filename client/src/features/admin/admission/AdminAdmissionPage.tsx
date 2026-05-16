@@ -831,6 +831,7 @@ function SeatsSection() {
                 count={sessionRows.length}
                 defaultOpen={idx === 0 || formActive}
                 icon={ListChecks}
+                titlePrefix="গুচ্ছ বিশ্ববিদ্যালয়ের আসন সমূহ "
                 onAddRow={() => handleAddTo(session)}
                 extraActions={
                   <>
@@ -1768,6 +1769,7 @@ function AdminSessionAccordion({
   icon: Icon,
   onAddRow,
   extraActions,
+  titlePrefix = 'Session ',
   children,
 }: {
   session: string;
@@ -1778,6 +1780,9 @@ function AdminSessionAccordion({
   /** Optional extra action buttons rendered to the LEFT of "Add Row" — used
    *  by SeatsSection to surface Rename / Delete bulk ops. */
   extraActions?: React.ReactNode;
+  /** Literal text shown before the session label in the header.
+   *  Seats passes "গুচ্ছ বিশ্ববিদ্যালয়ের আসন সমূহ "; Cutoffs uses the default. */
+  titlePrefix?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -1795,7 +1800,7 @@ function AdminSessionAccordion({
               <Icon className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground">Session {session}</p>
+              <p className="font-semibold text-foreground break-words">{titlePrefix}{session}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {defaultOpen && <span className="uppercase tracking-wide text-primary/80 mr-1.5">Most recent ·</span>}
                 {count} row{count === 1 ? '' : 's'}

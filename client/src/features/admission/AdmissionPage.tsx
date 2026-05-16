@@ -385,7 +385,13 @@ function SeatsTab() {
   return (
     <div className="space-y-3">
       {bySession.map(([session, sessionRows], idx) => (
-        <SessionAccordion key={session} session={session} defaultOpen={idx === 0} icon={ListChecks}>
+        <SessionAccordion
+          key={session}
+          session={session}
+          defaultOpen={idx === 0}
+          icon={ListChecks}
+          titlePrefix="গুচ্ছ বিশ্ববিদ্যালয়ের আসন সমূহ "
+        >
           <SeatsTable rows={sessionRows} />
         </SessionAccordion>
       ))}
@@ -673,11 +679,15 @@ function SessionAccordion({
   session,
   defaultOpen,
   icon: Icon,
+  titlePrefix = 'Session ',
   children,
 }: {
   session: string;
   defaultOpen: boolean;
   icon: typeof Megaphone;
+  /** Literal text shown before the session label in the header.
+   *  Each tab passes its own (e.g., "গুচ্ছ বিশ্ববিদ্যালয়ের আসন সমূহ " for Seats). */
+  titlePrefix?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -694,7 +704,7 @@ function SessionAccordion({
             <Icon className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-foreground">Session {session}</p>
+            <p className="font-semibold text-foreground break-words">{titlePrefix}{session}</p>
             {defaultOpen && (
               <p className="text-[11px] uppercase tracking-wide text-primary/80 mt-0.5">Most recent</p>
             )}
