@@ -18,6 +18,7 @@ import RichContent from '@/components/ui/RichContent';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Spinner from '@/components/ui/Spinner';
 import PdfPreviewModal, { type PdfPreviewTarget } from '@/components/ui/PdfPreviewModal';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 /** Local copy of the PDF-detection heuristic used on the public page. */
 function isPdfAttachment(a: { type?: string; url?: string; name?: string }): boolean {
@@ -1497,6 +1498,12 @@ function CutoffsSection() {
   const toast = useToast();
   const confirm = useConfirm();
 
+  // Pull the university name from SiteSettings so the session header reads
+  // "University of Barishal Cut-Off Mark 2024-25" (mirrors the public tab).
+  const { settings } = useSiteSettings();
+  const universityName = settings?.universityInfo?.name?.trim() || 'University';
+  const cutoffTitlePrefix = `${universityName} Cut-Off Mark `;
+
   const [form, setForm] = useState<CutoffForm>(emptyCutoff);
   const [editingSession, setEditingSession] = useState<string | null>(null);
 
@@ -1771,6 +1778,7 @@ function CutoffsSection() {
                 count={sessionRows.length}
                 defaultOpen={idx === 0 || formActive}
                 icon={Target}
+                titlePrefix={cutoffTitlePrefix}
                 onAddRow={() => handleAddTo(session)}
                 extraActions={
                   <>

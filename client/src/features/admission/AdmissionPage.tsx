@@ -14,6 +14,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
 import PdfPreviewModal, { type PdfPreviewTarget } from '@/components/ui/PdfPreviewModal';
 import { proxyFileUrl } from '@/lib/fileProxy';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 /** True if the attachment is a PDF — used to decide between in-app modal preview and a plain link. */
 function isPdfAttachment(a: { type?: string; url?: string; name?: string }): boolean {
@@ -497,6 +498,13 @@ interface CutoffRow {
 }
 
 function CutoffsTab() {
+  const { settings } = useSiteSettings();
+  // Pull the university name from SiteSettings so the header reads
+  // "University of Barishal Cut-Off Mark 2024-25" instead of "Session 2024-25".
+  // Falls back to "University" if settings haven't loaded yet.
+  const universityName = settings?.universityInfo?.name?.trim() || 'University';
+  const cutoffTitlePrefix = `${universityName} Cut-Off Mark `;
+
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.admission.cutoffs(),
     queryFn: async () => (await api.get('/admissions/cutoffs')).data,
@@ -527,7 +535,13 @@ function CutoffsTab() {
   return (
     <div className="space-y-3">
       {bySession.map(([session, sessionRows], idx) => (
-        <SessionAccordion key={session} session={session} defaultOpen={idx === 0} icon={Target}>
+        <SessionAccordion
+          key={session}
+          session={session}
+          defaultOpen={idx === 0}
+          icon={Target}
+          titlePrefix={cutoffTitlePrefix}
+        >
           <CutoffsTable rows={sessionRows} />
         </SessionAccordion>
       ))}
