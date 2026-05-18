@@ -270,7 +270,6 @@ export default function UserProfilePage() {
                   { key: "department", label: "Department" },
                   { key: "profession", label: "Profession" },
                   { key: "earningSource", label: "Earning Source" },
-                  { key: "homeDistrict", label: "Home District" },
                   { key: "facebook", label: "Facebook URL" },
                   { key: "linkedin", label: "LinkedIn URL" },
                   { key: "website", label: "Website" },
@@ -293,7 +292,7 @@ export default function UserProfilePage() {
                         <option value="">—</option>
                         {f.options?.map((o) => (
                           <option key={o} value={o}>
-                            {o}
+                            {o.charAt(0).toUpperCase() + o.slice(1)}
                           </option>
                         ))}
                       </select>

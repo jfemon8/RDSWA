@@ -75,7 +75,7 @@ export class AuthService {
     // Send verification email
     const buttonUrl = `${getAppUrl()}/verify-email?token=${emailVerificationToken}`;
     const fallbackUrl = `${getCanonicalAppUrl()}/verify-email?token=${emailVerificationToken}`;
-    const html = renderEmailLayout({
+    const html = await renderEmailLayout({
       heading: 'Welcome to RDSWA!',
       preheader: 'Verify your email to activate your RDSWA account.',
       greeting: `Hello ${user.name},`,
@@ -324,7 +324,7 @@ export class AuthService {
     const buttonUrl = `${getAppUrl()}/reset-password?token=${resetToken}`;
     const fallbackUrl = `${getCanonicalAppUrl()}/reset-password?token=${resetToken}`;
 
-    const html = renderEmailLayout({
+    const html = await renderEmailLayout({
       heading: 'Password Reset',
       preheader: 'Reset your RDSWA password — link expires in 1 hour.',
       greeting: `Hello ${user.name},`,
@@ -413,7 +413,7 @@ export class AuthService {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
-    const html = renderEmailLayout({
+    const html = await renderEmailLayout({
       heading: 'Email Verification',
       preheader: `Your RDSWA verification code: ${otp}`,
       greeting: `Hello ${user.name},`,

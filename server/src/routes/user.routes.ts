@@ -123,7 +123,7 @@ router.patch(
 
     // Email the user too — async, doesn't block the response.
     const adminName = req.user.name || 'an administrator';
-    const html = renderEmailLayout({
+    const html = await renderEmailLayout({
       heading: 'Your password was reset',
       preheader: 'An admin reset your RDSWA password.',
       greeting: `Hello ${target.name},`,

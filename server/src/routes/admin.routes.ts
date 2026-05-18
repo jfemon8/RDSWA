@@ -10,6 +10,7 @@ import { UserRole, SUPER_ADMIN_EMAILS, BACKUP_RESTRICTED_SUPER_ADMINS } from '@r
 import { parsePagination, getSkip } from '../utils/pagination';
 import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { sendEmail } from '../config/mail';
+import { renderEmailLayout, escapeHtml } from '../utils/emailTemplate';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -418,9 +419,18 @@ router.post('/bulk/email', authenticate(), authorize(UserRole.SUPER_ADMIN), audi
 
   let sent = 0;
   const errors: string[] = [];
+  // Admin-typed body is plain text → escape it, preserve line breaks, and
+  // wrap in the shared branded layout so bulk mail matches every other email.
+  const safeBody = escapeHtml(String(body)).replace(/\n/g, '<br/>');
   for (const user of users) {
     try {
-      await sendEmail(user.email, subject, body);
+      const html = await renderEmailLayout({
+        heading: subject,
+        preheader: String(subject).slice(0, 110),
+        greeting: `Hello ${escapeHtml(user.name || 'there')},`,
+        bodyHtml: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#374151;">${safeBody}</div>`,
+      });
+      await sendEmail(user.email, subject, html);
       sent++;
     } catch {
       errors.push(user.email);

@@ -12,6 +12,7 @@ import { SiteSettings, User, Event, ContactMessage } from '../models';
 import { UserRole, SETTINGS_RESTRICTED_SUPER_ADMINS, ADSENSE_RESTRICTED_SUPER_ADMINS, CommitteePosition } from '@rdswa/shared';
 import { cacheResponse } from '../middlewares/cache.middleware';
 import { sendEmail } from '../config/mail';
+import { renderEmailLayout } from '../utils/emailTemplate';
 import { env } from '../config/env';
 import { syncDepartmentGroups } from '../jobs/groupInitializer';
 
@@ -463,20 +464,21 @@ router.post(
     const safeSubject = escapeHtml(subject);
     const safeMessage = escapeHtml(message).replace(/\n/g, '<br/>');
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #3b82f6;">New Contact Form Submission</h2>
-        <p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p>
-        <p><strong>Subject:</strong> ${safeSubject}</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
-        <p style="white-space: pre-wrap;">${safeMessage}</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
-        <p style="color: #6b7280; font-size: 12px;">
-          Sent via the RDSWA contact form. Manage in Admin Panel &gt; Contact Messages.<br/>
-          Ref: ${record._id}
-        </p>
-      </div>
-    `;
+    const detailCard = `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc;border-radius:8px;">
+        <tr><td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#374151;line-height:1.6;">
+          <p style="margin:0 0 6px;"><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p>
+          <p style="margin:0 0 12px;"><strong>Subject:</strong> ${safeSubject}</p>
+          <div style="border-top:1px solid #e5e7eb;padding-top:12px;white-space:pre-wrap;">${safeMessage}</div>
+        </td></tr>
+      </table>`;
+    const html = await renderEmailLayout({
+      heading: 'New Contact Form Submission',
+      preheader: `New message from ${safeName}: ${safeSubject}`,
+      intro: 'A visitor submitted the contact form on the website.',
+      bodyHtml: detailCard,
+      footerNote: `Sent via the contact form. Manage in Admin Panel → Contact Messages. Ref: ${record._id}`,
+    });
 
     if (recipient) {
       try {
@@ -626,22 +628,31 @@ router.post(
     const safeOriginal = escapeHtml(msg.message).replace(/\n/g, '<br/>');
     const replierName = escapeHtml(req.user.name || 'The RDSWA Team');
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
-        <p>Hi ${escapeHtml(msg.name)},</p>
-        <p>Thank you for reaching out to ${escapeHtml(orgName)}. Here is our reply to your message:</p>
-        <div style="border-left: 3px solid #3b82f6; padding: 12px 16px; background: #f9fafb; border-radius: 4px; margin: 16px 0;">
-          <p style="white-space: pre-wrap; margin: 0;">${safeReply}</p>
-        </div>
-        <p>Best regards,<br/>${replierName}<br/><em>${escapeHtml(orgName)}</em></p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;"/>
-        <details style="color: #6b7280; font-size: 12px;">
-          <summary style="cursor: pointer;">Your original message</summary>
-          <p><strong>Subject:</strong> ${escapeHtml(msg.subject)}</p>
-          <p style="white-space: pre-wrap;">${safeOriginal}</p>
-        </details>
-      </div>
-    `;
+    const replyBody = `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#374151;line-height:1.6;padding-bottom:14px;">
+          Thank you for reaching out to ${escapeHtml(orgName)}. Here is our reply to your message:
+        </td></tr>
+        <tr><td style="background:#f8fafc;border-left:4px solid #008f57;border-radius:8px;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f172a;line-height:1.6;white-space:pre-wrap;">${safeReply}</td></tr>
+        <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#374151;padding-top:16px;">
+          Best regards,<br/>${replierName}<br/><em style="color:#64748b;">${escapeHtml(orgName)}</em>
+        </td></tr>
+        <tr><td style="padding-top:18px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;border-radius:8px;">
+            <tr><td style="padding:12px 16px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;line-height:1.6;">
+              <strong>Your original message</strong><br/>
+              <strong>Subject:</strong> ${escapeHtml(msg.subject)}<br/>
+              <span style="white-space:pre-wrap;">${safeOriginal}</span>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>`;
+    const html = await renderEmailLayout({
+      heading: 'Reply from ' + orgName,
+      preheader: `Re: ${msg.subject}`,
+      greeting: `Hi ${escapeHtml(msg.name)},`,
+      bodyHtml: replyBody,
+    });
 
     try {
       await sendEmail(msg.email, replySubject, html);

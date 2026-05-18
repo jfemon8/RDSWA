@@ -169,7 +169,7 @@ export class NotificationService {
    */
   private async sendEmailSafe(to: string, subject: string, body: string, link?: string): Promise<void> {
     try {
-      const html = renderEmailLayout({
+      const html = await renderEmailLayout({
         heading: subject,
         preheader: body.slice(0, 110),
         intro: body,
