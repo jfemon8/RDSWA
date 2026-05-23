@@ -393,11 +393,23 @@ router.get('/proxy', authenticate(true), (req, res, next) => {
           res.setHeader('Content-Length', upstream.headers['content-length']);
         }
         const disposition = inline ? 'inline' : 'attachment';
-        // Use both `filename` (legacy) and `filename*` (RFC 5987) for unicode support.
+        // Use both `filename` (legacy) and `filename*` (RFC 5987) for unicode
+        // support. Node's HTTP layer rejects non-Latin-1 chars in header
+        // values with `TypeError: Invalid character in header content`, so
+        // the legacy `filename="..."` token MUST be ASCII-only. Strip
+        // anything outside printable ASCII (Bengali, emoji, control chars)
+        // down to `_` here — modern browsers prefer the `filename*` token
+        // when present, so the user-visible download name still preserves
+        // the full unicode original via RFC 5987 percent-encoding.
+        const asciiFallback =
+          filename
+            .replace(/[^\x20-\x7E]/g, '_')
+            .replace(/["\\]/g, '_')
+            .trim() || 'download';
         const encoded = encodeURIComponent(filename);
         res.setHeader(
           'Content-Disposition',
-          `${disposition}; filename="${filename.replace(/"/g, '')}"; filename*=UTF-8''${encoded}`,
+          `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
         );
         // Cache for an hour — Cloudinary URLs are versioned so they're effectively immutable.
         res.setHeader('Cache-Control', 'private, max-age=3600');
