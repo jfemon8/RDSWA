@@ -167,6 +167,131 @@ function uploadToCloudinary(
   });
 }
 
+/**
+ * Canonical "extension for a given MIME type" lookup. Used by `ensureExtension`
+ * below so files uploaded with extension-less names (e.g. "report" or a phone
+ * camera dump like "IMG_20251023") get a sensible extension appended before
+ * we hand the name to Cloudinary and store it in the DB. Without this, raw
+ * Cloudinary URLs come back without a `.pdf` / `.docx` suffix and browsers
+ * can't infer the MIME — PDFs download as opaque hashes, Word docs lose
+ * their app association, etc.
+ */
+const EXT_BY_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'text/plain': 'txt',
+  'text/csv': 'csv',
+  'application/zip': 'zip',
+  'application/x-zip-compressed': 'zip',
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  'image/avif': 'avif',
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/ogg': 'ogg',
+  'audio/webm': 'weba',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+};
+
+/**
+ * If `filename` already ends in a sane extension (last segment after `.` is
+ * 1–8 alphanumeric chars), leave it alone — we trust whatever the user typed.
+ * Otherwise look up the canonical extension for the file's actual MIME type
+ * and append it. Falls back to the sanitized MIME subtype (e.g. octet-stream
+ * → "octetstream") if the MIME isn't in our table, and to the original
+ * filename if we can't derive anything useful.
+ */
+function ensureExtension(filename: string, mimeType: string): string {
+  if (!filename) return filename;
+  // Strip a trailing dot ("name.") so "name." + "pdf" becomes "name.pdf",
+  // not "name..pdf".
+  const trimmed = filename.replace(/\.+$/, '');
+  if (/\.[a-zA-Z0-9]{1,8}$/.test(trimmed)) return trimmed;
+  const m = (mimeType || '').toLowerCase();
+  // Skip when we genuinely don't know the type — appending "octetstream"
+  // (the subtype fallback) is worse than no extension at all.
+  if (!m || m === 'application/octet-stream' || m === 'binary/octet-stream') {
+    return trimmed;
+  }
+  let ext = EXT_BY_MIME[m];
+  if (!ext) {
+    const sub = m.split('/').pop() || '';
+    ext = sub.replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 8);
+  }
+  if (!ext) return trimmed;
+  return `${trimmed}.${ext}`;
+}
+
+/**
+ * Best-effort MIME detection from a buffer's leading bytes. Used by the
+ * upload proxy as a last-resort signal for legacy files where the URL has
+ * no extension AND the upstream returns `application/octet-stream` (which
+ * is what Cloudinary's "raw" resource type does — it never advertises a
+ * specific Content-Type for raw uploads). Covers the common formats this
+ * platform actually stores; falls back to `null` for anything unknown.
+ */
+function sniffMagic(buf: Buffer): string | null {
+  if (!buf || buf.length < 4) return null;
+  // PDF — `%PDF`
+  if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'application/pdf';
+  // PNG — 89 50 4E 47 0D 0A 1A 0A
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
+  // JPEG — FF D8 FF
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  // GIF — "GIF8"
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return 'image/gif';
+  // WebP — RIFF....WEBP
+  if (
+    buf.length >= 12 &&
+    buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+    buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50
+  ) {
+    return 'image/webp';
+  }
+  // SVG — text starting with `<?xml` or `<svg`
+  if (buf.length >= 5) {
+    const head = buf.slice(0, Math.min(buf.length, 64)).toString('utf8').trim().toLowerCase();
+    if (head.startsWith('<?xml') && head.includes('<svg')) return 'image/svg+xml';
+    if (head.startsWith('<svg')) return 'image/svg+xml';
+  }
+  // ZIP container (includes DOCX/XLSX/PPTX) — `PK\x03\x04`
+  if (buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) return 'application/zip';
+  // Legacy OLE (DOC/XLS/PPT) — D0 CF 11 E0
+  if (buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) return 'application/msword';
+  // MP4 / MOV — `ftyp` box marker at offset 4
+  if (buf.length >= 12 && buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) {
+    // brand at offsets 8-11 — "qt  " → mov, otherwise treat as mp4
+    if (buf[8] === 0x71 && buf[9] === 0x74) return 'video/quicktime';
+    return 'video/mp4';
+  }
+  // WebM / Matroska — 1A 45 DF A3
+  if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return 'video/webm';
+  // MP3 — ID3 tag or frame sync (FF Ex/Fx)
+  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return 'audio/mpeg';
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'audio/mpeg';
+  // WAV — RIFF....WAVE
+  if (
+    buf.length >= 12 &&
+    buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+    buf[8] === 0x57 && buf[9] === 0x41 && buf[10] === 0x56 && buf[11] === 0x45
+  ) {
+    return 'audio/wav';
+  }
+  return null;
+}
+
 /** Derive the chat attachment kind + Cloudinary resource_type from the file's MIME. */
 function deriveChatKind(mime: string): {
   kind: 'image' | 'video' | 'audio' | 'pdf' | 'file';
@@ -250,12 +375,16 @@ router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncH
   if (!req.file) throw ApiError.badRequest('No file provided');
 
   const isImage = req.file.mimetype.startsWith('image/');
+  // Append the canonical extension if the caller provided a bare name like
+  // "report" so the Cloudinary URL ends with ".pdf"/".docx" and the DB-stored
+  // filename downloads cleanly.
+  const filename = ensureExtension(req.file.originalname, req.file.mimetype);
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'documents',
     resourceType: isImage ? 'image' : 'raw',
     // Pass originalName for raw uploads so URL keeps the file extension
     // (e.g. report.pdf instead of an opaque hash).
-    originalName: isImage ? undefined : req.file.originalname,
+    originalName: isImage ? undefined : filename,
   });
 
   ApiResponse.success(res, {
@@ -263,7 +392,7 @@ router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncH
     publicId: result.publicId,
     fileType: req.file.mimetype,
     fileSize: req.file.size,
-    originalName: req.file.originalname,
+    originalName: filename,
   }, 'Document uploaded');
 }));
 
@@ -286,13 +415,19 @@ router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB')
     throw ApiError.badRequest(`File too large. ${kind} attachments are limited to 10 MB.`);
   }
 
+  // Same auto-extension treatment as documents — chat raws (PDF, zips,
+  // generic files) need a real extension on the URL so the client can render
+  // them; for media (image/video/audio) Cloudinary already manages the
+  // extension via the resource pipeline, but appending one to the stored
+  // `name` keeps the download dialog showing a sensible filename either way.
+  const filename = ensureExtension(req.file.originalname, req.file.mimetype);
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'chat',
     resourceType,
     // Raw uploads (PDF + generic files) need use_filename so the delivered
     // URL ends with the original extension. Without this, browsers download
     // PDFs as opaque binary blobs with hash filenames.
-    originalName: resourceType === 'raw' ? req.file.originalname : undefined,
+    originalName: resourceType === 'raw' ? filename : undefined,
   });
 
   ApiResponse.success(res, {
@@ -300,7 +435,7 @@ router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB')
     url: result.url,
     publicId: result.publicId,
     resourceType,
-    name: req.file.originalname,
+    name: filename,
     mimeType: req.file.mimetype,
     size: result.bytes ?? req.file.size,
     width: result.width,
@@ -344,85 +479,146 @@ const MIME_BY_EXT: Record<string, string> = {
   mov: 'video/quicktime',
 };
 
-router.get('/proxy', authenticate(true), (req, res, next) => {
+router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
+  const rawUrl = String(req.query.url || '');
+  const inline = req.query.inline !== 'false'; // default inline
+  const downloadName = String(req.query.name || '').replace(/[\r\n"]/g, '').trim();
+
+  if (!rawUrl) throw ApiError.badRequest('url query parameter is required');
+
+  // SSRF protection: only allow our own Cloudinary cloud as upstream.
+  let parsed: URL;
   try {
-    const rawUrl = String(req.query.url || '');
-    const inline = req.query.inline !== 'false'; // default inline
-    const downloadName = String(req.query.name || '').replace(/[\r\n"]/g, '').trim();
+    parsed = new URL(rawUrl);
+  } catch {
+    throw ApiError.badRequest('Invalid url');
+  }
+  if (parsed.protocol !== 'https:' || parsed.hostname !== 'res.cloudinary.com') {
+    throw ApiError.badRequest('Only Cloudinary URLs are allowed');
+  }
+  const cloudName = env.CLOUDINARY_CLOUD_NAME || '';
+  if (cloudName && !parsed.pathname.startsWith(`/${cloudName}/`)) {
+    throw ApiError.badRequest('Cloudinary URL belongs to a different cloud');
+  }
 
-    if (!rawUrl) {
-      return next(ApiError.badRequest('url query parameter is required'));
-    }
+  // First-pass MIME guess from the URL extension. May be empty for legacy
+  // raw uploads that were stored without an extension (the proxy then
+  // falls back to upstream Content-Type and magic-byte sniffing below).
+  const pathname = parsed.pathname.toLowerCase();
+  const extMatch = pathname.match(/\.([a-z0-9]{1,8})(?:$|\?)/);
+  const urlExt = extMatch?.[1] || '';
+  const mimeFromUrl = MIME_BY_EXT[urlExt] || '';
 
-    // SSRF protection: only allow our own Cloudinary cloud as upstream.
-    let parsed: URL;
-    try {
-      parsed = new URL(rawUrl);
-    } catch {
-      return next(ApiError.badRequest('Invalid url'));
-    }
-    if (parsed.protocol !== 'https:' || parsed.hostname !== 'res.cloudinary.com') {
-      return next(ApiError.badRequest('Only Cloudinary URLs are allowed'));
-    }
-    const cloudName = env.CLOUDINARY_CLOUD_NAME || '';
-    if (cloudName && !parsed.pathname.startsWith(`/${cloudName}/`)) {
-      return next(ApiError.badRequest('Cloudinary URL belongs to a different cloud'));
-    }
+  // Sensible default filename: prefer query.name, else last URL segment.
+  const lastSeg = decodeURIComponent(parsed.pathname.split('/').pop() || 'download');
+  const initialFilename = downloadName || lastSeg;
 
-    // Derive content type from the URL extension or fall back to upstream's header.
-    const pathname = parsed.pathname.toLowerCase();
-    const extMatch = pathname.match(/\.([a-z0-9]{1,8})(?:$|\?)/);
-    const ext = extMatch?.[1] || '';
-    const mime = MIME_BY_EXT[ext] || 'application/octet-stream';
+  // Fetch upstream and pipe through, but buffer the first few bytes first
+  // so we can sniff the file type when neither the URL nor the upstream
+  // tells us what we're serving. The whole flow is wrapped in a Promise so
+  // asyncHandler still owns the response lifecycle.
+  await new Promise<void>((resolve, reject) => {
+    const httpsReq = https.get(rawUrl, (upstream) => {
+      if (!upstream.statusCode || upstream.statusCode >= 400) {
+        upstream.resume();
+        reject(new ApiError(upstream.statusCode || 502, 'Upstream fetch failed'));
+        return;
+      }
 
-    // Sensible default filename: prefer query.name, else last URL segment.
-    const lastSeg = decodeURIComponent(parsed.pathname.split('/').pop() || 'download');
-    const filename = downloadName || lastSeg;
+      const upstreamMime = String(upstream.headers['content-type'] || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
 
-    https
-      .get(rawUrl, (upstream) => {
-        if (!upstream.statusCode || upstream.statusCode >= 400) {
-          upstream.resume();
-          return next(new ApiError(upstream.statusCode || 502, 'Upstream fetch failed'));
+      // We buffer up to SNIFF_LEN bytes from upstream before flushing
+      // response headers — that's the maximum we need for the magic-byte
+      // checks (WebP / WAV need 12 bytes; MP4 needs 12; everything else
+      // less). Stream resumes piping normally once headers are out.
+      const SNIFF_LEN = 16;
+      let buffered = Buffer.alloc(0);
+      let headersSent = false;
+
+      const flushHeadersAndBuffer = () => {
+        if (headersSent) return;
+        headersSent = true;
+
+        // Resolve MIME: URL extension → upstream header → magic-byte sniff.
+        // Octet-stream is treated as "unknown" since Cloudinary returns it
+        // for every raw upload regardless of the actual format.
+        let finalMime = mimeFromUrl;
+        const isUnknown = (m: string) =>
+          !m || m === 'application/octet-stream' || m === 'binary/octet-stream';
+        if (isUnknown(finalMime) && !isUnknown(upstreamMime)) {
+          finalMime = upstreamMime;
         }
+        if (isUnknown(finalMime)) {
+          const sniffed = sniffMagic(buffered);
+          if (sniffed) finalMime = sniffed;
+        }
+        if (!finalMime) finalMime = 'application/octet-stream';
 
-        // Override Content-Type so browsers preview PDFs/images inline instead
-        // of treating them as octet-stream downloads.
-        res.setHeader('Content-Type', mime);
+        // Auto-append the canonical extension to the served filename when
+        // the stored name didn't have one (e.g. legacy raw uploads named
+        // "report" with no extension). Modern browsers honour `filename*`
+        // for the Unicode form, so the user-visible download still gets a
+        // proper `report.pdf` / `photo.jpg` after the helper runs.
+        const finalFilename = ensureExtension(initialFilename, finalMime);
+
+        res.setHeader('Content-Type', finalMime);
         if (upstream.headers['content-length']) {
           res.setHeader('Content-Length', upstream.headers['content-length']);
         }
         const disposition = inline ? 'inline' : 'attachment';
-        // Use both `filename` (legacy) and `filename*` (RFC 5987) for unicode
-        // support. Node's HTTP layer rejects non-Latin-1 chars in header
-        // values with `TypeError: Invalid character in header content`, so
-        // the legacy `filename="..."` token MUST be ASCII-only. Strip
-        // anything outside printable ASCII (Bengali, emoji, control chars)
-        // down to `_` here — modern browsers prefer the `filename*` token
-        // when present, so the user-visible download name still preserves
-        // the full unicode original via RFC 5987 percent-encoding.
+        // Latin-1-safe fallback for the legacy `filename="..."` token —
+        // Node rejects non-ISO-8859-1 chars in header values, so any
+        // Bengali / emoji / control bytes get replaced with `_` here while
+        // `filename*=UTF-8''…` carries the full unicode original.
         const asciiFallback =
-          filename
+          finalFilename
             .replace(/[^\x20-\x7E]/g, '_')
             .replace(/["\\]/g, '_')
             .trim() || 'download';
-        const encoded = encodeURIComponent(filename);
+        const encoded = encodeURIComponent(finalFilename);
         res.setHeader(
           'Content-Disposition',
           `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
         );
-        // Cache for an hour — Cloudinary URLs are versioned so they're effectively immutable.
+        // Cache for an hour — Cloudinary URLs are versioned and effectively immutable.
         res.setHeader('Cache-Control', 'private, max-age=3600');
 
-        upstream.pipe(res);
-      })
-      .on('error', (err) => {
-        console.error('[Upload Proxy] Upstream error:', err);
-        next(new ApiError(502, 'Upstream fetch failed'));
+        if (buffered.length > 0) res.write(buffered);
+      };
+
+      upstream.on('data', (chunk: Buffer) => {
+        if (!headersSent) {
+          buffered = Buffer.concat([buffered, chunk]);
+          if (buffered.length >= SNIFF_LEN) flushHeadersAndBuffer();
+        } else {
+          // Backpressure: pause upstream when the response can't keep up.
+          if (!res.write(chunk)) {
+            upstream.pause();
+            res.once('drain', () => upstream.resume());
+          }
+        }
       });
-  } catch (err) {
-    next(err);
-  }
-});
+      upstream.on('end', () => {
+        // Short responses (< SNIFF_LEN bytes) reach `end` before we've
+        // flushed — do it now with whatever we buffered.
+        if (!headersSent) flushHeadersAndBuffer();
+        res.end();
+        resolve();
+      });
+      upstream.on('error', (err) => {
+        console.error('[Upload Proxy] Upstream stream error:', err);
+        if (!headersSent) reject(new ApiError(502, 'Upstream fetch failed'));
+        else { res.end(); resolve(); }
+      });
+    });
+    httpsReq.on('error', (err) => {
+      console.error('[Upload Proxy] Upstream error:', err);
+      reject(new ApiError(502, 'Upstream fetch failed'));
+    });
+  });
+}));
 
 export default router;
