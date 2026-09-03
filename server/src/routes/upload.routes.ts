@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { cloudinary } from '../config/cloudinary';
+import { decodeMultipartFilename } from '../utils/filename';
 import { env } from '../config/env';
 
 const router = Router();
@@ -378,7 +379,7 @@ router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncH
   // Append the canonical extension if the caller provided a bare name like
   // "report" so the Cloudinary URL ends with ".pdf"/".docx" and the DB-stored
   // filename downloads cleanly.
-  const filename = ensureExtension(req.file.originalname, req.file.mimetype);
+  const filename = ensureExtension(decodeMultipartFilename(req.file.originalname), req.file.mimetype);
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'documents',
     resourceType: isImage ? 'image' : 'raw',
@@ -420,7 +421,7 @@ router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB')
   // them; for media (image/video/audio) Cloudinary already manages the
   // extension via the resource pipeline, but appending one to the stored
   // `name` keeps the download dialog showing a sensible filename either way.
-  const filename = ensureExtension(req.file.originalname, req.file.mimetype);
+  const filename = ensureExtension(decodeMultipartFilename(req.file.originalname), req.file.mimetype);
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'chat',
     resourceType,

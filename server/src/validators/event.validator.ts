@@ -47,3 +47,33 @@ export const feedbackSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().optional(),
 });
+
+/** Optional backdate; range rules live in `resolveCheckedInAt` so client and server agree. */
+const checkedInAtField = z
+  .string()
+  .nullish()
+  .refine((v) => !v || !Number.isNaN(new Date(v).getTime()), {
+    message: 'Invalid attendance date',
+  });
+
+const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID');
+
+export const checkinSchema = z.object({
+  userId: objectId,
+  method: z.enum(['qr', 'manual']).optional(),
+  checkedInAt: checkedInAtField,
+});
+
+export const manualAttendanceSchema = z.object({
+  userId: objectId,
+  checkedInAt: checkedInAtField,
+});
+
+export const bulkAttendanceSchema = z.object({
+  userIds: z.array(objectId).min(1, 'Select at least one member'),
+  checkedInAt: checkedInAtField,
+});
+
+export const selfCheckinSchema = z.object({
+  checkedInAt: checkedInAtField,
+});

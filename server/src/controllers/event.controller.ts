@@ -41,17 +41,19 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const checkin = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { userId, method } = req.body;
+  const { userId, method, checkedInAt } = req.body;
   if (!userId || !mongoose.isValidObjectId(userId)) {
     throw ApiError.badRequest('Invalid user ID in QR / form payload');
   }
   const via = method === 'manual' ? 'manual' : 'qr';
-  const result = await eventService.submitAttendance(
-    req.params.id as string,
+  const result = await eventService.submitAttendance({
+    eventId: req.params.id as string,
     userId,
     via,
-    (req.user._id as any).toString()
-  );
+    verifiedBy: (req.user._id as any).toString(),
+    actorRole: req.user.role,
+    checkedInAt,
+  });
   // 200 with status='duplicate' is intentional — the scanner UI uses it to
   // render a warning ("already checked in: Name") instead of a hard error.
   const message =
@@ -63,16 +65,18 @@ export const checkin = asyncHandler(async (req: Request, res: Response) => {
 
 export const submitAttendance = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { userId } = req.body;
+  const { userId, checkedInAt } = req.body;
   if (!userId || !mongoose.isValidObjectId(userId)) {
     throw ApiError.badRequest('Invalid user ID');
   }
-  const result = await eventService.submitAttendance(
-    req.params.id as string,
+  const result = await eventService.submitAttendance({
+    eventId: req.params.id as string,
     userId,
-    'manual',
-    (req.user._id as any).toString()
-  );
+    via: 'manual',
+    verifiedBy: (req.user._id as any).toString(),
+    actorRole: req.user.role,
+    checkedInAt,
+  });
   const message =
     result.status === 'duplicate'
       ? 'Already checked in'
@@ -104,21 +108,36 @@ export const myAttendance = asyncHandler(async (req: Request, res: Response) => 
 
 export const selfCheckin = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const event = await eventService.selfCheckin(req.params.id as string, (req.user._id as any).toString());
+  const event = await eventService.selfCheckin(
+    req.params.id as string,
+    (req.user._id as any).toString(),
+    req.body?.checkedInAt
+  );
   ApiResponse.success(res, event, 'Check-in request submitted. Awaiting moderator approval.');
 });
 
 export const bulkAttendance = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { userIds } = req.body;
+  const { userIds, checkedInAt } = req.body;
   if (!Array.isArray(userIds) || userIds.length === 0) throw ApiError.badRequest('userIds array is required');
-  const event = await eventService.bulkAttendance(req.params.id as string, userIds, (req.user._id as any).toString());
+  const event = await eventService.bulkAttendance({
+    eventId: req.params.id as string,
+    userIds,
+    verifiedBy: (req.user._id as any).toString(),
+    actorRole: req.user.role,
+    checkedInAt,
+  });
   ApiResponse.success(res, event, `${userIds.length} users checked in`);
 });
 
 export const approveAttendance = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const event = await eventService.approveAttendance(req.params.id as string, req.params.userId as string, (req.user._id as any).toString());
+  const event = await eventService.approveAttendance(
+    req.params.id as string,
+    req.params.userId as string,
+    (req.user._id as any).toString(),
+    req.user.role
+  );
   ApiResponse.success(res, event, 'Attendance approved');
 });
 

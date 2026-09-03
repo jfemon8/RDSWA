@@ -4,7 +4,13 @@ import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import mongoose from 'mongoose';
 import QRCode from 'qrcode';
-import { deriveEventStatus } from '@rdswa/shared';
+import {
+  deriveEventStatus,
+  dhakaStartOfDay,
+  getAttendanceWindow,
+  resolveCheckedInAt,
+  attendanceWindowClosedMessage,
+} from '@rdswa/shared';
 
 interface ListEventsQuery {
   page?: string;
@@ -24,7 +30,8 @@ interface ListEventsQuery {
  * startDate's day.
  */
 function buildStatusDateFilter(status: string, now: Date): FilterQuery<IEventDocument> | null {
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Dhaka-anchored so this filter selects the same events `deriveEventStatus` labels.
+  const startOfToday = dhakaStartOfDay(now);
 
   if (status === 'upcoming') {
     return { status: { $nin: ['draft', 'cancelled'] }, startDate: { $gt: now } };
@@ -180,61 +187,57 @@ export class EventService {
   }
 
   /**
-   * Records an attendance check-in driven by a moderator (QR scan or manual
-   * entry). Has three branches:
-   *   - No prior record: creates an approved record.
-   *   - Pending self-checkin record exists: promotes it to approved and
-   *     stamps verifier + the actual via channel. This is what closes the
-   *     loop when a user submits a self check-in request and a moderator
-   *     then scans their QR — without this, the pending request would
-   *     linger forever and the QR scan would error with "already checked
-   *     in" while the user still saw "pending approval".
-   *   - Already approved: short-circuits with a structured "duplicate" so
-   *     the scanner can show a friendly warning instead of a hard error.
+   * Record a moderator-driven check-in, creating an approved record, promoting
+   * a pending self-request, or reporting a duplicate.
    *
-   * Returns the populated attendance record so the scanner can display the
-   * attendee's name and status without an extra round trip.
+   * Refused once the actor's backfill window has closed.
    */
-  async submitAttendance(
-    eventId: string,
-    userId: string,
-    via: 'qr' | 'manual',
-    verifiedBy?: string
-  ): Promise<{ status: 'approved' | 'duplicate'; record: any }> {
+  async submitAttendance(options: {
+    eventId: string;
+    userId: string;
+    via: 'qr' | 'manual';
+    verifiedBy?: string;
+    actorRole?: string;
+    checkedInAt?: string | Date | null;
+  }): Promise<{ status: 'approved' | 'duplicate'; record: any }> {
+    const { eventId, userId, via, verifiedBy, actorRole, checkedInAt } = options;
+
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
 
     const existing = event.attendance.find((a) => a.user.toString() === userId);
     const verifierOid = verifiedBy ? new mongoose.Types.ObjectId(verifiedBy) : undefined;
 
-    let resultStatus: 'approved' | 'duplicate' = 'approved';
+    const resultStatus: 'approved' | 'duplicate' =
+      existing?.status === 'approved' ? 'duplicate' : 'approved';
 
-    if (existing) {
-      if (existing.status === 'approved') {
-        resultStatus = 'duplicate';
-      } else {
+    // A duplicate writes nothing, so let the scanner warn even past the deadline.
+    if (resultStatus !== 'duplicate') {
+      const window = getAttendanceWindow(event, { role: actorRole });
+      const resolved = resolveCheckedInAt({ supplied: checkedInAt, event, window });
+      if (!resolved.ok) throw ApiError.badRequest(resolved.error!);
+
+      if (existing) {
         // Promote pending → approved (the user previously self-requested).
         existing.status = 'approved';
         existing.checkedInVia = via;
-        existing.checkedInAt = new Date();
+        // Keep the member's stated date unless one was supplied here.
+        if (checkedInAt) existing.checkedInAt = resolved.checkedInAt;
         if (verifierOid) existing.verifiedBy = verifierOid;
+      } else {
+        event.attendance.push({
+          user: new mongoose.Types.ObjectId(userId),
+          checkedInAt: resolved.checkedInAt,
+          checkedInVia: via,
+          verifiedBy: verifierOid,
+          status: 'approved',
+        } as any);
       }
-    } else {
-      event.attendance.push({
-        user: new mongoose.Types.ObjectId(userId),
-        checkedInAt: new Date(),
-        checkedInVia: via,
-        verifiedBy: verifierOid,
-        status: 'approved',
-      } as any);
-    }
 
-    if (resultStatus !== 'duplicate') {
       await event.save();
     }
 
-    // Re-fetch with population so the caller can show the attendee's name,
-    // batch, department, and verifier without a second query.
+    // Re-fetch populated so the scanner can show the attendee without a second query.
     const populated = await Event.findById(eventId)
       .select('attendance')
       .populate('attendance.user', 'name avatar department batch studentId')
@@ -288,16 +291,26 @@ export class EventService {
     return qrDataUrl;
   }
 
-  async selfCheckin(eventId: string, userId: string): Promise<IEventDocument> {
+  /** A member's own attendance claim, which lands as `pending` and uses the tightest window. */
+  async selfCheckin(
+    eventId: string,
+    userId: string,
+    checkedInAt?: string | Date | null
+  ): Promise<IEventDocument> {
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
 
+    // Checked before the window so an existing record reports itself, not the deadline.
     const already = event.attendance.some((a) => a.user.toString() === userId);
     if (already) throw ApiError.conflict('You have already checked in or have a pending request');
 
+    const window = getAttendanceWindow(event, { isSelfCheckin: true });
+    const resolved = resolveCheckedInAt({ supplied: checkedInAt, event, window });
+    if (!resolved.ok) throw ApiError.badRequest(resolved.error!);
+
     event.attendance.push({
       user: new mongoose.Types.ObjectId(userId),
-      checkedInAt: new Date(),
+      checkedInAt: resolved.checkedInAt,
       checkedInVia: 'self',
       status: 'pending',
     } as any);
@@ -305,9 +318,21 @@ export class EventService {
     return event;
   }
 
-  async bulkAttendance(eventId: string, userIds: string[], verifiedBy: string): Promise<IEventDocument> {
+  async bulkAttendance(options: {
+    eventId: string;
+    userIds: string[];
+    verifiedBy: string;
+    actorRole?: string;
+    checkedInAt?: string | Date | null;
+  }): Promise<IEventDocument> {
+    const { eventId, userIds, verifiedBy, actorRole, checkedInAt } = options;
+
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
+
+    const window = getAttendanceWindow(event, { role: actorRole });
+    const resolved = resolveCheckedInAt({ supplied: checkedInAt, event, window });
+    if (!resolved.ok) throw ApiError.badRequest(resolved.error!);
 
     const verifierOid = new mongoose.Types.ObjectId(verifiedBy);
     for (const uid of userIds) {
@@ -315,16 +340,16 @@ export class EventService {
       if (!existing) {
         event.attendance.push({
           user: new mongoose.Types.ObjectId(uid),
-          checkedInAt: new Date(),
+          checkedInAt: resolved.checkedInAt,
           checkedInVia: 'manual',
           verifiedBy: verifierOid,
           status: 'approved',
         } as any);
       } else if (existing.status === 'pending') {
-        // Promote pending self-request into an approved manual check-in.
+        // Promote a pending self-request, keeping its date unless one was supplied here.
         existing.status = 'approved';
         existing.checkedInVia = 'manual';
-        existing.checkedInAt = new Date();
+        if (checkedInAt) existing.checkedInAt = resolved.checkedInAt;
         existing.verifiedBy = verifierOid;
       }
       // status === 'approved' → already done, leave untouched.
@@ -333,9 +358,18 @@ export class EventService {
     return event;
   }
 
-  async approveAttendance(eventId: string, userId: string, verifiedBy: string): Promise<IEventDocument> {
+  /** Approve a pending self check-in, keeping the date the member recorded. */
+  async approveAttendance(
+    eventId: string,
+    userId: string,
+    verifiedBy: string,
+    actorRole?: string
+  ): Promise<IEventDocument> {
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
+
+    const window = getAttendanceWindow(event, { role: actorRole });
+    if (!window.isOpen) throw ApiError.badRequest(attendanceWindowClosedMessage(window));
 
     const record = event.attendance.find((a) => a.user.toString() === userId);
     if (!record) throw ApiError.notFound('Attendance record not found');

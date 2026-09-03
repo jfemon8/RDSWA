@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { getAttendanceWindow } from '@rdswa/shared';
+import { useAuth } from '@/hooks/useAuth';
+import AttendanceDateField, { AttendanceWindowClosedNotice } from '@/components/ui/AttendanceDateField';
 
 /**
  * QR-based check-in scanner with proper duplicate prevention and feedback
@@ -90,10 +93,14 @@ export default function CheckInScannerPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [manualId, setManualId] = useState('');
   const [busy, setBusy] = useState(false);
+  const [attendanceDate, setAttendanceDate] = useState('');
+  const { user } = useAuth();
 
   // Refs that the rAF loop reads. State-via-ref avoids stale-closure bugs
   // since the rAF callback is captured once at effect setup.
   const pausedRef = useRef(false);
+  // Read inside `checkin` so changing the backdate doesn't tear down the rAF scan loop.
+  const attendanceDateRef = useRef('');
   const lastQrRef = useRef<{ data: string; at: number } | null>(null);
   const detectorRef = useRef<any>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -109,6 +116,11 @@ export default function CheckInScannerPage() {
   });
 
   const event = data?.data;
+  const attendanceWindow = event ? getAttendanceWindow(event, { role: user?.role }) : null;
+
+  useEffect(() => {
+    attendanceDateRef.current = attendanceDate;
+  }, [attendanceDate]);
 
   const showResult = useCallback((next: ScanResult) => {
     setResult(next);
@@ -126,7 +138,11 @@ export default function CheckInScannerPage() {
       setBusy(true);
       pausedRef.current = true;
       try {
-        const { data } = await api.post(`/events/${id}/checkin`, { userId, method });
+        const { data } = await api.post(`/events/${id}/checkin`, {
+          userId,
+          method,
+          ...(attendanceDateRef.current ? { checkedInAt: attendanceDateRef.current } : {}),
+        });
         const payload = data?.data || {};
         const u = payload.record?.user;
         const userInfo = u
@@ -474,6 +490,18 @@ export default function CheckInScannerPage() {
           <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <UserCheck className="h-4 w-4 text-primary" /> Manual Check-in
           </h3>
+          {attendanceWindow && (
+            <>
+              <AttendanceWindowClosedNotice attendanceWindow={attendanceWindow} className="mb-3" />
+              <AttendanceDateField
+                id="scanner-attendance-date"
+                attendanceWindow={attendanceWindow}
+                event={event}
+                value={attendanceDate}
+                onChange={setAttendanceDate}
+              />
+            </>
+          )}
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               placeholder="Enter User ID"
@@ -488,7 +516,7 @@ export default function CheckInScannerPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={onManualSubmit}
-              disabled={!manualId.trim() || busy}
+              disabled={!manualId.trim() || busy || attendanceWindow?.isOpen === false}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}

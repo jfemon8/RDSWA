@@ -5,7 +5,15 @@ import { authorize } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { UserRole } from '@rdswa/shared';
-import { createEventSchema, updateEventSchema, feedbackSchema } from '../validators/event.validator';
+import {
+  createEventSchema,
+  updateEventSchema,
+  feedbackSchema,
+  checkinSchema,
+  manualAttendanceSchema,
+  bulkAttendanceSchema,
+  selfCheckinSchema,
+} from '../validators/event.validator';
 
 const router = Router();
 
@@ -16,10 +24,10 @@ router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body:
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateEventSchema }), auditLog('event.update', 'events'), eventController.update);
 router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('event.delete', 'events'), eventController.remove);
 router.post('/:id/register', authenticate(), authorize(UserRole.MEMBER), eventController.register);
-router.post('/:id/checkin', authenticate(), authorize(UserRole.MODERATOR), eventController.checkin);
-router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.submitAttendance);
-router.post('/:id/attendance/bulk', authenticate(), authorize(UserRole.MODERATOR), eventController.bulkAttendance);
-router.post('/:id/attendance/self', authenticate(), eventController.selfCheckin);
+router.post('/:id/checkin', authenticate(), authorize(UserRole.MODERATOR), validate({ body: checkinSchema }), eventController.checkin);
+router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), validate({ body: manualAttendanceSchema }), eventController.submitAttendance);
+router.post('/:id/attendance/bulk', authenticate(), authorize(UserRole.MODERATOR), validate({ body: bulkAttendanceSchema }), eventController.bulkAttendance);
+router.post('/:id/attendance/self', authenticate(), validate({ body: selfCheckinSchema }), eventController.selfCheckin);
 router.patch('/:id/attendance/:userId/approve', authenticate(), authorize(UserRole.MODERATOR), eventController.approveAttendance);
 router.patch('/:id/attendance/:userId/reject', authenticate(), authorize(UserRole.MODERATOR), eventController.rejectAttendance);
 router.post('/:id/feedback', authenticate(), authorize(UserRole.MEMBER), validate({ body: feedbackSchema }), eventController.submitFeedback);

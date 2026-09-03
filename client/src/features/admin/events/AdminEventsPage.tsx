@@ -16,7 +16,11 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import Pagination from '@/components/ui/Pagination';
-import { deriveEventStatus } from '@rdswa/shared';
+import { deriveEventStatus, getAttendanceWindow } from '@rdswa/shared';
+import { useAuth } from '@/hooks/useAuth';
+import AttendanceDateField, { AttendanceWindowClosedNotice } from '@/components/ui/AttendanceDateField';
+import DocumentUploadField from '@/components/ui/DocumentUploadField';
+import { proxyFileUrl } from '@/lib/fileProxy';
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
@@ -264,7 +268,11 @@ export default function AdminEventsPage() {
               >
                 <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground flex items-center gap-1.5">
+                    <h3
+                      onClick={() => setExpandedId(expandedId === e._id ? null : e._id)}
+                      title="Details"
+                      className="font-medium text-foreground flex items-center gap-1.5 cursor-pointer"
+                    >
                       <FileText className="h-4 w-4 text-primary shrink-0" /> {e.title}
                     </h3>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -353,8 +361,12 @@ function EventDetailPanel({ event }: { event: any }) {
   const [photoCaption, setPhotoCaption] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [attendanceDate, setAttendanceDate] = useState('');
   const [reportName, setReportName] = useState('');
   const [reportUrl, setReportUrl] = useState('');
+  // Falls back to this when no report name is typed.
+  const [reportDocName, setReportDocName] = useState('');
+  const { user } = useAuth();
 
   // Fetch full event detail
   const { data } = useQuery({
@@ -366,6 +378,9 @@ function EventDetailPanel({ event }: { event: any }) {
   });
 
   const fullEvent = data?.data || event;
+
+  // Staff window: 365 days past the event for admins, 30 for moderators.
+  const attendanceWindow = getAttendanceWindow(fullEvent, { role: user?.role });
 
   const { data: membersData } = useQuery({
     queryKey: ['users', 'members', 'search', memberSearch],
@@ -414,11 +429,16 @@ function EventDetailPanel({ event }: { event: any }) {
   });
 
   const bulkAttendanceMutation = useMutation({
-    mutationFn: (userIds: string[]) => api.post(`/events/${event._id}/attendance/bulk`, { userIds }),
+    mutationFn: (userIds: string[]) =>
+      api.post(`/events/${event._id}/attendance/bulk`, {
+        userIds,
+        ...(attendanceDate ? { checkedInAt: attendanceDate } : {}),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
       setSelectedUserIds(new Set());
       setMemberSearch('');
+      setAttendanceDate('');
       toast.success('Attendance recorded');
     },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
@@ -442,6 +462,7 @@ function EventDetailPanel({ event }: { event: any }) {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(event._id) });
       setReportName('');
       setReportUrl('');
+      setReportDocName('');
       toast.success('Report uploaded');
     },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Failed'); },
@@ -510,6 +531,19 @@ function EventDetailPanel({ event }: { event: any }) {
           {/* Member search + bulk check-in */}
           <div className="mb-4 border rounded-lg p-3 bg-muted/30">
             <p className="text-xs font-medium text-muted-foreground mb-2">Add Attendance</p>
+
+            <AttendanceWindowClosedNotice attendanceWindow={attendanceWindow} />
+
+            {attendanceWindow.isOpen && (
+            <>
+            <AttendanceDateField
+              id={`attendance-date-${event._id}`}
+              attendanceWindow={attendanceWindow}
+              event={fullEvent}
+              value={attendanceDate}
+              onChange={setAttendanceDate}
+            />
+
             <div className="relative mb-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <input
@@ -564,6 +598,8 @@ function EventDetailPanel({ event }: { event: any }) {
                 <UserCheck className="h-3.5 w-3.5" />
                 {bulkAttendanceMutation.isPending ? 'Processing...' : `Check In ${selectedUserIds.size} Selected`}
               </motion.button>
+            )}
+            </>
             )}
           </div>
 
@@ -706,18 +742,29 @@ function EventDetailPanel({ event }: { event: any }) {
             onChange={(e) => setReportName(e.target.value)}
             className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
           />
-          <input
-            placeholder="Document URL"
+          <DocumentUploadField
+            className="flex-1 min-w-0"
             value={reportUrl}
-            onChange={(e) => setReportUrl(e.target.value)}
-            className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
+            fileName={reportDocName}
+            onUploaded={(url, originalName) => {
+              setReportUrl(url);
+              setReportDocName(originalName);
+            }}
+            onClear={() => {
+              setReportUrl('');
+              setReportDocName('');
+            }}
+            onError={(message) => toast.error(message)}
           />
           <button
-            onClick={() => reportName && reportUrl && addReportMutation.mutate({ name: reportName, url: reportUrl })}
-            disabled={!reportName || !reportUrl || addReportMutation.isPending}
+            onClick={() =>
+              reportUrl &&
+              addReportMutation.mutate({ name: reportName.trim() || reportDocName, url: reportUrl })
+            }
+            disabled={!reportUrl || addReportMutation.isPending}
             className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
           >
-            {addReportMutation.isPending ? '...' : 'Upload'}
+            {addReportMutation.isPending ? '...' : 'Add'}
           </button>
         </div>
 
@@ -731,7 +778,7 @@ function EventDetailPanel({ event }: { event: any }) {
                 transition={{ delay: i * 0.03 }}
                 className="flex items-center justify-between py-1.5 px-2 bg-muted rounded text-xs group"
               >
-                <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate flex-1">
+                <a href={proxyFileUrl(r.url, r.name)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate flex-1">
                   {r.name}
                 </a>
                 <button

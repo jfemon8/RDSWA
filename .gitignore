@@ -36,6 +36,7 @@ playwright-report/
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # Project documents (confidential)
 FRS of RDSWA.pdf
