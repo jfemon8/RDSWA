@@ -33,6 +33,15 @@ export function formatDateTime(date: string | Date, _dateStyle?: string, _timeSt
   return `${formatDate(date)}, ${formatTime(date)}`;
 }
 
+/** Format a numeric stamp — e.g. "02/04/2026, 09:20:00 PM" (dd/mm/yyyy, BST) */
+export function formatTimestamp(date: string | Date) {
+  const d = new Date(date);
+  const day = d.toLocaleDateString('en-GB', {
+    day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ,
+  });
+  return `${day}, ${formatTime(d)}`;
+}
+
 /** Format with custom options (always BST) */
 export function formatDateCustom(date: string | Date, _options?: Intl.DateTimeFormatOptions) {
   return formatDate(date);

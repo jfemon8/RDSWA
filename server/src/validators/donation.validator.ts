@@ -21,6 +21,7 @@ export const createDonationSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
   type: z.enum(['one-time', 'monthly', 'event-based', 'construction-fund', 'membership']).optional(),
   campaign: z.string().optional(),
+  event: z.string().optional(),
   paymentMethod: z.enum(['bkash', 'nagad', 'rocket', 'bank', 'cash', 'other']),
   senderNumber: z.string().optional(),
   transactionId: z.string().optional(),

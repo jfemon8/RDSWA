@@ -121,7 +121,7 @@ export const registerSchema = z.object({
   responses: registrationResponses,
 });
 
-const registrationStatus = z.enum(['confirmed', 'waitlisted', 'interested', 'cancelled']);
+const registrationStatus = z.enum(['pending', 'confirmed', 'waitlisted', 'interested', 'cancelled']);
 
 export const addRegistrationSchema = z.object({
   userId: objectId,

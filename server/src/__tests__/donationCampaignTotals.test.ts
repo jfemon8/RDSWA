@@ -108,3 +108,30 @@ describe('donation schemas', () => {
     expect(() => updateDonationSchema.parse({ donationDate: 'nope' })).toThrow();
   });
 });
+
+describe('donation event linkage', () => {
+  const base = { amount: 500, paymentMethod: 'cash' as const };
+  const EVENT = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+
+  it('accepts a donation with no event, keeping the link optional', () => {
+    expect(createDonationSchema.parse(base).event).toBeUndefined();
+  });
+
+  it('links a donation to an event', () => {
+    expect(createDonationSchema.parse({ ...base, event: EVENT }).event).toBe(EVENT);
+  });
+
+  it('accepts an empty event so the link can be cleared', () => {
+    expect(createDonationSchema.parse({ ...base, event: '' }).event).toBe('');
+  });
+
+  it('allows the event to be changed on update', () => {
+    expect(updateDonationSchema.parse({ event: EVENT })).toEqual({ event: EVENT });
+  });
+
+  it('keeps campaign and event as independent links', () => {
+    const parsed = createDonationSchema.parse({ ...base, event: EVENT, campaign: 'bbbbbbbbbbbbbbbbbbbbbbbb' });
+    expect(parsed.event).toBe(EVENT);
+    expect(parsed.campaign).toBe('bbbbbbbbbbbbbbbbbbbbbbbb');
+  });
+});

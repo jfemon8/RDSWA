@@ -506,7 +506,7 @@ function ExpensesList() {
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '' });
+  const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '', event: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
@@ -520,13 +520,21 @@ function ExpensesList() {
   const resetForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ title: '', amount: '', category: 'other', description: '' });
+    setForm({ title: '', amount: '', category: 'other', description: '', event: '' });
     setErrors({});
   };
 
+  const { data: eventOptionsData } = useQuery({
+    queryKey: ['event-link-options'],
+    queryFn: async () => (await api.get('/events?limit=100')).data,
+  });
+  const eventOptions: any[] = eventOptionsData?.data || [];
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, amount: Number(form.amount) };
+      // An empty event must be dropped, or Mongoose rejects '' as an ObjectId.
+      const payload: any = { ...form, amount: Number(form.amount) };
+      if (!payload.event) delete payload.event;
       if (editId) return (await api.patch(`/expenses/${editId}`, payload)).data;
       return (await api.post('/expenses', payload)).data;
     },
@@ -556,6 +564,7 @@ function ExpensesList() {
       amount: String(e.amount || ''),
       category: e.category || 'other',
       description: e.description || '',
+      event: (typeof e.event === 'object' ? e.event?._id : e.event) || '',
     });
     setErrors({});
     setShowForm(true);
@@ -603,6 +612,21 @@ function ExpensesList() {
                   <option value="printing">Printing</option>
                   <option value="other">Other</option>
                 </select>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Linked event</label>
+                  <select
+                    value={form.event}
+                    onChange={(e) => setForm({ ...form, event: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  >
+                    <option value="" className="bg-card text-foreground">— None —</option>
+                    {eventOptions.map((ev: any) => (
+                      <option key={ev._id} value={ev._id} className="bg-card text-foreground">
+                        {ev.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Description..." minHeight="80px" />
               <div className="flex gap-2">
@@ -844,7 +868,7 @@ function CampaignsList() {
   );
 }
 
-/** Per-event financial report: budget vs actual expense. */
+/** Per-event financial report covering budget, income and expense. */
 function EventFinanceList() {
   const { data, isLoading } = useQuery({
     queryKey: ['reports', 'finance', 'events'],
@@ -875,27 +899,31 @@ function EventFinanceList() {
       <div className="hidden lg:block border rounded-lg overflow-hidden">
         <table className="w-full text-sm table-fixed">
           <colgroup>
-            <col className="w-[36%]" />
-            <col className="w-[16%]" />
-            <col className="w-[17%]" />
-            <col className="w-[17%]" />
+            <col className="w-[30%]" />
             <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[16%]" />
+            <col className="w-[12%]" />
           </colgroup>
           <thead>
             <tr className="bg-muted border-b">
               <th className="text-left p-3 font-medium text-foreground">Event</th>
               <th className="text-right p-3 font-medium text-foreground">Budget</th>
-              <th className="text-right p-3 font-medium text-foreground">Actual Expense</th>
-              <th className="text-right p-3 font-medium text-foreground">Variance</th>
+              <th className="text-right p-3 font-medium text-foreground">Income</th>
+              <th className="text-right p-3 font-medium text-foreground">Expense</th>
+              <th className="text-right p-3 font-medium text-foreground">Net</th>
               <th className="text-left p-3 font-medium text-foreground">Status</th>
             </tr>
           </thead>
           <tbody>
             {events.map((e: any, i: number) => {
               const budget = e.totalBudget || 0;
+              const income = e.totalIncome || 0;
               const actual = e.totalExpense || 0;
-              const variance = budget - actual;
-              const overBudget = variance < 0;
+              // Net is what the event actually made or cost, which budget alone never shows.
+              const net = income - actual;
+              const inDeficit = net < 0;
               return (
                 <motion.tr
                   key={e._id || i}
@@ -911,9 +939,10 @@ function EventFinanceList() {
                     )}
                   </td>
                   <td className="p-3 text-right text-foreground whitespace-nowrap">BDT {budget.toLocaleString()}</td>
+                  <td className="p-3 text-right text-green-600 font-medium whitespace-nowrap">BDT {income.toLocaleString()}</td>
                   <td className="p-3 text-right text-red-600 font-medium whitespace-nowrap">BDT {actual.toLocaleString()}</td>
-                  <td className={`p-3 text-right font-medium whitespace-nowrap ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
-                    {overBudget ? '−' : '+'} BDT {Math.abs(variance).toLocaleString()}
+                  <td className={`p-3 text-right font-medium whitespace-nowrap ${inDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                    {inDeficit ? '−' : '+'} BDT {Math.abs(net).toLocaleString()}
                   </td>
                   <td className="p-3 text-xs">
                     {e.status ? (
@@ -933,9 +962,10 @@ function EventFinanceList() {
       <div className="lg:hidden space-y-3">
         {events.map((e: any, i: number) => {
           const budget = e.totalBudget || 0;
+          const income = e.totalIncome || 0;
           const actual = e.totalExpense || 0;
-          const variance = budget - actual;
-          const overBudget = variance < 0;
+          const net = income - actual;
+          const inDeficit = net < 0;
           return (
             <motion.div
               key={e._id || i}
@@ -955,19 +985,23 @@ function EventFinanceList() {
                   <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground text-xs whitespace-nowrap shrink-0">{e.status}</span>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div>
                   <p className="text-muted-foreground">Budget</p>
                   <p className="font-medium text-foreground">BDT {budget.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Actual</p>
+                  <p className="text-muted-foreground">Income</p>
+                  <p className="font-medium text-green-600">BDT {income.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Expense</p>
                   <p className="font-medium text-red-600">BDT {actual.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Variance</p>
-                  <p className={`font-medium ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
-                    {overBudget ? '−' : '+'} BDT {Math.abs(variance).toLocaleString()}
+                  <p className="text-muted-foreground">Net</p>
+                  <p className={`font-medium ${inDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                    {inDeficit ? '−' : '+'} BDT {Math.abs(net).toLocaleString()}
                   </p>
                 </div>
               </div>

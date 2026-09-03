@@ -1,6 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type EventRegistrationStatus = 'confirmed' | 'waitlisted' | 'interested' | 'cancelled';
+export type EventRegistrationStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'waitlisted'
+  | 'interested'
+  | 'cancelled';
 
 /** One admin-defined question asked while registering for an event. */
 export interface IEventRegistrationField {
@@ -108,7 +113,7 @@ const eventSchema = new Schema<IEventDocument>(
         registeredAt: { type: Date, default: Date.now },
         status: {
           type: String,
-          enum: ['confirmed', 'waitlisted', 'interested', 'cancelled'],
+          enum: ['pending', 'confirmed', 'waitlisted', 'interested', 'cancelled'],
           default: 'confirmed',
         },
         responses: { type: Schema.Types.Mixed, default: {} },

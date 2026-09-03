@@ -22,7 +22,7 @@ interface DonationFormModalProps {
 export default function DonationFormModal({ donation, onClose }: DonationFormModalProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const isEdit = !!donation;
+  const isEdit = !!donation?._id;
 
   const [form, setForm] = useState({
     donor: (typeof donation?.donor === 'object' ? donation?.donor?._id : donation?.donor) || '',
@@ -32,6 +32,7 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
     amount: donation?.amount ? String(donation.amount) : '',
     type: donation?.type || 'one-time',
     campaign: (typeof donation?.campaign === 'object' ? donation?.campaign?._id : donation?.campaign) || '',
+    event: (typeof donation?.event === 'object' ? donation?.event?._id : donation?.event) || '',
     paymentMethod: donation?.paymentMethod || 'cash',
     senderNumber: donation?.senderNumber || '',
     transactionId: donation?.transactionId || '',
@@ -57,6 +58,12 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
   });
   const campaigns: any[] = campaignsData?.data || [];
 
+  const { data: eventsData } = useQuery({
+    queryKey: ['donation-event-options'],
+    queryFn: async () => (await api.get('/events?limit=100')).data,
+  });
+  const events: any[] = eventsData?.data || [];
+
   const { data: usersData, isFetching: searchingUsers } = useQuery({
     queryKey: ['donation-donor-search', userSearch],
     queryFn: async () => (await api.get(`/users?search=${encodeURIComponent(userSearch)}&limit=8`)).data,
@@ -74,6 +81,7 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
         amount: Number(form.amount),
         type: form.type,
         campaign: form.campaign,
+        event: form.event,
         paymentMethod: form.paymentMethod,
         senderNumber: form.senderNumber.trim(),
         transactionId: form.transactionId.trim(),
@@ -237,6 +245,14 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
                   {campaigns.map((c) => <option key={c._id} value={c._id}>{c.title}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className={label}>Event</label>
+              <select value={form.event} onChange={(e) => set({ event: e.target.value })} className={field}>
+                <option value="">None</option>
+                {events.map((e: any) => <option key={e._id} value={e._id}>{e.title}</option>)}
+              </select>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

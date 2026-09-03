@@ -53,6 +53,7 @@ import { proxyFileUrl } from "@/lib/fileProxy";
 import { fetchCsv, saveTextFile } from "@/lib/downloadCsv";
 import { downloadTablePdf } from "@/lib/downloadPdf";
 import EventRegistrationsSection from "./EventRegistrationsSection";
+import EventFinanceSection from "./EventFinanceSection";
 
 /** First problem that would make a question set unusable, or null when it is fine. */
 function validateQuestions(fields: any[]): string | null {
@@ -1030,6 +1031,8 @@ function EventDetailPanel({ event }: { event: any }) {
 
         {/* Attendance Section */}
         <EventRegistrationsSection event={fullEvent} />
+
+        <EventFinanceSection event={fullEvent} />
 
         <div className="md:col-span-3">
           <h4 className="text-sm font-semibold flex items-center justify-between gap-2 mb-2 text-foreground">

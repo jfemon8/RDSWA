@@ -102,7 +102,7 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
 
 // ─── Event-based finance report ───
 router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
-  const [eventExpenses, eventBudgets] = await Promise.all([
+  const [eventExpenses, eventBudgets, eventIncome] = await Promise.all([
     Expense.aggregate([
       { $match: { isDeleted: false, event: { $exists: true } } },
       { $group: {
@@ -137,20 +137,45 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
         eventTitle: '$eventInfo.title',
       }},
     ]),
+    Donation.aggregate([
+      { $match: { isDeleted: false, paymentStatus: 'completed', event: { $exists: true } } },
+      { $group: {
+        _id: '$event',
+        totalIncome: { $sum: '$amount' },
+      }},
+      { $lookup: { from: 'events', localField: '_id', foreignField: '_id', as: 'eventInfo' } },
+      { $unwind: '$eventInfo' },
+      { $project: {
+        _id: 1,
+        totalIncome: 1,
+        eventTitle: '$eventInfo.title',
+        eventDate: '$eventInfo.startDate',
+      }},
+    ]),
   ]);
 
-  // Merge event expenses with budgets
-  const eventMap = new Map();
-  for (const e of eventExpenses) {
-    eventMap.set(e._id.toString(), { ...e, totalBudget: 0 });
-  }
-  for (const b of eventBudgets) {
-    const key = b._id.toString();
-    if (eventMap.has(key)) {
-      eventMap.get(key).totalBudget = b.totalBudget;
-    } else {
-      eventMap.set(key, { ...b, totalExpense: 0, count: 0 });
+  // Merge the three sources so an event appears once with whichever figures it has.
+  const eventMap = new Map<string, any>();
+  const rowFor = (id: any, seed: any) => {
+    const key = id.toString();
+    if (!eventMap.has(key)) {
+      eventMap.set(key, { _id: id, totalBudget: 0, totalIncome: 0, totalExpense: 0, count: 0, ...seed });
     }
+    return eventMap.get(key);
+  };
+
+  for (const e of eventExpenses) Object.assign(rowFor(e._id, {}), e);
+  for (const b of eventBudgets) {
+    const row = rowFor(b._id, {});
+    row.totalBudget = b.totalBudget;
+    row.status = b.status;
+    row.eventTitle = row.eventTitle || b.eventTitle;
+  }
+  for (const i of eventIncome) {
+    const row = rowFor(i._id, {});
+    row.totalIncome = i.totalIncome;
+    row.eventTitle = row.eventTitle || i.eventTitle;
+    row.eventDate = row.eventDate || i.eventDate;
   }
 
   ApiResponse.success(res, Array.from(eventMap.values()));

@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { Loader2, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { formatTimestamp } from '@/lib/date';
 
 interface UserEventQrProps {
   eventId: string;
@@ -17,6 +18,7 @@ const FONT_STACK = '"Noto Sans Bengali", "Segoe UI", Arial, sans-serif';
 const SHEET_WIDTH = 760;
 const SHEET_PADDING = 48;
 const SHEET_QR_SIZE = 600;
+const STAMP_BLOCK = 46;
 
 /** Split text into lines that fit the given width, so a long title never runs off the sheet. */
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -91,12 +93,14 @@ export default function UserEventQr({
       ctx.font = `24px ${FONT_STACK}`;
       const subHeaderLines = eventTitle ? wrapText(ctx, eventTitle, textWidth) : [];
 
+      const stamp = `Generated on ${formatTimestamp(new Date())}`;
+
       const headerHeight = headerLines.length * 44;
       const subHeaderHeight = subHeaderLines.length * 32;
       const gap = headerLines.length || subHeaderLines.length ? 28 : 0;
       canvas.width = SHEET_WIDTH;
       canvas.height =
-        SHEET_PADDING * 2 + headerHeight + subHeaderHeight + gap + SHEET_QR_SIZE;
+        SHEET_PADDING * 2 + headerHeight + subHeaderHeight + gap + SHEET_QR_SIZE + STAMP_BLOCK;
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -120,6 +124,11 @@ export default function UserEventQr({
 
       y += gap;
       ctx.drawImage(image, (SHEET_WIDTH - SHEET_QR_SIZE) / 2, y, SHEET_QR_SIZE, SHEET_QR_SIZE);
+
+      y += SHEET_QR_SIZE + 16;
+      ctx.fillStyle = '#6b7280';
+      ctx.font = `20px ${FONT_STACK}`;
+      ctx.fillText(stamp, SHEET_WIDTH / 2, y);
 
       const slug = (eventTitle || 'event')
         .toLowerCase()

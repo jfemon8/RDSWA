@@ -42,11 +42,13 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     req.body?.responses
   );
   const message =
-    status === 'waitlisted'
-      ? 'Event is full — you have been added to the waitlist'
-      : status === 'interested'
-        ? 'Your interest has been recorded'
-        : 'Registered for event';
+    status === 'pending'
+      ? 'Submitted — an organiser will review your answers before your QR code is issued'
+      : status === 'waitlisted'
+        ? 'Event is full — you have been added to the waitlist'
+        : status === 'interested'
+          ? 'Your interest has been recorded'
+          : 'Registered for event';
   ApiResponse.success(res, event, message);
 });
 
@@ -57,6 +59,11 @@ export const withdrawRegistration = asyncHandler(async (req: Request, res: Respo
     (req.user._id as any).toString()
   );
   ApiResponse.success(res, event, 'Registration withdrawn');
+});
+
+export const getFinance = asyncHandler(async (req: Request, res: Response) => {
+  const finance = await eventService.getFinance(req.params.id as string);
+  ApiResponse.success(res, finance);
 });
 
 export const getRegistrations = asyncHandler(async (req: Request, res: Response) => {

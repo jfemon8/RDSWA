@@ -50,13 +50,14 @@ function isAdminOrAbove(role?: string): boolean {
 const PRIVILEGED_FIELDS = ['donor', 'paymentStatus'] as const;
 
 export class DonationService {
-  async list(query: { page?: string; limit?: string; type?: string; paymentStatus?: string; donor?: string }, requesterRole?: string) {
+  async list(query: { page?: string; limit?: string; type?: string; paymentStatus?: string; donor?: string; event?: string }, requesterRole?: string) {
     const { page, limit } = parsePagination(query);
     const filter: FilterQuery<IDonationDocument> = { isDeleted: false };
 
     if (query.type) filter.type = query.type;
     if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
     if (query.donor) filter.donor = query.donor;
+    if (query.event) filter.event = query.event;
 
     const [donations, total] = await Promise.all([
       Donation.find(filter)
@@ -142,8 +143,9 @@ export class DonationService {
     // An omitted date means the donation happened now.
     donationData.donationDate = data.donationDate ? new Date(data.donationDate) : new Date();
 
-    // An empty campaign means "no campaign", which would fail the ObjectId cast.
+    // An empty reference means "none", which would otherwise fail the ObjectId cast.
     if (!donationData.campaign) donationData.campaign = undefined;
+    if (!donationData.event) donationData.event = undefined;
 
     // If recurring, set next payment date
     if (data.isRecurring && data.recurringInterval) {
@@ -184,9 +186,12 @@ export class DonationService {
     if (data.donationDate) {
       updates.donationDate = new Date(data.donationDate);
     }
-    // An empty campaign means "no campaign", which would fail the ObjectId cast.
+    // An empty reference means "none", which would otherwise fail the ObjectId cast.
     if (data.campaign !== undefined && !data.campaign) {
       updates.campaign = undefined;
+    }
+    if (data.event !== undefined && !data.event) {
+      updates.event = undefined;
     }
 
     Object.assign(donation, updates);

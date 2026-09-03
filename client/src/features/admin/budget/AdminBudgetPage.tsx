@@ -80,6 +80,12 @@ export default function AdminBudgetPage() {
 
   const budgets: any[] = data?.data || [];
 
+  const { data: eventOptionsData } = useQuery({
+    queryKey: ['event-link-options'],
+    queryFn: async () => (await api.get('/events?limit=100')).data,
+  });
+  const eventOptions: any[] = eventOptionsData?.data || [];
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -291,13 +297,19 @@ export default function AdminBudgetPage() {
                     <FieldError message={errors.fiscalYear} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Linked event ID</label>
-                    <input
-                      placeholder="Mongo ObjectId of an event"
+                    <label className="text-xs text-muted-foreground">Linked event</label>
+                    <select
                       value={form.event}
                       onChange={(e) => setForm({ ...form, event: e.target.value })}
                       className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
-                    />
+                    >
+                      <option value="" className="bg-card text-foreground">— None —</option>
+                      {eventOptions.map((ev: any) => (
+                        <option key={ev._id} value={ev._id} className="bg-card text-foreground">
+                          {ev.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

@@ -9,6 +9,8 @@ export interface IDonationDocument extends Document {
   currency: string;
   type: 'one-time' | 'monthly' | 'event-based' | 'construction-fund' | 'membership';
   campaign?: mongoose.Types.ObjectId;
+  /** Event this money was raised for, so income can sit beside its budget and expenses. */
+  event?: mongoose.Types.ObjectId;
   paymentMethod: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash' | 'other';
   senderNumber?: string;
   transactionId?: string;
@@ -44,6 +46,7 @@ const donationSchema = new Schema<IDonationDocument>(
     currency: { type: String, default: 'BDT' },
     type: { type: String, enum: ['one-time', 'monthly', 'event-based', 'construction-fund', 'membership'], default: 'one-time' },
     campaign: { type: Schema.Types.ObjectId, ref: 'DonationCampaign' },
+    event: { type: Schema.Types.ObjectId, ref: 'Event' },
     paymentMethod: { type: String, enum: ['bkash', 'nagad', 'rocket', 'bank', 'cash', 'other'], required: true },
     senderNumber: String,
     transactionId: String,
@@ -71,6 +74,7 @@ const donationSchema = new Schema<IDonationDocument>(
 donationSchema.index({ donor: 1 });
 donationSchema.index({ type: 1 });
 donationSchema.index({ campaign: 1 });
+donationSchema.index({ event: 1 });
 donationSchema.index({ paymentStatus: 1 });
 donationSchema.index({ createdAt: -1 });
 donationSchema.index({ donationDate: -1 });

@@ -24,9 +24,12 @@ import { FadeIn } from "@/components/reactbits";
 import SEO from "@/components/SEO";
 import RichContent from "@/components/ui/RichContent";
 import UserEventQr from "@/components/ui/UserEventQr";
+import { FieldError } from "@/components/ui/FieldError";
+import { extractFieldErrors, omitFieldError } from "@/lib/formErrors";
 import Spinner from "@/components/ui/Spinner";
 import { deriveEventStatus, getAttendanceWindow } from "@rdswa/shared";
 import AttendanceDateField from "@/components/ui/AttendanceDateField";
+import EventFinanceSummary from "@/components/ui/EventFinanceSummary";
 import Promo from "@/components/promo/Promo";
 import {
   buildEventSchema,
@@ -44,6 +47,9 @@ export default function EventDetailPage() {
   const [attendanceDate, setAttendanceDate] = useState("");
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [regError, setRegError] = useState("");
+  const [regFieldErrors, setRegFieldErrors] = useState<Record<string, string>>(
+    {},
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.events.detail(id!),
@@ -58,10 +64,17 @@ export default function EventDetailPage() {
     mutationFn: () => api.post(`/events/${id}/register`, { responses }),
     onSuccess: () => {
       setRegError("");
+      setRegFieldErrors({});
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
     },
-    onError: (err: any) =>
-      setRegError(err.response?.data?.message || "Registration failed"),
+    onError: (err: any) => {
+      // A rejected answer belongs under its own input, so only whole-form failures use the summary line.
+      const fieldErrors = extractFieldErrors(err);
+      setRegFieldErrors(fieldErrors || {});
+      setRegError(
+        fieldErrors ? "" : err.response?.data?.message || "Registration failed",
+      );
+    },
   });
 
   const withdrawMutation = useMutation({
@@ -109,12 +122,25 @@ export default function EventDetailPage() {
   const myRegistration = event.myRegistration;
   const regStatus: string | undefined = myRegistration?.status;
   const isRegistered =
+    regStatus === "pending" ||
     regStatus === "confirmed" ||
     regStatus === "waitlisted" ||
     regStatus === "interested";
   // Without formal registration the button only records interest.
   const interestOnly = !event.registrationRequired;
   const registrationFields: any[] = event.registrationFields || [];
+  /** Record an answer and drop that question's message, so it clears the moment the user types a valid value. */
+  const answerField = (key: string, value: string) => {
+    setResponses((prev) => ({ ...prev, [key]: value }));
+    setRegFieldErrors((prev) =>
+      value.trim() ? omitFieldError(prev, key) : prev,
+    );
+    setRegError("");
+  };
+
+  // Required questions mean an organiser reads the answers before the seat and its QR code are granted.
+  const needsApproval =
+    !interestOnly && registrationFields.some((f) => f.required);
   // Registration stays open while the event runs; the server enforces the deadline.
   const registrationOpen =
     derivedStatus === "upcoming" || derivedStatus === "ongoing";
@@ -230,14 +256,15 @@ export default function EventDetailPage() {
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              const missing = registrationFields.find(
-                (f) => f.required && !(responses[f.key] || "").trim(),
-              );
-              if (missing) {
-                setRegError(`${missing.label} is required`);
-                return;
+              const missing: Record<string, string> = {};
+              for (const f of registrationFields) {
+                if (f.required && !(responses[f.key] || "").trim()) {
+                  missing[f.key] = `${f.label} is required`;
+                }
               }
+              setRegFieldErrors(missing);
               setRegError("");
+              if (Object.keys(missing).length > 0) return;
               registerMutation.mutate();
             }}
             className="mb-4 border rounded-xl p-4 bg-card flex justify-between items-center gap-2 flex-wrap"
@@ -252,12 +279,21 @@ export default function EventDetailPage() {
               <p className="text-xs text-muted-foreground mb-3">
                 {seatsLeft > 0
                   ? `${seatsLeft} of ${event.maxParticipants} seats left`
-                  : "All seats are taken. You will join the waitlist"}
+                  : needsApproval
+                    ? "All seats are taken — an organiser may still place you on the waitlist"
+                    : "All seats are taken. You will join the waitlist"}
+              </p>
+            )}
+
+            {needsApproval && (
+              <p className="w-full text-xs text-muted-foreground -mt-2 mb-1">
+                An organiser reviews your answers, and your check-in QR code
+                appears here once your application is approved.
               </p>
             )}
 
             {registrationFields.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-2">
                 {registrationFields.map((f) => (
                   <div key={f.key}>
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
@@ -269,18 +305,21 @@ export default function EventDetailPage() {
                     {f.type === "select" ? (
                       <select
                         value={responses[f.key] || ""}
-                        onChange={(e) => {
-                          setResponses({
-                            ...responses,
-                            [f.key]: e.target.value,
-                          });
-                          setRegError("");
-                        }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                        onChange={(e) => answerField(f.key, e.target.value)}
+                        aria-invalid={!!regFieldErrors[f.key]}
+                        className={`w-full px-3 py-2 border rounded-md bg-background text-sm ${
+                          regFieldErrors[f.key] ? "border-red-500" : ""
+                        }`}
                       >
-                        <option value="">Select...</option>
+                        <option value="" className="bg-card text-foreground">
+                          Select...
+                        </option>
                         {(f.options || []).map((o: string) => (
-                          <option key={o} value={o}>
+                          <option
+                            key={o}
+                            value={o}
+                            className="bg-card text-foreground"
+                          >
                             {o}
                           </option>
                         ))}
@@ -289,16 +328,14 @@ export default function EventDetailPage() {
                       <input
                         type={f.type === "number" ? "number" : "text"}
                         value={responses[f.key] || ""}
-                        onChange={(e) => {
-                          setResponses({
-                            ...responses,
-                            [f.key]: e.target.value,
-                          });
-                          setRegError("");
-                        }}
-                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                        onChange={(e) => answerField(f.key, e.target.value)}
+                        aria-invalid={!!regFieldErrors[f.key]}
+                        className={`w-full px-3 py-2 border rounded-md bg-background text-sm ${
+                          regFieldErrors[f.key] ? "border-red-500" : ""
+                        }`}
                       />
                     )}
+                    <FieldError message={regFieldErrors[f.key]} />
                   </div>
                 ))}
               </div>
@@ -318,9 +355,11 @@ export default function EventDetailPage() {
               )}
               {interestOnly
                 ? "I'm Interested"
-                : seatsLeft === 0
-                  ? "Join Waitlist"
-                  : "Register"}
+                : needsApproval
+                  ? "Submit Application"
+                  : seatsLeft === 0
+                    ? "Join Waitlist"
+                    : "Register"}
             </motion.button>
             {regError && (
               <p className="text-xs text-destructive mt-2">{regError}</p>
@@ -333,7 +372,7 @@ export default function EventDetailPage() {
         <FadeIn delay={0.2} direction="up">
           <div
             className={`mb-4 p-2 rounded-md text-sm ${
-              regStatus === "waitlisted"
+              regStatus === "waitlisted" || regStatus === "pending"
                 ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
                 : regStatus === "interested"
                   ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
@@ -346,11 +385,13 @@ export default function EventDetailPage() {
               ) : (
                 <Clock className="h-4 w-4" />
               )}
-              {regStatus === "waitlisted"
-                ? "You are on the waitlist — we will confirm if a seat opens"
-                : regStatus === "interested"
-                  ? "You have marked yourself as interested"
-                  : "You are registered for this event"}
+              {regStatus === "pending"
+                ? "Submitted! An organiser is reviewing your answers."
+                : regStatus === "waitlisted"
+                  ? "You are on the waitlist — we will confirm if a seat opens"
+                  : regStatus === "interested"
+                    ? "You have marked yourself as interested"
+                    : "You are registered for this event"}
               {myRegistration?.registeredAt && (
                 <span className="text-xs opacity-80">
                   on {formatDate(myRegistration.registeredAt)}
@@ -393,10 +434,12 @@ export default function EventDetailPage() {
         </FadeIn>
       )}
 
-      {/* Per-user QR code, which only exists for events that hold a seat. */}
+      <EventFinanceSummary eventId={id!} className="mb-6" />
+
+      {/* The QR code is proof of an approved seat, so only a confirmed registration earns one. */}
       {event.registrationRequired &&
         derivedStatus !== "completed" &&
-        isRegistered &&
+        regStatus === "confirmed" &&
         user && (
           <FadeIn delay={0.25} direction="up">
             <div className="mb-6 p-4 border rounded-lg bg-card">
@@ -444,7 +487,7 @@ export default function EventDetailPage() {
                   </span>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
+                <div className="flex flex-col sm:flex-row items-center gap-2 justify-between">
                   <AttendanceDateField
                     id="self-attendance-date"
                     attendanceWindow={attendanceWindow}

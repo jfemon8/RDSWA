@@ -5,7 +5,7 @@ import {
   createEventSchema,
   updateEventSchema,
 } from '../validators/event.validator';
-import { nextRegistrationStatus } from '../services/event.service';
+import { nextRegistrationStatus, needsApproval, validateResponses } from '../services/event.service';
 
 const ID = '507f1f77bcf86cd799439011';
 const baseEvent = { title: 'Iftar', description: 'Annual iftar', startDate: '2026-03-20T12:00:00.000Z' };
@@ -35,7 +35,7 @@ describe('addRegistrationSchema', () => {
     expect(addRegistrationSchema.parse({ userId: ID }).status).toBeUndefined();
   });
 
-  it.each(['confirmed', 'waitlisted', 'interested', 'cancelled'])('accepts the %s status', (status) => {
+  it.each(['pending', 'confirmed', 'waitlisted', 'interested', 'cancelled'])('accepts the %s status', (status) => {
     expect(addRegistrationSchema.parse({ userId: ID, status }).status).toBe(status);
   });
 
@@ -185,5 +185,113 @@ describe('nextRegistrationStatus', () => {
     expect(nextRegistrationStatus({ registrationRequired: true, maxParticipants: 2, registrations })).toBe(
       'confirmed'
     );
+  });
+});
+
+describe('needsApproval', () => {
+  const required = [{ key: 'why', label: 'Why?', type: 'text', required: true }];
+  const optional = [{ key: 'why', label: 'Why?', type: 'text', required: false }];
+
+  it('holds a sign-up for review when a question must be answered', () => {
+    expect(needsApproval({ registrationRequired: true, registrationFields: required })).toBe(true);
+  });
+
+  it('lets a sign-up through when every question is optional', () => {
+    expect(needsApproval({ registrationRequired: true, registrationFields: optional })).toBe(false);
+  });
+
+  it('lets a sign-up through when the event asks nothing', () => {
+    expect(needsApproval({ registrationRequired: true, registrationFields: [] })).toBe(false);
+    expect(needsApproval({ registrationRequired: true })).toBe(false);
+  });
+
+  it('never reviews an interest-only event, whatever it asks', () => {
+    expect(needsApproval({ registrationRequired: false, registrationFields: required })).toBe(false);
+  });
+});
+
+describe('nextRegistrationStatus with required questions', () => {
+  const required = [{ key: 'why', label: 'Why?', type: 'text', required: true }];
+
+  it('parks a sign-up as pending until an organiser reads the answers', () => {
+    expect(
+      nextRegistrationStatus({ registrationRequired: true, registrationFields: required, registrations: [] })
+    ).toBe('pending');
+  });
+
+  it('stays pending even when seats are gone, so approval decides the outcome', () => {
+    expect(
+      nextRegistrationStatus({
+        registrationRequired: true,
+        registrationFields: required,
+        maxParticipants: 1,
+        registrations: [{ status: 'confirmed' }],
+      })
+    ).toBe('pending');
+  });
+
+  it('leaves an interest-only event unreviewed despite required questions', () => {
+    expect(
+      nextRegistrationStatus({ registrationRequired: false, registrationFields: required, registrations: [] })
+    ).toBe('interested');
+  });
+
+  it('does not count pending rows against the seat cap', () => {
+    const registrations = [{ status: 'pending' }, { status: 'pending' }, { status: 'confirmed' }];
+    expect(nextRegistrationStatus({ registrationRequired: true, maxParticipants: 2, registrations })).toBe(
+      'confirmed'
+    );
+  });
+});
+
+describe('validateResponses field-level errors', () => {
+  const event = (fields: any[]) => ({ registrationFields: fields }) as any;
+  const shirt = { key: 'shirt', label: 'T-shirt size', type: 'select', options: ['S', 'L'], required: true };
+  const guests = { key: 'guests', label: 'Guests', type: 'number' };
+
+  const errorsFrom = (fn: () => unknown): Record<string, string[]> => {
+    try {
+      fn();
+    } catch (err: any) {
+      return err.errors;
+    }
+    throw new Error('expected a validation error');
+  };
+
+  it('keys a missing required answer by its field, so the client can print it under that input', () => {
+    expect(errorsFrom(() => validateResponses(event([shirt]), {}))).toEqual({
+      shirt: ['T-shirt size is required'],
+    });
+  });
+
+  it('keys an off-list select answer by its field', () => {
+    expect(errorsFrom(() => validateResponses(event([shirt]), { shirt: 'XXL' }))).toEqual({
+      shirt: ['T-shirt size must be one of: S, L'],
+    });
+  });
+
+  it('keys a non-numeric answer by its field', () => {
+    expect(errorsFrom(() => validateResponses(event([guests]), { guests: 'two' }))).toEqual({
+      guests: ['Guests must be a number'],
+    });
+  });
+
+  it('keeps the message and the field entry in step', () => {
+    try {
+      validateResponses(event([shirt]), {});
+    } catch (err: any) {
+      expect(err.errors.shirt[0]).toBe(err.message);
+    }
+  });
+
+  it('accepts answers that satisfy every question', () => {
+    expect(validateResponses(event([shirt, guests]), { shirt: 'L', guests: '2' })).toEqual({
+      shirt: 'L',
+      guests: '2',
+    });
+  });
+
+  it('lets an organiser save a blank required answer, since only self-registration enforces it', () => {
+    expect(validateResponses(event([shirt]), {}, false)).toEqual({});
   });
 });

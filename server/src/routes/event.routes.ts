@@ -30,6 +30,9 @@ router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('event
 router.post('/:id/register', authenticate(), authorize(UserRole.MEMBER), validate({ body: registerSchema }), eventController.register);
 router.delete('/:id/register', authenticate(), authorize(UserRole.MEMBER), eventController.withdrawRegistration);
 
+// Totals only, so anyone viewing the event can see where its money went.
+router.get('/:id/finance', authenticate(true), eventController.getFinance);
+
 // Registrations (Moderator+)
 router.get('/:id/registrations', authenticate(), authorize(UserRole.MODERATOR), eventController.getRegistrations);
 router.get('/:id/registrations/export', authenticate(), authorize(UserRole.MODERATOR), eventController.exportRegistrations);

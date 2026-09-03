@@ -15,6 +15,7 @@ router.get('/', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(asyn
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = { isDeleted: false };
   if (req.query.category) filter.category = req.query.category;
+  if (req.query.event) filter.event = req.query.event;
 
   const [expenses, total] = await Promise.all([
     Expense.find(filter).populate('createdBy', 'name').populate('event', 'title')

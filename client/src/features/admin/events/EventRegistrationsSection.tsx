@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import {
-  ClipboardList, Search, UserPlus, X, Loader2, FileDown, FileText,
+  ClipboardList, Search, UserPlus, X, Loader2, FileDown, FileText, ShieldCheck,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -11,9 +11,10 @@ import { formatDate } from '@/lib/date';
 import { fetchCsv, saveTextFile } from '@/lib/downloadCsv';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 
-const STATUSES = ['confirmed', 'waitlisted', 'interested', 'cancelled'] as const;
+const STATUSES = ['pending', 'confirmed', 'waitlisted', 'interested', 'cancelled'] as const;
 
 const STATUS_STYLES: Record<string, string> = {
+  pending: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   waitlisted: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   interested: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -132,6 +133,13 @@ export default function EventRegistrationsSection({ event }: { event: any }) {
         )}
       </div>
 
+      {countOf('pending') > 0 && (
+        <p className="mb-3 flex items-center gap-1.5 px-2.5 py-2 rounded-md bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs">
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+          {countOf('pending')} submission{countOf('pending') > 1 ? 's are' : ' is'} waiting on your review — approving one issues that member their check-in QR code.
+        </p>
+      )}
+
       {/* Register a member on their behalf. */}
       <div className="mb-4 border rounded-lg p-3 bg-muted/30">
         <p className="text-xs font-medium text-muted-foreground mb-2">Add Registration</p>
@@ -200,10 +208,25 @@ export default function EventRegistrationsSection({ event }: { event: any }) {
                   </span>
                 ))}
 
+                {r.status === 'pending' && (
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => statusMutation.mutate({ userId, status: 'confirmed' })}
+                    disabled={statusMutation.isPending}
+                    className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-600 text-white text-[11px] font-medium hover:bg-green-700 disabled:opacity-50"
+                  >
+                    <ShieldCheck className="h-3 w-3" /> Approve
+                  </motion.button>
+                )}
+
                 <select
                   value={r.status}
                   onChange={(e) => statusMutation.mutate({ userId, status: e.target.value })}
-                  className={`ml-auto px-2 py-0.5 rounded-full text-[11px] font-medium capitalize border-0 outline-none cursor-pointer ${STATUS_STYLES[r.status]}`}
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-medium capitalize border-0 outline-none cursor-pointer ${
+                    r.status === 'pending' ? '' : 'ml-auto'
+                  } ${STATUS_STYLES[r.status]}`}
                 >
                   {/* Options need their own colours, or they inherit the pill's tint and vanish against the dark popup. */}
                   {STATUSES.map((s) => (

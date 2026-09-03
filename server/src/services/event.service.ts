@@ -1,4 +1,4 @@
-import { Event, IEventDocument, EventRegistrationStatus } from '../models';
+import { Event, IEventDocument, EventRegistrationStatus, Budget, Donation, Expense } from '../models';
 import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
@@ -99,6 +99,7 @@ function findRegistration(event: IEventDocument, userId: string) {
 /** Counts the client needs, so registration rows themselves never leave the server. */
 function registrationCounts(registrations: any[]) {
   return {
+    pending: registrations.filter((r) => r.status === 'pending').length,
     confirmed: registrations.filter((r) => r.status === 'confirmed').length,
     waitlisted: registrations.filter((r) => r.status === 'waitlisted').length,
     interested: registrations.filter((r) => r.status === 'interested').length,
@@ -115,9 +116,15 @@ function hasSeatAvailable(event: IEventDocument): boolean {
   return seatedCount(event) < event.maxParticipants;
 }
 
-/** Status a fresh sign-up earns, which is interest only when the event holds no seats. */
+/** True when the event asks a required question, so an organiser must read the answers before granting a seat. */
+export function needsApproval(event: any): boolean {
+  return !!event.registrationRequired && (event.registrationFields || []).some((f: any) => f.required);
+}
+
+/** Status a fresh sign-up earns: interest without registration, pending while answers await review, else a seat or the waitlist. */
 export function nextRegistrationStatus(event: any): EventRegistrationStatus {
   if (!event.registrationRequired) return 'interested';
+  if (needsApproval(event)) return 'pending';
   return hasSeatAvailable(event) ? 'confirmed' : 'waitlisted';
 }
 
@@ -136,7 +143,7 @@ function promoteFromWaitlist(event: IEventDocument): void {
 }
 
 /** Check the answers against the event's own questions, enforcing required ones only for self-registration. */
-function validateResponses(
+export function validateResponses(
   event: IEventDocument,
   responses: Record<string, string> | undefined,
   enforceRequired = true
@@ -147,18 +154,22 @@ function validateResponses(
     const raw = responses?.[field.key];
     const value = typeof raw === 'string' ? raw.trim() : raw === undefined || raw === null ? '' : String(raw);
 
+    // Each message is keyed by the field, so the client can print it under the input it belongs to.
     if (!value) {
       if (enforceRequired && field.required) {
-        throw ApiError.badRequest(`${field.label} is required`);
+        const message = `${field.label} is required`;
+        throw ApiError.badRequest(message, { [field.key]: [message] });
       }
       continue;
     }
 
     if (field.type === 'select' && field.options?.length && !field.options.includes(value)) {
-      throw ApiError.badRequest(`${field.label} must be one of: ${field.options.join(', ')}`);
+      const message = `${field.label} must be one of: ${field.options.join(', ')}`;
+      throw ApiError.badRequest(message, { [field.key]: [message] });
     }
     if (field.type === 'number' && Number.isNaN(Number(value))) {
-      throw ApiError.badRequest(`${field.label} must be a number`);
+      const message = `${field.label} must be a number`;
+      throw ApiError.badRequest(message, { [field.key]: [message] });
     }
 
     answers[field.key] = value;
@@ -370,6 +381,40 @@ export class EventService {
 
     await event.save();
     return event;
+  }
+
+  /** Money linked to an event, reported as totals so the public page never exposes individual records. */
+  async getFinance(eventId: string) {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false }).select('_id');
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const linked = { event: new mongoose.Types.ObjectId(eventId), isDeleted: false };
+    const sum = (field: string) => [{ $group: { _id: null, total: { $sum: field }, count: { $sum: 1 } } }];
+
+    const [budget, income, expense] = await Promise.all([
+      Budget.aggregate([{ $match: linked }, ...sum('$totalAmount')]),
+      Donation.aggregate([{ $match: { ...linked, paymentStatus: 'completed' } }, ...sum('$amount')]),
+      Expense.aggregate([{ $match: linked }, ...sum('$amount')]),
+    ]);
+
+    const totals = {
+      budget: budget[0]?.total || 0,
+      income: income[0]?.total || 0,
+      expense: expense[0]?.total || 0,
+    };
+    const counts = {
+      budget: budget[0]?.count || 0,
+      income: income[0]?.count || 0,
+      expense: expense[0]?.count || 0,
+    };
+
+    return {
+      ...totals,
+      counts,
+      net: totals.income - totals.expense,
+      // Nothing linked means the UI hides the whole section rather than showing zeros.
+      hasData: counts.budget + counts.income + counts.expense > 0,
+    };
   }
 
   /** Registration list as CSV, with one extra column per custom question. */
