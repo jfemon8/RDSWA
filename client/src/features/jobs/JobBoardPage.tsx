@@ -1,23 +1,39 @@
-import { useState, Fragment } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import api from '@/lib/api';
-import { useTabParam } from '@/hooks/useTabParam';
-import { queryKeys } from '@/lib/queryKeys';
-import { useAuthStore } from '@/stores/authStore';
-import { UserRole } from '@rdswa/shared';
-import { hasMinRole } from '@/lib/roles';
-import { BlurText, FadeIn } from '@/components/reactbits';
-import { motion, AnimatePresence } from 'motion/react';
-import { Briefcase, MapPin, Clock, Search, Plus, ExternalLink, Trash2, Loader2, Users, CalendarX, Pencil, Banknote, UserCircle, Mail, X } from 'lucide-react';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/Toast';
-import { formatDate } from '@/lib/date';
-import RichTextEditor from '@/components/ui/RichTextEditor';
-import RichContent from '@/components/ui/RichContent';
-import { useConfirm } from '@/components/ui/ConfirmModal';
-import EmptyState from '@/components/ui/EmptyState';
-import Promo from '@/components/promo/Promo';
+import { useState, Fragment } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import api from "@/lib/api";
+import { useTabParam } from "@/hooks/useTabParam";
+import { queryKeys } from "@/lib/queryKeys";
+import { useAuthStore } from "@/stores/authStore";
+import { UserRole } from "@rdswa/shared";
+import { hasMinRole } from "@/lib/roles";
+import { BlurText, FadeIn } from "@/components/reactbits";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Briefcase,
+  MapPin,
+  Clock,
+  Search,
+  Plus,
+  ExternalLink,
+  Trash2,
+  Loader2,
+  Users,
+  CalendarX,
+  Pencil,
+  Banknote,
+  UserCircle,
+  Mail,
+  X,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
+import { formatDate } from "@/lib/date";
+import RichTextEditor from "@/components/ui/RichTextEditor";
+import RichContent from "@/components/ui/RichContent";
+import { useConfirm } from "@/components/ui/ConfirmModal";
+import EmptyState from "@/components/ui/EmptyState";
+import Promo from "@/components/promo/Promo";
 
 // Career-intent traffic — slightly tighter cadence than community pages
 // because contextual career ads on this surface have the highest CPM.
@@ -32,28 +48,42 @@ function isJobExpired(job: any): boolean {
 
 /** Format a job type like "full-time" → "Full Time" */
 function formatJobType(type?: string): string {
-  if (!type) return '';
-  return type.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  if (!type) return "";
+  return type.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const EMPTY_JOB = {
-  title: '', company: '', location: '', type: 'full-time' as string,
-  description: '', requirements: '', salary: '', vacancy: '', applicationLink: '', deadline: '',
+  title: "",
+  company: "",
+  location: "",
+  type: "full-time" as string,
+  description: "",
+  requirements: "",
+  salary: "",
+  vacancy: "",
+  applicationLink: "",
+  deadline: "",
 };
 
-const JOB_TYPES = ['full-time', 'part-time', 'internship', 'remote', 'contract'] as const;
+const JOB_TYPES = [
+  "full-time",
+  "part-time",
+  "internship",
+  "remote",
+  "contract",
+] as const;
 
-type JobView = 'all' | 'mine';
-const JOB_VIEWS: readonly JobView[] = ['all', 'mine'];
+type JobView = "all" | "mine";
+const JOB_VIEWS: readonly JobView[] = ["all", "mine"];
 
 export default function JobBoardPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [view, setView] = useTabParam<JobView>(JOB_VIEWS, 'all', 'view');
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [view, setView] = useTabParam<JobView>(JOB_VIEWS, "all", "view");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newJob, setNewJob] = useState({ ...EMPTY_JOB });
@@ -62,29 +92,32 @@ export default function JobBoardPage() {
   const canManage = (job: any): boolean => {
     if (!user) return false;
     if (user._id === job.postedBy?._id) return true;
-    return ['admin', 'super_admin'].includes(user.role);
+    return ["admin", "super_admin"].includes(user.role);
   };
 
   const { data, isLoading } = useQuery({
     queryKey: [...queryKeys.jobs.all, view, search, typeFilter],
     queryFn: async () => {
-      if (view === 'mine') {
-        const { data } = await api.get('/jobs/my/posts?limit=50');
+      if (view === "mine") {
+        const { data } = await api.get("/jobs/my/posts?limit=50");
         return data;
       }
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (typeFilter) params.set('type', typeFilter);
+      if (search) params.set("search", search);
+      if (typeFilter) params.set("type", typeFilter);
       const { data } = await api.get(`/jobs?${params}`);
       return data;
     },
-    enabled: view === 'all' || !!user,
+    enabled: view === "all" || !!user,
   });
 
   const buildPayload = (job: any) => {
     const payload: any = {
       ...job,
-      requirements: (job.requirements || '').split(',').map((r: string) => r.trim()).filter(Boolean),
+      requirements: (job.requirements || "")
+        .split(",")
+        .map((r: string) => r.trim())
+        .filter(Boolean),
     };
     // Strip empty optional fields so backend sees them as undefined
     if (!payload.vacancy) delete payload.vacancy;
@@ -108,41 +141,47 @@ export default function JobBoardPage() {
         const { data } = await api.patch(`/jobs/${editingId}`, payload);
         return data;
       }
-      const { data } = await api.post('/jobs', payload);
+      const { data } = await api.post("/jobs", payload);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
-      toast.success(editingId ? 'Job updated' : 'Job posted successfully');
+      toast.success(editingId ? "Job updated" : "Job posted successfully");
       resetForm();
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save job'),
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Failed to save job"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/jobs/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all }),
   });
 
   const startEdit = (job: any) => {
     setEditingId(job._id);
     setNewJob({
-      title: job.title || '',
-      company: job.company || '',
-      location: job.location || '',
-      type: job.type || 'full-time',
-      description: job.description || '',
-      requirements: Array.isArray(job.requirements) ? job.requirements.join(', ') : '',
-      salary: job.salary || '',
-      vacancy: typeof job.vacancy === 'number' ? String(job.vacancy) : '',
-      applicationLink: job.applicationLink || '',
-      deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
+      title: job.title || "",
+      company: job.company || "",
+      location: job.location || "",
+      type: job.type || "full-time",
+      description: job.description || "",
+      requirements: Array.isArray(job.requirements)
+        ? job.requirements.join(", ")
+        : "",
+      salary: job.salary || "",
+      vacancy: typeof job.vacancy === "number" ? String(job.vacancy) : "",
+      applicationLink: job.applicationLink || "",
+      deadline: job.deadline
+        ? new Date(job.deadline).toISOString().split("T")[0]
+        : "",
     });
     setShowForm(true);
     // Scroll the form into view
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   const jobs = data?.data || [];
@@ -166,15 +205,17 @@ export default function JobBoardPage() {
       {/* View tabs — All jobs / My posts */}
       {canPost && (
         <div className="flex gap-2 mb-4 border-b">
-          {(['all', 'mine'] as const).map((v) => (
+          {(["all", "mine"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                view === v ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                view === v
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {v === 'all' ? 'All Jobs' : 'My Posts'}
+              {v === "all" ? "All Jobs" : "My Posts"}
             </button>
           ))}
         </div>
@@ -182,8 +223,8 @@ export default function JobBoardPage() {
 
       {/* Filters — hidden in "My Posts" view since user wants to see all their posts */}
       <FadeIn delay={0.3}>
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-          {view === 'all' && (
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-3 mb-2 sm:mb-4">
+          {view === "all" && (
             <>
               <div className="relative flex-1 sm:min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -202,19 +243,33 @@ export default function JobBoardPage() {
               >
                 <option value="">All Types</option>
                 {JOB_TYPES.map((t) => (
-                  <option key={t} value={t}>{formatJobType(t)}</option>
+                  <option key={t} value={t}>
+                    {formatJobType(t)}
+                  </option>
                 ))}
               </select>
             </>
           )}
           {canPost && (
             <button
-              onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}
+              onClick={() => {
+                if (showForm) resetForm();
+                else setShowForm(true);
+              }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px] sm:ml-auto"
             >
-              <Plus className="h-4 w-4" /> <span className="whitespace-nowrap">Post Job</span>
+              <Plus className="h-4 w-4" />{" "}
+              <span className="whitespace-nowrap">Post Job</span>
             </button>
           )}
+          <a
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px] sm:ml-auto"
+            href="https://jfemon.vercel.app/tools/jobs"
+            target="_blank"
+          >
+            <span className="whitespace-nowrap">More Jobs</span>{" "}
+            <ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       </FadeIn>
 
@@ -223,63 +278,147 @@ export default function JobBoardPage() {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-6 sm:mb-8 overflow-hidden"
           >
             <div className="border rounded-xl p-4 sm:p-6 bg-card space-y-3 sm:space-y-4">
-              <h3 className="font-semibold text-base sm:text-lg">{editingId ? 'Edit Job' : 'Post a New Job'}</h3>
+              <h3 className="font-semibold text-base sm:text-lg">
+                {editingId ? "Edit Job" : "Post a New Job"}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                <input placeholder="Job Title *" value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
-                <input placeholder="Company *" value={newJob.company} onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
-                <input placeholder="Location" value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
-                <select value={newJob.type} onChange={(e) => setNewJob({ ...newJob, type: e.target.value })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50">
+                <input
+                  placeholder="Job Title *"
+                  value={newJob.title}
+                  onChange={(e) =>
+                    setNewJob({ ...newJob, title: e.target.value })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <input
+                  placeholder="Company *"
+                  value={newJob.company}
+                  onChange={(e) =>
+                    setNewJob({ ...newJob, company: e.target.value })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <input
+                  placeholder="Location"
+                  value={newJob.location}
+                  onChange={(e) =>
+                    setNewJob({ ...newJob, location: e.target.value })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <select
+                  value={newJob.type}
+                  onChange={(e) =>
+                    setNewJob({ ...newJob, type: e.target.value })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
                   {JOB_TYPES.map((t) => (
-                    <option key={t} value={t}>{formatJobType(t)}</option>
+                    <option key={t} value={t}>
+                      {formatJobType(t)}
+                    </option>
                   ))}
                 </select>
-                <input placeholder="Salary" value={newJob.salary} onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
-                <input placeholder="Vacancy" type="number" min={1} value={newJob.vacancy}
-                  onChange={(e) => setNewJob({ ...newJob, vacancy: e.target.value.replace(/[^0-9]/g, '') })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                <input
+                  placeholder="Salary"
+                  value={newJob.salary}
+                  onChange={(e) =>
+                    setNewJob({ ...newJob, salary: e.target.value })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <input
+                  placeholder="Vacancy"
+                  type="number"
+                  min={1}
+                  value={newJob.vacancy}
+                  onChange={(e) =>
+                    setNewJob({
+                      ...newJob,
+                      vacancy: e.target.value.replace(/[^0-9]/g, ""),
+                    })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Application Deadline</label>
-                  <input type="date" value={newJob.deadline}
-                    onChange={(e) => setNewJob({ ...newJob, deadline: e.target.value })}
-                    className="w-full px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    Application Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={newJob.deadline}
+                    onChange={(e) =>
+                      setNewJob({ ...newJob, deadline: e.target.value })
+                    }
+                    className="w-full px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
                 </div>
-                <input placeholder="Application Link" value={newJob.applicationLink} onChange={(e) => setNewJob({ ...newJob, applicationLink: e.target.value })}
-                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                <input
+                  placeholder="Application Link"
+                  value={newJob.applicationLink}
+                  onChange={(e) =>
+                    setNewJob({ ...newJob, applicationLink: e.target.value })
+                  }
+                  className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
               </div>
-              <RichTextEditor value={newJob.description} onChange={(v) => setNewJob({ ...newJob, description: v })} placeholder="Job description..." minHeight="100px" />
-              <input placeholder="Requirements (comma separated)" value={newJob.requirements} onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
-                className="w-full px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+              <RichTextEditor
+                value={newJob.description}
+                onChange={(v) => setNewJob({ ...newJob, description: v })}
+                placeholder="Job description..."
+                minHeight="100px"
+              />
+              <input
+                placeholder="Requirements (comma separated)"
+                value={newJob.requirements}
+                onChange={(e) =>
+                  setNewJob({ ...newJob, requirements: e.target.value })
+                }
+                className="w-full px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start">
                 <button
-                  disabled={saveMutation.isPending || !newJob.title || !newJob.company || !newJob.description}
+                  disabled={
+                    saveMutation.isPending ||
+                    !newJob.title ||
+                    !newJob.company ||
+                    !newJob.description
+                  }
                   onClick={() => saveMutation.mutate(newJob)}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-primary text-primary-foreground rounded-md disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]">
-                  {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {editingId ? 'Save Changes' : 'Post Job'}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-primary text-primary-foreground rounded-md disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  {saveMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  {editingId ? "Save Changes" : "Post Job"}
                 </button>
                 <button
                   onClick={resetForm}
-                  className="w-full sm:w-auto px-6 py-2.5 border rounded-md hover:bg-muted min-h-[44px]">
+                  className="w-full sm:w-auto px-6 py-2.5 border rounded-md hover:bg-muted min-h-[44px]"
+                >
                   Cancel
                 </button>
               </div>
               {(!newJob.title || !newJob.company || !newJob.description) && (
                 <p className="text-xs text-destructive mt-1">
                   {[
-                    !newJob.title && 'Job Title',
-                    !newJob.company && 'Company',
-                    !newJob.description && 'Description',
-                  ].filter(Boolean).join(', ')} {(!newJob.title && !newJob.company) || (!newJob.title && !newJob.description) || (!newJob.company && !newJob.description) ? 'are' : 'is'} required
+                    !newJob.title && "Job Title",
+                    !newJob.company && "Company",
+                    !newJob.description && "Description",
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}{" "}
+                  {(!newJob.title && !newJob.company) ||
+                  (!newJob.title && !newJob.description) ||
+                  (!newJob.company && !newJob.description)
+                    ? "are"
+                    : "is"}{" "}
+                  required
                 </p>
               )}
             </div>
@@ -297,13 +436,24 @@ export default function JobBoardPage() {
       ) : jobs.length === 0 ? (
         <EmptyState
           icon={Briefcase}
-          title={search || typeFilter ? 'No Matches' : 'No Job Posts Yet'}
-          description={search || typeFilter
-            ? 'No job posts match your filters. Try clearing them or searching with different keywords.'
-            : 'No job opportunities have been posted yet. Check back soon — new openings are shared by members and admins.'}
-          primary={search || typeFilter
-            ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setTypeFilter(''); } }
-            : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
+          title={search || typeFilter ? "No Matches" : "No Job Posts Yet"}
+          description={
+            search || typeFilter
+              ? "No job posts match your filters. Try clearing them or searching with different keywords."
+              : "No job opportunities have been posted yet. Check back soon — new openings are shared by members and admins."
+          }
+          primary={
+            search || typeFilter
+              ? {
+                  label: "Clear Filters",
+                  icon: X,
+                  onClick: () => {
+                    setSearch("");
+                    setTypeFilter("");
+                  },
+                }
+              : { label: "Contact Admin", icon: Mail, to: "/contact" }
+          }
           hint="Full-time, part-time, internship and remote opportunities shared within the RDSWA community appear here."
         />
       ) : (
@@ -311,119 +461,175 @@ export default function JobBoardPage() {
           {jobs.map((job: any, i: number) => {
             const expired = isJobExpired(job);
             return (
-            <Fragment key={job._id}>
-            <FadeIn delay={i * 0.05} direction="up">
-              <Link to={`/dashboard/jobs/${job._id}`} className="block">
-                <motion.div
-                  whileHover={{ y: expired ? 0 : -2 }}
-                  className={`relative rounded-xl border bg-card p-4 sm:p-6 transition-colors overflow-hidden ${expired ? 'opacity-75' : 'hover:border-primary/30'}`}
-                >
-                  {expired && (
-                    <div className="absolute top-0 right-0 pointer-events-none z-10">
-                      <div className="bg-red-500 text-white text-[10px] font-bold px-8 py-1 rotate-45 translate-x-6 translate-y-3 shadow-md">
-                        Expired
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content — full width */}
-                  <div className="min-w-0">
-                    <div className={`flex items-center gap-2 mb-2 flex-wrap ${expired ? 'pr-16' : ''}`}>
-                      <h3 className="font-semibold text-base sm:text-lg flex items-center gap-1.5 min-w-0">
-                        <Briefcase className="h-4 w-4 text-primary shrink-0" />
-                        <span className="break-words">{job.title}</span>
-                      </h3>
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium shrink-0">
-                        {formatJobType(job.type)}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground mb-3">
-                      <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5 shrink-0" /> {job.company}</span>
-                      {job.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0" /> {job.location}</span>}
-                      {job.salary && <span className="flex items-center gap-1"><Banknote className="h-3.5 w-3.5 shrink-0" /> BDT {job.salary}</span>}
-                      {typeof job.vacancy === 'number' && job.vacancy > 0 && (
-                        <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 shrink-0" /> {job.vacancy} vacancy</span>
+              <Fragment key={job._id}>
+                <FadeIn delay={i * 0.05} direction="up">
+                  <Link to={`/dashboard/jobs/${job._id}`} className="block">
+                    <motion.div
+                      whileHover={{ y: expired ? 0 : -2 }}
+                      className={`relative rounded-xl border bg-card p-4 sm:p-6 transition-colors overflow-hidden ${expired ? "opacity-75" : "hover:border-primary/30"}`}
+                    >
+                      {expired && (
+                        <div className="absolute top-0 right-0 pointer-events-none z-10">
+                          <div className="bg-red-500 text-white text-[10px] font-bold px-8 py-1 rotate-45 translate-x-6 translate-y-3 shadow-md">
+                            Expired
+                          </div>
+                        </div>
                       )}
-                      {job.deadline && (
-                        <span className={`flex items-center gap-1 ${expired ? 'text-red-500 font-medium' : ''}`}>
-                          <CalendarX className="h-3.5 w-3.5 shrink-0" /> Deadline: {formatDate(job.deadline)}
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 shrink-0" /> {formatDate(job.createdAt)}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground line-clamp-2"><RichContent html={job.description} /></div>
-                    {job.requirements?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {job.requirements.map((r: string, j: number) => (
-                          <span key={j} className="px-2 py-0.5 text-xs bg-muted rounded-md">{r}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Footer — Posted by + Action buttons */}
-                  {(job.postedBy || job.applicationLink || canManage(job)) && (
-                    <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t">
-                      <p className="text-xs text-muted-foreground truncate min-w-0 flex items-center gap-1.5">
-                        {job.postedBy ? (
-                          <>
-                            <UserCircle className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">Posted by <Link to={`/members/${job.postedBy._id}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">{job.postedBy.name}</Link></span>
-                          </>
-                        ) : ''}
-                      </p>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {job.applicationLink && !expired && (
-                          <span
-                            onClick={(e) => { e.preventDefault(); window.open(job.applicationLink, '_blank'); }}
-                            className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
-                            title="Apply"
-                          >
-                            <ExternalLink className="h-4 w-4" />
+                      {/* Content — full width */}
+                      <div className="min-w-0">
+                        <div
+                          className={`flex items-center gap-2 mb-2 flex-wrap ${expired ? "pr-16" : ""}`}
+                        >
+                          <h3 className="font-semibold text-base sm:text-lg flex items-center gap-1.5 min-w-0">
+                            <Briefcase className="h-4 w-4 text-primary shrink-0" />
+                            <span className="break-words">{job.title}</span>
+                          </h3>
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium shrink-0">
+                            {formatJobType(job.type)}
                           </span>
-                        )}
-                        {job.applicationLink && expired && (
-                          <span
-                            className="p-2 rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
-                            onClick={(e) => e.preventDefault()}
-                            title="Application deadline has passed"
-                          >
-                            <ExternalLink className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground mb-3">
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="h-3.5 w-3.5 shrink-0" />{" "}
+                            {job.company}
                           </span>
-                        )}
-                        {canManage(job) && (
-                          <>
-                            <button
-                              onClick={(e) => { e.preventDefault(); startEdit(job); }}
-                              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
-                              title="Edit job"
+                          {job.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5 shrink-0" />{" "}
+                              {job.location}
+                            </span>
+                          )}
+                          {job.salary && (
+                            <span className="flex items-center gap-1">
+                              <Banknote className="h-3.5 w-3.5 shrink-0" /> BDT{" "}
+                              {job.salary}
+                            </span>
+                          )}
+                          {typeof job.vacancy === "number" &&
+                            job.vacancy > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5 shrink-0" />{" "}
+                                {job.vacancy} vacancy
+                              </span>
+                            )}
+                          {job.deadline && (
+                            <span
+                              className={`flex items-center gap-1 ${expired ? "text-red-500 font-medium" : ""}`}
                             >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                const ok = await confirm({ title: 'Delete Job', message: `Delete job listing "${job.title}"? This cannot be undone.`, confirmLabel: 'Delete', variant: 'danger' });
-                                if (ok) deleteMutation.mutate(job._id);
-                              }}
-                              className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              title="Delete job"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </>
+                              <CalendarX className="h-3.5 w-3.5 shrink-0" />{" "}
+                              Deadline: {formatDate(job.deadline)}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5 shrink-0" />{" "}
+                            {formatDate(job.createdAt)}
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground line-clamp-2">
+                          <RichContent html={job.description} />
+                        </div>
+                        {job.requirements?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-3">
+                            {job.requirements.map((r: string, j: number) => (
+                              <span
+                                key={j}
+                                className="px-2 py-0.5 text-xs bg-muted rounded-md"
+                              >
+                                {r}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              </Link>
-            </FadeIn>
-            {(i + 1) % PROMO_EVERY === 0 && i < jobs.length - 1 && (
-              <Promo kind="infeed" minHeight={180} />
-            )}
-            </Fragment>
-          );
+
+                      {/* Footer — Posted by + Action buttons */}
+                      {(job.postedBy ||
+                        job.applicationLink ||
+                        canManage(job)) && (
+                        <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t">
+                          <p className="text-xs text-muted-foreground truncate min-w-0 flex items-center gap-1.5">
+                            {job.postedBy ? (
+                              <>
+                                <UserCircle className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">
+                                  Posted by{" "}
+                                  <Link
+                                    to={`/members/${job.postedBy._id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="hover:text-primary transition-colors"
+                                  >
+                                    {job.postedBy.name}
+                                  </Link>
+                                </span>
+                              </>
+                            ) : (
+                              ""
+                            )}
+                          </p>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {job.applicationLink && !expired && (
+                              <span
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  window.open(job.applicationLink, "_blank");
+                                }}
+                                className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                                title="Apply"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </span>
+                            )}
+                            {job.applicationLink && expired && (
+                              <span
+                                className="p-2 rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+                                onClick={(e) => e.preventDefault()}
+                                title="Application deadline has passed"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </span>
+                            )}
+                            {canManage(job) && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    startEdit(job);
+                                  }}
+                                  className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                  title="Edit job"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    const ok = await confirm({
+                                      title: "Delete Job",
+                                      message: `Delete job listing "${job.title}"? This cannot be undone.`,
+                                      confirmLabel: "Delete",
+                                      variant: "danger",
+                                    });
+                                    if (ok) deleteMutation.mutate(job._id);
+                                  }}
+                                  className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  title="Delete job"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  </Link>
+                </FadeIn>
+                {(i + 1) % PROMO_EVERY === 0 && i < jobs.length - 1 && (
+                  <Promo kind="infeed" minHeight={180} />
+                )}
+              </Fragment>
+            );
           })}
         </div>
       )}
