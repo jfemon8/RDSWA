@@ -1,11 +1,11 @@
-import { GraduationCap } from 'lucide-react';
-import AdminRoleTagManagerPage from '../shared/AdminRoleTagManagerPage';
+import { GraduationCap } from "lucide-react";
+import AdminRoleTagManagerPage from "../shared/AdminRoleTagManagerPage";
 
 export default function AdminAlumniMonitorPage() {
   return (
     <AdminRoleTagManagerPage
       title="Alumni Management"
-      description="Members are auto-tagged as Alumni when they add a current job or business. You can also grant Alumni status manually, or revoke it. Revoking is sticky — a user who has been manually revoked will NOT be re-tagged automatically even if they have current employment, until an admin grants again."
+      description="User who has been manually revoked will NOT be re-tagged automatically even if they have current employment, until an admin grants again."
       flagFilter="isAlumni"
       endpoint="alumni"
       icon={GraduationCap}

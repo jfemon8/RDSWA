@@ -1,11 +1,11 @@
-import { Award } from 'lucide-react';
-import AdminRoleTagManagerPage from '../shared/AdminRoleTagManagerPage';
+import { Award } from "lucide-react";
+import AdminRoleTagManagerPage from "../shared/AdminRoleTagManagerPage";
 
 export default function AdminAdvisorsPage() {
   return (
     <AdminRoleTagManagerPage
       title="Advisors Management"
-      description="Ex-presidents and ex-general secretaries are automatically granted the Advisor tag when their committee is archived. You can also add or remove Advisors manually here. Revoking does not affect membership."
+      description="Ex-presidents and ex-general secretaries are automatically granted the Advisor tag when their committee is archived."
       flagFilter="isAdvisor"
       endpoint="advisor"
       icon={Award}

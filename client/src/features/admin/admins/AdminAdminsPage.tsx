@@ -77,10 +77,6 @@ export default function AdminAdminsPage() {
         </button>
       </div>
 
-      <FadeIn direction="up" delay={0.05}>
-        <div className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/40"></div>
-      </FadeIn>
-
       {/* Promote Form */}
       <AnimatePresence>
         {showPromote && (

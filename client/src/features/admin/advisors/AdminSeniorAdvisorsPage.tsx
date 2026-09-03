@@ -1,11 +1,11 @@
-import { Star } from 'lucide-react';
-import AdminRoleTagManagerPage from '../shared/AdminRoleTagManagerPage';
+import { Star } from "lucide-react";
+import AdminRoleTagManagerPage from "../shared/AdminRoleTagManagerPage";
 
 export default function AdminSeniorAdvisorsPage() {
   return (
     <AdminRoleTagManagerPage
       title="Senior Advisors Management"
-      description="Senior Advisors are appointed manually by administrators. Any user can become a Senior Advisor regardless of membership status. Revoking does not affect membership."
+      description="Senior Advisors are appointed manually by administrators. Any user can become a Senior Advisor regardless of membership status."
       flagFilter="isSeniorAdvisor"
       endpoint="senior-advisor"
       icon={Star}
