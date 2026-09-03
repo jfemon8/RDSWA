@@ -1,6 +1,47 @@
 import { z } from 'zod';
 
+/** One admin-defined question shown on the registration form. */
+const registrationFieldSchema = z.object({
+  key: z.string().min(1, 'Field key is required').max(60),
+  label: z.string().min(1, 'Field label is required').max(200),
+  type: z.enum(['text', 'number', 'select']).optional(),
+  options: z.array(z.string()).optional(),
+  required: z.boolean().optional(),
+});
+
+/**
+ * Guards that keep a question set answerable, since a bad one silently blocks every registration.
+ */
+const registrationFieldsSchema = z
+  .array(registrationFieldSchema)
+  .max(20, 'A registration form is limited to 20 questions')
+  .superRefine((fields, ctx) => {
+    const seen = new Set<string>();
+
+    fields.forEach((field, i) => {
+      // Duplicate keys would make one question's answer overwrite the other's.
+      if (seen.has(field.key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Two questions share the name "${field.label}", so give one a different name`,
+          path: [i, 'key'],
+        });
+      }
+      seen.add(field.key);
+
+      // A required select with no options can never be satisfied.
+      if (field.type === 'select' && !field.options?.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `"${field.label}" is a dropdown, so it needs at least one option`,
+          path: [i, 'options'],
+        });
+      }
+    });
+  });
+
 const baseEventShape = {
+  registrationFields: registrationFieldsSchema.optional(),
   title: z.string().min(1, 'Title is required').max(500),
   titleBn: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
@@ -71,4 +112,26 @@ export const bulkAttendanceSchema = z.object({
 
 export const selfCheckinSchema = z.object({
   checkedInAt: checkedInAtField,
+});
+
+/** Answers to the event's custom questions, kept as plain strings. */
+const registrationResponses = z.record(z.string(), z.string()).optional();
+
+export const registerSchema = z.object({
+  responses: registrationResponses,
+});
+
+const registrationStatus = z.enum(['confirmed', 'waitlisted', 'interested', 'cancelled']);
+
+export const addRegistrationSchema = z.object({
+  userId: objectId,
+  status: registrationStatus.optional(),
+  note: z.string().max(500).optional(),
+  responses: registrationResponses,
+});
+
+export const updateRegistrationSchema = z.object({
+  status: registrationStatus.optional(),
+  note: z.string().max(500).optional(),
+  responses: registrationResponses,
 });

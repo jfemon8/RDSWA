@@ -164,7 +164,7 @@ router.get('/events', authenticate(), authorize(UserRole.MODERATOR), asyncHandle
       _id: '$type',
       count: { $sum: 1 },
       avgAttendance: { $avg: { $size: '$attendance' } },
-      totalRegistered: { $sum: { $size: '$registeredUsers' } },
+      totalRegistered: { $sum: { $size: { $ifNull: ['$registrations', []] } } },
     }},
   ]);
   ApiResponse.success(res, stats);

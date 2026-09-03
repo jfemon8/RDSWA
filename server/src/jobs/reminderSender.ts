@@ -12,10 +12,12 @@ export async function runReminderSender(): Promise<void> {
       startDate: { $gte: now, $lte: in24h },
       isDeleted: false,
       registrationRequired: true,
-    }).populate('registeredUsers', '_id');
+    });
 
     for (const event of upcomingEvents) {
-      for (const userId of event.registeredUsers) {
+      // Cancelled sign-ups should not be reminded about the event.
+      const recipients = event.registrations.filter((r) => r.status !== 'cancelled');
+      for (const userId of recipients.map((r) => r.user)) {
         // Check if reminder already sent
         const existing = await Notification.findOne({
           recipient: userId,

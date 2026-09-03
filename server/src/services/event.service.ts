@@ -1,4 +1,4 @@
-import { Event, IEventDocument } from '../models';
+import { Event, IEventDocument, EventRegistrationStatus } from '../models';
 import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
@@ -82,7 +82,109 @@ function attachDerivedStatus<T extends { status?: string; startDate?: Date | str
     status: plain.status,
     now,
   });
+  plain.registrationCounts = registrationCounts(plain.registrations || []);
+  delete plain.registrations;
   return plain;
+}
+
+function registrantId(registration: any): string {
+  const user = registration.user;
+  return (user?._id ? user._id.toString() : user?.toString()) || '';
+}
+
+function findRegistration(event: IEventDocument, userId: string) {
+  return event.registrations.find((r) => registrantId(r) === userId);
+}
+
+/** Counts the client needs, so registration rows themselves never leave the server. */
+function registrationCounts(registrations: any[]) {
+  return {
+    confirmed: registrations.filter((r) => r.status === 'confirmed').length,
+    waitlisted: registrations.filter((r) => r.status === 'waitlisted').length,
+    interested: registrations.filter((r) => r.status === 'interested').length,
+    total: registrations.filter((r) => r.status !== 'cancelled').length,
+  };
+}
+
+function seatedCount(event: IEventDocument): number {
+  return event.registrations.filter((r) => r.status === 'confirmed').length;
+}
+
+function hasSeatAvailable(event: IEventDocument): boolean {
+  if (!event.maxParticipants) return true;
+  return seatedCount(event) < event.maxParticipants;
+}
+
+/** Status a fresh sign-up earns, which is interest only when the event holds no seats. */
+export function nextRegistrationStatus(event: any): EventRegistrationStatus {
+  if (!event.registrationRequired) return 'interested';
+  return hasSeatAvailable(event) ? 'confirmed' : 'waitlisted';
+}
+
+/** Move the longest-waiting person into a seat that just opened up. */
+function promoteFromWaitlist(event: IEventDocument): void {
+  if (!event.maxParticipants) return;
+
+  const waiting = event.registrations
+    .filter((r) => r.status === 'waitlisted')
+    .sort((a, b) => (a.registeredAt?.getTime() || 0) - (b.registeredAt?.getTime() || 0));
+
+  for (const next of waiting) {
+    if (!hasSeatAvailable(event)) break;
+    next.status = 'confirmed';
+  }
+}
+
+/** Check the answers against the event's own questions, enforcing required ones only for self-registration. */
+function validateResponses(
+  event: IEventDocument,
+  responses: Record<string, string> | undefined,
+  enforceRequired = true
+): Record<string, string> {
+  const answers: Record<string, string> = {};
+
+  for (const field of event.registrationFields || []) {
+    const raw = responses?.[field.key];
+    const value = typeof raw === 'string' ? raw.trim() : raw === undefined || raw === null ? '' : String(raw);
+
+    if (!value) {
+      if (enforceRequired && field.required) {
+        throw ApiError.badRequest(`${field.label} is required`);
+      }
+      continue;
+    }
+
+    if (field.type === 'select' && field.options?.length && !field.options.includes(value)) {
+      throw ApiError.badRequest(`${field.label} must be one of: ${field.options.join(', ')}`);
+    }
+    if (field.type === 'number' && Number.isNaN(Number(value))) {
+      throw ApiError.badRequest(`${field.label} must be a number`);
+    }
+
+    answers[field.key] = value;
+  }
+
+  return answers;
+}
+
+/** Quote a CSV cell so commas, quotes and newlines survive the round trip. */
+function csvCell(value: unknown): string {
+  const text = value === null || value === undefined ? '' : String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function toCsv(headers: string[], rows: unknown[][]): string {
+  return [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
+}
+
+/** Slugify the event title so the download lands with a name the organiser recognises. */
+function csvFilename(title: string, kind: string): string {
+  const slug = (title || 'event')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'event';
+  return `${slug}-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
 }
 
 export class EventService {
@@ -128,16 +230,24 @@ export class EventService {
     };
   }
 
-  async getById(id: string): Promise<any> {
+  /** Public event detail, carrying only the requester's own registration so nobody reads another attendee's answers. */
+  async getById(id: string, requesterId?: string): Promise<any> {
     const event = await Event.findOne({ _id: id, isDeleted: false })
       .populate('createdBy', 'name avatar')
       .populate('committee', 'name')
-      .populate('registeredUsers', 'name avatar department batch')
       .populate('attendance.user', 'name avatar department batch studentId')
       .populate('attendance.verifiedBy', 'name')
       .populate('photos.taggedUsers', 'name avatar');
     if (!event) throw ApiError.notFound('Event not found');
-    return attachDerivedStatus(event as any, new Date());
+
+    const mine = requesterId ? findRegistration(event, requesterId) : undefined;
+    const plain = attachDerivedStatus(event as any, new Date());
+
+    plain.myRegistration = mine
+      ? { status: mine.status, registeredAt: mine.registeredAt, responses: mine.responses || {} }
+      : null;
+
+    return plain;
   }
 
   async create(data: any, createdBy: string): Promise<IEventDocument> {
@@ -159,23 +269,176 @@ export class EventService {
     await event.save();
   }
 
-  async register(eventId: string, userId: string): Promise<IEventDocument> {
+  /**
+   * Register the current user, seating them or adding them to the waitlist when the event is full.
+   */
+  async register(
+    eventId: string,
+    userId: string,
+    responses?: Record<string, string>
+  ): Promise<{ event: IEventDocument; status: EventRegistrationStatus }> {
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
-    if (!event.registrationRequired) throw ApiError.badRequest('Registration not required for this event');
     if (event.registrationDeadline && new Date() > event.registrationDeadline) {
       throw ApiError.badRequest('Registration deadline has passed');
     }
-    if (event.maxParticipants && event.registeredUsers.length >= event.maxParticipants) {
-      throw ApiError.badRequest('Event is full');
-    }
 
-    const oid = new mongoose.Types.ObjectId(userId);
-    if (event.registeredUsers.some((u) => u.toString() === userId)) {
+    const existing = findRegistration(event, userId);
+    if (existing && existing.status !== 'cancelled') {
       throw ApiError.conflict('Already registered for this event');
     }
 
-    event.registeredUsers.push(oid);
+    const answers = validateResponses(event, responses);
+
+    const status = nextRegistrationStatus(event);
+
+    if (existing) {
+      existing.status = status;
+      existing.registeredAt = new Date();
+      existing.responses = answers;
+      existing.updatedBy = undefined;
+    } else {
+      event.registrations.push({
+        user: new mongoose.Types.ObjectId(userId),
+        registeredAt: new Date(),
+        status,
+        responses: answers,
+      } as any);
+    }
+
+    await event.save();
+    return { event, status };
+  }
+
+  /** Withdraw the current user's own registration, promoting the first waitlisted person into the seat. */
+  async withdrawRegistration(eventId: string, userId: string): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const existing = findRegistration(event, userId);
+    if (!existing || existing.status === 'cancelled') {
+      throw ApiError.notFound('You are not registered for this event');
+    }
+
+    existing.status = 'cancelled';
+    promoteFromWaitlist(event);
+    await event.save();
+    return event;
+  }
+
+  /** Registration list for organisers, newest first with unknown-time legacy rows last. */
+  async getRegistrations(eventId: string) {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false }).populate(
+      'registrations.user',
+      'name email phone avatar department batch studentId'
+    );
+    if (!event) throw ApiError.notFound('Event not found');
+
+    return [...event.registrations].sort(
+      (a, b) => (b.registeredAt?.getTime() || 0) - (a.registeredAt?.getTime() || 0)
+    );
+  }
+
+  /** Add or update one registration on an organiser's behalf. */
+  async setRegistration(
+    eventId: string,
+    userId: string,
+    input: { status?: EventRegistrationStatus; note?: string; responses?: Record<string, string> },
+    actorId: string
+  ): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const existing = findRegistration(event, userId);
+    const status = input.status || existing?.status || 'confirmed';
+
+    if (existing) {
+      existing.status = status;
+      if (input.note !== undefined) existing.note = input.note;
+      if (input.responses) existing.responses = validateResponses(event, input.responses, false);
+      existing.updatedBy = new mongoose.Types.ObjectId(actorId);
+    } else {
+      event.registrations.push({
+        user: new mongoose.Types.ObjectId(userId),
+        registeredAt: new Date(),
+        status,
+        note: input.note,
+        responses: input.responses ? validateResponses(event, input.responses, false) : {},
+        updatedBy: new mongoose.Types.ObjectId(actorId),
+      } as any);
+    }
+
+    await event.save();
+    return event;
+  }
+
+  /** Registration list as CSV, with one extra column per custom question. */
+  async exportRegistrations(eventId: string): Promise<{ filename: string; csv: string }> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false }).populate(
+      'registrations.user',
+      'name email phone department batch studentId'
+    );
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const fields = event.registrationFields || [];
+    const headers = [
+      'Name', 'Email', 'Phone', 'Department', 'Batch', 'Student ID',
+      'Status', 'Registered At', ...fields.map((f) => f.label), 'Note',
+    ];
+
+    const rows = [...event.registrations]
+      .sort((a, b) => (a.registeredAt?.getTime() || 0) - (b.registeredAt?.getTime() || 0))
+      .map((r) => {
+        const u: any = r.user || {};
+        return [
+          u.name || '', u.email || '', u.phone || '', u.department || '', u.batch || '', u.studentId || '',
+          r.status,
+          r.registeredAt.toISOString(),
+          ...fields.map((f) => r.responses?.[f.key] || ''),
+          r.note || '',
+        ];
+      });
+
+    return { filename: csvFilename(event.title, 'registrations'), csv: toCsv(headers, rows) };
+  }
+
+  /** Attendance list as CSV, so organisers can compare who registered against who turned up. */
+  async exportAttendance(eventId: string): Promise<{ filename: string; csv: string }> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false })
+      .populate('attendance.user', 'name email phone department batch studentId')
+      .populate('attendance.verifiedBy', 'name');
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const headers = [
+      'Name', 'Email', 'Phone', 'Department', 'Batch', 'Student ID',
+      'Status', 'Checked In Via', 'Checked In At', 'Verified By',
+    ];
+
+    const rows = [...event.attendance]
+      .sort((a, b) => (a.checkedInAt?.getTime() || 0) - (b.checkedInAt?.getTime() || 0))
+      .map((a) => {
+        const u: any = a.user || {};
+        return [
+          u.name || '', u.email || '', u.phone || '', u.department || '', u.batch || '', u.studentId || '',
+          a.status, a.checkedInVia,
+          a.checkedInAt ? a.checkedInAt.toISOString() : '',
+          (a.verifiedBy as any)?.name || '',
+        ];
+      });
+
+    return { filename: csvFilename(event.title, 'attendance'), csv: toCsv(headers, rows) };
+  }
+
+  /** Remove a registration row outright, as opposed to cancelling it. */
+  async removeRegistration(eventId: string, userId: string): Promise<IEventDocument> {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const idx = event.registrations.findIndex((r) => registrantId(r) === userId);
+    if (idx === -1) throw ApiError.notFound('Registration not found');
+
+    event.registrations.splice(idx, 1);
+    promoteFromWaitlist(event);
     await event.save();
     return event;
   }
@@ -267,6 +530,9 @@ export class EventService {
   async generateQrCode(eventId: string, baseUrl: string): Promise<string> {
     const event = await Event.findOne({ _id: eventId, isDeleted: false });
     if (!event) throw ApiError.notFound('Event not found');
+    if (!event.registrationRequired) {
+      throw ApiError.badRequest('QR check-in needs registration to be required for this event');
+    }
 
     const checkinUrl = `${baseUrl}/events/${eventId}/checkin`;
     const qrDataUrl = await QRCode.toDataURL(checkinUrl, {

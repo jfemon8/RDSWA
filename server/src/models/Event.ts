@@ -1,5 +1,25 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export type EventRegistrationStatus = 'confirmed' | 'waitlisted' | 'interested' | 'cancelled';
+
+/** One admin-defined question asked while registering for an event. */
+export interface IEventRegistrationField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'select';
+  options?: string[];
+  required: boolean;
+}
+
+export interface IEventRegistration {
+  user: mongoose.Types.ObjectId;
+  registeredAt: Date;
+  status: EventRegistrationStatus;
+  responses?: Record<string, string>;
+  note?: string;
+  updatedBy?: mongoose.Types.ObjectId;
+}
+
 export interface IEventDocument extends Document {
   title: string;
   titleBn?: string;
@@ -14,7 +34,8 @@ export interface IEventDocument extends Document {
   registrationRequired: boolean;
   registrationDeadline?: Date;
   maxParticipants?: number;
-  registeredUsers: mongoose.Types.ObjectId[];
+  registrationFields: IEventRegistrationField[];
+  registrations: IEventRegistration[];
   qrCode?: string;
   attendance: Array<{
     user: mongoose.Types.ObjectId;
@@ -51,6 +72,20 @@ export interface IEventDocument extends Document {
   updatedAt: Date;
 }
 
+/**
+ * Declared as a real Schema so Mongoose doesn't read its `type` field as a SchemaType and collapse it to `[String]`.
+ */
+const registrationFieldSchema = new Schema<IEventRegistrationField>(
+  {
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    type: { type: String, enum: ['text', 'number', 'select'], default: 'text' },
+    options: [String],
+    required: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const eventSchema = new Schema<IEventDocument>(
   {
     title: { type: String, required: true, trim: true },
@@ -66,7 +101,21 @@ const eventSchema = new Schema<IEventDocument>(
     registrationRequired: { type: Boolean, default: false },
     registrationDeadline: Date,
     maxParticipants: Number,
-    registeredUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    registrationFields: { type: [registrationFieldSchema], default: [] },
+    registrations: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        registeredAt: { type: Date, default: Date.now },
+        status: {
+          type: String,
+          enum: ['confirmed', 'waitlisted', 'interested', 'cancelled'],
+          default: 'confirmed',
+        },
+        responses: { type: Schema.Types.Mixed, default: {} },
+        note: String,
+        updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      },
+    ],
     qrCode: String,
     attendance: [
       {
@@ -115,5 +164,6 @@ eventSchema.index({ status: 1, startDate: -1 });
 eventSchema.index({ type: 1 });
 eventSchema.index({ committee: 1 });
 eventSchema.index({ 'attendance.user': 1 });
+eventSchema.index({ 'registrations.user': 1 });
 
 export const Event = mongoose.model<IEventDocument>('Event', eventSchema);

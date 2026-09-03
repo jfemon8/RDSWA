@@ -13,7 +13,8 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getById = asyncHandler(async (req: Request, res: Response) => {
-  const event = await eventService.getById(req.params.id as string);
+  const requesterId = req.user ? (req.user._id as any).toString() : undefined;
+  const event = await eventService.getById(req.params.id as string, requesterId);
   ApiResponse.success(res, event);
 });
 
@@ -35,8 +36,83 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  const event = await eventService.register(req.params.id as string, (req.user._id as any).toString());
-  ApiResponse.success(res, event, 'Registered for event');
+  const { event, status } = await eventService.register(
+    req.params.id as string,
+    (req.user._id as any).toString(),
+    req.body?.responses
+  );
+  const message =
+    status === 'waitlisted'
+      ? 'Event is full — you have been added to the waitlist'
+      : status === 'interested'
+        ? 'Your interest has been recorded'
+        : 'Registered for event';
+  ApiResponse.success(res, event, message);
+});
+
+export const withdrawRegistration = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const event = await eventService.withdrawRegistration(
+    req.params.id as string,
+    (req.user._id as any).toString()
+  );
+  ApiResponse.success(res, event, 'Registration withdrawn');
+});
+
+export const getRegistrations = asyncHandler(async (req: Request, res: Response) => {
+  const registrations = await eventService.getRegistrations(req.params.id as string);
+  ApiResponse.success(res, registrations);
+});
+
+export const setRegistration = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { userId, status, note, responses } = req.body;
+  if (!userId || !mongoose.isValidObjectId(userId)) throw ApiError.badRequest('Invalid user ID');
+
+  const event = await eventService.setRegistration(
+    req.params.id as string,
+    userId,
+    { status, note, responses },
+    (req.user._id as any).toString()
+  );
+  ApiResponse.success(res, event, 'Registration saved');
+});
+
+export const updateRegistration = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const event = await eventService.setRegistration(
+    req.params.id as string,
+    req.params.userId as string,
+    req.body,
+    (req.user._id as any).toString()
+  );
+  ApiResponse.success(res, event, 'Registration updated');
+});
+
+export const removeRegistration = asyncHandler(async (req: Request, res: Response) => {
+  const event = await eventService.removeRegistration(
+    req.params.id as string,
+    req.params.userId as string
+  );
+  ApiResponse.success(res, event, 'Registration removed');
+});
+
+/** Stream a CSV so the browser saves it instead of rendering it. */
+function sendCsv(res: Response, filename: string, csv: string): void {
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  // The BOM makes Excel read Bangla names as UTF-8 rather than mojibake.
+  res.send('﻿' + csv);
+}
+
+export const exportRegistrations = asyncHandler(async (req: Request, res: Response) => {
+  const { filename, csv } = await eventService.exportRegistrations(req.params.id as string);
+  sendCsv(res, filename, csv);
+});
+
+export const exportAttendance = asyncHandler(async (req: Request, res: Response) => {
+  const { filename, csv } = await eventService.exportAttendance(req.params.id as string);
+  sendCsv(res, filename, csv);
 });
 
 export const checkin = asyncHandler(async (req: Request, res: Response) => {

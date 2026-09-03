@@ -13,17 +13,30 @@ import {
   manualAttendanceSchema,
   bulkAttendanceSchema,
   selfCheckinSchema,
+  registerSchema,
+  addRegistrationSchema,
+  updateRegistrationSchema,
 } from '../validators/event.validator';
 
 const router = Router();
 
 router.get('/', authenticate(true), eventController.list);
 router.get('/my-attendance', authenticate(), eventController.myAttendance);
-router.get('/:id', eventController.getById);
+// Optional auth so a signed-in visitor also gets their own registration back.
+router.get('/:id', authenticate(true), eventController.getById);
 router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body: createEventSchema }), auditLog('event.create', 'events'), eventController.create);
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateEventSchema }), auditLog('event.update', 'events'), eventController.update);
 router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('event.delete', 'events'), eventController.remove);
-router.post('/:id/register', authenticate(), authorize(UserRole.MEMBER), eventController.register);
+router.post('/:id/register', authenticate(), authorize(UserRole.MEMBER), validate({ body: registerSchema }), eventController.register);
+router.delete('/:id/register', authenticate(), authorize(UserRole.MEMBER), eventController.withdrawRegistration);
+
+// Registrations (Moderator+)
+router.get('/:id/registrations', authenticate(), authorize(UserRole.MODERATOR), eventController.getRegistrations);
+router.get('/:id/registrations/export', authenticate(), authorize(UserRole.MODERATOR), eventController.exportRegistrations);
+router.post('/:id/registrations', authenticate(), authorize(UserRole.MODERATOR), validate({ body: addRegistrationSchema }), auditLog('event.registration_add', 'events'), eventController.setRegistration);
+router.patch('/:id/registrations/:userId', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateRegistrationSchema }), auditLog('event.registration_update', 'events'), eventController.updateRegistration);
+router.delete('/:id/registrations/:userId', authenticate(), authorize(UserRole.MODERATOR), auditLog('event.registration_remove', 'events'), eventController.removeRegistration);
+router.get('/:id/attendance/export', authenticate(), authorize(UserRole.MODERATOR), eventController.exportAttendance);
 router.post('/:id/checkin', authenticate(), authorize(UserRole.MODERATOR), validate({ body: checkinSchema }), eventController.checkin);
 router.post('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), validate({ body: manualAttendanceSchema }), eventController.submitAttendance);
 router.post('/:id/attendance/bulk', authenticate(), authorize(UserRole.MODERATOR), validate({ body: bulkAttendanceSchema }), eventController.bulkAttendance);

@@ -16,11 +16,7 @@ export function contributionOf(donation: {
   return { campaign: donation.campaign.toString(), amount: donation.amount || 0 };
 }
 
-/**
- * The `raisedAmount` increments that move a campaign from one contribution state to another.
- *
- * Kept pure so create, verify, edit and delete can all be reasoned about and tested as one rule.
- */
+/** The pure `raisedAmount` increments that move a campaign from one contribution state to another. */
 export function campaignDeltas(
   before: CampaignContribution,
   after: CampaignContribution
@@ -38,11 +34,7 @@ export function campaignDeltas(
   return deltas;
 }
 
-/**
- * Apply the campaign-total change for a donation transition.
- *
- * Every create, verify, edit and delete routes through here, so a completed donation can never leave a stale total behind.
- */
+/** Apply a donation transition's campaign-total change, which every create, verify, edit and delete routes through. */
 async function syncCampaignTotals(before: CampaignContribution, after: CampaignContribution): Promise<void> {
   for (const { campaign, inc } of campaignDeltas(before, after)) {
     await DonationCampaign.findByIdAndUpdate(campaign, { $inc: { raisedAmount: inc } });
@@ -112,11 +104,7 @@ export class DonationService {
     return obj;
   }
 
-  /**
-   * Next receipt number, derived from the highest one already issued.
-   *
-   * The previous `countDocuments()` approach reused numbers once a donation was soft-deleted, because the count shrank while the issued numbers did not.
-   */
+  /** Next receipt number, taken from the highest already issued so a soft delete cannot make one repeat. */
   private async nextReceiptNumber(): Promise<string> {
     const latest = await Donation.findOne({ receiptNumber: /^RDSWA-\d+$/ })
       .sort({ receiptNumber: -1 })
@@ -127,11 +115,7 @@ export class DonationService {
     return `RDSWA-${String((Number.isNaN(highest) ? 0 : highest) + 1).padStart(6, '0')}`;
   }
 
-  /**
-   * Record a donation.
-   *
-   * `donor` and `paymentStatus` are honoured only for an Admin+, so a public submission can never attribute itself to someone else or mark itself paid.
-   */
+  /** Record a donation, honouring `donor` and `paymentStatus` only for an Admin+ so a public submission cannot mark itself paid. */
   async create(
     data: any,
     options: { donorId?: string; actorRole?: string } = {}

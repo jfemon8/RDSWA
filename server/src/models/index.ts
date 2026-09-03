@@ -5,7 +5,7 @@ export { Committee } from './Committee';
 export type { ICommitteeDocument } from './Committee';
 
 export { Event } from './Event';
-export type { IEventDocument } from './Event';
+export type { IEventDocument, IEventRegistration, IEventRegistrationField, EventRegistrationStatus } from './Event';
 
 export { Notice } from './Notice';
 export type { INoticeDocument } from './Notice';

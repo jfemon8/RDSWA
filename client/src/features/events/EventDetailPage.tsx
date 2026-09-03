@@ -42,6 +42,8 @@ export default function EventDetailPage() {
   const [showPhotos, setShowPhotos] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [attendanceDate, setAttendanceDate] = useState("");
+  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [regError, setRegError] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.events.detail(id!),
@@ -53,9 +55,21 @@ export default function EventDetailPage() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: () => api.post(`/events/${id}/register`),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(id!) }),
+    mutationFn: () => api.post(`/events/${id}/register`, { responses }),
+    onSuccess: () => {
+      setRegError("");
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+    },
+    onError: (err: any) =>
+      setRegError(err.response?.data?.message || "Registration failed"),
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: () => api.delete(`/events/${id}/register`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      setResponses({});
+    },
   });
 
   const selfCheckinMutation = useMutation({
@@ -65,7 +79,7 @@ export default function EventDetailPage() {
         attendanceDate ? { checkedInAt: attendanceDate } : {},
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(id!) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       setAttendanceDate("");
     },
   });
@@ -73,7 +87,7 @@ export default function EventDetailPage() {
   const feedbackMutation = useMutation({
     mutationFn: () => api.post(`/events/${id}/feedback`, { rating, comment }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(id!) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       setRating(0);
       setComment("");
     },
@@ -92,15 +106,25 @@ export default function EventDetailPage() {
   const derivedStatus = deriveEventStatus(event);
   // Members may still record their own attendance for 7 days after the event.
   const attendanceWindow = getAttendanceWindow(event, { isSelfCheckin: true });
+  const myRegistration = event.myRegistration;
+  const regStatus: string | undefined = myRegistration?.status;
   const isRegistered =
-    event.registeredUsers?.some?.(
-      (u: any) => (typeof u === "string" ? u : u._id) === user?._id,
-    ) || event.registeredUsers?.includes?.(user?._id);
-  const canRegister =
-    isAuthenticated &&
-    event.registrationRequired &&
-    derivedStatus === "upcoming" &&
-    !isRegistered;
+    regStatus === "confirmed" ||
+    regStatus === "waitlisted" ||
+    regStatus === "interested";
+  // Without formal registration the button only records interest.
+  const interestOnly = !event.registrationRequired;
+  const registrationFields: any[] = event.registrationFields || [];
+  // Registration stays open while the event runs; the server enforces the deadline.
+  const registrationOpen =
+    derivedStatus === "upcoming" || derivedStatus === "ongoing";
+  const canRegister = isAuthenticated && registrationOpen && !isRegistered;
+  const seatsLeft = event.maxParticipants
+    ? Math.max(
+        0,
+        event.maxParticipants - (event.registrationCounts?.confirmed || 0),
+      )
+    : null;
   const myAttendance = event.attendance?.find?.(
     (a: any) =>
       (typeof a.user === "string" ? a.user : a.user?._id) === user?._id,
@@ -171,13 +195,15 @@ export default function EventDetailPage() {
               {event.venue}
             </div>
           )}
-          {event.registeredUsers && (
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {event.registeredUsers.length} registered
-              {event.maxParticipants && ` / ${event.maxParticipants} max`}
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            {event.registrationRequired
+              ? `${event.registrationCounts?.confirmed ?? 0} registered`
+              : `${event.registrationCounts?.interested ?? 0} interested`}
+            {event.registrationRequired &&
+              event.maxParticipants &&
+              ` / ${event.maxParticipants} max`}
+          </div>
           {event.type && (
             <span className="capitalize px-2 py-0.5 bg-muted rounded text-xs">
               {event.type}
@@ -200,31 +226,147 @@ export default function EventDetailPage() {
       {/* Registration */}
       {canRegister && (
         <FadeIn delay={0.2} direction="up">
-          <button
-            onClick={() => registerMutation.mutate()}
-            disabled={registerMutation.isPending}
-            className="mb-6 flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+          <form
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              const missing = registrationFields.find(
+                (f) => f.required && !(responses[f.key] || "").trim(),
+              );
+              if (missing) {
+                setRegError(`${missing.label} is required`);
+                return;
+              }
+              setRegError("");
+              registerMutation.mutate();
+            }}
+            className="mb-4 border rounded-xl p-4 bg-card flex justify-between items-center gap-2 flex-wrap"
           >
-            {registerMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <UserPlus className="h-4 w-4" />
+            <h3 className="font-semibold mb-1 flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-primary" />
+              {interestOnly
+                ? "Interested in this event?"
+                : "Register for this event"}
+            </h3>
+            {!interestOnly && seatsLeft !== null && (
+              <p className="text-xs text-muted-foreground mb-3">
+                {seatsLeft > 0
+                  ? `${seatsLeft} of ${event.maxParticipants} seats left`
+                  : "All seats are taken. You will join the waitlist"}
+              </p>
             )}
-            Register for Event
-          </button>
+
+            {registrationFields.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                {registrationFields.map((f) => (
+                  <div key={f.key}>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                      {f.label}
+                      {f.required && (
+                        <span className="text-destructive"> *</span>
+                      )}
+                    </label>
+                    {f.type === "select" ? (
+                      <select
+                        value={responses[f.key] || ""}
+                        onChange={(e) => {
+                          setResponses({
+                            ...responses,
+                            [f.key]: e.target.value,
+                          });
+                          setRegError("");
+                        }}
+                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                      >
+                        <option value="">Select...</option>
+                        {(f.options || []).map((o: string) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={f.type === "number" ? "number" : "text"}
+                        value={responses[f.key] || ""}
+                        onChange={(e) => {
+                          setResponses({
+                            ...responses,
+                            [f.key]: e.target.value,
+                          });
+                          setRegError("");
+                        }}
+                        className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={registerMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium disabled:opacity-50"
+            >
+              {registerMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
+              {interestOnly
+                ? "I'm Interested"
+                : seatsLeft === 0
+                  ? "Join Waitlist"
+                  : "Register"}
+            </motion.button>
+            {regError && (
+              <p className="text-xs text-destructive mt-2">{regError}</p>
+            )}
+          </form>
         </FadeIn>
       )}
 
       {isRegistered && (
         <FadeIn delay={0.2} direction="up">
-          <div className="mb-6 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
+          <div
+            className={`mb-4 p-2 rounded-md text-sm ${
+              regStatus === "waitlisted"
+                ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
+                : regStatus === "interested"
+                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
+                  : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+            }`}
+          >
             <div className="flex items-center gap-2 flex-wrap">
-              <CheckCircle2 className="h-4 w-4" />
-              You are registered for this event
-              {/* Only show the "Checked in" badge once a moderator approves
-                  the record. Pending self-requests are surfaced separately
-                  via the Attendance card below so the user understands
-                  their request hasn't landed yet. */}
+              {regStatus === "confirmed" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Clock className="h-4 w-4" />
+              )}
+              {regStatus === "waitlisted"
+                ? "You are on the waitlist — we will confirm if a seat opens"
+                : regStatus === "interested"
+                  ? "You have marked yourself as interested"
+                  : "You are registered for this event"}
+              {myRegistration?.registeredAt && (
+                <span className="text-xs opacity-80">
+                  on {formatDate(myRegistration.registeredAt)}
+                </span>
+              )}
+              {registrationOpen && (
+                <button
+                  type="button"
+                  onClick={() => withdrawMutation.mutate()}
+                  disabled={withdrawMutation.isPending}
+                  className="ml-auto text-xs underline hover:no-underline disabled:opacity-50"
+                >
+                  {withdrawMutation.isPending ? "Withdrawing..." : "Withdraw"}
+                </button>
+              )}
+
               {isCheckedIn && (
                 <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-800/30 rounded text-xs">
                   Checked in via {myAttendance.checkedInVia} at{" "}
@@ -251,23 +393,26 @@ export default function EventDetailPage() {
         </FadeIn>
       )}
 
-      {/* Per-user QR Code for check-in */}
-      {derivedStatus !== "completed" && isRegistered && user && (
-        <FadeIn delay={0.25} direction="up">
-          <div className="mb-6 p-4 border rounded-lg bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <QrCode className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-sm">Check-in QR Code</h3>
+      {/* Per-user QR code, which only exists for events that hold a seat. */}
+      {event.registrationRequired &&
+        derivedStatus !== "completed" &&
+        isRegistered &&
+        user && (
+          <FadeIn delay={0.25} direction="up">
+            <div className="mb-6 p-4 border rounded-lg bg-card">
+              <div className="flex items-center gap-2 mb-3">
+                <QrCode className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-sm">Check-in QR Code</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Show this QR code at the venue for check-in
+              </p>
+              <div className="flex justify-center">
+                <UserEventQr eventId={id!} userId={user._id} size={192} />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              Show this QR code at the venue for check-in
-            </p>
-            <div className="flex justify-center">
-              <UserEventQr eventId={id!} userId={user._id} size={192} />
-            </div>
-          </div>
-        </FadeIn>
-      )}
+          </FadeIn>
+        )}
 
       {/* Self Check-in — stays available for 7 days after the event ends. */}
       {isAuthenticated &&
@@ -275,7 +420,7 @@ export default function EventDetailPage() {
         derivedStatus !== "cancelled" &&
         attendanceWindow.isOpen && (
           <FadeIn delay={0.3}>
-            <div className="border rounded-xl p-4 bg-card mb-6">
+            <div className="border rounded-xl p-4 bg-card mb-4 flex justify-between items-center gap-2 flex-wrap">
               <h3 className="font-semibold mb-2 flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" /> Attendance
               </h3>
