@@ -64,16 +64,13 @@ export default function LoginPage() {
 
     setErrors({});
 
-    if (!form.email.trim()) {
-      setErrors({ email: 'Email is required' });
-      return;
-    }
-    if (!emailRegex.test(form.email.trim())) {
-      setErrors({ email: 'Please enter a valid email address' });
-      return;
-    }
-    if (!form.password) {
-      setErrors({ password: 'Password is required' });
+    // Collect every problem so each field shows its own message at once.
+    const errs: Record<string, string> = {};
+    if (!form.email.trim()) errs.email = 'Email is required';
+    else if (!emailRegex.test(form.email.trim())) errs.email = 'Please enter a valid email address';
+    if (!form.password) errs.password = 'Password is required';
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
 

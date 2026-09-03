@@ -8,11 +8,12 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
-import { Search, CheckCircle, XCircle, Trash2, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Trash2, Eye, EyeOff, ChevronDown, Plus, Pencil } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
 import Pagination from '@/components/ui/Pagination';
+import DonationFormModal from './DonationFormModal';
 
 export default function AdminDonationsPage() {
   const queryClient = useQueryClient();
@@ -23,6 +24,8 @@ export default function AdminDonationsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = usePageParam();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // null closes the form; a donation opens it for editing, `{}` for a new record.
+  const [formTarget, setFormTarget] = useState<any | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-donations', search, page],
@@ -52,7 +55,22 @@ export default function AdminDonationsPage() {
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
-      <h1 className="text-xl sm:text-2xl font-bold mb-6 text-foreground">Donation Management</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Donation Management</h1>
+        <button
+          onClick={() => setFormTarget({})}
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap"
+        >
+          <Plus className="h-4 w-4 shrink-0" /> Add Donation
+        </button>
+      </div>
+
+      {formTarget && (
+        <DonationFormModal
+          donation={formTarget._id ? formTarget : null}
+          onClose={() => setFormTarget(null)}
+        />
+      )}
 
       <FadeIn direction="up">
         <div className="relative mb-6">
@@ -108,6 +126,10 @@ export default function AdminDonationsPage() {
                     <XCircle className="h-4 w-4" />
                   </button>
                 )}
+                <button onClick={(e) => { e.stopPropagation(); setFormTarget(d); }} title="Edit"
+                  className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded">
+                  <Pencil className="h-4 w-4" />
+                </button>
                 {isSuperAdmin && (
                   <button onClick={async (e) => {
                     e.stopPropagation();
@@ -194,7 +216,7 @@ export default function AdminDonationsPage() {
                           <td className="p-3 text-xs text-muted-foreground truncate" title={d.transactionId || ''}>{d.transactionId || '-'}</td>
                           <td className="p-3">{renderVisibility(d)}</td>
                           <td className="p-3">{renderStatus(d)}</td>
-                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(d.createdAt)}</td>
+                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(d.donationDate || d.createdAt)}</td>
                           <td className="p-3" onClick={(e) => e.stopPropagation()}>{renderActions(d)}</td>
                         </tr>
                         <AnimatePresence>
@@ -241,7 +263,7 @@ export default function AdminDonationsPage() {
                           <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{d.paymentMethod}</span>
                           {renderStatus(d)}
                           {renderVisibility(d)}
-                          <span>{formatDate(d.createdAt)}</span>
+                          <span>{formatDate(d.donationDate || d.createdAt)}</span>
                         </div>
                         {d.transactionId && (
                           <p className="text-xs text-muted-foreground break-all mb-3">

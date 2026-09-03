@@ -19,8 +19,24 @@ export const getById = asyncHandler(async (req: Request, res: Response) => {
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const donorId = req.user ? (req.user._id as any).toString() : undefined;
-  const donation = await donationService.create(req.body, donorId);
+  const donation = await donationService.create(req.body, {
+    donorId,
+    actorRole: req.user?.role,
+  });
   ApiResponse.created(res, donation, 'Donation recorded');
+});
+
+export const update = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const donation = await donationService.update(req.params.id as string, req.body, {
+    actorRole: req.user.role,
+  });
+  ApiResponse.success(res, donation, 'Donation updated');
+});
+
+export const remove = asyncHandler(async (req: Request, res: Response) => {
+  await donationService.remove(req.params.id as string);
+  ApiResponse.success(res, null, 'Donation deleted');
 });
 
 export const verifyPayment = asyncHandler(async (req: Request, res: Response) => {
@@ -74,7 +90,7 @@ export const getReceipt = asyncHandler(async (req: Request, res: Response) => {
 
   const donorName = (donation.donor as any)?.name || donation.donorName || 'Anonymous';
   const donorEmail = (donation.donor as any)?.email || donation.donorEmail || '';
-  const date = new Date(donation.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
+  const date = new Date(donation.donationDate || donation.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
 
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Donation Receipt</title>

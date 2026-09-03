@@ -4,6 +4,8 @@ import { Paperclip, Image as ImageIcon, Video, Music, FileText, File as FileIcon
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+import { omitFieldError } from '@/lib/formErrors';
 
 /** Minimal declaration for `navigator.contacts.select()`, an Android Chrome API missing from the standard TS lib and detected at runtime. */
 interface ContactsManager {
@@ -464,21 +466,23 @@ function PhoneContactMode({ onSelect }: { onSelect: (contact: NonNullable<ChatAt
 }
 
 function ManualContactMode({ onSelect }: { onSelect: (contact: NonNullable<ChatAttachment['contact']>) => void }) {
-  const toast = useToast();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error('Contact name is required');
+
+    // Collect every problem so each field shows its own message at once.
+    const errs: Record<string, string> = {};
+    if (!name.trim()) errs.name = 'Contact name is required';
+    if (!phone.trim() && !email.trim()) errs.phone = 'Add a phone number or email';
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
-    if (!phone.trim() && !email.trim()) {
-      toast.error('Add a phone number or email');
-      return;
-    }
+    setErrors({});
     onSelect({
       name: name.trim(),
       phone: phone.trim() || undefined,
@@ -491,25 +495,27 @@ function ManualContactMode({ onSelect }: { onSelect: (contact: NonNullable<ChatA
       <input
         type="text"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => { setName(e.target.value); setErrors((prev) => omitFieldError(prev, 'name')); }}
         placeholder="Name *"
-        className="w-full px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className={`w-full px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.name ? 'border-destructive' : ''}`}
         autoFocus
       />
+      <FieldError message={errors.name} />
       <input
         type="tel"
         value={phone}
-        onChange={(e) => setPhone(e.target.value)}
+        onChange={(e) => { setPhone(e.target.value); setErrors((prev) => omitFieldError(prev, 'phone')); }}
         placeholder="Phone"
-        className="w-full px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className={`w-full px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.phone ? 'border-destructive' : ''}`}
       />
       <input
         type="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => { setEmail(e.target.value); setErrors((prev) => omitFieldError(prev, 'phone')); }}
         placeholder="Email"
-        className="w-full px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className={`w-full px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.phone ? 'border-destructive' : ''}`}
       />
+      <FieldError message={errors.phone} />
       <button
         type="submit"
         className="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-md text-sm"

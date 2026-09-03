@@ -12,6 +12,17 @@ export function extractFieldErrors(err: any): Record<string, string> | null {
   return Object.keys(fieldErrors).length > 0 ? fieldErrors : null;
 }
 
+/** Drop one field's message so it disappears the moment the user edits that field. */
+export function omitFieldError(
+  errors: Record<string, string>,
+  field: string
+): Record<string, string> {
+  if (!(field in errors)) return errors;
+  const next = { ...errors };
+  delete next[field];
+  return next;
+}
+
 /** Pick the most human-readable message from an API error, preferring a field-level one over the generic text. */
 export function getApiErrorMessage(err: any, fallback = 'Something went wrong'): string {
   const data = err?.response?.data;

@@ -118,7 +118,7 @@ function SendPanel({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           <FieldError message={errors.message} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1">Link (optional)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Link</label>
           <input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="/events/..."
             className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
         </div>

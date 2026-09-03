@@ -204,7 +204,7 @@ export default function AdminBudgetPage() {
   };
 
   const handleReject = async (id: string) => {
-    const reason = window.prompt('Reason for rejection (optional):') || '';
+    const reason = window.prompt('Reason for rejection:') || '';
     reviewMutation.mutate({ id, status: 'rejected', reason });
   };
 
@@ -273,7 +273,7 @@ export default function AdminBudgetPage() {
                   <FieldError message={errors.title} />
                 </div>
                 <textarea
-                  placeholder="Description (optional)"
+                  placeholder="Description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
@@ -291,7 +291,7 @@ export default function AdminBudgetPage() {
                     <FieldError message={errors.fiscalYear} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Linked event ID (optional)</label>
+                    <label className="text-xs text-muted-foreground">Linked event ID</label>
                     <input
                       placeholder="Mongo ObjectId of an event"
                       value={form.event}

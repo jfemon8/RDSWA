@@ -226,7 +226,7 @@ export default function AdminEventsPage() {
                   </label>
                 </div>
                 {form.registrationRequired && (
-                  <input type="number" placeholder="Max Participants (optional)" value={form.maxParticipants}
+                  <input type="number" placeholder="Max Participants" value={form.maxParticipants}
                     onChange={(e) => setForm({ ...form, maxParticipants: e.target.value })}
                     className="w-full sm:w-48 px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 )}
@@ -686,7 +686,7 @@ function EventDetailPanel({ event }: { event: any }) {
           {photoUrl && (
             <div className="flex gap-2">
               <input
-                placeholder="Caption (optional)"
+                placeholder="Caption"
                 value={photoCaption}
                 onChange={(e) => setPhotoCaption(e.target.value)}
                 className="flex-1 px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"

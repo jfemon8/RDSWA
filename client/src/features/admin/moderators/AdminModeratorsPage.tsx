@@ -123,7 +123,7 @@ export default function AdminModeratorsPage() {
                 <input
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Reason for assignment (optional)"
+                  placeholder="Reason for assignment"
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
                 />
                 <div className="flex gap-2">

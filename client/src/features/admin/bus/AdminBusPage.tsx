@@ -709,7 +709,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                               className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
                           </div>
                         </div>
-                        <input placeholder="Seasonal note (optional)" value={form.seasonalNote} onChange={(e) => setForm({ ...form, seasonalNote: e.target.value })}
+                        <input placeholder="Seasonal note" value={form.seasonalNote} onChange={(e) => setForm({ ...form, seasonalNote: e.target.value })}
                           className="w-full px-3 py-1.5 border rounded-md bg-card text-foreground text-sm" />
                       </div>
                     </motion.div>
@@ -946,7 +946,7 @@ function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => v
                 </div>
                 <input placeholder="Phone Numbers (comma separated)" value={form.phoneNumbers} onChange={(e) => setForm({ ...form, phoneNumbers: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                <input placeholder="Booking Link (optional)" value={form.bookingLink} onChange={(e) => setForm({ ...form, bookingLink: e.target.value })}
+                <input placeholder="Booking Link" value={form.bookingLink} onChange={(e) => setForm({ ...form, bookingLink: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                 <div className="flex gap-2">
                   <button

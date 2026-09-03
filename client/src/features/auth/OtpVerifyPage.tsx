@@ -5,6 +5,8 @@ import { Loader2, CheckCircle, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, GradientText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+import { omitFieldError } from '@/lib/formErrors';
 
 export default function OtpVerifyPage() {
   const [searchParams] = useSearchParams();
@@ -13,6 +15,7 @@ export default function OtpVerifyPage() {
   const toast = useToast();
 
   const [email, setEmail] = useState(emailParam);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [step, setStep] = useState<'email' | 'otp' | 'success'>(emailParam ? 'otp' : 'email');
   const [loading, setLoading] = useState(false);
@@ -36,9 +39,10 @@ export default function OtpVerifyPage() {
   const handleSendOtp = async (targetEmail?: string) => {
     const sendTo = targetEmail || email;
     if (!sendTo.trim()) {
-      toast.error('Please enter your email');
+      setErrors({ email: 'Email is required' });
       return;
     }
+    setErrors({});
     setLoading(true);
     try {
       await api.post('/auth/send-otp', { email: sendTo });
@@ -149,11 +153,12 @@ export default function OtpVerifyPage() {
                         id="otp-email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                        onChange={(e) => { setEmail(e.target.value); setErrors((prev) => omitFieldError(prev, 'email')); }}
+                        className={`w-full px-3 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-shadow ${errors.email ? 'border-destructive' : ''}`}
                         placeholder="you@example.com"
                         onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
                       />
+                      <FieldError message={errors.email} />
                     </motion.div>
 
                     <motion.button

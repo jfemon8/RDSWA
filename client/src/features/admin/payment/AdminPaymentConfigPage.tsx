@@ -4,6 +4,8 @@ import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+import { omitFieldError } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
 import { Save, Loader2, CreditCard, Landmark } from 'lucide-react';
 
@@ -46,6 +48,7 @@ export default function AdminPaymentConfigPage() {
   });
 
   const [form, setForm] = useState<PaymentGateway>(DEFAULT_GATEWAY);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (data?.data) {
@@ -68,34 +71,34 @@ export default function AdminPaymentConfigPage() {
     onError: () => toast.error('Failed to update payment configuration'),
   });
 
-  const mobileErrors = (['bkash', 'nagad', 'rocket'] as const).some(
-    (m) => !isValidMobileFormat(m, form[m].number)
-  );
-
-  const bankRequiredEmpty = form.bank.isActive && (
-    !form.bank.bankName.trim() || !form.bank.accountName.trim() || !form.bank.accountNumber.trim()
-  );
-
-  const hasValidationErrors = mobileErrors || bankRequiredEmpty;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Collect every problem so each field shows its own message at once.
+    const errs: Record<string, string> = {};
     for (const method of ['bkash', 'nagad', 'rocket'] as const) {
       if (!isValidMobileFormat(method, form[method].number)) {
-        const hint = method === 'rocket' ? '01XXXXXXXXX অথবা 01XXXXXXXXXX' : '01XXXXXXXXX';
-        toast.error(`${method} এর জন্য সঠিক মোবাইল নম্বর দিন (${hint})`);
-        return;
+        const hint = method === 'rocket' ? '01XXXXXXXXX বা 01XXXXXXXXXX' : '01XXXXXXXXX';
+        errs[method] = `সঠিক মোবাইল নম্বর দিন (${hint})`;
       }
     }
-    if (bankRequiredEmpty) {
-      toast.error('ব্যাংক একটিভ থাকলে ব্যাংকের নাম, অ্যাকাউন্ট নাম ও অ্যাকাউন্ট নম্বর আবশ্যক');
+    if (form.bank.isActive) {
+      if (!form.bank.bankName.trim()) errs.bankName = 'ব্যাংকের নাম আবশ্যক';
+      if (!form.bank.accountName.trim()) errs.accountName = 'অ্যাকাউন্ট নাম আবশ্যক';
+      if (!form.bank.accountNumber.trim()) errs.accountNumber = 'অ্যাকাউন্ট নম্বর আবশ্যক';
+    }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
+
+    setErrors({});
     saveMutation.mutate();
   };
 
   const updateBank = (field: keyof BankEntry, value: string | boolean) => {
     setForm({ ...form, bank: { ...form.bank, [field]: value } });
+    setErrors((prev) => omitFieldError(prev, field as string));
   };
 
   if (isLoading) {
@@ -161,22 +164,11 @@ export default function AdminPaymentConfigPage() {
                           ...form,
                           [method]: { ...form[method], number: digits },
                         });
+                        setErrors((prev) => omitFieldError(prev, method));
                       }}
-                      className={`${inputClass} ${
-                        !isValidMobileFormat(method, form[method].number) ? 'border-destructive' : ''
-                      }`}
+                      className={`${inputClass} ${errors[method] ? 'border-destructive' : ''}`}
                     />
-                    {!isValidMobileFormat(method, form[method].number) && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-destructive mt-1"
-                      >
-                        {method === 'rocket'
-                          ? 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX বা 01XXXXXXXXXX)'
-                          : 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX)'}
-                      </motion.p>
-                    )}
+                    <FieldError message={errors[method]} />
                   </div>
                   <select
                     value={form[method].accountType}
@@ -221,8 +213,9 @@ export default function AdminPaymentConfigPage() {
                       placeholder="e.g. Sonali Bank"
                       value={form.bank.bankName}
                       onChange={(e) => updateBank('bankName', e.target.value)}
-                      className={`${inputClass} ${form.bank.isActive && !form.bank.bankName.trim() ? 'border-destructive' : ''}`}
+                      className={`${inputClass} ${errors.bankName ? 'border-destructive' : ''}`}
                     />
+                    <FieldError message={errors.bankName} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Branch Name</label>
@@ -239,8 +232,9 @@ export default function AdminPaymentConfigPage() {
                       placeholder="Account holder name"
                       value={form.bank.accountName}
                       onChange={(e) => updateBank('accountName', e.target.value)}
-                      className={`${inputClass} ${form.bank.isActive && !form.bank.accountName.trim() ? 'border-destructive' : ''}`}
+                      className={`${inputClass} ${errors.accountName ? 'border-destructive' : ''}`}
                     />
+                    <FieldError message={errors.accountName} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Account Number *</label>
@@ -248,35 +242,27 @@ export default function AdminPaymentConfigPage() {
                       placeholder="Account number"
                       value={form.bank.accountNumber}
                       onChange={(e) => updateBank('accountNumber', e.target.value)}
-                      className={`${inputClass} ${form.bank.isActive && !form.bank.accountNumber.trim() ? 'border-destructive' : ''}`}
+                      className={`${inputClass} ${errors.accountNumber ? 'border-destructive' : ''}`}
                     />
+                    <FieldError message={errors.accountNumber} />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-xs text-muted-foreground mb-1 block">Routing Number</label>
                     <input
-                      placeholder="Routing number (optional)"
+                      placeholder="Routing number"
                       value={form.bank.routingNumber}
                       onChange={(e) => updateBank('routingNumber', e.target.value)}
                       className={inputClass}
                     />
                   </div>
                 </div>
-                {form.bank.isActive && (!form.bank.bankName.trim() || !form.bank.accountName.trim() || !form.bank.accountNumber.trim()) && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-destructive"
-                  >
-                    ব্যাংক একটিভ থাকলে ব্যাংকের নাম, অ্যাকাউন্ট নাম ও অ্যাকাউন্ট নম্বর আবশ্যক
-                  </motion.p>
-                )}
               </div>
             </div>
           </FadeIn>
 
           <motion.button
             type="submit"
-            disabled={saveMutation.isPending || hasValidationErrors}
+            disabled={saveMutation.isPending}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"

@@ -27,6 +27,8 @@ export interface IDonationDocument extends Document {
   isRecurring: boolean;
   recurringInterval?: 'monthly' | 'yearly';
   nextPaymentDate?: Date;
+  /** When the donation actually happened, which may be back-dated independently of `createdAt`. */
+  donationDate: Date;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -60,6 +62,7 @@ const donationSchema = new Schema<IDonationDocument>(
     isRecurring: { type: Boolean, default: false },
     recurringInterval: { type: String, enum: ['monthly', 'yearly'] },
     nextPaymentDate: Date,
+    donationDate: { type: Date, default: Date.now },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
@@ -70,6 +73,7 @@ donationSchema.index({ type: 1 });
 donationSchema.index({ campaign: 1 });
 donationSchema.index({ paymentStatus: 1 });
 donationSchema.index({ createdAt: -1 });
+donationSchema.index({ donationDate: -1 });
 donationSchema.index({ isRecurring: 1, nextPaymentDate: 1 });
 
 export const Donation = mongoose.model<IDonationDocument>('Donation', donationSchema);

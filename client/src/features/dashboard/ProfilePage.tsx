@@ -243,7 +243,7 @@ export default function ProfilePage() {
                   >
                     <div className="pt-1">
                       <InputField
-                        label="Last Donation Date (optional)"
+                        label="Last Donation Date"
                         type="date"
                         value={form.lastDonationDate}
                         onChange={(v) => set('lastDonationDate', v)}

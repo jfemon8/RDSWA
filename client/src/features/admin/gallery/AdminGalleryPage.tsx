@@ -271,7 +271,7 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
                   folder="gallery"
                   label="Photo (max 5MB)"
                 />
-                <input placeholder="Caption (optional)" value={photoForm.caption}
+                <input placeholder="Caption" value={photoForm.caption}
                   onChange={(e) => setPhotoForm({ ...photoForm, caption: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                 <div className="flex gap-2">

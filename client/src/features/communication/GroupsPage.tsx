@@ -291,7 +291,7 @@ function CreateGroupForm({
           <FieldError message={errors.name} />
         </div>
         <textarea
-          placeholder="Description (optional)"
+          placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}

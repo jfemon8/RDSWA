@@ -1,6 +1,20 @@
 import { z } from 'zod';
 
+/** Optional date the donation happened, defaulting server-side to now when omitted. */
+const donationDateField = z
+  .string()
+  .nullish()
+  .refine((v) => !v || !Number.isNaN(new Date(v).getTime()), { message: 'Invalid donation date' });
+
+const objectIdOrEmpty = z
+  .string()
+  .refine((v) => v === '' || /^[0-9a-fA-F]{24}$/.test(v), { message: 'Invalid donor' });
+
 export const createDonationSchema = z.object({
+  /** Admin-only attribution to a registered user, sent as '' for a donor with no account. */
+  donor: objectIdOrEmpty.optional(),
+  paymentStatus: z.enum(['pending', 'completed', 'failed', 'refunded', 'revision']).optional(),
+  donationDate: donationDateField,
   donorName: z.string().optional(),
   donorEmail: z.string().email().optional().or(z.literal('')),
   donorPhone: z.string().optional(),
@@ -19,6 +33,9 @@ export const createDonationSchema = z.object({
   isRecurring: z.boolean().optional(),
   recurringInterval: z.enum(['monthly', 'yearly']).optional(),
 });
+
+/** Every donation field is editable, so a record can be corrected whatever state it is in. */
+export const updateDonationSchema = createDonationSchema.partial();
 
 export const verifyDonationSchema = z.object({
   paymentStatus: z.enum(['completed', 'failed', 'refunded', 'revision']),

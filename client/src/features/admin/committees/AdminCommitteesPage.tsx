@@ -122,7 +122,7 @@ export default function AdminCommitteesPage() {
                     <FieldError message={errors.startDate} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">End Date (optional)</label>
+                    <label className="text-xs text-muted-foreground">End Date</label>
                     <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                       className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
                   </div>

@@ -5,7 +5,7 @@ import { authorize } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { UserRole } from '@rdswa/shared';
-import { createDonationSchema, verifyDonationSchema, createCampaignSchema, updateCampaignSchema } from '../validators/donation.validator';
+import { createDonationSchema, updateDonationSchema, verifyDonationSchema, createCampaignSchema, updateCampaignSchema } from '../validators/donation.validator';
 
 const router = Router();
 
@@ -19,20 +19,12 @@ router.get('/:id', donationController.getById);
 router.get('/:id/receipt', donationController.getReceipt);
 router.post('/', authenticate(true), validate({ body: createDonationSchema }), donationController.create);
 router.patch('/:id/verify', authenticate(), authorize(UserRole.ADMIN), validate({ body: verifyDonationSchema }), auditLog('donation.verify', 'donations'), donationController.verifyPayment);
+router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body: updateDonationSchema }), auditLog('donation.update', 'donations'), donationController.update);
 router.post('/campaigns', authenticate(), authorize(UserRole.ADMIN), validate({ body: createCampaignSchema }), auditLog('campaign.create', 'donation_campaigns'), donationController.createCampaign);
 router.patch('/campaigns/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body: updateCampaignSchema }), auditLog('campaign.update', 'donation_campaigns'), donationController.updateCampaign);
 
 // Admin: delete donation
-router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('donation.delete', 'donations'), async (req, res, next) => {
-  try {
-    const { Donation } = await import('../models');
-    const donation = await Donation.findById(req.params.id as string);
-    if (!donation) return res.status(404).json({ success: false, message: 'Donation not found' });
-    donation.isDeleted = true;
-    await donation.save();
-    res.json({ success: true, message: 'Donation deleted' });
-  } catch (err) { next(err); }
-});
+router.delete('/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('donation.delete', 'donations'), donationController.remove);
 
 // Admin: delete campaign
 router.delete('/campaigns/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), auditLog('campaign.delete', 'donation_campaigns'), async (req, res, next) => {

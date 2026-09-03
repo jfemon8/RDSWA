@@ -12,6 +12,8 @@ import { UserRole } from '@rdswa/shared';
 import { hasMinRole } from '@/lib/roles';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
+import { FieldError } from '@/components/ui/FieldError';
+import { omitFieldError } from '@/lib/formErrors';
 import Spinner from '@/components/ui/Spinner';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
@@ -655,7 +657,7 @@ function CustomReportBuilder() {
       {/* Filters */}
       <FadeIn direction="up" delay={0.3}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
-          <h3 className="font-semibold text-foreground mb-3">3. Filters (optional)</h3>
+          <h3 className="font-semibold text-foreground mb-3">3. Filters</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Date From</label>
@@ -837,6 +839,7 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', type: 'finance', fiscalYear: String(new Date().getFullYear()) });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['reports', 'published'],
@@ -927,9 +930,10 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!form.title.trim()) {
-                  toast.error('Title required');
+                  setErrors({ title: 'Report title is required' });
                   return;
                 }
+                setErrors({});
                 publishMutation.mutate();
               }}
               className="border rounded-lg p-4 bg-card mb-4 space-y-3"
@@ -938,10 +942,14 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
                 <label className="text-xs text-muted-foreground">Report title</label>
                 <input
                   value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, title: e.target.value });
+                    setErrors((prev) => omitFieldError(prev, 'title'));
+                  }}
                   placeholder="e.g. Annual Finance Report FY 2026"
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-destructive' : ''}`}
                 />
+                <FieldError message={errors.title} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

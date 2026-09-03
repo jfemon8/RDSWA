@@ -1190,6 +1190,7 @@ function NewSessionDialog({
 }) {
   const trimmed = value.trim();
   const collision = trimmed && existing.includes(trimmed);
+  const [error, setError] = useState('');
 
   return (
     <AnimatePresence>
@@ -1216,7 +1217,12 @@ function NewSessionDialog({
               </button>
             </div>
             <form
-              onSubmit={(e) => { e.preventDefault(); if (!collision) onSubmit(); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!trimmed) { setError('Session label is required'); return; }
+                setError('');
+                if (!collision) onSubmit();
+              }}
               className="p-5 space-y-3"
             >
               <p className="text-xs text-muted-foreground">
@@ -1227,13 +1233,13 @@ function NewSessionDialog({
                 <input
                   autoFocus
                   value={value}
-                  onChange={(e) => onChange(e.target.value)}
+                  onChange={(e) => { onChange(e.target.value); setError(''); }}
                   placeholder="2026-27"
-                  className={`w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none ${collision ? 'border-red-500' : ''}`}
+                  className={`w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none ${collision || error ? 'border-red-500' : ''}`}
                 />
-                {collision && (
+                {(error || collision) && (
                   <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
-                    Session "{trimmed}" already exists.
+                    {error || `Session "${trimmed}" already exists.`}
                   </p>
                 )}
               </Field>
@@ -1360,6 +1366,8 @@ function RenameDialog({
   onSubmit: () => void;
   submitting: boolean;
 }) {
+  const [error, setError] = useState('');
+
   return (
     <AnimatePresence>
       {target && (
@@ -1387,7 +1395,12 @@ function RenameDialog({
               </button>
             </div>
             <form
-              onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!value.trim()) { setError('New name is required'); return; }
+                setError('');
+                onSubmit();
+              }}
               className="p-5 space-y-3"
             >
               <p className="text-xs text-muted-foreground">
@@ -1399,16 +1412,17 @@ function RenameDialog({
                 <input
                   autoFocus
                   value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  onChange={(e) => { onChange(e.target.value); setError(''); }}
+                  className={`w-full px-3 py-2 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none ${error ? 'border-red-500' : ''}`}
                 />
+                {error && <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{error}</p>}
               </Field>
               <div className="flex justify-end gap-2 -mx-5 -mb-5 px-5 py-3 border-t bg-muted/20 mt-2">
                 <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md border hover:bg-accent">Cancel</button>
                 <motion.button
                   type="submit"
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  disabled={submitting || !value.trim()}
+                  disabled={submitting}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground disabled:opacity-50"
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}

@@ -15,6 +15,8 @@ import { FadeIn } from '@/components/reactbits';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import Pagination from '@/components/ui/Pagination';
+import { FieldError } from '@/components/ui/FieldError';
+import { omitFieldError } from '@/lib/formErrors';
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuthStore();
@@ -567,7 +569,7 @@ function ForcePasswordModal({
   const [pwd, setPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
   const [show, setShow] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Reset on close so a previous attempt doesn't leak into the next one.
   const open = !!target;
@@ -575,15 +577,21 @@ function ForcePasswordModal({
     if (!open) {
       setPwd('');
       setConfirmPwd('');
-      setError('');
+      setErrors({});
       setShow(false);
     }
   }, [open]);
 
   const handleSubmit = () => {
-    setError('');
-    if (pwd.length < 6) { setError('Password must be at least 6 characters'); return; }
-    if (pwd !== confirmPwd) { setError('Passwords do not match'); return; }
+    // Collect every problem so each field shows its own message at once.
+    const errs: Record<string, string> = {};
+    if (!pwd) errs.pwd = 'New password is required';
+    else if (pwd.length < 6) errs.pwd = 'Password must be at least 6 characters';
+    if (!confirmPwd) errs.confirmPwd = 'Please confirm the password';
+    else if (pwd && pwd !== confirmPwd) errs.confirmPwd = 'Passwords do not match';
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    setErrors({});
     onSubmit(pwd);
   };
 
@@ -627,10 +635,10 @@ function ForcePasswordModal({
                   <input
                     type={show ? 'text' : 'password'}
                     value={pwd}
-                    onChange={(e) => { setPwd(e.target.value); setError(''); }}
+                    onChange={(e) => { setPwd(e.target.value); setErrors((prev) => omitFieldError(prev, 'pwd')); }}
                     autoFocus
                     minLength={6}
-                    className="w-full px-3 py-2 pr-9 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                    className={`w-full px-3 py-2 pr-9 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none ${errors.pwd ? 'border-destructive' : ''}`}
                     placeholder="At least 6 characters"
                   />
                   <button
@@ -642,19 +650,20 @@ function ForcePasswordModal({
                     {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.pwd} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Confirm password</label>
                 <input
                   type={show ? 'text' : 'password'}
                   value={confirmPwd}
-                  onChange={(e) => { setConfirmPwd(e.target.value); setError(''); }}
-                  className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                  onChange={(e) => { setConfirmPwd(e.target.value); setErrors((prev) => omitFieldError(prev, 'confirmPwd')); }}
+                  className={`w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none ${errors.confirmPwd ? 'border-destructive' : ''}`}
                   placeholder="Re-enter the password"
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
                 />
+                <FieldError message={errors.confirmPwd} />
               </div>
-              {error && <p className="text-xs text-destructive">{error}</p>}
             </div>
 
             <div className="flex gap-2 justify-end mt-5">

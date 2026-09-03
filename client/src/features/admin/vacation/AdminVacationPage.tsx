@@ -251,7 +251,7 @@ export default function AdminVacationPage() {
                     <FieldError message={errors.academicYear} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Notes (optional)</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Notes</label>
                     <input
                       placeholder="Short note shown above the table"
                       value={form.notes}

@@ -24,24 +24,15 @@ export default function RegisterPage() {
 
     setErrors({});
 
-    if (!form.name.trim()) {
-      setErrors({ name: 'Full name is required' });
-      return;
-    }
-    if (!form.email.trim()) {
-      setErrors({ email: 'Email is required' });
-      return;
-    }
-    if (!emailRegex.test(form.email.trim())) {
-      setErrors({ email: 'Please enter a valid email address' });
-      return;
-    }
-    if (!form.password) {
-      setErrors({ password: 'Password is required' });
-      return;
-    }
-    if (form.password.length < 6) {
-      setErrors({ password: 'Password must be at least 6 characters' });
+    // Collect every problem so each field shows its own message at once.
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Full name is required';
+    if (!form.email.trim()) errs.email = 'Email is required';
+    else if (!emailRegex.test(form.email.trim())) errs.email = 'Please enter a valid email address';
+    if (!form.password) errs.password = 'Password is required';
+    else if (form.password.length < 6) errs.password = 'Password must be at least 6 characters';
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
 
@@ -65,7 +56,7 @@ export default function RegisterPage() {
   const fields = [
     { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your full name', required: true },
     { id: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com', required: true },
-    { id: 'phone', label: 'Phone (optional)', type: 'tel', placeholder: '01XXXXXXXXX', required: false },
+    { id: 'phone', label: 'Phone', type: 'tel', placeholder: '01XXXXXXXXX', required: false },
   ];
 
   return (

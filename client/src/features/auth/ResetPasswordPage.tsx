@@ -26,16 +26,14 @@ export default function ResetPasswordPage() {
 
     setErrors({});
 
-    if (!password) {
-      setErrors({ password: 'Password is required' });
-      return;
-    }
-    if (password.length < 6) {
-      setErrors({ password: 'Password must be at least 6 characters' });
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErrors({ confirmPassword: 'Passwords do not match' });
+    // Collect every problem so each field shows its own message at once.
+    const errs: Record<string, string> = {};
+    if (!password) errs.password = 'Password is required';
+    else if (password.length < 6) errs.password = 'Password must be at least 6 characters';
+    if (!confirmPassword) errs.confirmPassword = 'Please confirm your password';
+    else if (password && password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
 

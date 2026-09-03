@@ -242,13 +242,13 @@ export default function JobBoardPage() {
                     <option key={t} value={t}>{formatJobType(t)}</option>
                   ))}
                 </select>
-                <input placeholder="Salary (optional)" value={newJob.salary} onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
+                <input placeholder="Salary" value={newJob.salary} onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
                   className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
-                <input placeholder="Vacancy (optional)" type="number" min={1} value={newJob.vacancy}
+                <input placeholder="Vacancy" type="number" min={1} value={newJob.vacancy}
                   onChange={(e) => setNewJob({ ...newJob, vacancy: e.target.value.replace(/[^0-9]/g, '') })}
                   className="px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Application Deadline (optional)</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Application Deadline</label>
                   <input type="date" value={newJob.deadline}
                     onChange={(e) => setNewJob({ ...newJob, deadline: e.target.value })}
                     className="w-full px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
