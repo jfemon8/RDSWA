@@ -408,7 +408,12 @@ export default function EventDetailPage() {
                 Show this QR code at the venue for check-in
               </p>
               <div className="flex justify-center">
-                <UserEventQr eventId={id!} userId={user._id} size={192} />
+                <UserEventQr
+                  eventId={id!}
+                  userId={user._id}
+                  eventTitle={event.title}
+                  size={192}
+                />
               </div>
             </div>
           </FadeIn>

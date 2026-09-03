@@ -1044,8 +1044,6 @@ function SeatsSessionBody({
   );
 }
 
-/** Clone Session modal, picking a source session and typing a target the server rejects if it already has data. */
-
 /** Inline form inside a session accordion, where the session is fixed by context and the category select has an explicit "add new" mode. */
 function InlineSeatForm({
   session,
@@ -1262,6 +1260,7 @@ function NewSessionDialog({
   );
 }
 
+/** Clone Session modal, picking a source session and typing a target the server rejects if it already has data. */
 function CloneSessionDialog({
   open,
   sessions,

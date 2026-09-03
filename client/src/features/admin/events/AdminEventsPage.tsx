@@ -50,7 +50,7 @@ import AttendanceDateField, {
 } from "@/components/ui/AttendanceDateField";
 import DocumentUploadField from "@/components/ui/DocumentUploadField";
 import { proxyFileUrl } from "@/lib/fileProxy";
-import { downloadCsv } from "@/lib/downloadCsv";
+import { fetchCsv, saveTextFile } from "@/lib/downloadCsv";
 import { downloadTablePdf } from "@/lib/downloadPdf";
 import EventRegistrationsSection from "./EventRegistrationsSection";
 
@@ -944,7 +944,8 @@ function EventDetailPanel({ event }: { event: any }) {
   const exportAttendance = async (kind: "csv" | "pdf") => {
     setAttendanceExporting(kind);
     try {
-      const csv = await downloadCsv(
+      // Fetch without saving, or asking for a PDF would also drop a CSV in the downloads folder.
+      const { csv, filename } = await fetchCsv(
         `/events/${fullEvent._id}/attendance/export`,
         `${fullEvent.title || "event"}-attendance.csv`,
       );
@@ -954,6 +955,8 @@ function EventDetailPanel({ event }: { event: any }) {
           `${fullEvent.title} — Attendance`,
           `${fullEvent.title}-attendance`,
         );
+      } else {
+        saveTextFile(csv, filename);
       }
       toast.success(kind === "pdf" ? "PDF download started" : "CSV downloaded");
     } catch (err: any) {

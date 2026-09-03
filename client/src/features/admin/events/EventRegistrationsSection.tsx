@@ -8,7 +8,7 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { formatDate } from '@/lib/date';
-import { downloadCsv } from '@/lib/downloadCsv';
+import { fetchCsv, saveTextFile } from '@/lib/downloadCsv';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 
 const STATUSES = ['confirmed', 'waitlisted', 'interested', 'cancelled'] as const;
@@ -70,12 +70,15 @@ export default function EventRegistrationsSection({ event }: { event: any }) {
   const runExport = async (kind: 'csv' | 'pdf') => {
     setExporting(kind);
     try {
-      const csv = await downloadCsv(
+      // Fetch without saving, or asking for a PDF would also drop a CSV in the downloads folder.
+      const { csv, filename } = await fetchCsv(
         `/events/${eventId}/registrations/export`,
         `${event.title || 'event'}-registrations.csv`
       );
       if (kind === 'pdf') {
         await downloadTablePdf(csv, `${event.title} — Registrations`, `${event.title}-registrations`);
+      } else {
+        saveTextFile(csv, filename);
       }
       toast.success(kind === 'pdf' ? 'PDF download started' : 'CSV downloaded');
     } catch (err: any) {

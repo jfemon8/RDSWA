@@ -39,7 +39,32 @@ interface ScanResult {
 // Tunables
 const DEBOUNCE_MS = 5000; // suppress the SAME QR re-firing within this window
 const RESULT_MS = 2000; // how long the success/warning/error toast stays up
-const SCAN_INTERVAL_MS = 250; // throttle BarcodeDetector calls
+const SCAN_INTERVAL_MS = 250; // throttle decoder calls
+const MAX_SCAN_DIMENSION = 720; // frame cap that keeps the JS decoder responsive
+
+/** Reads one frame and returns the QR payload, or null when none is visible. */
+type QrDecoder = (
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D
+) => Promise<string | null>;
+
+/** Pick a QR decoder, falling back to a lazily loaded jsQR because WebKit ships no Shape Detection API. */
+async function createQrDecoder(): Promise<QrDecoder> {
+  if ('BarcodeDetector' in window) {
+    const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+    return async (canvas) => {
+      const codes = await detector.detect(canvas);
+      return codes.length > 0 ? (codes[0].rawValue as string) : null;
+    };
+  }
+
+  const { default: jsQR } = await import('jsqr');
+  return async (canvas, ctx) => {
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const found = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' });
+    return found?.data ?? null;
+  };
+}
 
 // Lightweight two-tone beep that avoids bundling an audio file.
 function playBeep(kind: ResultKind) {
@@ -83,7 +108,7 @@ export default function CheckInScannerPage() {
   // Read inside `checkin` so changing the backdate doesn't tear down the rAF scan loop.
   const attendanceDateRef = useRef('');
   const lastQrRef = useRef<{ data: string; at: number } | null>(null);
-  const detectorRef = useRef<any>(null);
+  const decoderRef = useRef<QrDecoder | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const lastScanAtRef = useRef(0);
 
@@ -176,7 +201,14 @@ export default function CheckInScannerPage() {
       lastQrRef.current = null;
       setScanning(true);
     } catch {
-      showResult({ kind: 'error', message: 'Camera access denied or unavailable' });
+      // iOS blocks getUserMedia outright off a secure origin, which looks identical to a denial.
+      const insecure = !window.isSecureContext;
+      showResult({
+        kind: 'error',
+        message: insecure
+          ? 'Camera needs a secure connection — open this page over HTTPS'
+          : 'Camera access denied or unavailable',
+      });
     }
   }, [showResult]);
 
@@ -195,37 +227,28 @@ export default function CheckInScannerPage() {
     setScanning(false);
   }, []);
 
-  // QR detection loop using the BarcodeDetector API (Chrome/Edge/Safari 17+).
+  // QR detection loop, using the native detector where it exists and a JS decoder elsewhere.
   useEffect(() => {
     if (!scanning) return;
     if (!videoRef.current || !canvasRef.current) return;
 
-    const hasBarcodeDetector = 'BarcodeDetector' in window;
-    if (!hasBarcodeDetector) {
-      showResult({
-        kind: 'error',
-        message: 'QR scanning is not supported in this browser. Use manual check-in.',
-      });
-      return;
-    }
-
-    if (!detectorRef.current) {
-      detectorRef.current = new (window as any).BarcodeDetector({
-        formats: ['qr_code'],
-      });
-    }
-    const detector = detectorRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    // willReadFrequently keeps getImageData cheap on the JS-decoder path.
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    let cancelled = false;
 
     const tick = async () => {
       animFrameRef.current = requestAnimationFrame(tick);
 
       const video = videoRef.current;
+      const decode = decoderRef.current;
       if (
         !video ||
         !ctx ||
-        video.readyState !== 4 ||
+        !decode ||
+        // HAVE_CURRENT_DATA is enough to draw, and WebKit often never reports HAVE_ENOUGH_DATA.
+        video.readyState < 2 ||
+        video.videoWidth === 0 ||
         pausedRef.current ||
         Date.now() - lastScanAtRef.current < SCAN_INTERVAL_MS
       ) {
@@ -234,13 +257,14 @@ export default function CheckInScannerPage() {
       lastScanAtRef.current = Date.now();
 
       try {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const codes = await detector.detect(canvas);
-        if (codes.length === 0) return;
+        // Cap the frame so a 1080p camera doesn't stall the JS decoder.
+        const scale = Math.min(1, MAX_SCAN_DIMENSION / Math.max(video.videoWidth, video.videoHeight));
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const raw: string = codes[0].rawValue;
+        const raw = await decode(canvas, ctx);
+        if (!raw) return;
 
         // Silently ignore a repeat payload within DEBOUNCE_MS, so a lingering card doesn't spam the server.
         const last = lastQrRef.current;
@@ -276,9 +300,23 @@ export default function CheckInScannerPage() {
       }
     };
 
-    animFrameRef.current = requestAnimationFrame(tick);
+    (async () => {
+      try {
+        decoderRef.current = await createQrDecoder();
+      } catch {
+        showResult({
+          kind: 'error',
+          message: 'QR scanning could not start. Use manual check-in.',
+        });
+        return;
+      }
+      if (cancelled) return;
+      animFrameRef.current = requestAnimationFrame(tick);
+    })();
 
     return () => {
+      cancelled = true;
+      decoderRef.current = null;
       if (animFrameRef.current != null) {
         cancelAnimationFrame(animFrameRef.current);
         animFrameRef.current = null;
@@ -316,10 +354,10 @@ export default function CheckInScannerPage() {
     <div className="container mx-auto py-8">
       <FadeIn direction="up">
         <Link
-          to={`/events/${id}`}
+          to="/admin/events"
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Event
+          <ArrowLeft className="h-4 w-4" /> Back to Events
         </Link>
 
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Check-In Scanner</h1>
@@ -413,7 +451,7 @@ export default function CheckInScannerPage() {
                 <p className="text-sm">Click "Start Scanning" to activate the camera</p>
                 {!('BarcodeDetector' in window) && (
                   <p className="text-xs mt-2 text-yellow-300">
-                    Note: live QR scanning requires Chrome/Edge or Safari 17+. Use manual check-in as fallback.
+                    Scanning needs camera access over HTTPS, and manual check-in always works as a fallback.
                   </p>
                 )}
               </div>

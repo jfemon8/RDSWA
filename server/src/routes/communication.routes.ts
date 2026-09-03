@@ -73,7 +73,6 @@ async function purgeMessageAttachments(message: { attachments: any[] }): Promise
   }
 }
 
-/** Validate and normalize a new message's attachments[], dropping unknown kinds and stamping expiresAt on media only. */
 /** Build a denormalized reply snapshot so a quoted preview renders without a second round trip. */
 async function buildReplySnapshot(replyToId: unknown): Promise<any | undefined> {
   if (typeof replyToId !== 'string') return undefined;
@@ -96,6 +95,7 @@ async function buildReplySnapshot(replyToId: unknown): Promise<any | undefined> 
 /** Allowed emoji reaction set, with anything else rejected. */
 const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉']);
 
+/** Validate and normalize a new message's attachments[], dropping unknown kinds and stamping expiresAt on media only. */
 function buildAttachments(raw: any): any[] {
   if (!Array.isArray(raw)) return [];
   const now = Date.now();
