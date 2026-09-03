@@ -1,20 +1,4 @@
-/**
- * One-time backfill for the new isAlumni / isAdvisor / isSeniorAdvisor flags.
- *
- * What this does for every existing user:
- *  1. If their legacy `role` was 'alumni', set `alumniApproved = true` (treat the existing
- *     explicit alumni assignment as sticky — equivalent to a form approval).
- *  2. If their legacy `role` was 'advisor', set `isAdvisor = true`.
- *  3. If their legacy `role` was 'senior_advisor', set `isSeniorAdvisor = true`.
- *  4. For any archived (non-current) committees, any member who held PRESIDENT or
- *     GENERAL_SECRETARY → set `isAdvisor = true` (the new auto-retain rule).
- *  5. Call `.save()` on every touched user so the pre-save hook recomputes `isAlumni`
- *     from (approved member) AND (alumniApproved OR current job/business).
- *
- * Safe to re-run — it's idempotent. Does not delete or downgrade any existing data.
- *
- * Run with:  npm run backfill:role-flags  (from the server package)
- */
+/** Idempotent one-time backfill that maps legacy tier roles and archived committee posts onto the isAlumni, isAdvisor, and isSeniorAdvisor flags. */
 
 import mongoose from 'mongoose';
 import { connectDB } from '../config/db';
@@ -99,10 +83,7 @@ async function backfill(): Promise<Counters> {
       await user.save(); // pre-save hook recomputes isAlumni
       counters.saved++;
     } else {
-      // Even for untouched users, trigger a save so the pre-save hook
-      // recomputes isAlumni from current job/business state. This makes
-      // auto-tagged alumni (members with current employment) visible
-      // immediately without waiting for the cron.
+      // Save even untouched users so the pre-save hook recomputes isAlumni immediately rather than waiting for the cron.
       const needsRecompute =
         user.membershipStatus === 'approved' &&
         !user.isAlumni &&

@@ -13,12 +13,7 @@ function createStore(prefix: string) {
   });
 }
 
-/** General API rate limiter.
- *  Raised from the original 100/15min — that was unrealistic for a SPA
- *  that fires 5–10 parallel queries on mount and reacts to socket events.
- *  2000/15min ≈ 2.2 req/sec sustained per IP, generous for browsing and
- *  still rejects scraping / brute force. Skipped entirely in development
- *  so HMR rebuilds + dev-tools refetches don't lock you out. */
+/** General API limiter at 2000 per 15 minutes, generous for a SPA firing parallel queries yet still hostile to scraping, and skipped in development. */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,

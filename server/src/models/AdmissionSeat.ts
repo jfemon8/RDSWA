@@ -1,12 +1,6 @@
 import mongoose, { Schema, Document as MongoDoc } from 'mongoose';
 
-/**
- * Per-university seat allocation row, used by the public Available Seats
- * table on /admission. Universities are grouped by `category` in the UI
- * (e.g., "সাধারণ বিশ্ববিদ্যালয়", "প্রযুক্তি বিশ্ববিদ্যালয়"), so the
- * category string is stored on the row itself rather than as a separate
- * collection — admins can introduce a new category just by typing it in.
- */
+/** Per-university seat row whose `category` is stored inline rather than as its own collection, so admins add one just by typing it. */
 export interface IAdmissionSeatDocument extends MongoDoc {
   category: string;
   universityName: string;
@@ -36,8 +30,7 @@ const admissionSeatSchema = new Schema<IAdmissionSeatDocument>(
   { timestamps: true }
 );
 
-// Virtual: computed total. UI also computes its own total per-row + a grand
-// total, so this is convenience only — never persisted.
+// A convenience virtual total that is never persisted, since the UI computes its own.
 admissionSeatSchema.virtual('total').get(function (this: IAdmissionSeatDocument) {
   return (this.aUnit || 0) + (this.bUnit || 0) + (this.cUnit || 0);
 });

@@ -84,12 +84,7 @@ export default function AdminVacationPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // Convert YYYY-MM-DD to a stable timezone-anchored ISO string. Using
-      // `T00:00:00` (no Z) and letting the server parse it works for date-
-      // only fields where time-of-day doesn't matter.
-      // Sort entries ascending by start date before persisting so the DB
-      // is always canonically ordered. Read paths can rely on this without
-      // re-sorting; admin form opens in date order on next edit.
+      // Anchor each date as `T00:00:00` for the server to parse, and sort ascending by start so the DB stays canonically ordered.
       const sortedEntries = [...form.entries].sort((a, b) => {
         if (!a.startDate || !b.startDate) return 0;
         if (a.startDate !== b.startDate) return a.startDate.localeCompare(b.startDate);
@@ -141,9 +136,7 @@ export default function AdminVacationPage() {
 
   const startEdit = (v: Vacation) => {
     setEditId(v._id);
-    // Open the editor with entries in chronological order so admins always
-    // see the same canonical order, regardless of how rows were originally
-    // entered. Save also re-sorts (defence in depth).
+    // Open the editor in chronological order regardless of entry sequence, which save re-applies as defence in depth.
     const sortedEntries = [...(v.entries || [])].sort((a, b) => {
       const sa = new Date(a.startDate).getTime();
       const sb = new Date(b.startDate).getTime();
@@ -515,12 +508,7 @@ export default function AdminVacationPage() {
   );
 }
 
-/**
- * Inline file uploader for vacation attachments. Routes through the existing
- * `/upload/document` endpoint which handles PDFs/Word/Excel + images alike,
- * then returns `{ url, fileType, fileSize }`. We hand back the resulting
- * `Attachment` record to the parent.
- */
+/** Inline uploader that routes vacation attachments through `/upload/document` and hands the resulting record to the parent. */
 function AttachmentUpload({ onAdd }: { onAdd: (a: Attachment) => void }) {
   const toast = useToast();
   const [uploading, setUploading] = useState(false);
@@ -540,10 +528,7 @@ function AttachmentUpload({ onAdd }: { onAdd: (a: Attachment) => void }) {
       const { data } = await api.post('/upload/document', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      // Keep the full filename (with extension). The proxy uses `name` as
-      // the Content-Disposition filename — stripping the extension here
-      // would cause downloads to land as extension-less blobs that the
-      // OS can't open.
+      // Keep the extension, since the proxy uses `name` as the Content-Disposition filename.
       setPending({
         name: file.name,
         url: data.data.url,
@@ -647,11 +632,7 @@ function AttachmentUpload({ onAdd }: { onAdd: (a: Attachment) => void }) {
   );
 }
 
-/**
- * SuperAdmin-only editor for the public /vacation page heading and intro.
- * Persists via the dedicated /settings/vacation-page PATCH endpoint, which
- * already enforces SuperAdmin + denyRestricted on the server side.
- */
+/** SuperAdmin-only editor for the public vacation page heading, persisted through the endpoint that enforces the same gate server-side. */
 function VacationPageContentSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -771,14 +752,9 @@ function VacationPageContentSection() {
   );
 }
 
-/**
- * Read-only details panel for an academic year — entries (always sorted
- * ascending by start date) + notes + attachments. Rendered inline in the
- * admin list when an item is expanded.
- */
+/** Read-only panel showing an academic year's date-sorted entries, notes, and attachments when the admin row is expanded. */
 function VacationDetails({ vacation }: { vacation: Vacation }) {
-  // Always show entries in chronological order regardless of insertion
-  // sequence. Stable sort by start, falls back to end if starts are equal.
+  // Sort entries chronologically by start, falling back to end when two starts are equal.
   const sortedEntries = [...vacation.entries].sort((a, b) => {
     const sa = new Date(a.startDate).getTime();
     const sb = new Date(b.startDate).getTime();

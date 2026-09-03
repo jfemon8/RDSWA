@@ -5,10 +5,7 @@ interface RichContentProps {
   className?: string;
 }
 
-/**
- * Safely renders HTML content with sanitization.
- * Styles via Tailwind prose for consistent rich text display.
- */
+/** Renders sanitized HTML styled with Tailwind prose for consistent rich text. */
 export default function RichContent({ html, className = '' }: RichContentProps) {
   if (!html) return null;
 

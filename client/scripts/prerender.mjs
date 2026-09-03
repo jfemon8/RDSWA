@@ -1,44 +1,5 @@
 #!/usr/bin/env node
-/**
- * Static-route SEO prerender — runs AFTER `vite build`.
- *
- * Why this exists
- * ---------------
- * RDSWA is a client-rendered SPA. Vite emits a single `dist/index.html`
- * with a generic <title>/description, and the live SEO component (powered
- * by react-helmet-async) only swaps those values once the JavaScript bundle
- * has executed. Googlebot honours the JS-rendered metadata on its second
- * pass, but the *initial* HTTP response and every social-share scraper
- * (Facebook, Twitter, LinkedIn, WhatsApp, Slack, Telegram) read the raw
- * HTML — so without per-route HTML, every shared URL renders with the
- * same homepage card and competes for the same canonical signal.
- *
- * What this does
- * --------------
- * For every static public route below, we materialise a route-specific
- * `dist/<path>/index.html` whose <title>, meta description, canonical,
- * Open Graph and Twitter tags, robots directive, and JSON-LD schemas are
- * patched to match what the runtime <SEO> component would render. The
- * client bundle still hydrates on top of this HTML (so the SPA continues
- * to work), but crawlers see the right metadata on first byte.
- *
- * Dynamic routes (event/notice/job detail pages) are intentionally NOT
- * prerendered — their content changes hourly and Mongo data isn't
- * available at build time. The dynamic sitemap surfaces those URLs to
- * crawlers, JSON-LD on the live pages keeps them rich-result eligible,
- * and Google's renderer fills in the rest.
- *
- * Why not vite-plugin-prerender / puppeteer?
- * ------------------------------------------
- * Both require a headless Chromium download (~280 MB) which blows Vercel's
- * build cache budget and adds 30–90s to every deploy. We get 95% of the
- * SEO benefit (correct metadata in the initial response, route-specific
- * canonicals, no SPA-shell duplication) for ~zero install/build cost.
- *
- * Keep this script's metadata in sync with the runtime <SEO> component
- * calls — the source of truth for runtime is each page's <SEO> JSX,
- * mirrored here for the SSR-equivalent tag block.
- */
+/** Static-route SEO prerender, run after `vite build`, giving each static route its own index.html carrying the metadata the runtime `<SEO>` would render. */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -111,9 +72,7 @@ function breadcrumb(crumbs) {
 
 // ─── Per-route metadata (mirrors the runtime <SEO> calls) ─────────────────
 //
-// Title format follows the runtime convention: `{title} | RDSWA` for sub-
-// pages, raw site-name for the home page. Descriptions are 150–250 chars
-// to fit Google's snippet window without truncation.
+// Sub-pages use `{title} | RDSWA` and descriptions run 150-250 chars to fit Google's snippet window.
 const ROUTES = [
   {
     path: '/',
@@ -360,26 +319,19 @@ function buildHeadInjection(route) {
   const keywords = route.keywords ? htmlEscape(route.keywords) : '';
 
   const tags = [];
-  // Per-route description + canonical + robots come AFTER the static
-  // index.html ones so the patched value wins. We replace the document's
-  // static <title> earlier in `patchHtml`, not here, because there's only
-  // one valid <title> per page.
+  // These come after the static index.html tags so the patched value wins, while `<title>` is replaced earlier since only one is valid.
   if (route.noindex) tags.push('<meta name="robots" content="noindex,nofollow" />');
   tags.push(`<link rel="canonical" href="${url}" />`);
   if (keywords) tags.push(`<meta name="keywords" content="${keywords}" />`);
 
-  // Refresh OG/Twitter to per-route values. The static ones in index.html
-  // are matched and replaced by patchHtml; what we add here is everything
-  // that wasn't in the base.
+  // Add the per-route OG and Twitter tags that weren't already replaced in the base index.html.
   tags.push(`<meta property="og:url" content="${url}" />`);
   tags.push('<meta property="og:image:width" content="1200" />');
   tags.push('<meta property="og:image:height" content="630" />');
   tags.push('<meta property="og:locale" content="en_US" />');
   tags.push('<meta property="og:locale:alternate" content="bn_BD" />');
 
-  // Schemas — Organization, WebSite, BreadcrumbList. These are emitted on
-  // top of any JSON-LD a runtime <SEO> may inject; react-helmet-async
-  // dedupes by content so duplicates collapse cleanly.
+  // Organization, WebSite, and BreadcrumbList schemas stack on any runtime JSON-LD, which react-helmet-async dedupes by content.
   const schemas = [ORG_SCHEMA, WEBSITE_SCHEMA, breadcrumb(route.crumbs)];
   for (const s of schemas) {
     tags.push(`<script type="application/ld+json">${JSON.stringify(s)}</script>`);
@@ -429,12 +381,7 @@ function patchHtml(html, route) {
     `<meta name="twitter:image" content="${OG_IMAGE}" />`,
   );
 
-  // Inject the additive head tags right before </head>. The placement
-  // matters for canonical/robots — those need to appear BEFORE the JS
-  // bundle injects react-helmet's runtime tags so social scrapers (which
-  // don't run JS) read them first. We piggyback on the closing </head>
-  // tag rather than the opening so we land at the very end of <head>,
-  // after the existing static metas.
+  // Inject at the very end of <head> so canonical and robots land ahead of react-helmet's runtime tags for non-JS scrapers.
   out = out.replace('</head>', `    ${headTags}\n  </head>`);
 
   // Mark this HTML as being prerendered for the route so debugging is
@@ -455,9 +402,7 @@ async function main() {
   for (const route of ROUTES) {
     const html = patchHtml(baseHtml, route);
 
-    // Path "/" stays at dist/index.html (overwrite the source). All other
-    // paths become dist/<segment>/index.html — Vercel serves them via its
-    // automatic directory-index resolution before the SPA fallback.
+    // "/" overwrites dist/index.html while other paths become directory indexes Vercel resolves before the SPA fallback.
     const outPath =
       route.path === '/'
         ? path.join(DIST_DIR, 'index.html')

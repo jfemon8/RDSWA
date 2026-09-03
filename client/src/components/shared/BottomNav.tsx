@@ -27,20 +27,13 @@ const guestItems: NavItem[] = [
   { label: 'Login', href: '/login', icon: LogIn },
 ];
 
-/**
- * Native-style bottom navigation bar. Rendered only on Android app builds
- * (see `useIsAndroidApp`). Items switch between guest and authenticated
- * variants based on `authStore.isAuthenticated`.
- */
+/** Native-style bottom navigation, rendered only on Android app builds and switching between guest and authenticated items. */
 export default function BottomNav() {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const items = isAuthenticated ? authenticatedItems : guestItems;
 
-  // Pick exactly one active item. Score each candidate by the longest
-  // prefix that matches the current path — this way a more specific item
-  // (e.g. "Jobs" at /dashboard/jobs) wins over a generic one (Dashboard
-  // at /dashboard) when both would match.
+  // Pick one active item by longest matching path prefix, so a specific route wins over a generic parent.
   const activeIndex = (() => {
     let winner = -1;
     let winnerScore = -1;

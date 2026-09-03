@@ -16,10 +16,7 @@ const TYPE_ICONS: Record<string, typeof Users> = {
   custom: Hash,
 };
 
-/**
- * Forward a message to one or more groups and/or DM partners.
- * Lets the user multi-select destinations and dispatches in a single request.
- */
+/** Forward a message to multi-selected groups and DM partners in a single request. */
 export default function ForwardModal({ messageId, onClose }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();

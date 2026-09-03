@@ -12,10 +12,7 @@ const router = Router();
 
 // ─── Helpers ───
 
-/**
- * Ensure a consultation group exists for a mentor. Creates one on first active
- * mentee. Name: "{MentorName}'s Consultation". Mentor is creator + admin.
- */
+/** Ensure a mentor's consultation group exists, creating it on the first active mentee with the mentor as creator and admin. */
 async function ensureConsultationGroup(mentorId: string, mentorName: string) {
   let group = await ChatGroup.findOne({
     type: 'consultation',

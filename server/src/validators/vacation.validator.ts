@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
-/**
- * "YYYY-YY" — e.g. "2026-27". Two-digit suffix must be the next calendar
- * year mod 100, so "2026-26" or "2026-28" are rejected.
- */
+/** A "YYYY-YY" academic year whose two-digit suffix must be the next calendar year, rejecting "2026-26" or "2026-28". */
 const academicYearSchema = z.string()
   .regex(/^\d{4}-\d{2}$/, 'Academic year must be in YYYY-YY format (e.g. 2026-27)')
   .refine((v) => {
@@ -44,8 +41,7 @@ export const createVacationSchema = z.object({
 });
 
 export const updateVacationSchema = z.object({
-  // Allow renaming the academic year (e.g. typo correction). Uniqueness is
-  // enforced at the route handler against a partial unique index.
+  // Renaming the academic year is allowed, with uniqueness enforced by the route against a partial unique index.
   academicYear: academicYearSchema.optional(),
   notes: z.string().max(2000).optional(),
   entries: z.array(entrySchema).optional(),

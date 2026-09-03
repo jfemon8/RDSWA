@@ -1,10 +1,7 @@
 import { Event, Notification } from '../models';
 import { notificationService } from '../services/notification.service';
 
-/**
- * Send reminders for upcoming events (24h before start).
- * Run on a schedule (e.g., every hour).
- */
+/** Hourly job that sends reminders for events starting within 24 hours. */
 export async function runReminderSender(): Promise<void> {
   try {
     const now = new Date();

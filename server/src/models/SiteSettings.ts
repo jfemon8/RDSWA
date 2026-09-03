@@ -107,13 +107,7 @@ export interface ISiteSettingsDocument extends Document {
     /** Positions that auto-grant the Advisor tag when their committee archives. */
     advisorOnArchivePositions?: string[];
   };
-  /**
-   * Global kill-switch for all Google AdSense slots. When `false`, every
-   * <Promo> on the client returns null regardless of route / configuration,
-   * so the page renders with no ad reservations or "Sponsored" labels.
-   * Default is `true` so existing deployments keep showing ads as before.
-   * Togglable only by SuperAdmin (minus ADSENSE_RESTRICTED_SUPER_ADMINS).
-   */
+  /** Global AdSense kill-switch, defaulting to `true` and togglable only by unrestricted SuperAdmins, which makes every `<Promo>` render nothing when `false`. */
   adsenseEnabled: boolean;
   updatedBy?: mongoose.Types.ObjectId;
   updatedAt: Date;
@@ -137,8 +131,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       youtube: String,
       linkedin: String,
       twitter: String,
-      // Per-platform app download links shown as buttons in the footer.
-      // Any unset value hides its button.
+      // Per-platform download links for the footer, where an unset value hides its button.
       androidApp: String,
       iosApp: String,
       windowsApp: String,
@@ -148,10 +141,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
     contactEmail: String,
     contactPhone: String,
     address: String,
-    // Brand colors — hex strings (e.g. "#008f57"). Empty / missing fields
-    // fall back to the hardcoded defaults baked into client/src/index.css.
-    // Defaults mirror the current brand emerald palette so existing sites
-    // render identically before any admin customization.
+    // Brand colors as hex strings, with empty fields falling back to the emerald defaults baked into index.css.
     brandColors: {
       lightPrimary: { type: String, default: '#008f57' },
       lightSecondary: { type: String, default: '#e6f4ee' },

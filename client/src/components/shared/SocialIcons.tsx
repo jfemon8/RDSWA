@@ -2,11 +2,7 @@ import { motion } from 'motion/react';
 import { Facebook, Youtube, Linkedin, Twitter } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-/**
- * Horizontal row of social-media icon links rendered in the footer below
- * the app-download buttons. Reads from `settings.socialLinks` and only
- * shows entries whose URL is configured via `/admin/settings → Social Links`.
- */
+/** Footer row of social icon links, showing only the entries configured in `settings.socialLinks`. */
 
 type SocialDef = {
   key: 'facebook' | 'youtube' | 'linkedin' | 'twitter';

@@ -2,16 +2,7 @@ import mongoose, { Schema, Document as MongoDoc } from 'mongoose';
 
 export type AdmissionUnit = 'A' | 'B' | 'C';
 
-/**
- * Cut-off mark row for a (faculty, department, unit) combination in a given
- * admission session. Faculty + department strings are matched against the
- * SiteSettings.academicConfig.faculties list — the admin form picks from
- * existing values rather than introducing parallel taxonomies.
- *
- * The 4 numeric fields are kept optional because some units / departments
- * have no advertised cut-off (e.g., Engineering has only A-unit data) and
- * the UI shows "x" / "—" placeholders for empty cells.
- */
+/** Cut-off row per faculty, department, and unit in a session, with optional numeric fields because some units advertise no cut-off. */
 export interface IAdmissionCutoffDocument extends MongoDoc {
   faculty: string;
   department: string;

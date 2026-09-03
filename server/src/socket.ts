@@ -6,10 +6,7 @@ import { User } from './models';
 
 let io: Server | null = null;
 
-/**
- * Track online users across multiple sockets (a user may have N tabs open).
- * Map<userId, Set<socketId>> — a user is "online" as long as any socket is live.
- */
+/** Track online users as `Map<userId, Set<socketId>>`, so a user counts as online while any tab holds a socket. */
 const onlineUsers = new Map<string, Set<string>>();
 
 /** Update the lastSeenAt field on a user (fire-and-forget). */
@@ -56,8 +53,7 @@ export function initSocket(httpServer: HTTPServer): Server {
     if (userId) {
       socket.join(`user:${userId}`);
 
-      // Track presence — add this socket to the user's socket set.
-      // First socket for a user → emit online event.
+      // Add this socket to the user's set, emitting the online event only for the first one.
       const existing = onlineUsers.get(userId);
       if (existing) {
         existing.add(socket.id);
@@ -82,8 +78,7 @@ export function initSocket(httpServer: HTTPServer): Server {
     });
 
     // ── Typing indicator (group or DM) ──
-    // Clients emit `chat:typing` with { groupId? , recipientId?, isTyping }.
-    // Server fans out to the corresponding room without hitting the DB.
+    // Fan `chat:typing` out to the corresponding room without touching the DB.
     socket.on('chat:typing', (payload: { groupId?: string; recipientId?: string; isTyping: boolean }) => {
       if (!userId || !payload) return;
       const evt = {
@@ -101,8 +96,7 @@ export function initSocket(httpServer: HTTPServer): Server {
     });
 
     // ── Presence snapshot request (get current state of N users) ──
-    // Returns per-user { online, lastSeenAt? } — offline users get lastSeenAt
-    // from the DB so the client can render "Last seen X ago" on first open.
+    // Offline users get `lastSeenAt` from the DB so the client can render "Last seen X ago" immediately.
     socket.on('presence:query', async (
       userIds: string[],
       ack?: (states: Record<string, { online: boolean; lastSeenAt?: string | null }>) => void,
@@ -217,18 +211,7 @@ export function broadcastChatRead(groupId: string, messageIds: string[], userId:
   }
 }
 
-/**
- * Notify *every* member of a group that chat activity happened, so their
- * chat-list UIs (GroupsPage, ChatHubPage, MessageBell, etc.) can refresh
- * previews / unread counts / ordering even when they don't currently have
- * the group chat page open. The `chat:${groupId}` room only reaches users
- * actively viewing that chat, so this is the complement for everyone else.
- *
- * `kind`:
- *   - 'message' — new message posted (reorder list, bump unread)
- *   - 'edit' / 'delete' — preview text may have changed
- *   - 'read' — unread count for the reader should recompute
- */
+/** Notify every group member of chat activity so their lists refresh even without the chat page open, complementing the `chat:${groupId}` room. */
 export function broadcastGroupActivity(
   groupId: string,
   kind: 'message' | 'edit' | 'delete' | 'read',

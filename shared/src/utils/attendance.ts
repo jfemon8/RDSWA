@@ -88,12 +88,7 @@ export interface ResolvedCheckedInAt {
   checkedInAt: Date;
 }
 
-/**
- * Decide what `checkedInAt` to store for one attendance entry.
- *
- * Bounds are compared by Dhaka calendar day, not by instant, so an event that
- * started at 14:00 still accepts its own date.
- */
+/** Decide the `checkedInAt` to store, comparing bounds by Dhaka calendar day so an event starting at 14:00 still accepts its own date. */
 export function resolveCheckedInAt(input: {
   supplied?: string | Date | null;
   event: { startDate: string | Date; endDate?: string | Date | null };

@@ -19,10 +19,7 @@ pushSubscriptionSchema.index({ user: 1, endpoint: 1 }, { unique: true });
 
 export const PushSubscription = mongoose.model('PushSubscription', pushSubscriptionSchema);
 
-/**
- * Initialize VAPID details for web push.
- * Call once at startup (no-op if keys not configured).
- */
+/** Initialize VAPID details once at startup, doing nothing when the keys are unconfigured. */
 export function initWebPush(): void {
   if (env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(
@@ -33,10 +30,7 @@ export function initWebPush(): void {
   }
 }
 
-/**
- * Send a web push notification to all subscriptions of a user.
- * Removes stale subscriptions automatically.
- */
+/** Send a web push to all of a user's subscriptions, removing stale ones automatically. */
 export async function sendPushNotification(
   userId: string,
   payload: { title: string; body: string; link?: string }

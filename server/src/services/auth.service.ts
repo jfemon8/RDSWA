@@ -60,9 +60,7 @@ export class AuthService {
       }),
     });
 
-    // SuperAdmin is auto-approved on registration → add to central group immediately.
-    // Regular users are added to the central group only after their membership is approved
-    // by an admin (handled in userService.approveMembership).
+    // SuperAdmin is auto-approved so joins the central group at registration, while regular users join once membership is approved.
     if (isSuperAdmin) {
       ensureCentralGroup().then(() => {
         ChatGroup.findOneAndUpdate(
@@ -149,25 +147,7 @@ export class AuthService {
     return { user, tokens };
   }
 
-  /**
-   * Rotates a refresh token. Designed to be safe under concurrent refresh
-   * requests carrying the *same* old token — a common pattern when the
-   * access token expires and the SPA fires several parallel API calls that
-   * all 401 at once.
-   *
-   * Strategy:
-   *  1. Verify the JWT signature.
-   *  2. Atomic compare-and-swap (CAS) via findOneAndUpdate filtered on the
-   *     old token's presence. Exactly one concurrent caller wins and rotates.
-   *  3. Losing callers fall back to a short grace window: if the same old
-   *     token was rotated within the last few seconds and its replacement
-   *     is still active, we return that replacement idempotently — both the
-   *     winner and the losers therefore see the same new refresh token, and
-   *     whichever Set-Cookie response the browser keeps is internally
-   *     consistent.
-   *  4. Outside the grace window, an unknown token means a genuine reuse
-   *     (likely theft) — wipe all sessions, force re-auth.
-   */
+  /** Rotate a refresh token via an atomic compare-and-swap, with a short grace window so concurrent refreshes all receive the same replacement. */
   async refreshToken(token: string): Promise<AuthTokens> {
     let payload;
     try {
@@ -190,16 +170,7 @@ export class AuthService {
     const newTokens = this.generateTokens(user);
     const cutoff = new Date(now.getTime() - GRACE_MS);
 
-    // Atomic rotate via an aggregation-pipeline update. Two reasons we use
-    // a pipeline rather than `$pull` + `$push`:
-    //   1. Mongo rejects mixed `$pull`/`$push` on the same array path
-    //      ("Updating the path 'refreshTokens' would create a conflict").
-    //   2. The pipeline gives us a single-document atomic compare-and-swap:
-    //      the filter requires the old token to be present, and Mongo
-    //      serialises concurrent writes to the same document — so exactly
-    //      one of the racing callers will see the document still matching
-    //      and win the rotation. The losers' query no longer matches and
-    //      they fall through to the grace-window branch below.
+    // A pipeline update gives a single-document compare-and-swap, which mixed `$pull`/`$push` cannot do on the same array path.
     const rotated = await User.findOneAndUpdate(
       { _id: user._id, refreshTokens: token },
       [
@@ -235,9 +206,7 @@ export class AuthService {
     ).select('+refreshTokens +recentlyRotated');
 
     if (rotated) {
-      // Trim active sessions to the most recent MAX_ACTIVE and prune
-      // rotation entries that have aged out of the grace window. Best-effort
-      // — if this update fails, the cap is enforced on the next rotation.
+      // Best-effort trim of active sessions and aged-out rotation entries, re-enforced on the next rotation if it fails.
       const fresh = rotated as IUserDocument;
       const liveHistory = (fresh.recentlyRotated || []).filter(
         (r) => r.rotatedAt && r.rotatedAt > cutoff
@@ -255,7 +224,7 @@ export class AuthService {
       return newTokens;
     }
 
-    // CAS lost. Two possibilities — re-read and decide.
+    // CAS lost, so re-read and decide between a concurrent refresh and genuine reuse.
     const fresh = await User.findById(user._id).select(
       '+refreshTokens +recentlyRotated'
     );
@@ -266,8 +235,7 @@ export class AuthService {
     );
 
     if (graceEntry && fresh.refreshTokens.includes(graceEntry.replacedBy)) {
-      // Concurrent-refresh path: another caller just rotated this very
-      // token. Return the same replacement so cookies stay coherent.
+      // Concurrent-refresh path, so return the same replacement to keep cookies coherent.
       const accessToken = signAccessToken({
         userId: (fresh._id as any).toString(),
         email: fresh.email,
@@ -276,8 +244,7 @@ export class AuthService {
       return { accessToken, refreshToken: graceEntry.replacedBy };
     }
 
-    // Genuine reuse: unknown token, or its replacement was already rotated
-    // out. Treat as compromise — wipe the family.
+    // Genuine reuse of an unknown or already-rotated token, so wipe the whole family.
     await User.findByIdAndUpdate(user._id, {
       $set: { refreshTokens: [], recentlyRotated: [] },
     });
@@ -318,9 +285,7 @@ export class AuthService {
     user.passwordResetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    // CLIENT_URL is a comma-separated CORS allowlist; pick concrete URLs
-    // for the email link (button = primary deployment, fallback = canonical
-    // custom domain). Both routes resolve to the same SPA so either works.
+    // CLIENT_URL is a comma-separated CORS allowlist, so pick concrete URLs for the email link.
     const buttonUrl = `${getAppUrl()}/reset-password?token=${resetToken}`;
     const fallbackUrl = `${getCanonicalAppUrl()}/reset-password?token=${resetToken}`;
 
@@ -335,12 +300,7 @@ export class AuthService {
         'This link expires in 1 hour. If you didn\'t request a password reset, please ignore this email — your account is safe.',
     });
 
-    // Don't block the API response on SMTP. If Gmail is slow, throttling,
-    // or the App Password has been revoked, the user previously waited
-    // up to 10 minutes for a reset request to complete (Nodemailer's
-    // default socket timeout). Now: persist the token, return a 200
-    // immediately, and let the email send in the background. Failures
-    // are logged with enough detail to diagnose (recipient + error code).
+    // Persist the token and return immediately rather than blocking the response on a slow or throttled SMTP send.
     void sendEmail(
       user.email,
       'Reset your RDSWA password',
@@ -371,12 +331,7 @@ export class AuthService {
     await user.save();
   }
 
-  /**
-   * Change password for an authenticated user. Verifies the current password,
-   * updates to the new one, and invalidates existing refresh tokens so other
-   * sessions are logged out — a standard security hygiene step after a
-   * password rotation.
-   */
+  /** Change an authenticated user's password and invalidate existing refresh tokens so other sessions log out. */
   async changePassword(
     userId: string,
     currentPassword: string,

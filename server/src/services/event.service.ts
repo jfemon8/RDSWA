@@ -22,13 +22,7 @@ interface ListEventsQuery {
   committee?: string;
 }
 
-/**
- * Status is derived from startDate/endDate at read time. `draft` and
- * `cancelled` remain honored as admin overrides; 'upcoming' / 'ongoing' /
- * 'completed' in the DB are ignored in favor of time-based derivation.
- * Events without an endDate are treated as lasting until the end of their
- * startDate's day.
- */
+/** Status is derived from the dates at read time, honouring only `draft` and `cancelled` as stored admin overrides. */
 function buildStatusDateFilter(status: string, now: Date): FilterQuery<IEventDocument> | null {
   // Dhaka-anchored so this filter selects the same events `deriveEventStatus` labels.
   const startOfToday = dhakaStartOfDay(now);
@@ -186,12 +180,7 @@ export class EventService {
     return event;
   }
 
-  /**
-   * Record a moderator-driven check-in, creating an approved record, promoting
-   * a pending self-request, or reporting a duplicate.
-   *
-   * Refused once the actor's backfill window has closed.
-   */
+  /** Record a moderator-driven check-in, creating a record, promoting a pending self-request, or reporting a duplicate. */
   async submitAttendance(options: {
     eventId: string;
     userId: string;

@@ -18,10 +18,7 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * Floating context menu positioned at a page coordinate.
- * Auto-clamps to the viewport so it never clips off-screen.
- */
+/** Floating context menu placed at a page coordinate and clamped to the viewport so it never clips. */
 export default function MessageContextMenu({ anchor, actions, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 

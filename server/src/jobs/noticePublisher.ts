@@ -1,11 +1,6 @@
 import { Notice } from '../models';
 
-/**
- * Auto-publish notices that have a scheduledPublishAt date in the past
- * but are still in 'draft' status.
- *
- * Run on a schedule (e.g., every 5 minutes).
- */
+/** Scheduled job that publishes draft notices whose scheduledPublishAt has passed. */
 export async function runNoticePublisher(): Promise<void> {
   try {
     const now = new Date();

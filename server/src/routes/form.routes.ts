@@ -89,16 +89,13 @@ router.patch('/:id/review', authenticate(), authorize(UserRole.MODERATOR), valid
   form.reviewedAt = new Date();
   await form.save();
 
-  // For membership forms, sync with user membership status by routing through the
-  // user service so the same flow handles role assignment, notification, and group
-  // auto-add (central + department). Direct mutation here would skip group joins.
+  // Route membership approval through the user service, since mutating directly would skip role assignment, notification, and group joins.
   if (form.type === 'membership') {
     if (req.body.status === 'approved') {
       try {
         await userService.approveMembership(form.submittedBy.toString(), req.user);
       } catch (err: any) {
-        // approveMembership rejects if user isn't in pending/rejected/suspended state.
-        // Surface a clearer error for the form review case.
+        // Surface a clearer error, since approveMembership only accepts pending, rejected, or suspended users.
         throw ApiError.badRequest(err?.message || 'Failed to approve membership');
       }
     } else if (req.body.status === 'rejected') {

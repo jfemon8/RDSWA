@@ -294,11 +294,7 @@ export default function AdminFormsPage() {
   );
 }
 
-/**
- * Single attachment row with view (in-browser preview) and download buttons.
- * Routes Cloudinary URLs through the backend proxy so PDFs preview inline
- * and downloads keep their filename.
- */
+/** Attachment row whose view and download buttons route through the backend proxy so PDFs preview inline and keep their filename. */
 function AttachmentRow({ name, url }: { name: string; url: string }) {
   const label = getDocLabel(name);
   const filename = `${name || 'document'}${guessExt(url)}`;

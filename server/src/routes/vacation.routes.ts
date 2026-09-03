@@ -12,15 +12,9 @@ import { createVacationSchema, updateVacationSchema } from '../validators/vacati
 
 const router = Router();
 
-/**
- * Vacation calendar — yearly records (one per academic year, e.g. "2026-27")
- * holding a list of holidays/breaks plus optional supporting attachments.
- *
- * Public: anyone can list/read.
- * Admin: Moderator+ can create/update/delete.
- */
+/** Vacation calendar of yearly holiday records, publicly readable and editable by Moderator+. */
 
-// List all academic years (newest first). Public — no auth required.
+// List all academic years newest first, with no auth required.
 router.get('/', asyncHandler(async (_req, res) => {
   const list = await Vacation.find({ isDeleted: false })
     .sort({ academicYear: -1 })
@@ -30,7 +24,7 @@ router.get('/', asyncHandler(async (_req, res) => {
   ApiResponse.success(res, list);
 }));
 
-// Get one academic year by id. Public.
+// Get one academic year by id, publicly.
 router.get('/:id', asyncHandler(async (req, res) => {
   const vac = await Vacation.findOne({ _id: req.params.id as string, isDeleted: false })
     .populate('createdBy', 'name')
@@ -49,8 +43,7 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!req.user) throw ApiError.unauthorized();
 
-    // Pre-flight uniqueness check so the user gets a clear 400 instead of a
-    // raw Mongo E11000. The partial unique index still backstops a race.
+    // Pre-flight uniqueness check for a clear 400, with the partial unique index still backstopping a race.
     const existing = await Vacation.findOne({
       academicYear: req.body.academicYear,
       isDeleted: false,

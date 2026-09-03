@@ -33,11 +33,7 @@ export const ROLE_HIERARCHY: UserRole[] = [
   UserRole.SUPER_ADMIN,
 ];
 
-/**
- * Tier-only hierarchy (privilege levels). Alumni / Advisor / Senior Advisor
- * are orthogonal boolean tags, NOT privilege tiers — they don't appear here.
- * Use this for display, role hierarchy visualization, and tier comparisons.
- */
+/** Tier-only privilege hierarchy for display and comparisons, excluding Alumni, Advisor, and Senior Advisor which are orthogonal tags. */
 export const TIER_HIERARCHY: UserRole[] = [
   UserRole.GUEST,
   UserRole.USER,
@@ -88,22 +84,12 @@ export const BACKUP_RESTRICTED_SUPER_ADMINS: string[] = [
 /** SuperAdmins who cannot access the Settings page / settings routes */
 export const SETTINGS_RESTRICTED_SUPER_ADMINS: string[] = [];
 
-/**
- * SuperAdmins who cannot access the User Activity / Microsoft Clarity
- * analytics page. Mirrors the BACKUP_/SETTINGS_-restricted pattern: even
- * though these accounts are SuperAdmins for everything else, they should
- * NOT see the Clarity surface (session recordings + heatmaps reveal user
- * behaviour data that is intentionally scoped to specific admins).
- */
+/** SuperAdmins barred from the Clarity analytics page, since session recordings and heatmaps are scoped to specific admins. */
 export const CLARITY_RESTRICTED_SUPER_ADMINS: string[] = [
   'manikmia.phy@gmail.com',
 ];
 
-/**
- * SuperAdmins who cannot toggle the site-wide Google AdSense visibility.
- * Same pattern as CLARITY_RESTRICTED_SUPER_ADMINS — revenue / ad-policy
- * decisions are intentionally scoped to specific admins.
- */
+/** SuperAdmins barred from toggling site-wide AdSense, since revenue and ad-policy decisions are scoped to specific admins. */
 export const ADSENSE_RESTRICTED_SUPER_ADMINS: string[] = [
   'manikmia.phy@gmail.com',
 ];

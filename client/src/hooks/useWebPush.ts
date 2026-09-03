@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '@/lib/api';
 
-/**
- * Convert a URL-safe base64 VAPID key into the Uint8Array PushManager expects.
- * Browsers reject keys with the "-" and "_" characters the server returns.
- */
+/** Convert the server's URL-safe base64 VAPID key into the Uint8Array PushManager requires. */
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -25,11 +22,7 @@ export interface WebPushState {
   error: string | null;
 }
 
-/**
- * Manages the browser's Push subscription state and keeps it in sync with the
- * backend. Callers get a subscribe/unsubscribe pair and a state object that
- * reflects whether the active service worker has a live PushSubscription.
- */
+/** Keep the browser's Push subscription in sync with the backend, exposing subscribe and unsubscribe plus the live subscription state. */
 export function useWebPush() {
   const supported =
     typeof window !== 'undefined' &&

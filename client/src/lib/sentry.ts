@@ -1,9 +1,6 @@
 import * as Sentry from '@sentry/react';
 
-/**
- * Initialize Sentry error tracking for the client.
- * Only initializes if VITE_SENTRY_DSN is set.
- */
+/** Initialize client-side Sentry error tracking, only when VITE_SENTRY_DSN is set. */
 export function initSentry(): void {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   if (!dsn) {

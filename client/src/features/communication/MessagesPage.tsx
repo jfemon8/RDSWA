@@ -28,8 +28,7 @@ export default function MessagesPage() {
   const [searchParams] = useSearchParams();
   const withUserId = searchParams.get('with');
 
-  // Deep-link: when ?with=<userId> is in the URL, auto-open that conversation
-  // by fetching the user's profile. Runs once when the param changes.
+  // A `?with=<userId>` param auto-opens that conversation once, whenever the param changes.
   useEffect(() => {
     if (!withUserId || selectedUser?._id === withUserId) return;
     let cancelled = false;
@@ -47,9 +46,7 @@ export default function MessagesPage() {
     return () => { cancelled = true; };
   }, [withUserId, selectedUser?._id]);
 
-  // Back always returns to the unified Chat Hub (All/Chats/Groups/Starred).
-  // /dashboard/messages is an entry point but not the canonical list — going
-  // back to it would strand the user on the older list view without tabs.
+  // Back always returns to the unified Chat Hub, since the older messages list has no tabs to return to.
   const handleBack = () => {
     setSelectedUser(null);
     navigate('/dashboard/chat');
@@ -275,9 +272,7 @@ function ChatView({
     },
   });
 
-  // The DM fetch itself marks received messages as read on the server. Once
-  // that response lands, refresh the bell count and conversation list so the
-  // unread badges drop without waiting for the next poll / socket event.
+  // The DM fetch marks messages read server-side, so refresh the badges immediately rather than awaiting the next poll.
   useEffect(() => {
     if (!data) return;
     queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
@@ -473,9 +468,7 @@ function ChatView({
   }, [messages, user?._id]);
 
   return (
-    // Negative margins cancel the DashboardLayout main padding so DM chat
-    // goes edge-to-edge. calc() widths restore the inner layout width so
-    // children fill the visual area (not just the original content box).
+    // Negative margins cancel the layout padding for an edge-to-edge chat, with calc() widths restoring the inner width.
     <div className="flex flex-col h-[calc(100dvh-4rem)] -m-3 sm:-m-4 lg:-m-6 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2rem)] lg:w-[calc(100%+3rem)] bg-background">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">

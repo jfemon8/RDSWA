@@ -7,11 +7,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { getSocket } from '@/hooks/useSocket';
 
-/**
- * Message bell icon for the top navigation.
- * Shows a live unread-message badge (DMs + unread group messages)
- * and links to the chat hub.
- */
+/** Top-navigation bell showing a live unread badge for DMs and group messages, linking to the chat hub. */
 export default function MessageBell() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();

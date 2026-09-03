@@ -27,10 +27,7 @@ interface EmptyStateProps {
   className?: string;
 }
 
-/**
- * Consistent illustrated empty state used across the app when no data is available.
- * Animated pulsing rings, a sparkle accent, heading, description and up to two actions.
- */
+/** Illustrated empty state with pulsing rings, a heading, a description, and up to two actions. */
 export default function EmptyState({
   icon: Icon,
   title,

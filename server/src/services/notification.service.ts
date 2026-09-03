@@ -27,15 +27,9 @@ interface SendBulkNotificationOpts {
   force?: boolean;
 }
 
-/**
- * Central notification service that respects user preferences.
- * Handles: in-app DB creation, Socket.IO real-time, email, and web push.
- */
+/** Central notification service that respects user preferences across in-app, Socket.IO, email, and web push delivery. */
 export class NotificationService {
-  /**
-   * Send a notification to a single user.
-   * Checks DND and channel preferences before delivering.
-   */
+  /** Send a notification to one user after checking their DND and channel preferences. */
   async send(opts: SendNotificationOpts): Promise<void> {
     const { recipientId, type, title, message, link, metadata, force } = opts;
     const rid = recipientId.toString();
@@ -77,10 +71,7 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Send notification to multiple users at once.
-   * More efficient than calling send() in a loop for broadcast scenarios.
-   */
+  /** Send a notification to many users at once, more efficiently than looping over `send()`. */
   async sendBulk(opts: SendBulkNotificationOpts): Promise<number> {
     const { recipientIds, type, title, message, link, metadata, force } = opts;
 

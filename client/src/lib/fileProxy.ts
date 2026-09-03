@@ -1,19 +1,9 @@
 /**
- * Build a URL that routes a Cloudinary file through our backend proxy.
- *
- * Cloudinary serves `raw` resources (PDFs, Word, Excel, etc.) with
- * `Content-Type: application/octet-stream`, which forces browsers to download
- * them as opaque binary blobs instead of previewing inline. The proxy at
- * `/api/upload/proxy` refetches the file and re-serves it with the proper
- * Content-Type and a sensible Content-Disposition so PDFs preview in the
- * browser's built-in viewer and downloads keep their original filename.
- *
- * Use this helper everywhere a Cloudinary attachment URL is rendered as an
- * `<a href>` or `window.open()` target.
+ * Route a Cloudinary file through the backend proxy, which re-serves it with a real Content-Type so PDFs preview instead of downloading as opaque blobs.
  *
  * @param rawUrl  The Cloudinary `secure_url` returned from the upload API
- * @param name    Optional filename hint — surfaces in the download dialog
- * @param inline  `true` (default) → preview in browser; `false` → force download
+ * @param name    Optional filename hint surfaced in the download dialog
+ * @param inline  `true` previews in the browser, `false` forces a download
  */
 export function proxyFileUrl(rawUrl: string, name?: string, inline = true): string {
   if (!rawUrl) return '';

@@ -1,11 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getRedis } from '../config/redis';
 
-/**
- * Express middleware for Redis response caching.
- * Caches GET responses for the specified TTL.
- * Use on public, read-heavy endpoints.
- */
+/** Redis response cache for GET requests on public, read-heavy endpoints, held for the given TTL. */
 export function cacheResponse(ttlSeconds: number = 300) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const redis = getRedis();
@@ -38,10 +34,7 @@ export function cacheResponse(ttlSeconds: number = 300) {
   };
 }
 
-/**
- * Invalidate cache entries matching a prefix.
- * Call after write operations on cached resources.
- */
+/** Invalidate cache entries matching a prefix, to call after writes on cached resources. */
 export async function invalidateCachePrefix(prefix: string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;

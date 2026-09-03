@@ -51,12 +51,7 @@ export default function NotificationsPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete'),
   });
 
-  // Click on a notification → mark as read (optimistic, fire-and-forget) and
-  // navigate to its linked page, Facebook-style. If the notification has no
-  // `link`, we still mark it read but stay on the page.
-  // `normalizeNotificationLink` rewrites legacy API-path prefixes like
-  // `/communication/groups/...` → `/dashboard/groups/...` so old notifications
-  // still stored in the DB (before the server-side fix) don't hit 404.
+  // Optimistically mark read and navigate to the normalized link, which rewrites legacy API prefixes that would otherwise 404.
   const handleNotificationClick = (n: any) => {
     if (!n.isRead) markReadMutation.mutate(n._id);
     const target = normalizeNotificationLink(n.link);

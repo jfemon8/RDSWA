@@ -1,27 +1,11 @@
 import nodemailer from 'nodemailer';
 import { env } from './env';
 
-/**
- * Two-mode mail transport.
- *
- *   1. **Resend HTTP API** — used when `RESEND_API_KEY` is set. Sends over
- *      HTTPS (port 443), so it works on PaaS providers like Render's free
- *      tier that block outbound SMTP ports (25 / 465 / 587). This is the
- *      production path.
- *
- *   2. **SMTP via Nodemailer** — used as a fallback when no Resend key is
- *      present. Convenient for local development with Gmail App Password.
- *
- * Both modes expose the same `sendEmail(to, subject, html)` interface and
- * the same `verifyMailTransport()` startup check, so callers (auth.service,
- * routes, jobs) don't need to know which transport is active.
- */
+/** Two-mode mail transport behind one interface, using Resend's HTTPS API when `RESEND_API_KEY` is set and Nodemailer SMTP otherwise. */
 
 const useResend = !!env.RESEND_API_KEY;
 
-// Boot-time visibility — prints which transport will be used the moment
-// the module loads. Saves a round of "is the env var actually set?"
-// guessing on PaaS providers.
+// Print the chosen transport at module load, so a missing env var is obvious on PaaS.
 console.log(
   `[Mail] Active transport: ${useResend ? 'Resend HTTP API' : 'SMTP'} ` +
   `(RESEND_API_KEY ${useResend ? 'detected' : 'NOT detected'}, ` +
@@ -34,9 +18,7 @@ const smtpTransporter = useResend
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
       secure: env.SMTP_PORT === 465,
-      // 10s to establish TCP, 10s for the server greeting, 20s socket idle.
-      // Without these, Nodemailer can hang for ~10 minutes on a silently
-      // dropped connection.
+      // Explicit timeouts, without which Nodemailer hangs for about ten minutes on a silently dropped connection.
       connectionTimeout: 10_000,
       greetingTimeout: 10_000,
       socketTimeout: 20_000,
@@ -46,21 +28,10 @@ const smtpTransporter = useResend
           : undefined,
     });
 
-/**
- * Verify mail transport at boot. Logs once. Doesn't crash the server on
- * failure — the API stays usable and only email-dependent flows surface
- * the issue with their own per-call logging.
- */
+/** Verify the mail transport at boot and log once, leaving the server usable if it fails. */
 export async function verifyMailTransport(): Promise<void> {
   if (useResend) {
-    // Resend has no dedicated `verify` endpoint. We POST to /emails with
-    // an intentionally empty body — auth runs *before* validation, so:
-    //   - 401  → bad / revoked / mistyped API key
-    //   - 422  → auth OK, request validation failed (the success signal here)
-    //   - 5xx / network error → upstream issue, log it
-    // A send-only "Sending access" key cannot hit /domains or /api-keys, so
-    // POST /emails is the only endpoint that round-trips both the network
-    // and the credentials without actually delivering mail.
+    // Resend has no verify endpoint, so an empty POST to /emails checks credentials without sending: 401 means a bad key and 422 means success.
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -106,10 +77,7 @@ export async function verifyMailTransport(): Promise<void> {
   console.warn('[Mail] No mail transport configured — set RESEND_API_KEY or SMTP credentials.');
 }
 
-/**
- * Send a transactional email. Throws on failure so callers can decide
- * whether to surface the error to the user or log-and-swallow.
- */
+/** Send a transactional email, throwing on failure so callers decide whether to surface or swallow it. */
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   if (useResend) {
     const res = await fetch('https://api.resend.com/emails', {
@@ -143,6 +111,5 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   });
 }
 
-// Kept for backward compatibility with any code that imported the SMTP
-// transporter directly. Returns null when running on the Resend HTTP path.
+// Kept for code that imported the SMTP transporter directly, returning null on the Resend path.
 export const transporter = smtpTransporter;

@@ -19,8 +19,7 @@ import {
 } from '@/lib/membershipDocs';
 
 interface UploadedFile {
-  /** Doc-type key (e.g. 'nid', 'student_id') for membership/alumni group uploads,
-   *  or a free-form label for legacy alumni uploads. Persisted on the Form. */
+  /** Doc-type key for grouped uploads or a free-form label for legacy ones, persisted on the Form. */
   name: string;
   url: string;
   uploading?: boolean;
@@ -419,10 +418,7 @@ export default function SubmitFormPage() {
   );
 }
 
-/**
- * Doc-group upload UI: pick a doc type from the accepted list, then upload.
- * The selected doc-type key is what gets stored as `attachment.name`.
- */
+/** Doc-group upload UI whose selected doc-type key is stored as `attachment.name`. */
 function DocGroupUpload({
   title,
   hint,

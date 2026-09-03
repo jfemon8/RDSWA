@@ -56,9 +56,7 @@ function authHeaders(token) {
 // Setup — register + login once per VU to obtain a token
 // ---------------------------------------------------------------------------
 
-// Because k6 does not share state across VUs in setup(), each VU registers
-// and logs in during its first iteration, then reuses the token.  We store
-// the token in a module-level variable (scoped to the VU).
+// Each VU registers on its first iteration and reuses the token from a VU-scoped variable, since setup() shares no state across VUs.
 
 let vuToken = null;
 

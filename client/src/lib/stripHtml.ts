@@ -1,4 +1,4 @@
-/** Strip HTML tags to plain text. Safe for previews and non-rich-text contexts. */
+/** Strip HTML tags to plain text, for previews and other non-rich-text contexts. */
 export function stripHtml(val: unknown): string {
   const str = String(val ?? '');
   if (!str.includes('<')) return str;

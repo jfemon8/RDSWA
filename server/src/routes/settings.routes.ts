@@ -140,10 +140,7 @@ router.patch('/academic-config', authenticate(), authorize(UserRole.ADMIN), audi
   }
   const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
 
-  // Reconcile department chat groups against the new configuration: create
-  // groups for newly-added departments, archive groups for removed ones.
-  // The faculties list is the single source of truth for which department
-  // groups are allowed to exist.
+  // Reconcile department chat groups against the faculties list, which is the single source of truth for which may exist.
   if (faculties !== undefined) {
     syncDepartmentGroups().catch((err) => console.error('Department group sync failed:', err));
   }
@@ -220,9 +217,7 @@ router.patch('/general', authenticate(), authorize(UserRole.ADMIN), auditLog('se
   ApiResponse.success(res, settings, 'General settings updated');
 }));
 
-// Update brand colors (SuperAdmin only) — controls the CSS primary/secondary
-// variables applied app-wide. Empty strings fall back to hardcoded defaults
-// baked into client/src/index.css.
+// Update the app-wide brand color variables (SuperAdmin only), where empty strings fall back to the defaults in index.css.
 const hexColorSchema = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a 6-digit hex color (e.g. #008f57)').or(z.literal(''));
 const brandColorsSchema = z.object({
   brandColors: z.object({
@@ -389,8 +384,7 @@ router.get('/auto-role-config', authenticate(), authorize(UserRole.ADMIN), async
   });
 }));
 
-// Toggle Google AdSense site-wide. SuperAdmin only, with the AdSense-restricted
-// list blocked — keeps revenue / ad-policy decisions scoped to specific admins.
+// Toggle Google AdSense site-wide for unrestricted SuperAdmins only, keeping ad-policy decisions narrowly scoped.
 const adsenseToggleSchema = z.object({
   adsenseEnabled: z.boolean(),
 });

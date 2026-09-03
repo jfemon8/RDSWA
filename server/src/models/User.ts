@@ -7,11 +7,7 @@ export interface IUserDocument extends Document {
   email: string;
   password: string;
   refreshTokens: string[];
-  // Short-lived rotation history. When a refresh token is rotated, the old
-  // value is recorded here so a concurrent refresh request that arrives
-  // within the grace window (a few seconds) gets the same replacement token
-  // back idempotently — instead of being mistaken for a stolen-token replay
-  // and triggering a session-wide family wipe. See auth.service.refreshToken.
+  // Short-lived rotation history, so a concurrent refresh inside the grace window gets the same replacement instead of tripping theft detection.
   recentlyRotated: Array<{
     token: string;
     replacedBy: string;
@@ -94,11 +90,7 @@ export interface IUserDocument extends Document {
 
   // Alumni tracking — sticky flag set when alumni form is approved (persists even if user removes job)
   alumniApproved: boolean;
-  /**
-   * Admin override that blocks isAlumni from being auto-computed to true.
-   * Set when an admin explicitly revokes alumni status — prevents the pre-save hook
-   * from re-flipping isAlumni based on current job/business. Cleared when admin grants again.
-   */
+  /** Admin override set on revoke that stops the pre-save hook re-flipping isAlumni, cleared when the admin grants again. */
   alumniManuallyRevoked: boolean;
   // Alumni flag — derived in pre-save hook: approved member AND NOT alumniManuallyRevoked AND (alumniApproved OR current job/business)
   isAlumni: boolean;
@@ -376,9 +368,7 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Pre-save: recompute isAlumni.
-// Business rule: to be an alumni, the user must first be an approved member.
-// An admin manual revoke (`alumniManuallyRevoked`) blocks auto-detection from current job/business.
+// Recompute isAlumni before saving, requiring an approved member and honouring a manual revoke override.
 userSchema.pre('save', function (next) {
   const isApprovedMember = this.membershipStatus === 'approved';
   const hasCurrentJob = Array.isArray(this.jobHistory) && this.jobHistory.some((j) => j.isCurrent);

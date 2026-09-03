@@ -245,9 +245,7 @@ function CommitteeMembersPanel({ committeeId, members }: { committeeId: string; 
   const [selectedUserId, setSelectedUserId] = useState('');
   const [position, setPosition] = useState(CommitteePosition.MEMBER);
 
-  // Active members only — members who have left should not be counted in the
-  // header or rendered in the list. Keeps the count consistent with the
-  // collapsed-row label (which already filters by `!leftAt`).
+  // Count active members only, keeping the header consistent with the collapsed-row label that already filters by `!leftAt`.
   const activeMembers = members.filter((m: any) => !m.leftAt);
 
   const { data: searchData } = useQuery({

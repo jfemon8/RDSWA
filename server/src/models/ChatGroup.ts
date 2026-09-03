@@ -18,9 +18,9 @@ export interface IChatGroupDocument extends Document {
   mentorUser?: mongoose.Types.ObjectId;
   members: mongoose.Types.ObjectId[];
   admins: mongoose.Types.ObjectId[];
-  /** User who created a custom group. Undefined for system-managed central/department groups. */
+  /** Creator of a custom group, left undefined for system-managed central and department groups. */
   createdBy?: mongoose.Types.ObjectId;
-  /** Users who have muted notifications for this group. Still receive messages. */
+  /** Users who muted notifications for this group but still receive its messages. */
   mutedBy: mongoose.Types.ObjectId[];
   joinRequests: IJoinRequest[];
   avatar?: string;

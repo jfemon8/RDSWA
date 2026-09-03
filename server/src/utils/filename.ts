@@ -1,10 +1,4 @@
-/**
- * Repair a multipart filename that arrived as raw bytes instead of UTF-8.
- *
- * Busboy defaults `defParamCharset` to undefined and multer never sets it, so
- * `file.originalname` holds each UTF-8 byte as a separate latin1 character —
- * a Bangla name like "প্রতিবেদন.pdf" arrives as "à¦ªà§à¦°...".
- */
+/** Repair a multipart filename whose UTF-8 bytes arrived as latin1 characters, because busboy leaves `defParamCharset` unset and multer never sets it. */
 export function decodeMultipartFilename(name: string): string {
   if (!name) return name;
 

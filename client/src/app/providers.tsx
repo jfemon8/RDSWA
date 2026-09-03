@@ -20,12 +20,7 @@ const queryClient = new QueryClient({
       gcTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
       refetchOnWindowFocus: false,
-      // Critical for PWA + service-worker caching. Default 'online' mode
-      // aborts the fetch entirely when navigator.onLine is false, which
-      // prevents Workbox from ever seeing the request and serving its
-      // cached response. 'offlineFirst' lets the queryFn run once so the
-      // SW can intercept; retries are paused only on a genuine cache miss.
-      // See https://tkdodo.eu/blog/offline-react-query.
+      // 'offlineFirst' lets the queryFn run so Workbox can answer it, whereas the default aborts the fetch while offline.
       networkMode: 'offlineFirst',
     },
     mutations: {
@@ -49,15 +44,13 @@ function AuthInitializer({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Null-rendering component that keeps <head> (favicon, title, meta description) in
- *  sync with dynamic SiteSettings on every page. See useDynamicSiteMeta for rationale. */
+/** Null-rendering component that keeps the document head in sync with dynamic SiteSettings on every page. */
 function DynamicSiteMeta() {
   useDynamicSiteMeta();
   return null;
 }
 
-/** Null-rendering component that injects the admin-configured brand palette as
- *  CSS variable overrides. See useBrandColors for the precedence rules. */
+/** Null-rendering component that injects the admin-configured brand palette as CSS variable overrides. */
 function BrandColorsApplier() {
   useBrandColors();
   return null;

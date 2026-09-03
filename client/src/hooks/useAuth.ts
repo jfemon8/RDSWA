@@ -37,19 +37,14 @@ export function useAuth() {
       return;
     }
 
-    // Only force logout on genuine auth failures. A network error (no
-    // response, or a Workbox-served failure) must NOT log the user out —
-    // otherwise every cold offline launch silently clears the access token
-    // and the user is stranded at /login the next time they come online.
+    // Log out only on genuine auth failures, since treating a network error that way strands users at /login after an offline launch.
     const status = (error as { response?: { status?: number } } | null)?.response?.status;
     if (status === 401 || status === 403) {
       logout();
     }
   }, [data, error, hasToken, setUser, setLoading, logout, isAuthenticated]);
 
-  // Only block rendering on initial auth check, not background refetches.
-  // If we already have a persisted user from the Zustand store, don't block
-  // — let the app render and reconcile in the background.
+  // Block rendering only on the initial check, letting a persisted user render immediately and reconcile in the background.
   const initialLoading = isLoading && !user && hasToken && queryLoading;
 
   return { user, isAuthenticated, isLoading: initialLoading, logout };

@@ -4,26 +4,7 @@ import { usePageParam } from '@/hooks/usePageParam';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 
-/**
- * Offline-persistence options applied to every Bus Schedule query.
- *   - `meta.persist`: opts this query into IndexedDB-backed persistence
- *     (see lib/queryPersister.ts). Without it the query lives in memory only.
- *   - `gcTime` 30 days: keeps the query entry alive long enough to actually
- *     be persisted. If gcTime expires before a persist tick, the entry is
- *     dropped and never written to IndexedDB.
- *   - `staleTime` 1 hour: avoids refetching on every navigation when the data
- *     is typically fine for an hour. Stale queries auto-refetch on mount and
- *     on the browser 'online' event, which is how the "come back online →
- *     see fresh data" sync works alongside the Workbox NetworkFirst rule.
- *   - `refetchOnReconnect: true`: explicit — fire a refetch the moment the
- *     device transitions from offline to online, as long as the query is
- *     stale. Combined with NetworkFirst in the SW this gives fresh data
- *     without requiring the user to navigate away and back.
- *   - `networkMode: 'offlineFirst'`: critical for PWA + Workbox. Default
- *     'online' aborts the fetch when navigator.onLine is false, preventing
- *     the SW from ever seeing the request. 'offlineFirst' lets the queryFn
- *     run once so Workbox's NetworkFirst cache can answer.
- */
+/** Offline-persistence options that keep every Bus Schedule query in IndexedDB and let Workbox answer it while the device is offline. */
 const BUS_OFFLINE_OPTS = {
   meta: { persist: true } as const,
   gcTime: 30 * 24 * 60 * 60 * 1000,
@@ -76,18 +57,11 @@ export default function BusSchedulePage() {
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);
 
   const prefetchClient = useQueryClient();
-  // True while PersistQueryClientProvider is still pulling cached queries
-  // out of IndexedDB. Used below to suppress the spinner flash on cold
-  // offline launches — if we have persisted data, it'll land in the cache
-  // within a tick and we'd rather show it than a spinner.
+  // True while cached queries are still coming out of IndexedDB, used below to suppress the spinner flash on cold launches.
   const isRestoring = useIsRestoring();
   useBusSocket();
 
-  // Eager prefetch on mount: the user expects every tab + filter to work
-  // offline after one online visit, so we warm the cache for BOTH route
-  // types (not just the active tab), operators, and counters in parallel
-  // the first time the page is opened. Subsequent mounts are cheap — the
-  // queries are already cached.
+  // Warm every tab, operator, and counter in parallel on first mount, so one online visit makes the whole page work offline.
   useEffect(() => {
     const fire = (key: unknown[], url: string) =>
       prefetchClient.prefetchQuery({
@@ -156,10 +130,7 @@ export default function BusSchedulePage() {
   const schedules = schedulesData?.data || [];
   const operators = operatorsData?.data || [];
 
-  // Phase 2 prefetch: once the list queries resolve, warm the per-item
-  // detail / reviews / schedules caches. Fires in parallel, falls back
-  // gracefully offline. Runs once per operator/route — subsequent renders
-  // hit TanStack's in-memory cache so no network activity.
+  // Once the lists resolve, warm each item's detail, reviews, and schedules in parallel, once per operator or route.
   useEffect(() => {
     const warm = (key: unknown[], url: string) =>
       prefetchClient.prefetchQuery({
@@ -227,10 +198,7 @@ export default function BusSchedulePage() {
   const hasActiveFilters = filterCategory || departureAfter || departureBefore;
 
   const handleTabChange = (newTab: Tab) => {
-    // setPage MUST be called before setTab — both write to the same URL
-    // search params, and the later call wins. If setTab fired first, the
-    // setPage call would overwrite it with a stale URL snapshot and the
-    // tab change would silently revert to default.
+    // setPage must precede setTab, because both write the same search params and the later call wins.
     setPage(1);
     setTab(newTab);
     setSearch('');
@@ -280,11 +248,7 @@ export default function BusSchedulePage() {
     }
   };
 
-  // Only show the spinner when we genuinely have no data AND aren't merely
-  // waiting on IndexedDB hydration. `useIsRestoring` returns true for one
-  // render cycle on cold mount while PersistQueryClientProvider rehydrates
-  // — flashing a spinner during that window would hide data we already have
-  // on disk.
+  // Show the spinner only with no data and no pending IndexedDB hydration, so persisted data isn't hidden behind a flash.
   const hasAnyBaseData = (routes.length > 0) || (operators.length > 0);
   const isLoading = !isRestoring && !hasAnyBaseData && (
     (view === 'routes' && routesLoading) ||

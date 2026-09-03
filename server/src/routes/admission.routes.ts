@@ -218,16 +218,9 @@ router.delete(
 
 // ── Session-level bulk ops (Moderator+) ──────────────────
 //
-// Sessions / categories aren't first-class entities — they're plain strings
-// stored on each row. These endpoints expose bulk operations across all rows
-// of a given session (or session+category) without making admins click into
-// every row individually.
+// Sessions and categories are plain strings on each row, so these endpoints act across all rows at once instead of one by one.
 
-/** Clone every non-deleted row from sourceSession into a new targetSession.
- *  Rejects when targetSession already contains rows so we never silently merge
- *  two sessions together (the user's explicit "same session multiple hobe na"
- *  rule). The source session keeps its data — only metadata fields are reset
- *  on the new copies (timestamps, createdBy). */
+/** Clone every live row into a new target session, rejecting a target that already has rows so two sessions never silently merge. */
 const seatCloneSchema = z.object({
   sourceSession: z.string().trim().min(2).max(20),
   targetSession: z.string().trim().min(2).max(20),

@@ -12,7 +12,7 @@ import ReplyPreview, { type ReplyData } from './ReplyPreview';
 import ReadReceipt from './ReadReceipt';
 import { formatTime } from '@/lib/date';
 
-/** Time windows mirroring the server. Keep in sync with communication.routes.ts. */
+/** Time windows mirroring the server, to keep in sync with communication.routes.ts. */
 export const EDIT_WINDOW_MS = 6 * 60 * 60 * 1000;
 export const DELETE_EVERYONE_WINDOW_MS = 12 * 60 * 60 * 1000;
 export const DELETE_FOR_ME_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -45,7 +45,7 @@ export interface MessageBubbleProps {
   currentUserId?: string;
   /** Admin override grants extended edit/delete powers */
   isAdmin?: boolean;
-  /** Can the user pin messages here? Group admin / creator. */
+  /** Whether the user may pin messages here, meaning a group admin or the creator. */
   canPin?: boolean;
   /** Read-receipt: at least one other participant has seen this. */
   isRead?: boolean;
@@ -100,8 +100,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  // Only the sender (within the time window) or an admin/superAdmin can delete.
-  // "Delete for me" is hidden for non-sender, non-admin participants.
+  // Deletion is limited to the sender inside the window or an admin, and "delete for me" is hidden from everyone else.
   const canEdit = isMine && isWithinMs(EDIT_WINDOW_MS, msg.createdAt);
   const canDeleteEveryone = (isMine && isWithinMs(DELETE_EVERYONE_WINDOW_MS, msg.createdAt)) || !!isAdmin;
   const canDeleteForMe = (isMine || !!isAdmin) && isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);

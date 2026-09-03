@@ -19,12 +19,7 @@ const baseEventShape = {
   committee: z.string().optional(),
 };
 
-/**
- * If both dates are present, end must be strictly after start. Compare as
- * Date objects so we accept any parseable string (ISO with offset, plain
- * datetime-local, etc.) — the client now sends UTC ISO; older clients may
- * still send timezone-less strings, both work here.
- */
+/** Require end to be strictly after start when both are present, comparing as Dates so any parseable string format works. */
 const endAfterStart = (val: { startDate?: string; endDate?: string }, ctx: z.RefinementCtx) => {
   if (!val.startDate || !val.endDate) return;
   const s = new Date(val.startDate).getTime();

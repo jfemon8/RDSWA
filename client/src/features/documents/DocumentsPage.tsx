@@ -25,12 +25,7 @@ export default function DocumentsPage() {
 
   const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
-  /**
-   * Hit the counter endpoint, then open the proxy URL with `inline=false`.
-   * The server replies with `Content-Disposition: attachment; filename=...`,
-   * which is what actually triggers the browser save dialog for Cloudinary
-   * files — the HTML `download` attribute alone is ignored cross-origin.
-   */
+  /** Bump the counter then open the proxy with `inline=false`, since only its Content-Disposition header triggers a cross-origin save dialog. */
   const handleDownload = async (docId: string, fileUrl: string, title?: string) => {
     if (!fileUrl) {
       toast.error('File URL is missing');
@@ -130,9 +125,7 @@ export default function DocumentsPage() {
         <div className="space-y-3">
           {documents.map((doc: any, index: number) => {
             const isExpanded = expandedId === doc._id;
-            // Accept any of: 'pdf', 'application/pdf', a URL ending in .pdf,
-            // or a title that ends in .pdf. fileType is stored as the original
-            // MIME type for some uploads, plain 'pdf' for others.
+            // Accept a PDF signalled by MIME, bare 'pdf', or a .pdf suffix on the URL or title, since uploads store it inconsistently.
             const isPdf =
               (doc.fileType || '').toLowerCase().includes('pdf') ||
               (doc.fileUrl || '').toLowerCase().includes('.pdf') ||

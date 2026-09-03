@@ -37,7 +37,7 @@ const KIND_LABEL: Record<string, string> = {
   contact: 'Contact',
 };
 
-/** Quoted reply preview. Used both in the composer and inside message bubbles. */
+/** Quoted reply preview, used in both the composer and message bubbles. */
 export default function ReplyPreview({ reply, onCancel, isMine, onClick }: Props) {
   const Icon = reply.attachmentKind ? KIND_ICON[reply.attachmentKind] || FileIcon : null;
   const preview = reply.content || (reply.attachmentKind ? KIND_LABEL[reply.attachmentKind] : '');

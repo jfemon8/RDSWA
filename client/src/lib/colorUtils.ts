@@ -1,13 +1,4 @@
-/**
- * Color utilities used by the brand-colors admin UI and the runtime theme
- * injector. All functions are pure and safe to call with user input —
- * invalid hex returns `null` so callers can fall back.
- *
- * The CSS variables in index.css store colors as space-separated HSL channels
- * without the `hsl()` wrapper (Tailwind's convention: `hsl(var(--primary))`).
- * So when we override those variables from user-picked hex values, we must
- * emit `"H S% L%"` strings.
- */
+/** Pure color helpers that return `null` on invalid hex and emit the space-separated `"H S% L%"` channels Tailwind's CSS variables expect. */
 
 /** `#008f57` → `{ r: 0, g: 143, b: 87 }`, or null if invalid. */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -43,11 +34,7 @@ export function hexToHslChannels(hex: string): string | null {
   return rgbToHslString(rgb.r, rgb.g, rgb.b);
 }
 
-/**
- * Relative luminance per WCAG (ratio 0–1). Used to pick readable foreground
- * text when the user sets a custom primary/secondary — dark BG → white text,
- * light BG → near-black text.
- */
+/** WCAG relative luminance, used to pick readable foreground text against a custom brand color. */
 export function relativeLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
@@ -63,7 +50,7 @@ export function autoForegroundChannels(bgHex: string): string {
   return relativeLuminance(bgHex) > 0.5 ? '0 0% 9%' : '0 0% 100%';
 }
 
-/** Validates a 6-digit hex string like `#ABCDEF`. Lowercase/uppercase OK. */
+/** Validate a 6-digit hex string like `#ABCDEF`, in either case. */
 export function isValidHex(hex: string): boolean {
   return /^#[0-9a-fA-F]{6}$/.test(hex.trim());
 }

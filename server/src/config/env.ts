@@ -17,13 +17,10 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
   JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
-  // Sessions stay valid for 1 year unless the user explicitly logs out.
-  // A silent refresh renews the access token while the refresh token is alive.
+  // Sessions last a year unless the user logs out, with a silent refresh renewing the access token meanwhile.
   JWT_REFRESH_EXPIRY: z.string().default('365d'),
 
-  // Email — when RESEND_API_KEY is set, Resend's HTTP API is used (works on
-  // free Render plans where outbound SMTP ports 25/465/587 are blocked).
-  // Otherwise the SMTP transport is used (good for local dev with Gmail).
+  // Email uses Resend's HTTP API when RESEND_API_KEY is set, since free Render plans block outbound SMTP ports.
   RESEND_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().default('smtp.gmail.com'),
   SMTP_PORT: z.coerce.number().default(587),

@@ -60,8 +60,7 @@ export default function DonationsPage() {
     setShowForm(true);
   };
 
-  // Scroll the donation form into view when it opens (esp. after clicking
-  // "Donate" on a campaign card lower on the page).
+  // Scroll the donation form into view when it opens, especially from a campaign card further down the page.
   useEffect(() => {
     if (showForm) {
       requestAnimationFrame(() => {

@@ -39,17 +39,9 @@ export interface AdminRoleTagManagerPageProps {
   roleLabel: string;
   /** Short pluralized label, e.g. "alumni" / "advisors" / "senior advisors" */
   roleLabelPlural: string;
-  /**
-   * For Alumni pages only — show the user's current employment (job/business) inline on each
-   * card so the admin can see *why* they were auto-tagged. Does not affect revoke behavior;
-   * any user holding the tag can be revoked from any of these management pages.
-   */
+  /** Show current employment inline on Alumni cards so admins can see why a user was auto-tagged. */
   showEmploymentInfo?: boolean;
-  /**
-   * When true, the candidate search returns ALL users (not just approved members).
-   * Use this for tags that any user can hold regardless of membership status
-   * (e.g. Senior Advisor). Default: false (approved-members-only).
-   */
+  /** Search all users rather than approved members only, for tags anyone may hold regardless of membership status. */
   allowAnyUser?: boolean;
 }
 
@@ -91,8 +83,7 @@ export default function AdminRoleTagManagerPage({
     },
   });
 
-  // Search candidate users who do NOT yet have this tag — for the "add" panel.
-  // When allowAnyUser is true, search across ALL users; otherwise restrict to approved members.
+  // Search users without this tag for the add panel, across all users when allowAnyUser is set.
   const { data: candidatesData, isLoading: candidatesLoading } = useQuery({
     queryKey: ['users', `tag-candidates-${flagFilter}`, addSearch, allowAnyUser],
     queryFn: async () => {

@@ -11,9 +11,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import Promo from '@/components/promo/Promo';
 
-// Album grid is up to 3 cols on lg, so every 6 cards = every 2 rows. Photo
-// grid is up to 4 cols, so 12 keeps the visual flow uninterrupted while
-// still placing one promo per ~3 rows on long albums.
+// Cadences chosen so a promo lands every two album rows and roughly every three photo rows.
 const ALBUM_PROMO_EVERY = 6;
 const PHOTO_PROMO_EVERY = 12;
 

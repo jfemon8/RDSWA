@@ -1,10 +1,7 @@
 import { Vote } from '../models';
 import { broadcastVoteStatus } from '../socket';
 
-/**
- * Auto-activate draft votes whose startTime has been reached.
- * Run on a schedule (e.g., every 1 minute).
- */
+/** Scheduled job that activates draft votes once their startTime is reached. */
 export async function runVoteActivator(): Promise<void> {
   try {
     const now = new Date();

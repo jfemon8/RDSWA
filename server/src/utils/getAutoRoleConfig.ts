@@ -17,18 +17,7 @@ const DEFAULT_ADMIN_POSITIONS = ADMIN_AUTO_POSITIONS;
 const DEFAULT_MODERATOR_POSITIONS = MODERATOR_AUTO_POSITIONS;
 const DEFAULT_ADVISOR_ON_ARCHIVE_POSITIONS = ADMIN_AUTO_POSITIONS;
 
-/**
- * Resolve the effective auto-role configuration from SiteSettings, falling
- * back to the shared-constant defaults when fields are absent.
- *
- * An explicitly-empty array (e.g. `adminPositions: []`) is respected — it
- * means the SuperAdmin has chosen to disable that auto-assignment. Only a
- * missing/undefined field uses the default.
- *
- * Used by committee.service and roleSyncOnStart so that automatic role
- * transitions (committee create / add / remove / archive / startup sync)
- * follow the same rules as the editable settings UI.
- */
+/** Resolve the auto-role configuration that drives every role transition, honouring an explicitly empty array as disabled and falling back to the shared defaults only when a field is absent. */
 export async function getAutoRoleConfig(): Promise<EffectiveAutoRoleConfig> {
   const settings = await SiteSettings.findOne().lean();
   const cfg = (settings as any)?.autoRoleConfig ?? {};

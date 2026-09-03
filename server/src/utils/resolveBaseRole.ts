@@ -1,14 +1,7 @@
 import { UserRole } from '@rdswa/shared';
 import { IUserDocument } from '../models';
 
-/**
- * Determine the privilege tier a user should fall back to
- * when the Moderator or Admin role is removed.
- *
- * Alumni / Advisor / Senior Advisor are now tags (booleans), not tiers —
- * they don't affect the base privilege level. The base role is simply:
- *   approved member → MEMBER, otherwise USER.
- */
+/** The tier a user falls back to when Moderator or Admin is removed, which is MEMBER for an approved member and USER otherwise. */
 export function resolveBaseRole(user: IUserDocument): UserRole {
   if (user.membershipStatus === 'approved') return UserRole.MEMBER;
   return UserRole.USER;

@@ -62,22 +62,7 @@ export function toDateTimeLocal(date: string | Date) {
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 }
 
-/**
- * Convert a `<input type="datetime-local">` value (`YYYY-MM-DDTHH:mm`)
- * back to a proper UTC ISO string, treating the input as **Asia/Dhaka
- * (BST, UTC+6)** wall clock time.
- *
- * Why this exists: `datetime-local` inputs emit a timezone-less string.
- * If sent to the server as-is, V8 re-interprets it as the container's
- * local time — usually UTC on Render — so a BST 15:30 entry comes back
- * shifted by 6 hours when displayed through the Dhaka formatter. This
- * helper pins the interpretation to BST so save and read round-trip
- * cleanly.
- *
- * BST has no DST, so a fixed −6h offset is exact and timezone-table-free.
- *
- * Returns `''` for empty input so callers can pass it through unchanged.
- */
+/** Convert a timezone-less `datetime-local` value to UTC ISO by pinning it to Asia/Dhaka, which has no DST, and returning `''` for empty input. */
 export function fromDateTimeLocal(local: string | undefined | null): string {
   if (!local) return '';
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(local);

@@ -1,20 +1,7 @@
 import { useEffect } from 'react';
 import { useSiteSettings } from './useSiteSettings';
 
-/**
- * Imperatively syncs the document head with dynamic SiteSettings.
- *
- * Runs once at the app root so favicon / title / description update on EVERY page,
- * not just pages that happen to render the <SEO /> component.
- *
- * Why imperative (not Helmet): react-helmet-async is per-page — pages that don't
- * mount <SEO /> never get the override, and the static <link rel="icon"> in
- * index.html wins the race. This hook directly mutates <head> so there's one
- * source of truth regardless of route.
- *
- * Per-page <SEO /> components still work on top of this — they update the title
- * per page, while this hook provides the fallback + dynamic favicon.
- */
+/** Imperatively syncs the document head with SiteSettings once at the app root, so every page gets the favicon and fallback metadata that per-page `<SEO />` cannot provide. */
 export function useDynamicSiteMeta() {
   const { settings } = useSiteSettings();
 

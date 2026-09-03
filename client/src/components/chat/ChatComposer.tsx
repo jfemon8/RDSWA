@@ -6,7 +6,7 @@ import ReplyPreview, { type ReplyData } from './ReplyPreview';
 import { REACTIONS } from './ReactionPicker';
 
 interface Props {
-  /** Called when the user wants to send. Composer clears on successful promise. */
+  /** Called on send, with the composer clearing once the promise resolves. */
   onSend: (content: string, attachments: ChatAttachment[], replyToId?: string) => Promise<void> | void;
   /** Reply being composed — shown as a chip above the input */
   replyTo?: ReplyData | null;
@@ -18,10 +18,7 @@ interface Props {
   placeholder?: string;
 }
 
-/**
- * Shared chat composer — text + attachments + reply + emoji picker.
- * Handles typing indicators (debounced) and drag-and-drop / paste upload hand-offs.
- */
+/** Shared chat composer for text, attachments, replies, and emoji, with debounced typing indicators and paste or drop hand-offs. */
 export default function ChatComposer({
   onSend, replyTo, onCancelReply, onTyping, disabled, placeholder = 'Type a message…',
 }: Props) {
@@ -100,11 +97,7 @@ export default function ChatComposer({
     const images = files.filter((f) => f.type.startsWith('image/'));
     if (images.length === 0) return;
     e.preventDefault();
-    // For simplicity we just trigger the ChatAttachmentMenu's file picker by delegating.
-    // The user can also click the paperclip to pick manually.
-    // We can't call the private upload pipeline here, so we surface the image via the menu.
-    // In practice, images should be uploaded directly — for now we just note this
-    // and leave it to the menu.
+    // Delegate to the ChatAttachmentMenu's picker, since the upload pipeline isn't reachable from here.
   };
 
   return (

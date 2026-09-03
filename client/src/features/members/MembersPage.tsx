@@ -17,8 +17,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import Promo from '@/components/promo/Promo';
 
-// In-feed promo cadence — once per 6 member cards. Lower than 6 starts to
-// dominate the grid; higher than 8 misses too many users on short pages.
+// One in-feed promo per six member cards, the balance point between dominating the grid and missing short pages.
 const PROMO_EVERY = 6;
 
 type CategoryKey = '' | 'alumni' | 'advisor' | 'senior_advisor';

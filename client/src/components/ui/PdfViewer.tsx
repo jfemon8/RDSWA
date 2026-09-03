@@ -21,12 +21,7 @@ interface PdfViewerProps {
   allowFullscreen?: boolean;
 }
 
-/**
- * Continuous-scroll PDF viewer — all pages stacked vertically, scroll to
- * navigate. Desktop-optimized with keyboard shortcuts, spacious toolbar,
- * page separators, and fit-to-width rendering. Mobile-friendly with
- * pinch-to-zoom and responsive height.
- */
+/** Continuous-scroll PDF viewer stacking every page vertically, with keyboard shortcuts on desktop and pinch-to-zoom on mobile. */
 export default function PdfViewer({ url, fileName, height = 600, allowFullscreen = true }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -168,7 +163,7 @@ export default function PdfViewer({ url, fileName, height = 600, allowFullscreen
   }, [showPageInput]);
 
   // ── Computed dimensions ──
-  // Desktop: use container width minus padding. Zoomed pages can overflow and scroll horizontally.
+  // Desktop uses container width minus padding, letting zoomed pages overflow and scroll horizontally.
   const pageWidth = Math.min(containerWidth - 48, 1200) * scale;
 
   // Height: desktop caps at 70vh so the viewer doesn't push the page content

@@ -13,9 +13,7 @@ import ImageLightbox from '@/components/chat/ImageLightbox';
 import Promo from '@/components/promo/Promo';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-// PdfViewer pulls in `react-pdf` + the worker — lazy-load so the bundle stays
-// small for visitors viewing years that have no PDF attachments. Same pattern
-// used by NoticeDetailPage.
+// Lazy-load PdfViewer so `react-pdf` and its worker stay out of the bundle for years with no PDF attachments.
 const PdfViewer = lazy(() => import('@/components/ui/PdfViewer'));
 
 interface VacationEntry {
@@ -204,8 +202,7 @@ export default function VacationPage() {
 }
 
 function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlight?: boolean }) {
-  // Always render entries in chronological order regardless of how the
-  // admin entered them. Stable sort by start, then end as a tie-breaker.
+  // Sort entries chronologically by start with end as the tie-breaker, whatever order the admin entered them.
   const sortedEntries = useMemo(() => {
     return [...vacation.entries].sort((a, b) => {
       const sa = new Date(a.startDate).getTime();
@@ -394,12 +391,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
   );
 }
 
-/**
- * Ensure the filename ends with a recognisable extension. The proxy uses
- * this as the Content-Disposition filename — without an extension the OS
- * can't open the downloaded file. Falls back to deriving the extension
- * from the URL or the MIME type.
- */
+/** Ensure the filename carries an extension, derived from the URL or MIME type, since the proxy uses it as the download name. */
 function ensureExt(name: string, url: string, type: string): string {
   if (/\.[a-z0-9]{1,8}$/i.test(name)) return name;
   const fromUrl = (url.match(/\.([a-z0-9]{1,8})(?:\?|$)/i) || [])[1];

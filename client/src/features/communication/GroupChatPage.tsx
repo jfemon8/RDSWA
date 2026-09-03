@@ -448,11 +448,7 @@ export default function GroupChatPage() {
     [messages, user?._id],
   );
 
-  // The chat container is already `h-[calc(100dvh-4rem)]` so body scroll is
-  // a non-issue here. Adding a global `overflow-hidden` class on body caused
-  // leaks with AnimatePresence mode="wait": during the exit animation the
-  // cleanup hasn't run yet, so the next page (ChatHub) could briefly mount
-  // while body was still scroll-locked, producing a blank-ish viewport.
+  // No body scroll lock here, since its cleanup lagged AnimatePresence exits and left the next page mounting while still locked.
 
   // ── Render ─────────────────────────────────────────────────────
 
@@ -472,12 +468,7 @@ export default function GroupChatPage() {
   const memberCount = group.members?.length || 0;
 
   return (
-    // Negative margins cancel the DashboardLayout main padding (p-3 sm:p-4 lg:p-6)
-    // so the chat container goes edge-to-edge. The matching calc() widths are
-    // critical: without them, the chat's *computed* width would still be the
-    // parent's content-box width (= main width − padding), so children would
-    // lay out within the smaller box and leave empty space on the right even
-    // though the background extends to the visual edges.
+    // Negative margins cancel the layout padding for an edge-to-edge chat, with matching calc() widths so children fill the visual area.
     <div className="flex flex-col h-[calc(100dvh-4rem)] -m-3 sm:-m-4 lg:-m-6 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2rem)] lg:w-[calc(100%+3rem)] bg-background">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">

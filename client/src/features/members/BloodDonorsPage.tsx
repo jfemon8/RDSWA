@@ -14,13 +14,7 @@ import Promo from '@/components/promo/Promo';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-/**
- * Offline-persistence options applied to every Blood Donors query.
- * Same rationale as in BusSchedulePage — see BUS_OFFLINE_OPTS there.
- * `networkMode: 'offlineFirst'` is required so Workbox can serve cached
- * responses on cold offline launches; default 'online' would abort the
- * fetch before the service worker ever saw it.
- */
+/** Offline-persistence options mirroring BusSchedulePage, where `networkMode: 'offlineFirst'` lets Workbox answer on cold offline launches. */
 const DONORS_OFFLINE_OPTS = {
   meta: { persist: true } as const,
   gcTime: 30 * 24 * 60 * 60 * 1000,

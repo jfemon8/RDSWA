@@ -274,10 +274,7 @@ export default function TopicDetailPage() {
                         </span>
                       </div>
                       {(canEdit || canDelete) && editingReplyId !== reply._id && (
-                        // Mobile (touch): always visible — :hover doesn't work
-                        // reliably on touch. Desktop: hover-revealed to stay
-                        // visually calm. Uses sm: because touch/hover tends
-                        // to correlate with viewport in this app.
+                        // Always visible on small viewports where :hover is unreliable, and hover-revealed above them to stay visually calm.
                         <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
                           {canEdit && (
                             <button

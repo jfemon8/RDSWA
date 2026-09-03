@@ -246,10 +246,7 @@ export class CommitteeService {
     }
   }
 
-  /**
-   * Grant or note Admin role for a user (auto-assignment from committee position).
-   * Also sets isModerator=true so if Admin is later removed, they fall back to Moderator.
-   */
+  /** Grant the Admin role from a committee position, also setting isModerator so removal falls back to Moderator. */
   private async setAutoAdminRole(userId: string, grant: boolean, reason: string): Promise<void> {
     const user = await User.findById(userId);
     if (!user) return;
@@ -285,11 +282,7 @@ export class CommitteeService {
     }
   }
 
-  /**
-   * Transition a user from auto-assigned Admin down to Moderator.
-   * Used when committee archives or President/GS is removed — they become ex-officers
-   * and retain Moderator status.
-   */
+  /** Step an auto-assigned Admin down to Moderator when their committee archives or their post is removed, keeping them as an ex-officer. */
   private async transitionAdminToModerator(userId: string, reason: string): Promise<void> {
     const user = await User.findById(userId);
     if (!user) return;

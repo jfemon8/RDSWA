@@ -9,12 +9,7 @@ export function getSocket(): Socket {
     const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
     socket = io(socketUrl, {
       path: '/socket.io',
-      // Dynamic auth: socket.io invokes this callback on every (re)connect,
-      // so a refreshed access token or a post-login token is picked up
-      // automatically. With a static `auth: { token }` the server would keep
-      // seeing a stale/expired token on reconnects — causing presence to
-      // silently drop the user from `onlineUsers` and making them appear
-      // offline even though they are logged in.
+      // A callback runs on every reconnect so refreshed tokens are picked up, which a static `auth` object would miss and break presence.
       auth: (cb: (data: Record<string, unknown>) => void) => {
         const token = localStorage.getItem('accessToken');
         cb(token ? { token } : {});
@@ -36,11 +31,7 @@ export function disconnectSocket(): void {
   }
 }
 
-/**
- * Hook for real-time notification updates.
- * Listens on the user's personal room for new notifications,
- * invalidates TanStack queries to trigger refetch.
- */
+/** Listen on the user's personal room for notifications and invalidate the matching queries. */
 export function useNotificationSocket(
   onNewNotification?: (notification: any) => void,
 ) {
@@ -66,18 +57,7 @@ export function useNotificationSocket(
   }, [queryClient]);
 }
 
-/**
- * App-wide listener for group-chat activity. Keeps every surface that shows
- * a group list / preview / unread indicator in sync when a group event
- * happens *somewhere else* in the app (e.g. the Messages bell, ChatHubPage,
- * GroupsPage). The server emits `chat:group:activity` to each member's
- * personal room whenever a message is posted / edited / deleted / read, so
- * this listener fires regardless of whether the user currently has that
- * group's chat page open. Complement to `useChatSocket`, which only fires
- * while the user is actively in the group chat room.
- *
- * Mount once at the app root (providers.tsx).
- */
+/** App-wide listener, mounted once at the app root, that keeps every group list and unread badge in sync via each member's personal room. */
 export function useGroupActivitySocket() {
   const queryClient = useQueryClient();
 
@@ -100,11 +80,7 @@ export function useGroupActivitySocket() {
   }, [queryClient]);
 }
 
-/**
- * Hook for real-time chat messages in a group. Listens on all the related
- * events (new message, edit, delete, reaction, read-receipt) and invalidates
- * the group query so consumers just re-read from cache.
- */
+/** Listen to every group chat event and invalidate the group query so consumers re-read from cache. */
 export function useChatSocket(
   groupId: string | undefined,
   onNewMessage?: (message: any) => void,
@@ -219,9 +195,7 @@ export function usePresence(userIds: string[]): { online: Set<string>; lastSeen:
     if (userIds.length === 0) return;
     const s = getSocket();
 
-    // Seed initial state from a presence:query ack. Server returns either a
-    // legacy boolean map or the richer { online, lastSeenAt } shape — handle
-    // both so a server/client version skew doesn't break presence.
+    // Seed from the presence:query ack, accepting both the legacy boolean map and the richer shape so version skew is safe.
     const query = () => {
       s.emit('presence:query', userIds, (states: Record<string, any>) => {
         if (!states || typeof states !== 'object') return;
@@ -274,10 +248,7 @@ export function usePresence(userIds: string[]): { online: Set<string>; lastSeen:
   return { online, lastSeen };
 }
 
-/**
- * Hook for real-time DM updates. Listens on all related events and invalidates
- * the DM query. Also handles edit/delete/reaction/read receipts.
- */
+/** Listen to every DM event, including edits, reactions, and read receipts, and invalidate the DM query. */
 export function useDMSocket(
   partnerId: string | undefined,
   onNewMessage?: (message: any) => void,
@@ -328,10 +299,7 @@ export function useDMSocket(
   }, [partnerId, queryClient]);
 }
 
-/**
- * Hook for real-time bus schedule updates.
- * Auto-invalidates bus queries when admin changes schedules.
- */
+/** Invalidate the bus queries whenever an admin changes a schedule. */
 export function useBusSocket() {
   const queryClient = useQueryClient();
 

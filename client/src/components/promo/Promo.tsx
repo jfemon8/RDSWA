@@ -17,46 +17,19 @@ declare global {
 }
 
 interface PromoProps {
-  /** Which AdSense unit to render. Determines slot ID + format attributes. */
+  /** Which AdSense unit to render, determining the slot ID and format attributes. */
   kind: PromoKind;
   /** Extra classes for the wrapper. Use to control margins, max-width, etc. */
   className?: string;
-  /**
-   * Reserved height (px) until the ad fills, prevents Cumulative Layout
-   * Shift. Pick something close to the ad's typical rendered height for the
-   * placement: sidebar 600, infeed 180, multiplex 280, in-article 250,
-   * displayResponsive 250.
-   */
+  /** Height reserved in px until the ad fills, ideally close to the placement's typical rendered height. */
   minHeight?: number;
-  /**
-   * Optional Google-provided layout key for in-feed units. Generated when
-   * you create the unit in AdSense Console (e.g., '-fb+5w+4e-db+86').
-   */
+  /** Optional Google-provided layout key for in-feed units, generated in the AdSense Console. */
   layoutKey?: string;
   /** Override 'in-article' layout for `kind="inArticle"`. */
   layout?: 'in-article' | 'fluid';
 }
 
-/**
- * Native React wrapper for a single Google AdSense ad unit.
- *
- * Behavior:
- *   - Returns `null` on auth/admin/private-data routes (see promoSlots.ts).
- *   - Returns `null` when env publisher ID or slot ID is unset (e.g., dev
- *     before AdSense approval). Layout space is preserved nowhere — the
- *     parent absorbs the gap so the page looks identical to before.
- *   - Reserves `minHeight` of layout space, so when the ad does fill, no
- *     content jumps. AdSense auto-collapses unfilled slots; we mirror that
- *     by hiding the wrapper if `data-ad-status="unfilled"` lands.
- *   - Animates in with the project's standard fade pattern.
- *
- * Compliance:
- *   - Renders `<ins class="adsbygoogle">` exactly as Google specifies. Do
- *     NOT rename the class or change `adsbygoogle.js` — both are detected
- *     and trigger account-level enforcement.
- *   - Includes a "Sponsored" label per Better Ads / IAB native-ad disclosure
- *     guidelines, which AdSense allows verbatim.
- */
+/** Native React wrapper for one AdSense unit that returns `null` on forbidden routes and reserves `minHeight` so a filled ad shifts nothing. */
 export default function Promo({
   kind,
   className = '',
@@ -70,9 +43,7 @@ export default function Promo({
   const { pathname } = useLocation();
   const { settings } = useSiteSettings();
 
-  // Treat missing/loading settings as enabled so existing deployments keep
-  // showing ads before the first /settings response arrives. The flag is
-  // only respected once it's explicitly `false` in the DB.
+  // Missing or loading settings count as enabled, so the flag only suppresses ads once it is explicitly `false`.
   const adsenseEnabled = settings?.adsenseEnabled !== false;
 
   const allowedHere = isPromoAllowedOnRoute(pathname);
@@ -107,9 +78,7 @@ export default function Promo({
 
   const slot = PROMO_SLOTS[kind];
 
-  // Format attribute mapping. These exactly mirror what Google's "Get code"
-  // snippet generates for each ad-unit type — keep in sync with AdSense
-  // Console output if Google adds new attributes.
+  // Format attributes mirror Google's "Get code" snippet per unit type, so keep them in sync with the AdSense Console.
   const formatProps: Record<string, string> = {
     'data-ad-client': PROMO_CLIENT,
     'data-ad-slot': slot,
@@ -136,8 +105,7 @@ export default function Promo({
       break;
   }
 
-  // Default min-heights chosen to roughly match each unit's typical rendered
-  // size, so reserving space keeps CLS near zero. Caller can override.
+  // Default min-heights roughly match each unit's rendered size to keep layout shift near zero, and callers may override them.
   const reserved =
     minHeight ??
     (kind === 'sidebar'

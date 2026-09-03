@@ -1,21 +1,10 @@
 import { User, RoleAssignment, Notification } from '../models';
 import { UserRole } from '@rdswa/shared';
 
-/**
- * Periodic reconciliation job for the isAlumni flag.
- *
- * Instant tagging happens in UserService.updateProfile on profile save.
- * This job is a safety net that catches any drift — e.g., users whose
- * isAlumni flag is out-of-sync with their current job/business state
- * (edge cases like direct DB writes or pre-save hook failures).
- *
- * It does NOT mutate the user.role field anymore — isAlumni is now
- * a persisted flag computed in the User pre-save hook.
- */
+/** Periodic safety net that reconciles drift in the isAlumni flag, which profile saves already tag instantly and which never touches user.role. */
 export async function runAlumniTagger(): Promise<void> {
   try {
-    // Find approved members who qualify for alumni (current job/business) but isAlumni is false.
-    // Skip users an admin has explicitly revoked — the manual override sticks until admin re-grants.
+    // Find approved members who qualify but aren't tagged, skipping anyone an admin has explicitly revoked.
     const candidates = await User.find({
       isDeleted: false,
       membershipStatus: 'approved',

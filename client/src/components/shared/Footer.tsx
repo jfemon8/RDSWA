@@ -14,10 +14,7 @@ export default function Footer() {
   const fLogo = (theme === 'dark' ? (settings?.footerLogoDark || settings?.footerLogo) : settings?.footerLogo) || fallbackLogo;
   const siteName = settings?.siteName || 'RDSWA';
 
-  // WCAG AA requires 4.5:1 contrast for normal text. text-muted-foreground against
-  // bg-background sits near the 4.5:1 boundary in both themes and fails for links/
-  // small text. Using foreground with opacity guarantees a stronger base colour
-  // while keeping the hover-to-full-opacity affordance.
+  // Foreground with opacity clears the WCAG AA 4.5:1 bar that muted-foreground sits right on, while keeping the hover affordance.
   const linkClass = 'text-foreground/75 hover:text-foreground transition-colors';
   const textClass = 'text-foreground/80';
 

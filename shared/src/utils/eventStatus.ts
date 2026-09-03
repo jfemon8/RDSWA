@@ -29,12 +29,7 @@ export function dhakaStartOfDay(d: Date): Date {
   );
 }
 
-/**
- * Last millisecond of `d`'s calendar day in Asia/Dhaka.
- *
- * Deliberately not `setHours(23,59,59,999)`, which uses the process timezone
- * and made the UTC server and the Dhaka browser disagree by six hours.
- */
+/** Last millisecond of `d`'s calendar day in Asia/Dhaka, avoiding `setHours` whose process timezone made server and browser disagree by six hours. */
 export function dhakaEndOfDay(d: Date): Date {
   return new Date(dhakaStartOfDay(d).getTime() + DAY_MS - 1);
 }

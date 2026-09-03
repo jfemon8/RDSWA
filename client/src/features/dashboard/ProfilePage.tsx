@@ -136,16 +136,7 @@ export default function ProfilePage() {
 
   const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  /**
-   * Blood-group setter with side-effects. The donor checkbox cannot be
-   * checked without a blood group selected (you can't donate an unknown
-   * group), so when the user clears the dropdown we also flip the
-   * `isBloodDonor` flag off — preventing the form from sitting in an
-   * impossible state where the checkbox is true but disabled. We
-   * intentionally LEAVE `lastDonationDate` intact: a user briefly
-   * clearing their group shouldn't lose their real donation history,
-   * and re-selecting a group restores everything as it was.
-   */
+  /** Blood-group setter that also clears `isBloodDonor` when the group is emptied, while deliberately preserving `lastDonationDate`. */
   const setBloodGroup = (value: string) => {
     setForm((prev) => ({
       ...prev,

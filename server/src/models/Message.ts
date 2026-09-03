@@ -1,10 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-/**
- * Attachment types supported on chat messages.
- * Media kinds (image/video/audio/pdf/file) are stored in Cloudinary and auto-expire.
- * Contact is a lightweight inline reference to a user — no file, no expiry.
- */
+/** Chat attachment kinds, where media lives in Cloudinary and auto-expires while a contact is an inline user reference. */
 export type MessageAttachmentKind = 'image' | 'video' | 'audio' | 'pdf' | 'file' | 'contact';
 
 export interface IMessageAttachment {
@@ -41,7 +37,7 @@ export interface IMessageAttachment {
   };
 }
 
-/** Emoji reaction from a single user. One reaction per user per message. */
+/** Emoji reaction from a single user, limited to one per user per message. */
 export interface IMessageReaction {
   user: mongoose.Types.ObjectId;
   emoji: string;
@@ -146,8 +142,7 @@ const messageSchema = new Schema<IMessageDocument>(
     group: { type: Schema.Types.ObjectId, ref: 'ChatGroup' },
     sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     recipient: { type: Schema.Types.ObjectId, ref: 'User' },
-    // Content is optional — a message may have just an attachment.
-    // The route handlers enforce "at least one of content or attachments".
+    // Content is optional since a message may carry only an attachment, with the routes enforcing that one of the two exists.
     content: { type: String, default: '' },
     attachments: { type: [attachmentSchema], default: [] },
     replyTo: { type: replyToSchema, default: undefined },

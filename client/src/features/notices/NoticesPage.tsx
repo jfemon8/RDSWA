@@ -14,8 +14,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import Promo from '@/components/promo/Promo';
 
-// Insert one in-feed promo per N notice cards. Notices are denser/shorter
-// than events so we space them slightly tighter than the event list.
+// One in-feed promo per N notice cards, spaced slightly tighter than events because notices are shorter.
 const PROMO_EVERY = 6;
 
 export default function NoticesPage() {

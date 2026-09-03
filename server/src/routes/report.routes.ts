@@ -323,8 +323,7 @@ router.post('/custom', authenticate(), authorize(UserRole.ADMIN), asyncHandler(a
 }));
 
 // ─── Published Reports (approval workflow) ───
-// Reports can be generated and published by admin. We'll use a lightweight
-// approach: save report snapshots in-memory via a simple collection.
+// Admins generate and publish reports, stored as lightweight snapshots in a simple collection.
 
 // Create a report snapshot for publishing
 router.post('/publish', authenticate(), authorize(UserRole.ADMIN), auditLog('report.publish', 'reports'), asyncHandler(async (req, res) => {

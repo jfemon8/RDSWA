@@ -1,21 +1,5 @@
 #!/usr/bin/env node
-/**
- * Regenerates PWA / APK icon variants from the canonical source logo.
- *
- *   Source:  client/public/icons/source-logo.png
- *   Outputs: client/public/icons/icon-192x192.png
- *            client/public/icons/icon-512x512.png
- *            client/public/icons/icon-maskable-512x512.png
- *            client/public/icons/favicon-32x32.png
- *            client/public/icons/apple-touch-icon.png   (180x180)
- *
- * Run after replacing the source logo:
- *   npm run generate:icons --workspace=client
- *
- * Maskable icons need a safe zone: Android adaptive icons clip to a circle
- * or squircle, so all meaningful content must sit inside the inner 80%.
- * We pad the logo down to 80% on a solid background so nothing is cropped.
- */
+/** Regenerates every PWA and APK icon variant from source-logo.png via `npm run generate:icons --workspace=client`, padding maskable output to the inner 80% safe zone. */
 import sharp from 'sharp';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

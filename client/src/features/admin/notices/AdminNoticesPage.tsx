@@ -57,11 +57,7 @@ export default function AdminNoticesPage() {
     },
   });
 
-  /**
-   * Build the notice payload explicitly. We pick each field by name (rather
-   * than spreading `form`) so any future extra UI-only state can't leak into
-   * the request body and trip the backend validator.
-   */
+  /** Build the payload by naming each field, so UI-only state can never leak into the request body. */
   const buildPayload = () => {
     const attachments = form.attachment
       ? [{
@@ -146,10 +142,7 @@ export default function AdminNoticesPage() {
 
   const startEdit = (n: any) => {
     setEditId(n._id);
-    // Notices can have at most one attachment — pull the first if present.
-    // Older notices may store attachments without the `type` field; default
-    // those to a sensible MIME based on the URL extension so the server-side
-    // validator (which requires a non-empty type string) accepts them.
+    // Take the single allowed attachment, inferring a MIME from the URL for older records the validator would otherwise reject.
     const first = Array.isArray(n.attachments) && n.attachments.length > 0 ? n.attachments[0] : null;
     const attachment = first
       ? {
@@ -158,9 +151,7 @@ export default function AdminNoticesPage() {
           type: first.type || (/(\.pdf)(\?|$)/i.test(first.url || '') ? 'application/pdf' : 'application/octet-stream'),
         }
       : null;
-    // Validator only allows status='draft' or 'published' on update — clamp
-    // 'archived' (or anything else) to 'draft' so editing an archived notice
-    // doesn't blow up. Use the dedicated archive button to set archived state.
+    // Clamp any other status to 'draft' on update, since archiving has its own dedicated button.
     const safeStatus: 'draft' | 'published' = n.status === 'published' ? 'published' : 'draft';
     setForm({
       title: n.title || '',

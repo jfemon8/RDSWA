@@ -82,11 +82,7 @@ export class NoticeService {
   }
 
   async update(id: string, data: any, userId: string, isAdmin: boolean): Promise<INoticeDocument> {
-    // Load just the auth-relevant fields. We deliberately avoid touching the
-    // full document instance via Object.assign because legacy notices may
-    // have malformed values stored under `attachments` (e.g. stringified
-    // inspect output from an older bug) which causes Mongoose CastError on
-    // .save() — even though the new payload is perfectly valid.
+    // Load only the auth-relevant fields, since hydrating legacy notices with malformed `attachments` throws a CastError on save.
     const existing = await Notice.findOne({ _id: id, isDeleted: false }).select('createdBy publishedAt');
     if (!existing) throw ApiError.notFound('Notice not found');
 

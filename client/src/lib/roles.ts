@@ -13,20 +13,7 @@ const ROLE_CONFIG: Record<string, { label: string; bg: string; text: string }> =
   [UserRole.GUEST]: { label: 'Guest', bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-500 dark:text-gray-400' },
 };
 
-/**
- * Display config for a role string.
- *
- * SECURITY NOTE: `super_admin` is intentionally collapsed to the same
- * label + styling as `admin` here. The role itself stays valid for every
- * access check (`hasMinRole`, RBAC middleware, route guards) — but it's
- * hidden in the UI so the existence of the SuperAdmin tier isn't
- * advertised. Any badge / role chip rendered through this helper will
- * therefore show "Admin" for a SuperAdmin user.
- *
- * To distinguish tiers internally (e.g., for conditional admin actions),
- * call `hasMinRole(role, UserRole.SUPER_ADMIN)` directly — that compares
- * raw values and is unaffected by this display masking.
- */
+/** Display config that deliberately renders `super_admin` as "Admin" to hide the tier, so real checks must call `hasMinRole` on raw values instead. */
 export function getRoleConfig(role: string) {
   if (role === UserRole.SUPER_ADMIN) return ROLE_CONFIG[UserRole.ADMIN];
   return ROLE_CONFIG[role] || { label: role.replace('_', ' '), bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-700 dark:text-gray-400' };
@@ -37,12 +24,7 @@ export function getPrimaryRoleLabel(role: string): string {
   return getRoleConfig(role).label;
 }
 
-/**
- * Get all effective tier-level roles for a user based on hierarchy.
- * A SuperAdmin effectively holds all lower tiers; an Admin holds admin, moderator, member.
- * Skips guest/user for anyone member+. Excludes tag roles (alumni/advisor/senior_advisor)
- * — those render separately from the persisted isAlumni/isAdvisor/isSeniorAdvisor flags.
- */
+/** Every tier a user effectively holds, skipping guest and user for members and excluding the tag roles rendered from their own flags. */
 export function getEffectiveRoles(role: string): string[] {
   const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
   if (idx < 0) return [role];

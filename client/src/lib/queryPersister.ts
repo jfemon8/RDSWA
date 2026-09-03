@@ -1,31 +1,9 @@
-/**
- * IndexedDB-backed persistence for TanStack Query results.
- *
- * Why this exists:
- *   Workbox caches raw HTTP responses in Cache Storage — good, but not enough
- *   for a truly offline-first experience. TanStack Query holds *parsed*
- *   results + pagination cursors + filter-state keyed by queryKey; on a cold
- *   start (RAM cleared, app relaunched), an empty TanStack cache would still
- *   trigger a network request, and while the SW would answer that request
- *   from its own cache, we rely on Workbox's cache being alive.
- *
- *   Persisting TanStack state gives us a **second independent offline layer**
- *   that restores query state instantly on mount, before any fetch is even
- *   attempted. If Workbox evicts a response due to quota pressure, TanStack
- *   persistence still has the parsed result.
- *
- * Scope:
- *   Only queries with `meta: { persist: true }` are dehydrated. This keeps
- *   the persistent bundle small — we don't want to persist every query in
- *   the app, only the ones the user explicitly needs offline (bus schedule,
- *   blood donors, supporting settings/config).
- */
+/** IndexedDB persistence for queries marked `meta: { persist: true }`, giving a second offline layer that survives Workbox cache eviction. */
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import type { QueryClient } from '@tanstack/react-query';
 import { get, set, del, createStore } from 'idb-keyval';
 
-// Persister-compatible async-storage shape. The library's AsyncStorage type
-// isn't publicly exported, so we define the minimal surface it accepts.
+// Minimal async-storage surface, since the library's AsyncStorage type isn't publicly exported.
 interface AsyncStorageLike {
   getItem: (key: string) => Promise<string | null>;
   setItem: (key: string, value: string) => Promise<void>;
@@ -54,11 +32,7 @@ export const queryPersister = createAsyncStoragePersister({
   throttleTime: 1000,
 });
 
-/**
- * Filters passed to PersistQueryClient — only queries explicitly marked with
- * `meta: { persist: true }` are persisted. Everything else (auth profile,
- * notifications, admin pages, etc.) stays in memory only.
- */
+/** Filters for PersistQueryClient so only queries marked `meta: { persist: true }` leave memory. */
 export const persistOptions = {
   persister: queryPersister,
   maxAge: THIRTY_DAYS_MS,
@@ -73,12 +47,7 @@ export const persistOptions = {
   },
 };
 
-/**
- * Call this once on app start to request persistent storage from the browser.
- * When granted, the OS will not auto-evict our IDB / Cache Storage under
- * low-disk pressure. Granted silently for installed PWAs / TWAs; may be
- * denied in plain browser tabs (harmless — eviction still follows LRU).
- */
+/** Request persistent storage once at app start, which installed PWAs get silently and plain tabs may harmlessly refuse. */
 export async function requestPersistentStorage(): Promise<void> {
   if (typeof navigator === 'undefined' || !navigator.storage?.persist) return;
   try {

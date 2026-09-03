@@ -1,25 +1,4 @@
-/**
- * One-off seed for the Barishal University Cut-off Mark (Session 2024-25)
- * — Social Sciences + Business Studies faculty rows.
- *
- * The other faculties were inserted manually via the admin UI; this script
- * just covers the bottom half of the cut-off chart so we don't retype 30
- * (department × unit) entries.
- *
- * Behavior:
- *   - Auto-detects faculty names from SiteSettings.academicConfig so the
- *     stored strings stay consistent with the rest of the platform (e.g.,
- *     "Faculty of Social Science" vs "Social Sciences"). Falls back to the
- *     image's plain-English names if no match is found.
- *   - Uses bulkWrite with upserts keyed on (session, faculty, department,
- *     unit), so re-running the script is safe — existing rows are updated
- *     in place rather than duplicated.
- *   - Empty cells in the source image stay `undefined` (Sociology B-unit
- *     1st-position has no Score in the chart, for example).
- *
- * Run with:
- *   npm run seed:cutoff-2024-social-business --workspace=server
- */
+/** One-off idempotent seed for the 2024-25 Social Sciences and Business Studies cut-off rows, run with `npm run seed:cutoff-2024-social-business --workspace=server`. */
 
 import mongoose from 'mongoose';
 import { connectDB } from '../config/db';
@@ -138,14 +117,7 @@ const BUSINESS_STUDIES: DeptInput[] = [
   },
 ];
 
-/**
- * Match a faculty by keyword against the live academicConfig. Picks the
- * first faculty whose name contains the keyword (case-insensitive). Falls
- * back to a sensible default if academicConfig is missing or doesn't list
- * the faculty yet — the cut-off model only stores strings, so an unmatched
- * faculty still inserts cleanly; it just won't appear under the Faculty
- * dropdown when an admin edits the row.
- */
+/** Match a faculty by case-insensitive keyword against the live academicConfig, falling back to a default when nothing matches. */
 function findFaculty(facultiesInConfig: Array<{ name: string }>, keyword: string, fallback: string): string {
   const re = new RegExp(keyword, 'i');
   const match = facultiesInConfig.find((f) => re.test(f.name));
@@ -177,9 +149,7 @@ async function main() {
     console.log(`[seed-cutoff] Social Sciences faculty → "${socialFaculty}"`);
     console.log(`[seed-cutoff] Business Studies faculty → "${businessFaculty}"`);
 
-    // Flatten the structured data into one bulkWrite op per (session,
-    // faculty, department, unit). Upsert by the unique compound key so
-    // re-runs update in place instead of erroring on duplicate.
+    // Flatten into one upsert per compound key, so re-runs update in place rather than erroring on duplicates.
     type BulkOp = Parameters<typeof AdmissionCutoff.bulkWrite>[0][number];
     const ops: BulkOp[] = [];
     const queue = (faculty: string, depts: DeptInput[]) => {

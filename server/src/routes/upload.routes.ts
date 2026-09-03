@@ -63,11 +63,7 @@ const docUpload = multer({
 }).single('file');
 
 // ── Chat media upload ──
-// Accepts image/video/audio/pdf/generic files for chat.
-// - Video: up to 50 MB
-// - Everything else (image / audio / pdf / file): up to 10 MB
-// Multer's hard limit is set to the largest allowed (50 MB); the route handler
-// re-validates the per-kind cap after derive once the MIME is known.
+// Video may reach 50 MB and everything else 10 MB, so multer caps at 50 MB and the route re-validates per kind.
 const CHAT_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 const CHAT_OTHER_MAX_BYTES = 10 * 1024 * 1024;
 const chatMediaFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -97,13 +93,7 @@ interface UploadOptions {
   folder: string;
   resourceType?: 'image' | 'video' | 'raw' | 'auto';
   transformation?: Record<string, any>[];
-  /**
-   * Original filename — when provided, Cloudinary uses it as the public_id
-   * base via use_filename + unique_filename. Critical for raw uploads (PDF,
-   * Word, Excel) so the delivered URL ends with the proper extension —
-   * without this, raw URLs are opaque hashes and browsers can't infer the
-   * MIME type, causing PDFs to download as binary blobs.
-   */
+  /** Original filename used as the Cloudinary public_id base, so raw URLs keep a real extension instead of an opaque hash. */
   originalName?: string;
 }
 
@@ -126,8 +116,7 @@ function uploadToCloudinary(
       uploadOpts.unique_filename = true;
     }
 
-    // Only apply image-optimization transforms for `image` resource type.
-    // Video/raw uploads should pass through untouched.
+    // Only image resources get optimization transforms, video and raw pass through untouched.
     if (uploadOpts.resource_type === 'image') {
       const transforms = options.transformation ? [...options.transformation] : [];
       transforms.push({
@@ -139,9 +128,7 @@ function uploadToCloudinary(
       uploadOpts.transformation = options.transformation;
     }
 
-    // Chunked upload for any file >1MB. Chunked is more reliable on slow
-    // connections (the original 10MB threshold left medium PDFs vulnerable
-    // to single-shot timeout failures).
+    // Chunk anything over 1MB, since single-shot uploads time out on slow connections.
     if (buffer.length > 1 * 1024 * 1024) {
       uploadOpts.chunk_size = 6 * 1024 * 1024;
     }
@@ -168,15 +155,7 @@ function uploadToCloudinary(
   });
 }
 
-/**
- * Canonical "extension for a given MIME type" lookup. Used by `ensureExtension`
- * below so files uploaded with extension-less names (e.g. "report" or a phone
- * camera dump like "IMG_20251023") get a sensible extension appended before
- * we hand the name to Cloudinary and store it in the DB. Without this, raw
- * Cloudinary URLs come back without a `.pdf` / `.docx` suffix and browsers
- * can't infer the MIME — PDFs download as opaque hashes, Word docs lose
- * their app association, etc.
- */
+/** Canonical extension per MIME type, so extension-less uploads still get a suffix Cloudinary and browsers can use. */
 const EXT_BY_MIME: Record<string, string> = {
   'application/pdf': 'pdf',
   'application/msword': 'doc',
@@ -206,14 +185,7 @@ const EXT_BY_MIME: Record<string, string> = {
   'video/quicktime': 'mov',
 };
 
-/**
- * If `filename` already ends in a sane extension (last segment after `.` is
- * 1–8 alphanumeric chars), leave it alone — we trust whatever the user typed.
- * Otherwise look up the canonical extension for the file's actual MIME type
- * and append it. Falls back to the sanitized MIME subtype (e.g. octet-stream
- * → "octetstream") if the MIME isn't in our table, and to the original
- * filename if we can't derive anything useful.
- */
+/** Keep an existing sane extension, otherwise append the canonical one for the file's MIME type. */
 function ensureExtension(filename: string, mimeType: string): string {
   if (!filename) return filename;
   // Strip a trailing dot ("name.") so "name." + "pdf" becomes "name.pdf",
@@ -235,14 +207,7 @@ function ensureExtension(filename: string, mimeType: string): string {
   return `${trimmed}.${ext}`;
 }
 
-/**
- * Best-effort MIME detection from a buffer's leading bytes. Used by the
- * upload proxy as a last-resort signal for legacy files where the URL has
- * no extension AND the upstream returns `application/octet-stream` (which
- * is what Cloudinary's "raw" resource type does — it never advertises a
- * specific Content-Type for raw uploads). Covers the common formats this
- * platform actually stores; falls back to `null` for anything unknown.
- */
+/** Best-effort MIME detection from a buffer's leading bytes, for legacy files whose URL and Content-Type say nothing. */
 function sniffMagic(buf: Buffer): string | null {
   if (!buf || buf.length < 4) return null;
   // PDF — `%PDF`
@@ -323,8 +288,7 @@ function handleMulter(upload: any, maxSizeLabel: string) {
 }
 
 // ──────────────────────────────────────────────
-// POST /upload/avatar — Profile picture (2MB max)
-// Optimized: auto-crop to 256x256, auto format/quality
+// POST /upload/avatar — profile picture, 2MB max, auto-cropped to 256x256.
 // ──────────────────────────────────────────────
 router.post('/avatar', authenticate(), handleMulter(avatarUpload, '2MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -344,8 +308,7 @@ router.post('/avatar', authenticate(), handleMulter(avatarUpload, '2MB'), asyncH
 }));
 
 // ──────────────────────────────────────────────
-// POST /upload/image — General image (5MB max)
-// Optimized: max 1920px width, auto format/quality
+// POST /upload/image — general image, 5MB max, capped at 1920px wide.
 // ──────────────────────────────────────────────
 router.post('/image', authenticate(), handleMulter(imageUpload, '5MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -368,23 +331,19 @@ router.post('/image', authenticate(), handleMulter(imageUpload, '5MB'), asyncHan
 }));
 
 // ──────────────────────────────────────────────
-// POST /upload/document — Document/file (10MB max)
-// No image transforms, uploaded as raw resource
+// POST /upload/document — document or file, 10MB max, stored as a raw resource.
 // ──────────────────────────────────────────────
 router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
   if (!req.file) throw ApiError.badRequest('No file provided');
 
   const isImage = req.file.mimetype.startsWith('image/');
-  // Append the canonical extension if the caller provided a bare name like
-  // "report" so the Cloudinary URL ends with ".pdf"/".docx" and the DB-stored
-  // filename downloads cleanly.
+  // Append the canonical extension for bare names like "report" so the URL and stored filename stay usable.
   const filename = ensureExtension(decodeMultipartFilename(req.file.originalname), req.file.mimetype);
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'documents',
     resourceType: isImage ? 'image' : 'raw',
-    // Pass originalName for raw uploads so URL keeps the file extension
-    // (e.g. report.pdf instead of an opaque hash).
+    // Pass originalName for raw uploads so the URL keeps the file extension.
     originalName: isImage ? undefined : filename,
   });
 
@@ -398,11 +357,7 @@ router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncH
 }));
 
 // ──────────────────────────────────────────────
-// POST /upload/chat-media — Chat attachments (100 MB max)
-// Routes video/audio → Cloudinary 'video' resource_type,
-//   image → 'image', pdf/other → 'raw'.
-// The caller receives the full attachment payload ready to
-// drop into the message's attachments[] array.
+// POST /upload/chat-media — chat attachments, routed to the matching Cloudinary resource type and returned ready for attachments[].
 // ──────────────────────────────────────────────
 router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -410,24 +365,17 @@ router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB')
 
   const { kind, resourceType } = deriveChatKind(req.file.mimetype);
 
-  // Per-kind size enforcement: only video gets the 50 MB cap; everything else
-  // is capped at 10 MB. Multer already rejected anything > 50 MB.
+  // Only video gets the 50 MB cap, since multer already rejected anything larger.
   if (kind !== 'video' && req.file.size > CHAT_OTHER_MAX_BYTES) {
     throw ApiError.badRequest(`File too large. ${kind} attachments are limited to 10 MB.`);
   }
 
-  // Same auto-extension treatment as documents — chat raws (PDF, zips,
-  // generic files) need a real extension on the URL so the client can render
-  // them; for media (image/video/audio) Cloudinary already manages the
-  // extension via the resource pipeline, but appending one to the stored
-  // `name` keeps the download dialog showing a sensible filename either way.
+  // Same auto-extension treatment as documents, so raw chat files download with a sensible name.
   const filename = ensureExtension(decodeMultipartFilename(req.file.originalname), req.file.mimetype);
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'chat',
     resourceType,
-    // Raw uploads (PDF + generic files) need use_filename so the delivered
-    // URL ends with the original extension. Without this, browsers download
-    // PDFs as opaque binary blobs with hash filenames.
+    // Raw uploads need use_filename so the delivered URL keeps the original extension.
     originalName: resourceType === 'raw' ? filename : undefined,
   });
 
@@ -446,15 +394,7 @@ router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB')
 }));
 
 // ──────────────────────────────────────────────
-// GET /upload/proxy — Proxy a Cloudinary file with proper headers
-//
-// Cloudinary serves `raw` resources with Content-Type: application/octet-stream
-// regardless of the actual file type. This forces browsers to download files
-// as opaque binary blobs (e.g. PDFs become unnamed hash files instead of
-// previewing inline). The proxy refetches the file and re-serves it with the
-// correct Content-Type and filename, enabling inline preview and proper
-// downloads for any attachment kind.
-//
+// GET /upload/proxy — re-serve a Cloudinary file with the right Content-Type so raw PDFs preview instead of downloading as blobs.
 // Query: ?url=<cloudinaryUrl>&name=<filename>&inline=true|false
 // ──────────────────────────────────────────────
 const MIME_BY_EXT: Record<string, string> = {
@@ -502,9 +442,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Cloudinary URL belongs to a different cloud');
   }
 
-  // First-pass MIME guess from the URL extension. May be empty for legacy
-  // raw uploads that were stored without an extension (the proxy then
-  // falls back to upstream Content-Type and magic-byte sniffing below).
+  // First-pass MIME guess from the URL extension, which may be empty for legacy raw uploads.
   const pathname = parsed.pathname.toLowerCase();
   const extMatch = pathname.match(/\.([a-z0-9]{1,8})(?:$|\?)/);
   const urlExt = extMatch?.[1] || '';
@@ -514,10 +452,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
   const lastSeg = decodeURIComponent(parsed.pathname.split('/').pop() || 'download');
   const initialFilename = downloadName || lastSeg;
 
-  // Fetch upstream and pipe through, but buffer the first few bytes first
-  // so we can sniff the file type when neither the URL nor the upstream
-  // tells us what we're serving. The whole flow is wrapped in a Promise so
-  // asyncHandler still owns the response lifecycle.
+  // Buffer the first bytes before piping so the file type can be sniffed when nothing else declares it.
   await new Promise<void>((resolve, reject) => {
     const httpsReq = https.get(rawUrl, (upstream) => {
       if (!upstream.statusCode || upstream.statusCode >= 400) {
@@ -531,10 +466,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
         .trim()
         .toLowerCase();
 
-      // We buffer up to SNIFF_LEN bytes from upstream before flushing
-      // response headers — that's the maximum we need for the magic-byte
-      // checks (WebP / WAV need 12 bytes; MP4 needs 12; everything else
-      // less). Stream resumes piping normally once headers are out.
+      // SNIFF_LEN bytes is the most any magic-byte check needs, and piping resumes once headers are out.
       const SNIFF_LEN = 16;
       let buffered = Buffer.alloc(0);
       let headersSent = false;
@@ -543,9 +475,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
         if (headersSent) return;
         headersSent = true;
 
-        // Resolve MIME: URL extension → upstream header → magic-byte sniff.
-        // Octet-stream is treated as "unknown" since Cloudinary returns it
-        // for every raw upload regardless of the actual format.
+        // Resolve MIME by URL extension, then upstream header, then magic bytes, treating octet-stream as unknown.
         let finalMime = mimeFromUrl;
         const isUnknown = (m: string) =>
           !m || m === 'application/octet-stream' || m === 'binary/octet-stream';
@@ -558,11 +488,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
         }
         if (!finalMime) finalMime = 'application/octet-stream';
 
-        // Auto-append the canonical extension to the served filename when
-        // the stored name didn't have one (e.g. legacy raw uploads named
-        // "report" with no extension). Modern browsers honour `filename*`
-        // for the Unicode form, so the user-visible download still gets a
-        // proper `report.pdf` / `photo.jpg` after the helper runs.
+        // Append the canonical extension when the stored name lacks one, since browsers honour the Unicode filename*.
         const finalFilename = ensureExtension(initialFilename, finalMime);
 
         res.setHeader('Content-Type', finalMime);
@@ -570,10 +496,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
           res.setHeader('Content-Length', upstream.headers['content-length']);
         }
         const disposition = inline ? 'inline' : 'attachment';
-        // Latin-1-safe fallback for the legacy `filename="..."` token —
-        // Node rejects non-ISO-8859-1 chars in header values, so any
-        // Bengali / emoji / control bytes get replaced with `_` here while
-        // `filename*=UTF-8''…` carries the full unicode original.
+        // Node rejects non-Latin-1 header bytes, so this ASCII fallback pairs with the full Unicode filename*.
         const asciiFallback =
           finalFilename
             .replace(/[^\x20-\x7E]/g, '_')

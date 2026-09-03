@@ -1,16 +1,7 @@
 import { env } from '../config/env';
 import { SiteSettings } from '../models';
 
-/**
- * `CLIENT_URL` is a comma-separated CORS allowlist (e.g.
- * `"https://rdswa.vercel.app,https://rdswa.info.bd,https://www.rdswa.info.bd"`).
- * For email links we need ONE concrete URL, not the joined string.
- *
- * Returns the first entry (the "primary" deployment URL — typically the
- * Vercel one, useful for the CTA button) and the last entry (the canonical
- * custom-domain URL — used as a plaintext fallback link). When only one
- * URL is configured both helpers return the same value.
- */
+/** Split the comma-separated `CLIENT_URL` allowlist into one primary URL for the CTA button and one canonical URL for the plaintext fallback. */
 function splitClientUrls(): string[] {
   return (env.CLIENT_URL || '')
     .split(',')
@@ -50,11 +41,7 @@ interface Branding {
 let brandingCache: { data: Branding; at: number } | null = null;
 const BRANDING_TTL = 5 * 60 * 1000;
 
-/**
- * Pull the association's identity from SiteSettings for the email footer.
- * Falls back to sensible defaults so an email still renders fully even if
- * the settings document is missing or the DB read fails.
- */
+/** Pull the association's identity for the email footer, falling back to defaults if the settings read fails. */
 async function getBranding(): Promise<Branding> {
   if (brandingCache && Date.now() - brandingCache.at < BRANDING_TTL) {
     return brandingCache.data;
@@ -92,33 +79,19 @@ interface EmailLayoutOptions {
   greeting?: string;
   /** Body paragraphs — already escaped/safe HTML or plain strings. */
   intro?: string | string[];
-  /** Primary CTA button. If omitted, the layout still renders cleanly. */
+  /** Primary CTA button, which the layout renders cleanly without. */
   cta?: { label: string; url: string };
   /** Plaintext fallback link shown after "or," — recipients can copy/paste. */
   fallbackUrl?: string;
   /** Highlighted code block (used for OTPs etc.). */
   code?: string;
-  /**
-   * Raw HTML injected into the body, after `intro`/`code` and before the CTA.
-   * For rich content the structured options can't express: digest cards,
-   * donation receipts, contact-detail tables. The CALLER is responsible for
-   * escaping anything user-supplied inside this string.
-   */
+  /** Raw HTML injected between `intro` and the CTA, which the caller must escape if it contains user-supplied content. */
   bodyHtml?: string;
   /** Footer note (e.g. "If you didn't request this, ignore this email."). */
   footerNote?: string;
 }
 
-/**
- * Build a self-contained HTML email with inline styles. Email clients
- * routinely strip `<style>` tags and don't load external CSS, so every
- * style declaration here is inline; layout uses tables for Outlook safety.
- *
- * Async because the footer (association name / address / contact / website)
- * is pulled live from SiteSettings — every transactional email, digest,
- * contact reply, bulk message and receipt funnels through this one layout
- * so branding stays consistent and updates centrally.
- */
+/** Build a self-contained HTML email with inline styles and table layout, reading the footer identity live from SiteSettings. */
 export async function renderEmailLayout(opts: EmailLayoutOptions): Promise<string> {
   const {
     heading,

@@ -63,10 +63,7 @@ async function htmlToPdf(container: HTMLElement, filename: string, orientation: 
   doc.save(`${filename}.pdf`);
 }
 
-/**
- * Build styled HTML table from CSV, render offscreen, capture as PDF.
- * Supports Bangla/Unicode text perfectly since it uses browser font rendering.
- */
+/** Render CSV as a styled offscreen HTML table captured to PDF, which preserves Bangla through browser font rendering. */
 export async function downloadTablePdf(csv: string, title: string, filename: string, siteName = 'RDSWA', siteNameFull = ''): Promise<void> {
   const { headers, rows } = parseCsv(csv);
 
@@ -123,9 +120,7 @@ export async function downloadTablePdf(csv: string, title: string, filename: str
   }
 }
 
-/**
- * Download donation receipt HTML as PDF. Supports Bangla/Unicode.
- */
+/** Download a donation receipt as PDF, with Bangla and Unicode preserved. */
 export async function downloadHtmlPdf(html: string, filename: string): Promise<void> {
   const container = document.createElement('div');
   container.style.position = 'fixed';

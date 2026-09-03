@@ -1,15 +1,4 @@
-/**
- * Normalizes notification `link` values before navigation.
- *
- * Historically some server code stored links with the API-path prefix
- * (e.g. `/communication/groups/:id`) instead of the React Router client
- * path (`/dashboard/groups/:id`). Those stored notifications survive in
- * the database until their 90-day TTL expires, so users would hit 404
- * screens when clicking notifications created before the server fix.
- *
- * This helper rewrites known stale prefixes at click time. Adding another
- * mapping is a one-line change if the same class of issue recurs.
- */
+/** Rewrites stale API-path prefixes in notification links at click time, so records stored before the server fix don't 404. */
 
 const REWRITES: ReadonlyArray<readonly [string, string]> = [
   ['/communication/groups/', '/dashboard/groups/'],

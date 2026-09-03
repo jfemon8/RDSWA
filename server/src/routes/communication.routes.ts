@@ -54,11 +54,7 @@ function isWithin(windowMs: number, sentAt: Date): boolean {
   return Date.now() - sentAt.getTime() <= windowMs;
 }
 
-/**
- * Delete a message's attached files from Cloudinary immediately.
- * Used when a message is hard-deleted (delete-for-everyone) before its
- * normal retention window has elapsed, so we don't pay for stale storage.
- */
+/** Delete a message's attached Cloudinary files immediately when it is hard-deleted, so stale storage isn't billed. */
 async function purgeMessageAttachments(message: { attachments: any[] }): Promise<void> {
   const { cloudinary } = await import('../config/cloudinary');
   for (const att of message.attachments || []) {
@@ -77,20 +73,8 @@ async function purgeMessageAttachments(message: { attachments: any[] }): Promise
   }
 }
 
-/**
- * Validate and normalize the client-supplied attachments[] array for a new message.
- * - Drops unknown kinds
- * - Stamps expiresAt on media attachments based on the retention policy
- * - Contact attachments are passed through without expiry
- * - Returns a clean array ready to assign to Message.attachments
- *
- * Does NOT enforce "at least one of content/attachments" — the caller does that.
- */
-/**
- * Build a denormalized reply snapshot from a replyToId.
- * Loads just enough of the parent message to render a quoted preview without
- * a second round trip.
- */
+/** Validate and normalize a new message's attachments[], dropping unknown kinds and stamping expiresAt on media only. */
+/** Build a denormalized reply snapshot so a quoted preview renders without a second round trip. */
 async function buildReplySnapshot(replyToId: unknown): Promise<any | undefined> {
   if (typeof replyToId !== 'string') return undefined;
   const parent = await Message.findOne({ _id: replyToId, isDeleted: false })
@@ -109,7 +93,7 @@ async function buildReplySnapshot(replyToId: unknown): Promise<any | undefined> 
   };
 }
 
-/** Allowed emoji reaction set. Anything else is rejected. */
+/** Allowed emoji reaction set, with anything else rejected. */
 const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉']);
 
 function buildAttachments(raw: any): any[] {
@@ -177,10 +161,7 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
     return ApiResponse.success(res, []);
   }
 
-  // Compute unread count per group in a single aggregation. A message counts
-  // as unread for the current user when they didn't send it and their id is
-  // not in the message's readBy list. `deletedFor` excludes messages the
-  // user has hidden from their own view.
+  // One aggregation per group, where a message is unread if the user didn't send it, isn't in readBy, and hasn't hidden it via deletedFor.
   const groupIds = groups.map((g: any) => g._id);
   const unreadAgg = await Message.aggregate([
     {
@@ -206,10 +187,7 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, result);
 }));
 
-// Create custom group (Moderator+). Always creates type='custom' — central and department
-// groups are system-managed and cannot be created via this endpoint.
-// Auto-seeds all Admin/SuperAdmin as members+admins so they can manage the group.
-// The creator is recorded so they can manage members alongside admins.
+// Create a custom group (Moderator+), auto-seeding every Admin/SuperAdmin plus the creator as members and admins.
 router.post('/groups', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { name, description, avatar, members: extraMembers } = req.body;
@@ -263,8 +241,7 @@ router.get('/groups/browse', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, result);
 }));
 
-// Get group with recent messages. Supports cursor pagination via ?before=ISO.
-// Admin+ can access any group.
+// Get a group with recent messages, cursor-paginated via ?before=ISO and open to Admin+ for any group.
 router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -379,8 +356,7 @@ router.patch('/groups/:id/mute', authenticate(), asyncHandler(async (req, res) =
   ApiResponse.success(res, { isMuted: !!mute }, mute ? 'Muted' : 'Unmuted');
 }));
 
-// Mark a batch of group messages as read by the current user.
-// Clients call this when the chat window is focused and messages are visible.
+// Mark a batch of group messages read, called when the chat window is focused.
 router.post('/groups/:id/messages/read', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -446,17 +422,14 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   group.updatedAt = new Date();
   await group.save();
 
-  // Real-time broadcast to the group room (for users actively viewing it)
-  // AND to each member's user room (for chat-list / bell badge updates
-  // across the app when they don't have the group open).
+  // Broadcast to the group room for active viewers and to each member's user room for chat-list and bell badges.
   broadcastChatMessage(id, message);
   broadcastGroupActivity(id, 'message', group.members as any);
 
   ApiResponse.created(res, message);
 }));
 
-// Toggle a reaction on a group message. Each user has one slot — sending the
-// same emoji twice removes it; sending a different emoji replaces.
+// Toggle a reaction, where each user has one slot so the same emoji removes it and a different one replaces it.
 router.post('/groups/:id/messages/:messageId/react', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { id, messageId } = req.params;
@@ -502,7 +475,7 @@ router.post('/groups/:id/messages/:messageId/react', authenticate(), asyncHandle
   ApiResponse.success(res, { reactions: reactionsPayload });
 }));
 
-// Toggle pin on a group message. Admin+ or group creator only.
+// Toggle pin on a group message, restricted to Admin+ or the group creator.
 router.post('/groups/:id/messages/:messageId/pin', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { id, messageId } = req.params;
@@ -656,7 +629,7 @@ router.post('/messages/:messageId/forward', authenticate(), asyncHandler(async (
   ApiResponse.success(res, { count: created.length }, `Forwarded to ${created.length} chat${created.length === 1 ? '' : 's'}`);
 }));
 
-// Edit message — sender only, within EDIT_WINDOW. Admins bypass the time window for moderation.
+// Edit a message within EDIT_WINDOW for the sender, which admins bypass for moderation.
 router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -688,8 +661,7 @@ router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(asy
   ApiResponse.success(res, message, 'Message updated');
 }));
 
-// Delete message for everyone — sender within DELETE_EVERYONE_WINDOW, or Admin+ any time.
-// Also immediately purges any attached files from Cloudinary so we don't pay for stale storage.
+// Delete for everyone within DELETE_EVERYONE_WINDOW (any time for Admin+), also purging attached Cloudinary files.
 router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -714,8 +686,7 @@ router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(as
   ApiResponse.success(res, null, 'Message deleted');
 }));
 
-// Delete message just for the current user — any participant, within DELETE_FOR_ME_WINDOW.
-// The message remains visible to everyone else; only the requesting user no longer sees it.
+// Delete a message for the current user only, within DELETE_FOR_ME_WINDOW, leaving it visible to everyone else.
 router.delete('/groups/:id/messages/:messageId/me', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -786,8 +757,7 @@ router.delete('/groups/:id/members/:userId', authenticate(), asyncHandler(async 
   ApiResponse.success(res, null, 'User removed from group');
 }));
 
-// User leaves a group themselves. Only allowed for custom groups —
-// central and department groups are membership-tied and managed by admins.
+// Users may leave custom groups only, since central and department groups are membership-tied and admin-managed.
 router.delete('/groups/:id/leave', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -907,12 +877,7 @@ router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandle
 
 // ── Direct Messages ──
 
-// Total unread messages for the current user. Counts DMs only — group
-// messages don't have a reliable per-user "opened the group" signal (readBy
-// is only populated when a member actively scrolls through individual
-// messages), so including them produces phantom unread counts for groups
-// the user has already browsed. If/when groups track lastVisitedAt per
-// member this can be expanded. See Message.isRead for the DM signal.
+// Total unread for the current user counts DMs only, since group readBy is too sparse to avoid phantom counts.
 router.get('/messages/unread-count', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const userId = req.user._id;
@@ -1211,11 +1176,7 @@ router.delete('/dm/messages/:messageId', authenticate(), asyncHandler(async (req
   ApiResponse.success(res, null, 'Message deleted');
 }));
 
-// Clear the entire DM conversation with a user — hides every DM between the
-// two participants from the current user's view only. The partner still sees
-// the thread untouched. Implemented by adding the current user to deletedFor
-// on every non-deleted DM in the thread; no time window restriction because
-// the user is only hiding their own view.
+// Clear a DM conversation by adding the current user to deletedFor on every message, hiding it from their view alone.
 router.post('/dm/:userId/clear', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const partnerId = req.params.userId as string;

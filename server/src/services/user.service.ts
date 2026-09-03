@@ -29,10 +29,7 @@ function isAdminOrAbove(role: string): boolean {
   return idx >= adminIdx;
 }
 
-/**
- * Strip private fields from a user object based on their profileVisibility settings.
- * Moderator+ can see all fields regardless.
- */
+/** Strip private fields per the user's profileVisibility settings, which Moderator+ bypasses entirely. */
 function applyVisibilityFilter(user: any, viewerRole?: string): any {
   if (!user) return user;
   // Moderator+ sees everything
@@ -69,7 +66,7 @@ interface ListUsersQuery {
 }
 
 export class UserService {
-  /** Strip private fields based on profileVisibility. Public method for controllers. */
+  /** Public wrapper for controllers that strips private fields per profileVisibility. */
   filterVisibility(user: any, viewerRole?: string): any {
     return applyVisibilityFilter(user, viewerRole);
   }
@@ -95,9 +92,7 @@ export class UserService {
     );
     if (!user) throw ApiError.notFound('User not found');
 
-    // Auto-sync department group membership when user sets/changes their department.
-    // Only approved members participate in department groups — unapproved users get
-    // added later when their membership is approved (handled in approveMembership).
+    // Sync department group membership on change, but only for approved members since the rest join at approval time.
     if (data.department && user.membershipStatus === 'approved') {
       const newDept = data.department as string;
 
@@ -118,10 +113,7 @@ export class UserService {
       }).catch(() => {});
     }
 
-    // Instant alumni detection — when an approved member adds current job/business,
-    // the pre-save hook flips isAlumni. We trigger a save here (findByIdAndUpdate bypasses hooks)
-    // and emit a notification + audit log on the 0 → 1 transition.
-    // Skip entirely if the user has been manually revoked by an admin — their override sticks.
+    // Save explicitly so the pre-save alumni hook runs, unless an admin's manual revoke override is in place.
     if (
       user.membershipStatus === 'approved' &&
       !user.alumniManuallyRevoked &&
@@ -500,10 +492,7 @@ export class UserService {
       }
     }
 
-    // When demoted from Member+ to a lower tier (User / Guest), remove them
-    // from the Central RDSWA group and their Department group. Custom /
-    // consultation groups are intentionally left alone — the user may still
-    // participate in those by invitation even without Member status.
+    // Demotion below Member removes the central and department groups, leaving custom and consultation groups intact.
     if (justDemoted) {
       await ChatGroup.findOneAndUpdate(
         { type: 'central', isDeleted: false },
@@ -539,17 +528,7 @@ export class UserService {
     return target;
   }
 
-  /**
-   * Manually grant or revoke alumni status.
-   *
-   * Grant: sets alumniApproved=true and clears the manual-revoke override.
-   * Revoke: sets alumniApproved=false and sets alumniManuallyRevoked=true, so the
-   *         user is removed from alumni even if they have a current job/business.
-   *         The override is sticky — subsequent profile saves won't auto-re-tag them.
-   *         To put them back, the admin must explicitly grant again.
-   *
-   * Gate: target must be an approved member when granting.
-   */
+  /** Manually grant or revoke alumni status, where a revoke sets a sticky override so later profile saves never auto-re-tag the user. */
   async setAlumni(
     targetUserId: string,
     grant: boolean,
@@ -632,10 +611,7 @@ export class UserService {
     return this.setAlumni(targetUserId, true, approvedBy, reason, 'form');
   }
 
-  /**
-   * Manually grant or revoke the Advisor flag.
-   * Gate: target must be an approved member.
-   */
+  /** Manually grant or revoke the Advisor flag on an approved member. */
   async setAdvisor(
     targetUserId: string,
     grant: boolean,
@@ -686,10 +662,7 @@ export class UserService {
     return target;
   }
 
-  /**
-   * Manually grant or revoke the Senior Advisor flag.
-   * Gate: target must be an approved member. Senior Advisor is manual-only.
-   */
+  /** Manually grant or revoke the manual-only Senior Advisor flag on an approved member. */
   async setSeniorAdvisor(
     targetUserId: string,
     grant: boolean,

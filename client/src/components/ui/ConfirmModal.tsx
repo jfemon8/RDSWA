@@ -9,7 +9,7 @@ interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'warning' | 'info';
-  /** Optional — ask the user to type this exact text to enable the confirm button. Good for bulk or irreversible actions. */
+  /** Optional text the user must type to enable confirmation, for bulk or irreversible actions. */
   requireTypeToConfirm?: string;
 }
 

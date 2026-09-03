@@ -1,56 +1,25 @@
-/**
- * Promo (Google AdSense) slot configuration + route policy.
- *
- * Component naming uses "promo" to keep code reads clean; the underlying
- * markup (`<ins class="adsbygoogle">` + `adsbygoogle.js`) MUST stay as
- * Google specifies — renaming/obfuscating those is a "Circumventing Systems"
- * policy violation that gets accounts permanently banned.
- *
- * Site: rdswa.info.bd · Publisher: ca-pub-1036044341182474
- * Env: VITE_ADSENSE_CLIENT (set in Vercel for prod; leave blank in dev to
- * suppress all AdSense network requests + impressions).
- */
+/** Promo (Google AdSense) slot configuration and route policy, where only the naming says "promo" since the `adsbygoogle` markup must stay exactly as Google specifies. */
 
-// Read at import time. Empty in dev → <Promo> renders nothing, layout is
-// preserved by `min-height` reservations on each placement so there is no
-// CLS once ads start filling.
+// Read at import time and empty in dev, where each placement's `min-height` still reserves space so ads cause no layout shift.
 export const PROMO_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined) ?? '';
 
-/**
- * Slot IDs from AdSense Console → Ads → By ad unit (rdswa.info.bd publisher
- * ca-pub-1036044341182474). Slot IDs are public (visible in DOM) so they
- * are committed to git; the publisher ID lives in env to keep production /
- * staging / dev cleanly separated.
- */
+/** Slot IDs are public so they live in git, while the publisher ID stays in env to keep environments separated. */
 export const PROMO_SLOTS = {
-  /** rdswa-sidebar — Display, vertical/responsive. Desktop right rails. */
+  /** rdswa-sidebar — vertical responsive display unit for desktop right rails. */
   sidebar: '4716324992',
-  /** rdswa-infeed — In-feed (fluid). Native-feeling cards in lists. */
+  /** rdswa-infeed — fluid in-feed unit for native-feeling cards in lists. */
   infeed: '5837834971',
-  /** rdswa-multiplex — Multiplex (autorelaxed). End-of-page grids. */
+  /** rdswa-multiplex — autorelaxed multiplex unit for end-of-page grids. */
   multiplex: '2573377382',
-  /** rdswa-display-responsive — Display, horizontal/responsive. Bottom banners. */
+  /** rdswa-display-responsive — horizontal responsive display unit for bottom banners. */
   displayResponsive: '3503315674',
-  /** rdswa-in-article — In-article (fluid, in-article layout). Long-form bodies. */
+  /** rdswa-in-article — fluid in-article unit for long-form bodies. */
   inArticle: '5937907323',
 } as const;
 
 export type PromoKind = keyof typeof PROMO_SLOTS;
 
-/**
- * Routes where promos are FORBIDDEN.
- *
- * Categories blocked here:
- *   - Auth flows (login pages with ads = "Valuable Inventory: No content"
- *     policy violation).
- *   - User-private records (attendance history, my-donations, profile edit).
- *   - Admin / moderator surfaces (no value to users; private internal data).
- *   - Payment / checkout flows (ads near payment forms = "Deceptive site
- *     navigation" policy risk).
- *
- * The `<Promo>` component reads this list and returns `null` on match, so
- * accidentally dropping a `<Promo>` into one of these pages is a no-op.
- */
+/** Routes where promos are forbidden — auth flows, private records, admin surfaces, and payment flows — on which `<Promo>` returns `null`. */
 export const PROMO_BLOCKED_ROUTES: RegExp[] = [
   // Auth flows
   /^\/login(\/|$)/,

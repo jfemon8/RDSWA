@@ -170,8 +170,7 @@ function CircularsTab() {
     );
   }
 
-  // First card opens by default. Once the user toggles anything, their
-  // choice wins (expandedId becomes the source of truth).
+  // The first card opens by default until the user toggles anything, after which expandedId is the source of truth.
   const isOpen = (id: string, idx: number) =>
     expandedId === null ? idx === 0 : expandedId === id;
 
@@ -361,8 +360,7 @@ function SeatsTab() {
   });
   const rows: SeatRow[] = data?.data || [];
 
-  // Bucket rows by session, then sort sessions DESC. The newest session
-  // ends up first and opens by default; older ones stay collapsed.
+  // Bucket rows by session and sort descending, so the newest lands first and opens by default.
   const bySession = useMemo(() => {
     const map = new Map<string, SeatRow[]>();
     for (const r of rows) {
@@ -499,9 +497,7 @@ interface CutoffRow {
 
 function CutoffsTab() {
   const { settings } = useSiteSettings();
-  // Pull the university name from SiteSettings so the header reads
-  // "University of Barishal Cut-Off Mark 2024-25" instead of "Session 2024-25".
-  // Falls back to "University" if settings haven't loaded yet.
+  // Pull the university name from SiteSettings for the header, falling back to "University" before settings load.
   const universityName = settings?.universityInfo?.name?.trim() || 'University';
   const cutoffTitlePrefix = `${universityName} Cut-Off Mark `;
 
@@ -682,13 +678,7 @@ function CellGroup({ cell }: { cell?: { firstMerit?: number; firstScore?: number
 // Shared: session accordion (latest open by default, others collapsed)
 // ═══════════════════════════════════════════════════════
 
-/**
- * One collapsible session block. Renders a header row with the session label
- * and a row count, then the table (children) inside an animated drawer.
- * `defaultOpen` is honored once on mount — the user's expand/collapse choice
- * wins afterwards. Visual style mirrors the document/notice expandable cards
- * elsewhere in the project.
- */
+/** One collapsible session block whose `defaultOpen` applies on mount only, after which the user's choice wins. */
 function SessionAccordion({
   session,
   defaultOpen,
@@ -699,8 +689,7 @@ function SessionAccordion({
   session: string;
   defaultOpen: boolean;
   icon: typeof Megaphone;
-  /** Literal text shown before the session label in the header.
-   *  Each tab passes its own (e.g., "গুচ্ছ বিশ্ববিদ্যালয়ের আসন সমূহ " for Seats). */
+  /** Literal text shown before the session label, which each tab supplies for itself. */
   titlePrefix?: string;
   children: React.ReactNode;
 }) {

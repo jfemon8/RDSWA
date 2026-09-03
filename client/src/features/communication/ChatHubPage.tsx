@@ -14,12 +14,7 @@ import { formatDateCustom, formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 
-/**
- * Unified "chat hub" — single landing page listing DMs, groups, and starred
- * in one place. Selecting an item navigates to the existing dedicated page
- * (MessagesPage / GroupChatPage / StarredMessagesPage). No chat state is
- * managed here — this is purely a router + list view.
- */
+/** Unified chat hub listing DMs, groups, and starred items, holding no chat state and only routing to the dedicated pages. */
 
 type Tab = 'all' | 'chats' | 'groups' | 'starred';
 
@@ -166,8 +161,7 @@ export default function ChatHubPage() {
   );
   const { online } = usePresence(partnerIds);
 
-  // Normalize DMs and groups into a single typed list so the render loop is
-  // simple. Sorted by most recent activity across both kinds.
+  // Normalise DMs and groups into one typed list sorted by most recent activity, keeping the render loop simple.
   const unified: UnifiedItem[] = useMemo(() => {
     const items: UnifiedItem[] = [];
 

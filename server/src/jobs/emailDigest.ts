@@ -15,13 +15,7 @@ function notificationCard(title: string, message: string): string {
     </table>`;
 }
 
-/**
- * Send digest emails to users who prefer daily/weekly digests.
- * Run every hour; checks if it's time for each user's digest.
- *
- * Uses the shared renderEmailLayout so the digest matches every other
- * transactional email (emerald header + dynamic association footer).
- */
+/** Hourly job that sends daily and weekly digest emails through the shared layout, checking each user's schedule as it goes. */
 export async function runEmailDigest(): Promise<void> {
   try {
     const now = new Date();

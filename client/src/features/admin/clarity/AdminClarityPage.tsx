@@ -6,23 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import SEO from '@/components/SEO';
 import { CLARITY_PROJECT_ID, isClarityEnabled } from '@/lib/clarity';
 
-/**
- * User Activity dashboard surface for SuperAdmins, powered by Microsoft
- * Clarity (free behavioural analytics — session recordings, heatmaps,
- * scroll depth, dead-clicks, rage-clicks, smart insights).
- *
- * Why deep-link instead of in-app embed:
- *   Clarity blocks <iframe> embedding of clarity.microsoft.com (X-Frame
- *   denied) and does not expose a public Data API for arbitrary metric
- *   queries — the canonical workflow is "click through to the Clarity
- *   dashboard, work there, come back". This page is therefore a launcher
- *   + status surface rather than a clone — admins use the real Clarity
- *   UI for recordings/heatmaps/insights.
- *
- * Access control: gated by AdminRoleGuard with CLARITY_RESTRICTED_SUPER_
- * ADMINS in router.tsx, so the email denylist is enforced at the route
- * level — we don't re-check here.
- */
+/** Launcher and status surface for Microsoft Clarity, which blocks iframe embedding and is gated by AdminRoleGuard at the route level. */
 export default function AdminClarityPage() {
   const toast = useToast();
   const [copied, setCopied] = useState(false);

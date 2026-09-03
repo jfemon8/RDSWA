@@ -29,11 +29,7 @@ export interface MemberDirectoryPageProps {
   emptyLabel: string;
 }
 
-/**
- * Reusable public member directory page.
- * Used by AlumniPage, AdvisorsPage, SeniorAdvisorsPage — they each pass a flag filter
- * that the backend uses to narrow the user list.
- */
+/** Reusable public directory page that Alumni, Advisors, and Senior Advisors each drive with their own backend flag filter. */
 export default function MemberDirectoryPage({
   title,
   description,

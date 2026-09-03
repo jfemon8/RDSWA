@@ -7,15 +7,7 @@ import {
   LinuxIcon,
 } from '@/components/icons/PlatformIcons';
 
-/**
- * Vertical stack of app-download buttons rendered in the footer.
- * Only buttons whose corresponding link is configured via
- * `/admin/settings → Social Links → App Download Links` are visible.
- *
- * All buttons share identical geometry. Colours resolve to the current
- * brand primary through the `text-primary` + `border-primary` CSS variables,
- * so they track the admin-configured palette automatically.
- */
+/** Footer stack of identically sized app-download buttons, showing only configured links and tracking the brand palette via CSS variables. */
 
 type ButtonDef = {
   key: 'android' | 'ios' | 'windows' | 'macos' | 'linux';
@@ -48,10 +40,7 @@ export default function AppDownloadButtons() {
           target="_blank"
           rel="noopener noreferrer"
           whileTap={{ scale: 0.98 }}
-          // No `whileHover` translation — the button stays anchored.
-          // On hover: background fills with primary, text/icon flip to the
-          // foreground colour, and a conic-gradient streak orbits the
-          // border via .hover-rotating-border (see index.css).
+          // The button stays anchored on hover while the background fills and a conic-gradient streak orbits the border.
           className="
             flex items-center justify-between gap-3
             bg-white dark:bg-background

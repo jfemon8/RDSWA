@@ -17,11 +17,7 @@ interface AttendanceDateFieldProps {
   className?: string;
 }
 
-/**
- * Optional backdate picker, shown only once an event has ended.
- *
- * Bounds mirror the server rules in `resolveCheckedInAt`.
- */
+/** Optional backdate picker shown only after an event ends, with bounds mirroring `resolveCheckedInAt`. */
 export default function AttendanceDateField({
   attendanceWindow,
   event,

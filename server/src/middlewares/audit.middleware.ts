@@ -2,14 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuditLog } from '../models';
 import requestIp from 'request-ip';
 
-/**
- * Extract real client IP from request.
- * Uses request-ip which checks 15+ headers:
- * x-client-ip, x-forwarded-for, cf-connecting-ip (Cloudflare),
- * fastly-client-ip, x-real-ip, x-cluster-client-ip,
- * x-forwarded, forwarded-for, forwarded, and more.
- * Works behind any proxy/CDN (Vercel, Render, Cloudflare, AWS, nginx).
- */
+/** Extract the real client IP via request-ip, which checks the 15+ proxy headers used by Vercel, Render, Cloudflare, and nginx. */
 function getClientIp(req: Request): string {
   return requestIp.getClientIp(req) || req.ip || 'unknown';
 }

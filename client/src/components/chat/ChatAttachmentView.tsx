@@ -44,13 +44,7 @@ const EXPIRED_LABEL: Record<string, string> = {
   file: 'File expired',
 };
 
-/**
- * Renders a single chat attachment. Handles media (image/video/audio/pdf/file),
- * the expired placeholder, and contact cards.
- *
- * The visual scope is intentionally tight — this is meant to live INSIDE a
- * chat bubble (max-w-sm), not as a page-level element.
- */
+/** Renders one chat attachment, whether media, an expired placeholder, or a contact card, sized to live inside a chat bubble. */
 export default function ChatAttachmentView({ attachment, isMine, onImageClick }: Props) {
   const { kind, url, expired } = attachment;
 
@@ -121,12 +115,7 @@ export default function ChatAttachmentView({ attachment, isMine, onImageClick }:
   return <FileCard attachment={attachment} isMine={isMine} />;
 }
 
-/**
- * Build a proxy URL that re-serves the Cloudinary file with proper Content-Type
- * and filename headers. This is what enables PDFs to preview inline in the
- * browser instead of downloading as opaque binary blobs (Cloudinary serves
- * `raw` resources as application/octet-stream regardless of extension).
- */
+/** Build a proxy URL that re-serves the file with correct headers, so PDFs preview inline instead of downloading as opaque blobs. */
 function buildProxyUrl(rawUrl: string, name?: string, inline = true): string {
   const params = new URLSearchParams({ url: rawUrl, inline: String(inline) });
   if (name) params.set('name', name);

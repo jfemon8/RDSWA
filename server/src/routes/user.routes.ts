@@ -77,12 +77,7 @@ router.patch('/:id/reject', authenticate(), authorize(UserRole.MODERATOR), valid
 router.patch('/:id/suspend', authenticate(), authorize(UserRole.ADMIN), validate({ body: memberActionSchema }), auditLog('user.suspend', 'users'), userController.suspendUser);
 router.patch('/:id/unsuspend', authenticate(), authorize(UserRole.ADMIN), auditLog('user.unsuspend', 'users'), userController.unsuspendUser);
 
-// SuperAdmin: force-set any user's password (overrides existing password).
-// Sensitive action — audited, notifies the target user, and emails them so
-// they're never left wondering why their old password stopped working.
-// Guard: a SuperAdmin cannot force-set another SuperAdmin's password (would
-// allow one SuperAdmin to lock another out). A SuperAdmin can still
-// force-set their own via the normal "change password" flow if needed.
+// SuperAdmin force-set of a user's password, audited and emailed to the target, and blocked against other SuperAdmins so none can lock out another.
 router.patch(
   '/:id/force-password',
   authenticate(),

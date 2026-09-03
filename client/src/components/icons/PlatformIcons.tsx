@@ -1,12 +1,4 @@
-/**
- * Monochrome SVG brand icons for the app-store download buttons in the
- * footer. All inherit `fill="currentColor"` so they adopt the surrounding
- * text colour (useful for theming via the CSS --primary variable).
- *
- * Paths are sourced from Simple Icons (CC0 project-wide); icons are used
- * only as unambiguous hyperlinks to the respective stores, which is
- * standard nominative fair use.
- */
+/** Monochrome Simple Icons brand marks for the footer store links, inheriting `currentColor` so they follow the surrounding text. */
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 
@@ -42,11 +34,7 @@ export function WindowsIcon(props: IconProps) {
   );
 }
 
-/**
- * Simplified Tux silhouette for Linux. Recognizable at the 18–24px sizes
- * used by the footer buttons. Keeping the geometry simple avoids fidelity
- * loss that a full-detail Tux path would suffer at small sizes.
- */
+/** Simplified Tux silhouette whose plain geometry stays recognisable at the footer's 18-24px sizes. */
 export function LinuxIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>

@@ -6,7 +6,7 @@ interface Props {
   withRing?: boolean;
 }
 
-/** Small green/grey dot for presence. Designed to overlay on an avatar corner. */
+/** Small green or grey presence dot, designed to overlay an avatar corner. */
 export default function PresenceBadge({ online, size = 10, withRing = true }: Props) {
   return (
     <span

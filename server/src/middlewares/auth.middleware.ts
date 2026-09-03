@@ -15,10 +15,7 @@ declare global {
   }
 }
 
-/**
- * Auth middleware — verifies JWT and attaches user to request.
- * If `optional` is true, allows unauthenticated access (for public routes).
- */
+/** Verify the JWT and attach the user, allowing unauthenticated access when `optional` is set. */
 export function authenticate(optional = false) {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     try {

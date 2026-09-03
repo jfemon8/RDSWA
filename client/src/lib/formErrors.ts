@@ -1,9 +1,4 @@
-/**
- * Extracts field-level validation errors from an API error response.
- * Backend returns: { success: false, message: "Validation failed", errors: { fieldName: ["msg"] } }
- * Returns a flat Record<string, string> for use with FieldError components.
- * Returns null if the error is not a validation error (should fall back to toast).
- */
+/** Flatten an API response's field-level validation errors for FieldError, returning null when it isn't a validation error. */
 export function extractFieldErrors(err: any): Record<string, string> | null {
   const data = err?.response?.data;
   if (!data?.errors || typeof data.errors !== 'object') return null;
@@ -17,18 +12,12 @@ export function extractFieldErrors(err: any): Record<string, string> | null {
   return Object.keys(fieldErrors).length > 0 ? fieldErrors : null;
 }
 
-/**
- * Extracts the best human-readable error message from an API error.
- * Prioritizes field-level validation messages over generic "Validation failed".
- * Use this in onError handlers: toast.error(getApiErrorMessage(err, 'Fallback'))
- */
+/** Pick the most human-readable message from an API error, preferring a field-level one over the generic text. */
 export function getApiErrorMessage(err: any, fallback = 'Something went wrong'): string {
   const data = err?.response?.data;
   if (!data) return err?.message || fallback;
 
-  // Mongoose error handler in middleware sometimes returns `errors` as a
-  // plain string (e.g. "Notice validation failed: attachments.0: ..."). Show
-  // that instead of the generic top-level message when present.
+  // Prefer a plain-string `errors` value, which the Mongoose error handler sometimes returns, over the generic message.
   if (typeof data.errors === 'string' && data.errors.trim()) {
     return data.errors;
   }

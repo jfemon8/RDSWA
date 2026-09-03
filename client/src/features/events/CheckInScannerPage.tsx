@@ -21,24 +21,7 @@ import { getAttendanceWindow } from '@rdswa/shared';
 import { useAuth } from '@/hooks/useAuth';
 import AttendanceDateField, { AttendanceWindowClosedNotice } from '@/components/ui/AttendanceDateField';
 
-/**
- * QR-based check-in scanner with proper duplicate prevention and feedback
- * lifecycle. Design notes:
- *
- *  - The rAF loop captures state via *refs*, not React state. Reading state
- *    closures inside the loop would freeze the very first values and never
- *    see updates — a classic pitfall that caused the previous version to
- *    keep firing the same QR over and over.
- *  - Per-QR debounce: the same payload within DEBOUNCE_MS is silently
- *    ignored so a card lingering in front of the camera doesn't spam the
- *    server.
- *  - Result-driven cooldown: after a scan, the loop is *paused* until the
- *    feedback toast clears (~RESULT_MS). The user/operator gets a clear
- *    success / warning / error before the next scan can start.
- *  - Three result kinds — success (new check-in), warning (already
- *    approved), error (network/auth/event mismatch). Each has its own
- *    color, icon, and audio cue.
- */
+/** QR check-in scanner whose rAF loop reads refs rather than state, debounces repeat payloads, and pauses until each result toast clears. */
 
 type ResultKind = 'success' | 'warning' | 'error';
 
@@ -58,8 +41,7 @@ const DEBOUNCE_MS = 5000; // suppress the SAME QR re-firing within this window
 const RESULT_MS = 2000; // how long the success/warning/error toast stays up
 const SCAN_INTERVAL_MS = 250; // throttle BarcodeDetector calls
 
-// Lightweight beep without bundling an audio file. Two tones — pleasant for
-// success, lower & shorter for warning/error.
+// Lightweight two-tone beep that avoids bundling an audio file.
 function playBeep(kind: ResultKind) {
   try {
     const Ctx =
@@ -96,8 +78,7 @@ export default function CheckInScannerPage() {
   const [attendanceDate, setAttendanceDate] = useState('');
   const { user } = useAuth();
 
-  // Refs that the rAF loop reads. State-via-ref avoids stale-closure bugs
-  // since the rAF callback is captured once at effect setup.
+  // Refs for the rAF loop, since its callback is captured once and would otherwise read stale state.
   const pausedRef = useRef(false);
   // Read inside `checkin` so changing the backdate doesn't tear down the rAF scan loop.
   const attendanceDateRef = useRef('');
@@ -261,9 +242,7 @@ export default function CheckInScannerPage() {
 
         const raw: string = codes[0].rawValue;
 
-        // Per-QR debounce: same payload within DEBOUNCE_MS is silently
-        // ignored. Avoids spamming the server when a card lingers in
-        // front of the lens.
+        // Silently ignore a repeat payload within DEBOUNCE_MS, so a lingering card doesn't spam the server.
         const last = lastQrRef.current;
         if (last && last.data === raw && Date.now() - last.at < DEBOUNCE_MS) {
           return;

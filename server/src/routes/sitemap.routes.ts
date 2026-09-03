@@ -1,27 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { Event, Notice, JobPost } from '../models';
 
-/**
- * Dynamic sitemap.xml — served from the backend so it always reflects the
- * latest published Notices, Events, and JobPosts without a redeploy.
- *
- * Vercel rewrites `/sitemap.xml` to `/api/sitemap.xml` so the production
- * canonical (https://rdswa.info.bd/sitemap.xml) hits this handler. The
- * sitemap is generated on each request and short-cached at the CDN
- * (Cache-Control public, max-age=3600) so frequent crawler hits don't
- * hammer Mongo.
- *
- * Spec: https://www.sitemaps.org/protocol.html — we emit the standard
- * sitemap namespace plus xhtml namespace for hreflang alternates so the
- * Bengali/English variants are discoverable per Google's multilingual
- * sitemap guidance.
- */
+/** Dynamic sitemap.xml generated per request and CDN-cached for an hour, so new Notices, Events, and Jobs appear without a redeploy. */
 
 const router = Router();
 
-// Production origin — kept in lock-step with the canonical URL emitted by
-// the SEO component on the client. If you ever change this, also update
-// client/src/components/SEO.tsx (PRODUCTION_ORIGIN) and robots.txt.
+// Production origin that must stay in lock-step with SEO.tsx and robots.txt if it ever changes.
 const SITE_URL = 'https://rdswa.info.bd';
 
 interface UrlEntry {
@@ -59,11 +43,7 @@ function urlEntry({ loc, lastmod, changefreq, priority, alternates }: UrlEntry):
   return parts.join('\n');
 }
 
-// Static public routes. Priorities are relative — they signal which pages
-// matter most when Google has to choose what to crawl first within our
-// allotted crawl budget. The acquisition pages (Bus Schedule, Members,
-// Alumni) earn the highest relative weight since they map to long-tail
-// keyword traffic ("Rangpur Barishal bus", "BU Rangpur students", etc.).
+// Static public routes whose relative priorities push the acquisition pages up Google's crawl budget.
 const STATIC_ROUTES: Array<Omit<UrlEntry, 'loc'> & { path: string }> = [
   { path: '/', changefreq: 'daily', priority: 1.0 },
   { path: '/about', changefreq: 'monthly', priority: 0.9 },
@@ -90,10 +70,7 @@ const STATIC_ROUTES: Array<Omit<UrlEntry, 'loc'> & { path: string }> = [
 
 router.get('/sitemap.xml', async (_req: Request, res: Response) => {
   try {
-    // Pull only the fields needed to compose lastmod + URLs. `lean()`
-    // returns plain JS objects (no Mongoose hydration overhead) — the
-    // sitemap can run hundreds of times a day, so every cycle saved here
-    // matters for free-tier Render quotas.
+    // Select only the fields needed for lastmod and URLs, using `lean()` to skip Mongoose hydration on a hot path.
     const [events, notices, jobs] = await Promise.all([
       Event.find(
         { isDeleted: { $ne: true } },

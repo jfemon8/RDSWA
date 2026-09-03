@@ -1,15 +1,4 @@
-/**
- * Pure JSON-LD schema builders for RDSWA.
- *
- * Each function returns a plain object suitable for passing to <SEO jsonLd={...}>.
- * Keeping the builders pure (no React, no hooks) means schemas can be composed
- * server-side at prerender time, unit-tested in isolation, and reused across
- * different mount points without coupling to component lifecycles.
- *
- * Schema reference: schema.org/EducationalOrganization, schema.org/Event,
- * schema.org/Article, schema.org/BreadcrumbList, schema.org/WebSite,
- * schema.org/JobPosting.
- */
+/** Pure JSON-LD builders returning plain objects for `<SEO jsonLd={...}>`, free of React so they run at prerender time. */
 
 const SITE_URL = 'https://rdswa.info.bd';
 const ORG_NAME = 'Rangpur Divisional Student Welfare Association';
@@ -25,17 +14,7 @@ export function absUrl(path: string): string {
   return `${SITE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
-/**
- * Top-level Organization schema describing RDSWA. Mounted once at the
- * layout root so every page advertises the same canonical entity (helps
- * Knowledge Graph attribution and avoids the "multiple Organization
- * candidates" warning in Rich Results Test).
- *
- * We use `EducationalOrganization` rather than the generic `Organization`
- * because RDSWA is a student welfare body affiliated with a university —
- * Google rewards the more specific type with better academic-context
- * surfacing.
- */
+/** Top-level EducationalOrganization schema, mounted once at the layout root so every page advertises the same canonical entity. */
 export function buildOrganizationSchema(opts?: {
   description?: string;
   email?: string;
@@ -85,12 +64,7 @@ export function buildOrganizationSchema(opts?: {
   };
 }
 
-/**
- * WebSite schema with a SearchAction — tells Google how to deep-link search
- * results into our internal search. Recognised by Google for the "Sitelinks
- * search box" rich result on branded queries (e.g. searching "RDSWA" shows
- * a search box right in the SERP).
- */
+/** WebSite schema with a SearchAction, which Google uses for the sitelinks search box on branded queries. */
 export function buildWebSiteSchema() {
   return {
     '@context': 'https://schema.org',
@@ -124,11 +98,7 @@ interface EventInput {
   url?: string;
 }
 
-/**
- * Event schema — eligible for the Google "Events" rich result (calendar
- * carousel + event detail card). Required fields per Google's docs:
- * `name`, `startDate`, and `location` (or virtual location for online).
- */
+/** Event schema for the Google Events rich result, requiring `name`, `startDate`, and a physical or virtual location. */
 export function buildEventSchema(event: EventInput) {
   return {
     '@context': 'https://schema.org',
@@ -175,11 +145,7 @@ interface ArticleInput {
   url: string;
 }
 
-/**
- * Article schema — used on Notice detail and Job detail pages. Eligible
- * for the Google News / Top Stories carousel when paired with Article
- * Structured Data signals (date, author, image).
- */
+/** Article schema for Notice and Job detail pages, eligible for Top Stories when date, author, and image are present. */
 export function buildArticleSchema(article: ArticleInput) {
   return {
     '@context': 'https://schema.org',
@@ -214,11 +180,7 @@ interface JobInput {
   url: string;
 }
 
-/**
- * JobPosting schema — eligible for Google Jobs (the dedicated jobs box on
- * "[role] jobs in [city]" queries). Strict required fields: `title`,
- * `description`, `datePosted`, `hiringOrganization`, `jobLocation`.
- */
+/** JobPosting schema for Google Jobs, strictly requiring title, description, datePosted, hiringOrganization, and jobLocation. */
 export function buildJobPostingSchema(job: JobInput) {
   return {
     '@context': 'https://schema.org',
@@ -270,12 +232,7 @@ export function buildBreadcrumbSchema(crumbs: BreadcrumbCrumb[]) {
   };
 }
 
-/**
- * Generic ItemList — used on the directory pages (Members, Alumni,
- * Advisors, Blood Donors, Committee). Helps Google understand that the
- * page is a curated list, which can surface the SiteLinks "list" rich
- * result on branded queries.
- */
+/** Generic ItemList for the directory pages, telling Google the page is a curated list. */
 export function buildItemListSchema(opts: {
   name: string;
   description?: string;

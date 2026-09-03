@@ -831,7 +831,7 @@ function EmptyChart() {
   );
 }
 
-/** Publish report snapshots + approval workflow. Draft → Admin approves → Published. */
+/** Report snapshot publishing whose workflow runs draft, admin approval, then published. */
 function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
   const toast = useToast();
   const queryClient = useQueryClient();

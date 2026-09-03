@@ -1,10 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-/**
- * Yearly vacation calendar (e.g. "2026-27") containing a list of events
- * with date ranges and optional supporting attachments. Each `academicYear`
- * is unique — admins update the same record rather than creating duplicates.
- */
+/** Yearly vacation calendar of dated events and attachments, keyed by a unique `academicYear` that admins update in place. */
 export interface IVacationEntry {
   event: string;
   startDate: Date;
@@ -19,7 +15,7 @@ export interface IVacationAttachment {
 }
 
 export interface IVacationDocument extends Document {
-  /** Format: "YYYY-YY", e.g. "2026-27". Validated server-side. */
+  /** Server-validated "YYYY-YY" format, such as "2026-27". */
   academicYear: string;
   notes?: string;
   entries: IVacationEntry[];
@@ -43,10 +39,7 @@ const entrySchema = new Schema<IVacationEntry>(
   { _id: false },
 );
 
-/**
- * Attachment sub-schema — same `type` field collision pitfall as Notice.
- * Defined as a real Schema so Mongoose doesn't collapse it to `[String]`.
- */
+/** Attachment sub-schema declared as a real Schema so Mongoose doesn't collapse its `type` field to `[String]`. */
 const attachmentSchema = new Schema<IVacationAttachment>(
   {
     name: { type: String, required: true },
@@ -75,8 +68,7 @@ const vacationSchema = new Schema<IVacationDocument>(
   { timestamps: true },
 );
 
-// Unique on academicYear + isDeleted so a year can be re-created after a
-// soft delete. Partial index excludes soft-deleted docs from uniqueness.
+// A partial unique index excludes soft-deleted docs, so a year can be re-created after deletion.
 vacationSchema.index(
   { academicYear: 1 },
   { unique: true, partialFilterExpression: { isDeleted: false } },

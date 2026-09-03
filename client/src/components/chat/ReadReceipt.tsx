@@ -9,10 +9,7 @@ interface Props {
   className?: string;
 }
 
-/**
- * Single-tick for sent, double-tick grey for delivered, double-tick blue for read.
- * Falls back to a clock for optimistic messages without an id.
- */
+/** Ticks for sent, delivered, and read, falling back to a clock for optimistic messages without an id. */
 export default function ReadReceipt({ sent, read, className }: Props) {
   if (!sent) return <Clock className={`h-3 w-3 ${className || ''}`} />;
   if (read) return <CheckCheck className={`h-3 w-3 text-sky-300 ${className || ''}`} />;

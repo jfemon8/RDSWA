@@ -43,12 +43,7 @@ export function authorize(...allowedRoles: UserRole[]) {
   };
 }
 
-/**
- * Deny a specific set of SuperAdmin emails from accessing a route.
- * Place after authenticate() + authorize(). Returns 403 if the user's email
- * is in the provided list. Pass the scope-specific list from shared constants
- * (e.g. BACKUP_RESTRICTED_SUPER_ADMINS, SETTINGS_RESTRICTED_SUPER_ADMINS).
- */
+/** Return 403 for emails in the given scope-specific denylist, placed after `authenticate()` and `authorize()`. */
 export function denyRestricted(deniedEmails: string[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) return next(ApiError.unauthorized());

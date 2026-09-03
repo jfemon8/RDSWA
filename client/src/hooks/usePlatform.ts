@@ -1,25 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-/**
- * Detects whether the app is running inside an Android app wrapper (any
- * third-party WebView-to-APK service such as GoNative, Appsgeyser, WebIntoApp,
- * MobiLoud, etc., or a TWA / installed PWA on Android).
- *
- * Third-party WebView wrappers don't let us inject a custom User-Agent token,
- * so the primary detection channel is a **URL query parameter** set on the
- * app's start URL:
- *
- *   Configure the third-party platform to load:   https://<site>/?app=android
- *
- * On the first load we persist the flag to localStorage so every subsequent
- * navigation (including deep links) is detected correctly.
- *
- * Fallback channels:
- *   • TWA — document.referrer starts with "android-app://"
- *   • Installed PWA on Android — display-mode: standalone + Android UA
- *   • Legacy WebView — UA contains the "RDSWAApp" token (kept for future
- *     native builds that do control the UA)
- */
+/** Detects an Android app wrapper primarily from an `?app=android` start URL persisted to localStorage, falling back to TWA referrer, standalone display mode, and a legacy UA token. */
 
 const STORAGE_KEY = 'rdswa_platform_android';
 

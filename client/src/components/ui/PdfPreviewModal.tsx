@@ -2,8 +2,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Loader2 } from 'lucide-react';
 
-// PdfViewer drags in react-pdf + its worker (~600 KB). Lazy-loading keeps the
-// modal weightless until a visitor actually opens a preview.
+// Lazy-load PdfViewer so its ~600 KB of react-pdf and worker code arrives only when a preview is opened.
 const PdfViewer = lazy(() => import('./PdfViewer'));
 
 export interface PdfPreviewTarget {
@@ -11,15 +10,7 @@ export interface PdfPreviewTarget {
   title?: string;
 }
 
-/**
- * Project-wide PDF preview modal. Wraps the existing PdfViewer in an
- * animated dialog with backdrop blur, click-outside / Escape / X to close,
- * and a Suspense fallback while the viewer chunk loads.
- *
- * Pass `null` to close. Used by /documents, /admission and the admin
- * versions of both — all callers share this one implementation so behavior
- * stays consistent and any improvements (a11y, sizing) propagate once.
- */
+/** Project-wide PDF preview dialog, closed by passing `null`, that every caller shares so behaviour and improvements stay consistent. */
 export default function PdfPreviewModal({
   target,
   onClose,

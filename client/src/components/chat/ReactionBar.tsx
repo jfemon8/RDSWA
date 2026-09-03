@@ -12,10 +12,7 @@ interface Props {
   align?: 'start' | 'end';
 }
 
-/**
- * Renders the aggregated reaction chips under a message bubble.
- * Clicking a chip you already reacted with toggles the reaction off (server enforces).
- */
+/** Aggregated reaction chips under a bubble, where clicking your own reaction toggles it off. */
 export default function ReactionBar({ reactions, currentUserId, onToggle, align = 'start' }: Props) {
   if (!reactions || reactions.length === 0) return null;
 

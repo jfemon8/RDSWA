@@ -1,26 +1,5 @@
 #!/usr/bin/env node
-/**
- * Generates the canonical 1200×630 Open Graph share image used by the SEO
- * component as a fallback whenever a page does not provide its own
- * `image` prop. Facebook, Twitter, LinkedIn, Discord, Slack, WhatsApp and
- * Telegram all crop large images to roughly this aspect ratio (~1.91:1).
- *
- *   Source:  client/public/icons/source-logo.png
- *   Output:  client/public/og-image.png
- *
- * Re-run after rebranding:
- *   npm run generate:og --workspace=client
- *
- * Implementation notes:
- *   - We composite the logo onto a solid brand-colour canvas, then layer
- *     SVG text on top. SVG <text> avoids bundling a TTF/OTF font into the
- *     repo while still producing crisp anti-aliased output that survives
- *     Facebook's image re-encoding pipeline.
- *   - The Bengali tagline uses the system font fallback list — most social
- *     scrapers render server-side with Pango/Cairo which honour generic
- *     font-family hints; if the platform can't find a Bengali face it
- *     gracefully degrades to glyph boxes (very rare in 2026).
- */
+/** Generates the canonical 1200x630 Open Graph fallback image via `npm run generate:og --workspace=client`, layering SVG text so no font file is bundled. */
 import sharp from 'sharp';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,9 +18,7 @@ const BRAND_PRIMARY = '#008f57';
 const BRAND_ACCENT = '#10b981';
 
 async function buildBackground() {
-  // Diagonal gradient from dark forest to brand green — same vibe as the
-  // dashboard header. SVG gradient is rasterised by sharp at the final
-  // resolution so there's no scaling artefact.
+  // A diagonal brand gradient that sharp rasterises at final resolution, avoiding scaling artefacts.
   const svg = `
     <svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -63,10 +40,7 @@ async function buildBackground() {
 }
 
 async function buildTextOverlay() {
-  // The text overlay is rendered as a single SVG so font metrics line up
-  // pixel-perfect with the rest of the composition. Letters use system
-  // sans + a Bengali fallback — sharp's underlying librsvg picks the best
-  // available face on the build host.
+  // One SVG carries the whole text overlay so font metrics line up exactly, using system sans with a Bengali fallback.
   const overlay = `
     <svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
       <style>

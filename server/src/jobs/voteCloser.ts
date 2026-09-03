@@ -1,10 +1,7 @@
 import { Vote } from '../models';
 import { broadcastVoteStatus } from '../socket';
 
-/**
- * Auto-close expired votes.
- * Run on a schedule (e.g., every 5 minutes).
- */
+/** Scheduled job that closes votes once they expire. */
 export async function runVoteCloser(): Promise<void> {
   try {
     // Find votes to close first (so we can broadcast)

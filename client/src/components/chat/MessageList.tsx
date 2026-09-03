@@ -80,9 +80,7 @@ export default function MessageList(props: Props) {
   const [stickToBottom, setStickToBottom] = useState(true);
   const [lightbox, setLightbox] = useState<{ images: ListImage[]; index: number } | null>(null);
   const lastCountRef = useRef(0);
-  // Track whether we've already done the initial jump-to-bottom for the
-  // current conversation. Resets when the first message ID changes (i.e. the
-  // user switches to a different chat).
+  // Tracks the initial jump-to-bottom for this conversation, resetting when the first message id changes.
   const initialScrollDoneRef = useRef(false);
   const firstMessageIdRef = useRef<string | null>(null);
 
@@ -127,16 +125,7 @@ export default function MessageList(props: Props) {
     }
   }, []);
 
-  // Initial jump-to-bottom: runs synchronously after DOM commit (useLayoutEffect)
-  // so the user never sees the list at the top. Uses instant scroll because
-  // smooth-scrolling 50+ messages would look like "the page just opened at
-  // the top" even though it's actually animating.
-  //
-  // The tricky part: avatars / images / link previews load asynchronously
-  // after the initial render, growing the container's scrollHeight. A single
-  // scrollTop = scrollHeight call leaves the user halfway up the list once
-  // those images decode. To fix this we attach a ResizeObserver for ~1.5s
-  // after mount and re-pin to the bottom every time the content grows.
+  // Jump to the bottom synchronously after commit, then re-pin via a short-lived ResizeObserver as late-loading media grows the list.
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el || isLoading || messages.length === 0 || initialScrollDoneRef.current) return;
@@ -189,7 +178,7 @@ export default function MessageList(props: Props) {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setStickToBottom(distanceFromBottom < 80);
 
-    // Near top? load older.
+    // Load older messages when scrolled near the top.
     if (el.scrollTop < 120 && hasMore && !isLoadingOlder) {
       onLoadOlder?.();
     }

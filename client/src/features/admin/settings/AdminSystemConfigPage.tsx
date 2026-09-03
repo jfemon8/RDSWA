@@ -346,12 +346,7 @@ const FALLBACK_AUTO_ROLE_CONFIG: AutoRoleConfigShape = {
   advisorOnArchivePositions: [...ADMIN_AUTO_POSITIONS],
 };
 
-/**
- * Visualizes the live auto-role configuration. The same rules drive both
- * automatic transitions (committee changes / startup sync) and manual
- * role-change validation, so any future tweak by SuperAdmin propagates
- * everywhere consistently. Edit panel below is SuperAdmin-only.
- */
+/** Visualises the live auto-role configuration, whose rules drive committee transitions, startup sync, and manual role validation alike. */
 function AutoRoleConfig() {
   const formatPos = (p: string) => p.replace(/_/g, ' ');
 
@@ -574,10 +569,7 @@ function PositionRow({ positions, target }: { positions: string[]; target: strin
   );
 }
 
-/**
- * SuperAdmin-only edit panel for the auto-role rules. Saves to
- * `/settings/auto-role-config` (PATCH gated to SuperAdmin on the server).
- */
+/** SuperAdmin-only editor for the auto-role rules, saving to an endpoint gated the same way server-side. */
 function AutoRoleEditor({ liveConfig }: { liveConfig: AutoRoleConfigShape }) {
   const queryClient = useQueryClient();
   const toast = useToast();

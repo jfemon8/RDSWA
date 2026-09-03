@@ -3,10 +3,7 @@ import { env } from './env';
 
 let initialized = false;
 
-/**
- * Initialize Sentry error tracking.
- * Only initializes if SENTRY_DSN is set in environment variables.
- */
+/** Initialize Sentry error tracking, only when SENTRY_DSN is set. */
 export function initSentry(): void {
   if (!env.SENTRY_DSN) {
     console.log('Sentry DSN not configured — skipping Sentry initialization');
@@ -23,10 +20,7 @@ export function initSentry(): void {
   console.log(`Sentry initialized for ${env.NODE_ENV} environment`);
 }
 
-/**
- * Capture an exception in Sentry.
- * Only sends if Sentry has been initialized.
- */
+/** Capture an exception in Sentry, only if it has been initialized. */
 export function captureException(err: Error): void {
   if (initialized) {
     Sentry.captureException(err);

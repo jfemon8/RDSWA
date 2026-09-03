@@ -17,17 +17,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REMEMBER_EMAIL_KEY = 'rdswa_remember_email';
 const REMEMBER_PASSWORD_KEY = 'rdswa_remember_password';
 
-/**
- * The password is Base64-encoded before being written to localStorage. This
- * is obfuscation, NOT encryption — anyone with access to localStorage can
- * decode it in one line. We accept this tradeoff because:
- *   1. The user explicitly opts in via the Remember Me checkbox.
- *   2. The main threat (plain text visible in DevTools inspection) is
- *      reduced, even if XSS can still defeat it.
- * If stronger protection is needed later, switch to the Credential Management
- * API (navigator.credentials) or fully migrate to browser-managed password
- * storage by removing this persistence entirely.
- */
+/** Base64 obfuscation, not encryption, accepted only because the user opts in via Remember Me and it hides plaintext from casual inspection. */
 const encodePassword = (p: string) => {
   try { return btoa(unescape(encodeURIComponent(p))); } catch { return ''; }
 };
@@ -42,9 +32,7 @@ export default function LoginPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  // Restore remembered credentials on first render so the form paints with
-  // the values already filled. We encode the password to avoid it showing
-  // up as plaintext in casual localStorage inspection (see note above).
+  // Restore remembered credentials on first render so the form paints already filled.
   const remembered = (() => {
     try {
       return {
@@ -94,10 +82,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', form);
       localStorage.setItem('accessToken', data.data.accessToken);
-      // Persist (or clear) remembered credentials for auto-fill next visit.
-      // Manual logout does NOT clear these — that's intentional, so the user
-      // can log back in quickly. To clear them, the user must uncheck
-      // "Remember me" and log in once.
+      // Persist or clear remembered credentials, which logout deliberately leaves alone so returning users log in quickly.
       try {
         if (rememberMe) {
           localStorage.setItem(REMEMBER_EMAIL_KEY, form.email.trim());

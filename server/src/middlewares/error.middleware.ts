@@ -51,8 +51,7 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
   console.error('Unhandled error:', err);
   res.status(500).json({
     success: false,
-    // In development, surface the real error message so the client toast can show it.
-    // In production we hide internals to avoid leaking implementation details.
+    // Surface the real message in development only, hiding internals in production.
     message: env.NODE_ENV === 'development' ? (err.message || 'Internal server error') : 'Internal server error',
     ...(env.NODE_ENV === 'development' && { stack: err.stack }),
   });

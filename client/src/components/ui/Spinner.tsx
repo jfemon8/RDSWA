@@ -5,7 +5,7 @@ export interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   /** Optional label shown below the spinner */
   label?: string;
-  /** When true, fills its parent with min-h-[50vh] for full-page centering. When false, just renders inline-centered with sensible padding. */
+  /** Fill the parent with min-h-[50vh] for full-page centering, rather than rendering inline-centered with padding. */
   fullPage?: boolean;
   /** Extra classes on the outer wrapper */
   className?: string;
@@ -17,11 +17,7 @@ const SIZE_MAP = {
   lg: { outer: 'h-20 w-20', dot: 'h-3.5 w-3.5', gap: 'gap-4', text: 'text-base' },
 } as const;
 
-/**
- * Attractive branded loading spinner — two counter-rotating gradient rings,
- * a pulsing center dot, and an optional animated label. Centers itself both
- * vertically and horizontally inside its container.
- */
+/** Branded spinner of two counter-rotating rings and a pulsing dot, centred both ways inside its container. */
 export default function Spinner({ size = 'md', label, fullPage = false, className = '' }: SpinnerProps) {
   const s = SIZE_MAP[size];
   return (

@@ -1,15 +1,4 @@
-/**
- * Catalogue of accepted membership document types. These keys are persisted
- * in `Form.attachments[i].name` so they must stay stable. The matching label
- * is rendered in the submission form and the admin review UI.
- *
- * Two groups of documents:
- *   - academicDocs:  proves the applicant's student/alumni status
- *   - identityDocs:  proves the applicant's legal identity
- *
- * The active subset of each group is configured at /admin/system-config →
- * Membership Criteria.
- */
+/** Catalogue of accepted membership document types whose keys persist in `Form.attachments[i].name` and must therefore stay stable. */
 
 export const ACADEMIC_DOC_TYPES = [
   { key: 'student_id', label: 'Student ID' },
@@ -56,11 +45,7 @@ export const DEFAULT_MEMBERSHIP_CRITERIA: MembershipCriteria = {
   autoRejectAfterDays: 30,
 };
 
-/**
- * Resolve the user-facing label for a stored attachment whose `name` is
- * either a doc-type key (new format) or a free-form string (legacy format).
- * Falls back to the raw name for backward compatibility with existing forms.
- */
+/** Resolve an attachment's display label from either a doc-type key or a legacy free-form name, falling back to the raw value. */
 export function getDocLabel(name: string | undefined): string {
   if (!name) return '';
   const all = [...ACADEMIC_DOC_TYPES, ...IDENTITY_DOC_TYPES];

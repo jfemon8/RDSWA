@@ -20,14 +20,7 @@ api.interceptors.request.use((config) => {
 });
 
 // ---- Single-flight refresh -------------------------------------------------
-// When the access token expires, the SPA typically has several queries in
-// flight (notifications poll, useAuth's /users/me, dashboard data). All of
-// them 401 within milliseconds of each other. Without coordination each one
-// would fire its own /auth/refresh-token call carrying the same cookie —
-// triggering the server's refresh-token-rotation theft detection on every
-// request after the first, which wipes the session and forces the user back
-// to /login. We coordinate here: at most one refresh runs at a time, and
-// every concurrent 401 awaits the same shared promise.
+// Concurrent 401s await one shared promise, since parallel refresh calls would trip the server's token-theft detection and wipe the session.
 
 let refreshPromise: Promise<string> | null = null;
 
@@ -48,15 +41,7 @@ async function performRefresh(): Promise<string> {
   return newAccessToken;
 }
 
-/**
- * Returns the current in-flight refresh promise, or starts a new one. All
- * callers that arrive while a refresh is pending await the SAME promise
- * instance — guaranteeing a single network call regardless of concurrency.
- *
- * Handlers attached before the promise settles all receive the resolved
- * token (or rejection); the `.finally` clears the slot only after the
- * settle, so a fresh refresh can start for the next expiry cycle.
- */
+/** Return the in-flight refresh promise or start one, so any number of concurrent callers share a single network call. */
 function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = performRefresh().finally(() => {
@@ -108,14 +93,7 @@ api.interceptors.response.use(
         (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Only invalidate the session when the refresh endpoint explicitly
-        // refused us (401/403). Network errors, timeouts, and 5xx responses
-        // mean the backend is briefly unreachable — most commonly a Render
-        // free-tier cold start. Logging the user out in that case wipes a
-        // perfectly valid refresh-token cookie and forces a re-login over
-        // a transient infrastructure blip (the original "bar bar logout"
-        // bug). Let the request fail; the next user action will retry the
-        // refresh and recover automatically.
+        // Only a 401 or 403 from the refresh endpoint ends the session, since network errors and 5xx are usually a transient cold start.
         const refreshStatus = (refreshError as AxiosError)?.response?.status;
         if (refreshStatus === 401 || refreshStatus === 403) {
           handleAuthFailure();

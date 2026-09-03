@@ -558,8 +558,7 @@ const emptySeat: SeatForm = {
   category: '', universityName: '', aUnit: 0, bUnit: 0, cUnit: 0, session: '', sortOrder: 0,
 };
 
-/** What the rename modal is currently targeting — either a whole session, or
- *  a category within a session. `null` means the modal is closed. */
+/** What the rename modal targets: a whole session, a category within one, or `null` when closed. */
 type RenameTarget =
   | { kind: 'session'; session: string }
   | { kind: 'category'; session: string; category: string }
@@ -570,16 +569,11 @@ function SeatsSection() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  // Form state — `editingSession` identifies WHICH session's accordion shows
-  // the inline form. Session lives in the form too so the mutation has it,
-  // but the UI never asks the admin to type or change it.
+  // `editingSession` picks which accordion shows the inline form, and the form carries the session for the mutation without ever asking the admin for it.
   const [form, setForm] = useState<SeatForm>(emptySeat);
   const [editingSession, setEditingSession] = useState<string | null>(null);
 
-  // Client-only stub sessions: a session label that exists in the UI but has
-  // no rows in the DB yet. Created via the "New Session" button so admins
-  // can open the inline form inside a brand-new session before any row
-  // exists server-side. Once a row is saved, the server data takes over.
+  // Client-only stub sessions exist in the UI with no DB rows yet, so admins can open the form in a brand-new session before anything is saved.
   const [pendingSessions, setPendingSessions] = useState<string[]>([]);
 
   // New Session dialog state.
@@ -602,8 +596,7 @@ function SeatsSection() {
   });
   const rows: any[] = data?.data || [];
 
-  // Bucket rows by session (server data), then merge in any pending stub
-  // sessions that don't yet have rows. Sort desc so newest is at the top.
+  // Bucket server rows by session, merge in pending stubs, and sort desc so the newest is on top.
   const bySession = useMemo(() => {
     const map = new Map<string, any[]>();
     for (const r of rows) {
@@ -716,17 +709,13 @@ function SeatsSection() {
     setEditingSession(r.session);
   };
 
-  /** Open the inline form inside the given session for a new row.
-   *  `category` is optional — when set (from the per-category Add button) the
-   *  form's category is pre-selected so admins don't pick it again. */
+  /** Open the inline form for a new row, pre-selecting `category` when the per-category Add button supplied one. */
   const handleAddTo = (session: string, category = '') => {
     setForm({ ...emptySeat, session, category });
     setEditingSession(session);
   };
 
-  /** Create a brand-new session via the dialog: register it as a pending stub
-   *  and open the inline form inside it so the admin can immediately add the
-   *  first row. */
+  /** Register a brand-new session as a pending stub and open its inline form for the first row. */
   const submitNewSession = () => {
     const label = newSessionLabel.trim();
     if (!label) { toast.error('Session label required'); return; }
@@ -939,9 +928,7 @@ function SeatsSection() {
   );
 }
 
-/** Inside-the-accordion body: groups a session's rows by category and exposes
- *  per-category actions (rename, delete, add row). The table per category
- *  drops the redundant category column since the header already says it. */
+/** Accordion body that groups a session's rows by category and exposes per-category rename, delete, and add actions. */
 function SeatsSessionBody({
   session,
   rows,
@@ -1057,18 +1044,9 @@ function SeatsSessionBody({
   );
 }
 
-/** Backdrop-blurred modal for "Clone Session": pick source from existing
- *  sessions, type a new target label. Server rejects a target that already
- *  has data so admins can't silently overwrite an existing session. */
+/** Clone Session modal, picking a source session and typing a target the server rejects if it already has data. */
 
-/**
- * Inline form rendered INSIDE a session accordion. The session is locked in
- * by context (the accordion's session) so the form never asks the admin to
- * pick or type a session. Category is a strict <select> of this session's
- * existing categories, plus an explicit "+ Add new category" mode that
- * swaps the select for a text input so admins can introduce a fresh one
- * without accidentally creating typos on existing categories.
- */
+/** Inline form inside a session accordion, where the session is fixed by context and the category select has an explicit "add new" mode. */
 function InlineSeatForm({
   session,
   categories,
@@ -1086,9 +1064,7 @@ function InlineSeatForm({
   onCancel: () => void;
   submitting: boolean;
 }) {
-  // Default to "add new" if the session has no categories at all (otherwise
-  // the dropdown would be empty and admins couldn't move forward).
-  // For edits, the row's category exists in `categories`, so select mode wins.
+  // Default to "add new" only when the session has no categories, since an edit's category always exists in the list.
   const [newCategoryMode, setNewCategoryMode] = useState(categories.length === 0);
 
   // If the session gains its first category mid-edit (after a save in a sibling),
@@ -1451,9 +1427,7 @@ function RenameDialog({
 // Cut-offs CRUD
 // ═══════════════════════════════════════════════════════
 
-/** Numeric fields are stored as strings so empty inputs round-trip cleanly
- *  without becoming the number `0`. An optional `_id` flags an existing row
- *  fetched from the server vs. a new row being drafted. */
+/** Numeric fields are strings so empty inputs never become `0`, and an optional `_id` marks a row that already exists server-side. */
 interface CutoffUnitFields {
   _id?: string;
   firstMerit: string;
@@ -1462,10 +1436,7 @@ interface CutoffUnitFields {
   lastScore: string;
 }
 
-/** Department-centric form: Faculty + Department picked once, then per-unit
- *  sections (A / B / C) below. Each filled unit becomes one DB row on save;
- *  empty units are skipped on create. On edit, all of the department's
- *  existing rows for this session are loaded into the matching sections. */
+/** Department-centric form where Faculty and Department are picked once and each filled unit section becomes one DB row. */
 interface CutoffForm {
   session: string;
   faculty: string;
@@ -1486,9 +1457,7 @@ const emptyCutoff: CutoffForm = {
   units: { A: { ...emptyUnit }, B: { ...emptyUnit }, C: { ...emptyUnit } },
 };
 
-/** True when every field in a unit section is empty — drives the "create
- *  only when filled" skip rule. Does NOT consider `_id` (caller checks that
- *  separately to differentiate "skip new row" from "keep existing row"). */
+/** True when every field in a unit section is empty, ignoring `_id` so the caller can tell a new row from an existing one. */
 function isEmptyUnit(u: CutoffUnitFields): boolean {
   return !u.firstMerit.trim() && !u.firstScore.trim() && !u.lastMerit.trim() && !u.lastScore.trim();
 }
@@ -1507,9 +1476,7 @@ function CutoffsSection() {
   const [form, setForm] = useState<CutoffForm>(emptyCutoff);
   const [editingSession, setEditingSession] = useState<string | null>(null);
 
-  // Client-only stub sessions — same trick as Seats: a session label that
-  // exists in the UI but has no rows in the DB yet, so admins can open the
-  // inline form inside a brand-new session before the first row is saved.
+  // Client-only stub sessions, the same trick as Seats, let admins open the form in a session with no DB rows yet.
   const [pendingSessions, setPendingSessions] = useState<string[]>([]);
 
   // New Session dialog state.
@@ -1556,11 +1523,7 @@ function CutoffsSection() {
 
   const closeForm = () => { setForm(emptyCutoff); setEditingSession(null); };
 
-  /** Dispatch one POST or PATCH per non-empty unit section. New rows are
-   *  skipped when their section has no data (the "optional skip" rule);
-   *  existing rows are always PATCHed so admins can clear individual
-   *  fields. Unit deletion is intentionally NOT handled here — admins use
-   *  the per-row delete button in the table for that. */
+  /** Dispatch one POST or PATCH per non-empty unit section, skipping empty new rows and always patching existing ones. */
   const saveMutation = useMutation({
     mutationFn: async (payload: CutoffForm) => {
       const numOrUndef = (s: string) => (s === '' || s === null || s === undefined ? undefined : Number(s));
@@ -1652,9 +1615,7 @@ function CutoffsSection() {
   });
 
   // ── Handlers ────────────────────────────────────────────
-  /** Clicking Edit on ANY of a department's rows loads the WHOLE department
-   *  (every unit it has data for) into the form. Empty unit sections are
-   *  drafts that admins can fill in to add a missing unit alongside the edit. */
+  /** Editing any row loads the whole department, so a missing unit can be added alongside the edit. */
   const handleEdit = (r: any) => {
     const peers = rows.filter(
       (x) => x.session === r.session && x.faculty === r.faculty && x.department === r.department
@@ -1881,13 +1842,7 @@ function CutoffsSection() {
   );
 }
 
-/**
- * Department-centric inline cut-off form. Faculty + Department are picked
- * once at the top, then the A / B / C unit sections share that scope.
- * Skipping is "soft": an empty unit section just doesn't create a row.
- * For edits, every existing unit for the department is preloaded so the
- * admin sees the complete picture and can add a missing unit alongside.
- */
+/** Department-centric inline cut-off form where the A/B/C unit sections share one Faculty and Department scope. */
 function InlineCutoffForm({
   session,
   faculties,
@@ -2002,9 +1957,7 @@ function InlineCutoffForm({
   );
 }
 
-/** Compact fieldset for a single unit's 1st-position / last-position pair.
- *  Highlights when the unit has existing data so admins know which sections
- *  will be PATCHed vs. POSTed. */
+/** Compact fieldset for one unit's first and last position pair, highlighted when the unit already has data. */
 function UnitFieldset({
   unitKey,
   data,
@@ -2145,13 +2098,7 @@ function CutoffsAdminTable({
 // Shared form bits
 // ═══════════════════════════════════════════════════════
 
-/**
- * Collapsible session card used by both SeatsSection and CutoffsSection.
- * Latest session is open by default and shows a "Most recent" caption.
- * The header includes an "Add row" button so admins can add a row directly
- * into the session they're already looking at, without retyping the session
- * string in the form.
- */
+/** Collapsible session card shared by Seats and Cut-offs, with the latest session open by default and an inline "Add row" button. */
 function AdminSessionAccordion({
   session,
   count,
@@ -2170,8 +2117,7 @@ function AdminSessionAccordion({
   /** Optional extra action buttons rendered to the LEFT of "Add Row" — used
    *  by SeatsSection to surface Rename / Delete bulk ops. */
   extraActions?: React.ReactNode;
-  /** Literal text shown before the session label in the header.
-   *  Seats passes "গুচ্ছ বিশ্ববিদ্যালয়ের আসন সমূহ "; Cutoffs uses the default. */
+  /** Literal text shown before the session label, which Seats overrides and Cut-offs leaves at the default. */
   titlePrefix?: string;
   children: React.ReactNode;
 }) {

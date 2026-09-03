@@ -1,13 +1,7 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 
-/**
- * Tab state synced to a URL search param so navigating away and pressing
- * back returns to the same tab. Drop-in replacement for `useState<Tab>(default)`.
- *
- * Tab changes use `replace: true` so they don't flood browser history.
- * If the URL value isn't in `validValues`, the hook falls back to `defaultValue`.
- */
+/** Tab state synced to a URL param with `replace: true`, falling back to `defaultValue` when the URL value isn't valid. */
 export function useTabParam<T extends string>(
   validValues: readonly T[],
   defaultValue: T,

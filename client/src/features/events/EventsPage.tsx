@@ -16,8 +16,7 @@ import Pagination from '@/components/ui/Pagination';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
 
-// One in-feed promo per N event cards. 6 keeps density unobtrusive while
-// still hitting the 12-per-page list often enough to register impressions.
+// One in-feed promo per six event cards, unobtrusive yet frequent enough on a twelve-per-page list.
 const PROMO_EVERY = 6;
 
 const EVENT_TYPES = ['event', 'meeting', 'workshop', 'seminar', 'social', 'other'];

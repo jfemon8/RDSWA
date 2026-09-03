@@ -1,17 +1,7 @@
 import { Message } from '../models';
 import { cloudinary } from '../config/cloudinary';
 
-/**
- * Scan messages for attachments whose retention window has expired, delete the
- * file from Cloudinary, and mark the attachment as expired so the chat UI can
- * render a "File expired" placeholder instead of a broken link.
- *
- * Retention is set when the message is created (see buildAttachments in
- * communication.routes.ts): videos = 30 days, all other media = 90 days.
- * Contact attachments have no expiresAt and are skipped.
- *
- * Run on a schedule (every hour by default).
- */
+/** Hourly job that deletes expired attachments from Cloudinary and marks them expired, so the chat renders a placeholder instead of a broken link. */
 export async function runChatMediaPurge(): Promise<void> {
   try {
     const now = new Date();

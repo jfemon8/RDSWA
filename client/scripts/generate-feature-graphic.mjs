@@ -1,29 +1,5 @@
 #!/usr/bin/env node
-/**
- * Generates the 1024×500 feature graphic used by app stores (APKPure,
- * Google Play, Aptoide, Samsung Galaxy Store) as the hero banner shown
- * above the screenshots in a listing.
- *
- *   Source:  client/public/icons/source-logo.png
- *   Output:  client/public/feature-graphic.png
- *
- * Re-run after rebranding:
- *   npm run generate:feature --workspace=client
- *
- * Why custom-built rather than reusing the OG image:
- *   The OG image is 1200×630 (1.91:1) and tuned for social-card crop
- *   ratios — Facebook/Twitter tend to centre-crop the top + bottom.
- *   Feature graphics are 1024×500 (~2.05:1), wider and shorter, with a
- *   strict requirement that NO essential text or logo fall in the
- *   horizontal centre of the image (Google Play overlays the install
- *   button there on some surfaces). This script lays the badge on the
- *   far left and pushes title text to the right, keeping the centre
- *   uncluttered.
- *
- * Brand palette is shared with manifest.theme_color and the OG image
- * generator so apnar visual identity stays coherent across stores,
- * social shares, and the PWA chrome.
- */
+/** Generates the 1024x500 app-store feature graphic via `npm run generate:feature --workspace=client`, keeping the centre clear for store install overlays. */
 import sharp from 'sharp';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -66,10 +42,7 @@ async function buildBackground() {
 }
 
 async function buildTextOverlay() {
-  // Layout principle: badge on the LEFT (centred between 50px–340px),
-  // text block on the RIGHT (starting at x=370). Centre column
-  // (around x=450–600) deliberately left clean so app-store install
-  // buttons / overlays don't crash into critical content.
+  // Badge left and text right, leaving the centre column clear for app-store install overlays.
   const overlay = `
     <svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
       <style>
@@ -103,10 +76,7 @@ async function buildTextOverlay() {
 }
 
 async function buildLogoBadge() {
-  // White circular badge so the logo reads cleanly on the green
-  // gradient regardless of which logo variant (light/dark) is in use.
-  // Sized to fit within the left third of the canvas (50–340 = 290px,
-  // so badge=280px gives 5px breathing room on each side).
+  // A white circular badge sized to the left third, so either logo variant reads cleanly on the green gradient.
   const BADGE = 280;
   const INNER = 215;
 

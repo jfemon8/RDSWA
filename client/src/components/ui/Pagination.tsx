@@ -4,7 +4,7 @@ interface PaginationProps {
   page: number;
   totalPages: number;
   onChange: (page: number) => void;
-  /** Tailwind sizing of buttons. "sm" matches admin tables, "md" matches public list pages. */
+  /** Button sizing, where "sm" matches admin tables and "md" matches public list pages. */
   size?: "sm" | "md";
   className?: string;
 }

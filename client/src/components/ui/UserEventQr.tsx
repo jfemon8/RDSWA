@@ -10,10 +10,7 @@ interface UserEventQrProps {
   className?: string;
 }
 
-/**
- * Generates a per-user QR code for event check-in.
- * Encodes: `RDSWA:CHECKIN:{eventId}:{userId}` — domain-independent.
- */
+/** Generates a per-user check-in QR encoding the domain-independent `RDSWA:CHECKIN:{eventId}:{userId}`. */
 export default function UserEventQr({ eventId, userId, size = 200, className = '' }: UserEventQrProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 

@@ -1,15 +1,7 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 
-/**
- * Page state synced to a URL search param so that navigating away and
- * pressing back returns to the same page. Drop-in replacement for
- * `useState<number>(1)` when paired with the shared `Pagination` component.
- *
- * Pagination changes use `replace: true` so they don't flood browser history,
- * but the URL still preserves the page, so back navigation from a detail page
- * returns to the correct page.
- */
+/** Page state synced to a URL param with `replace: true`, so back navigation returns to the same page without flooding history. */
 export function usePageParam(
   key = "page",
 ): [number, (page: number) => void] {

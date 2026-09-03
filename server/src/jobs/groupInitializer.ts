@@ -1,11 +1,7 @@
 import { ChatGroup, User, SiteSettings } from '../models';
 import { UserRole } from '@rdswa/shared';
 
-/**
- * Read the canonical department list from SiteSettings.academicConfig.faculties.
- * The admin-curated list at /admin/settings?tab=academic is the single source of
- * truth: only departments listed there are allowed to have a chat group.
- */
+/** Read the canonical department list from academicConfig, the single source of truth for which departments may have a chat group. */
 async function getConfiguredDepartments(): Promise<Set<string>> {
   const settings = await SiteSettings.findOne();
   const faculties = settings?.academicConfig?.faculties || [];
@@ -19,18 +15,7 @@ async function getConfiguredDepartments(): Promise<Set<string>> {
   return set;
 }
 
-/**
- * Reconcile department chat groups against the configured faculties/departments.
- *  - Creates groups for any configured department missing one.
- *  - Soft-deletes (`isDeleted: true`) any existing department group whose
- *    department is no longer listed in academicConfig — keeps history but hides
- *    the group from listings.
- *  - Re-activates a previously soft-deleted group if its department reappears
- *    in the config.
- *
- * Safe to call repeatedly. Called on startup and after admin updates the
- * academic config in /admin/settings.
- */
+/** Reconcile department chat groups against academicConfig, creating, soft-deleting, or re-activating them as the list changes. */
 export async function syncDepartmentGroups(): Promise<void> {
   const configured = await getConfiguredDepartments();
 
@@ -86,10 +71,7 @@ export async function syncDepartmentGroups(): Promise<void> {
   }
 }
 
-/**
- * Ensure central group and department groups exist.
- * Run once at startup.
- */
+/** Ensure the central and department groups exist, run once at startup. */
 export async function initializeGroups(): Promise<void> {
   try {
     // Fetch all admin/superadmin users for auto-adding
@@ -132,10 +114,7 @@ export async function initializeGroups(): Promise<void> {
   }
 }
 
-/**
- * Ensure the central "RDSWA, BU" group exists. Creates it if missing.
- * On creation: seeds with all existing approved members + all admins.
- */
+/** Ensure the central "RDSWA, BU" group exists, seeding it with every approved member and admin when first created. */
 export async function ensureCentralGroup(): Promise<void> {
   const existing = await ChatGroup.findOne({ type: 'central', isDeleted: false });
   if (existing) return;
@@ -165,14 +144,7 @@ export async function ensureCentralGroup(): Promise<void> {
   });
 }
 
-/**
- * Ensure a department group exists. Called when a user's department is set.
- * On creation: seeds with all existing approved members of that department + all admins.
- *
- * Refuses to create a group for a department that is not present in
- * academicConfig.faculties — the admin-curated list is the single source of
- * truth. If a user's department falls off the list, no group is auto-created.
- */
+/** Ensure a group exists for a department listed in academicConfig, seeding it with that department's approved members and all admins. */
 export async function ensureDepartmentGroup(department: string): Promise<void> {
   if (!department) return;
   const configured = await getConfiguredDepartments();

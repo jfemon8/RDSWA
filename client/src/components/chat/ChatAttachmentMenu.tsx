@@ -5,11 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 
-/**
- * Browser API: navigator.contacts.select() — only on Android Chrome (and only
- * via HTTPS or localhost). Not in standard TS lib, so we declare a minimal
- * shape here. Detection happens at runtime.
- */
+/** Minimal declaration for `navigator.contacts.select()`, an Android Chrome API missing from the standard TS lib and detected at runtime. */
 interface ContactsManager {
   select(properties: string[], options?: { multiple?: boolean }): Promise<Array<{
     name?: string[];
@@ -73,12 +69,7 @@ interface ChatAttachmentMenuProps {
   disabled?: boolean;
 }
 
-/**
- * Paperclip button that opens a popover with 6 attachment options:
- * Image, Video, Audio, PDF, File, Contact.
- * Handles upload to /upload/chat-media for media kinds; contact uses an inline
- * member search that produces a contact attachment (no upload).
- */
+/** Paperclip popover offering media kinds that upload to /upload/chat-media plus a contact option backed by inline member search. */
 export default function ChatAttachmentMenu({ onSelect, disabled }: ChatAttachmentMenuProps) {
   const toast = useToast();
   const [open, setOpen] = useState(false);

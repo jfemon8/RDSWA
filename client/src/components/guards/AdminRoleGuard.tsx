@@ -4,19 +4,12 @@ import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 
 interface AdminRoleGuardProps {
   minRole: UserRole;
-  /**
-   * Optional list of emails to deny even if they otherwise meet the role.
-   * Pass scope-specific lists from shared (e.g. BACKUP_RESTRICTED_SUPER_ADMINS).
-   */
+  /** Optional scope-specific email list, from shared, denied even when the role check passes. */
   denyEmails?: string[];
   children: React.ReactNode;
 }
 
-/**
- * Inline role guard for individual admin routes.
- * Redirects to /admin if user's role is below the required minimum
- * or if the user's email is in the denyEmails list.
- */
+/** Inline route guard that redirects to /admin when the role is too low or the email is in `denyEmails`. */
 export default function AdminRoleGuard({ minRole, denyEmails, children }: AdminRoleGuardProps) {
   const { user } = useAuthStore();
 

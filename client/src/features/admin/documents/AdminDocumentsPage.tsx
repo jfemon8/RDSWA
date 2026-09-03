@@ -20,9 +20,7 @@ import { formatDateTime } from '@/lib/date';
 const CATEGORIES = ['policy', 'resolution', 'report', 'form', 'other'] as const;
 const ROLES = ['user', 'member', 'alumni', 'advisor', 'senior_advisor', 'moderator', 'admin'] as const;
 
-// Common file extensions we recognize when swapping the title's extension.
-// If the title currently ends with one of these and the user uploads a
-// different format, the extension is replaced cleanly instead of stacking.
+// Recognized extensions, so uploading a different format replaces the title's suffix instead of stacking one on.
 const KNOWN_EXTS = new Set([
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg',
@@ -51,11 +49,7 @@ function humanize(name: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/**
- * Ensure the title ends with the given extension. If the title already
- * ends with a different KNOWN extension, swap it. If it ends with the
- * same extension (case-insensitive), leave alone. Otherwise append.
- */
+/** Ensure the title ends with the given extension, swapping a different known one and leaving a matching one alone. */
 function applyExt(title: string, ext: string): string {
   const t = title.trim();
   if (!ext || !t) return t;
@@ -87,8 +81,7 @@ export default function AdminDocumentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
-  // UI-only: original filename of the just-uploaded file, for display.
-  // Not persisted to the server (existing docs don't have this on edit).
+  // Display-only filename of the just-uploaded file, never persisted to the server.
   const [originalFileName, setOriginalFileName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -329,11 +322,7 @@ export default function AdminDocumentsPage() {
                             const { data } = await api.post('/upload/document', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
                             const ext = getExt(file.name);
                             setForm((f) => {
-                              // Smart title logic:
-                              //  - If title is empty → derive a humanized title from the filename + extension.
-                              //  - If title already has the same extension → leave as-is.
-                              //  - If title has a different known extension → swap it.
-                              //  - Otherwise → append the extension.
+                              // Derive a title from the filename when empty, otherwise swap or append the extension as needed.
                               const nextTitle = f.title.trim()
                                 ? applyExt(f.title, ext)
                                 : applyExt(humanize(stripExt(file.name)), ext);

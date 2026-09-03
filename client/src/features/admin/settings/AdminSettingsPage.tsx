@@ -27,9 +27,7 @@ export default function AdminSettingsPage() {
   const [tab, setTab] = useTabParam<Tab>(TABS, 'general');
   const { user } = useAuthStore();
 
-  // The AdSense kill-switch is scoped to SuperAdmins minus the restricted
-  // list. Hide both the tab button and the panel itself; if a restricted
-  // user lands on it via deep-link, fall back to General.
+  // The AdSense kill-switch is scoped to SuperAdmins minus the restricted list, who fall back to General on deep-link.
   const canManageAdsense =
     user?.role === UserRole.SUPER_ADMIN &&
     !ADSENSE_RESTRICTED_SUPER_ADMINS.includes(user.email.toLowerCase());
