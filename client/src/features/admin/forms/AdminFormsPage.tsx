@@ -12,6 +12,8 @@ import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
+import { Link } from 'react-router-dom';
+import DocumentPreviewModal, { type DocumentPreviewTarget } from '@/components/ui/DocumentPreviewModal';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import RichContent from '@/components/ui/RichContent';
 import { proxyFileUrl } from '@/lib/fileProxy';
@@ -26,6 +28,7 @@ export default function AdminFormsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [preview, setPreview] = useState<DocumentPreviewTarget | null>(null);
   const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 
   const filters: Record<string, string> = {};
@@ -120,7 +123,11 @@ export default function AdminFormsPage() {
                     <div className="p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-2 gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground capitalize flex items-center gap-1.5">
+                          <p
+                            onClick={() => setExpandedId(expandedId === f._id ? null : f._id)}
+                            title="Details"
+                            className="font-medium text-foreground capitalize flex items-center gap-1.5 cursor-pointer"
+                          >
                             <FileText className="h-4 w-4 text-primary shrink-0" /> {f.type?.replace('_', ' ')} Form
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -228,7 +235,7 @@ export default function AdminFormsPage() {
                                 <p className="text-xs font-semibold text-muted-foreground uppercase">Attached Documents ({attachments.length})</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {attachments.map((a, i) => (
-                                    <AttachmentRow key={i} name={a.name} url={a.url} />
+                                    <AttachmentRow key={i} name={a.name} url={a.url} onPreview={setPreview} />
                                   ))}
                                 </div>
                               </div>
@@ -236,7 +243,7 @@ export default function AdminFormsPage() {
 
                             {/* Submitter context */}
                             <div className="text-xs text-muted-foreground">
-                              Submitted by <span className="font-medium text-foreground">{f.submittedBy?.name || 'Unknown'}</span>
+                              Submitted by <UserLink user={f.submittedBy} />
                               {f.submittedBy?.email && <> ({f.submittedBy.email})</>} on {formatDate(f.createdAt)}
                             </div>
 
@@ -272,7 +279,7 @@ export default function AdminFormsPage() {
                             ) : (
                               f.reviewedBy && (
                                 <p className="text-xs text-muted-foreground pt-2 border-t">
-                                  Reviewed by {f.reviewedBy?.name || 'admin'} on {f.reviewedAt ? formatDate(f.reviewedAt) : 'N/A'}
+                                  Reviewed by <UserLink user={f.reviewedBy} fallback="admin" /> on {f.reviewedAt ? formatDate(f.reviewedAt) : 'N/A'}
                                 </p>
                               )
                             )}
@@ -294,41 +301,52 @@ export default function AdminFormsPage() {
             endLabel={forms.length > 0 ? `All ${total} forms loaded` : undefined}
           />
       </div>
+
+      <DocumentPreviewModal target={preview} onClose={() => setPreview(null)} />
     </FadeIn>
   );
 }
 
 /** Attachment row whose view and download buttons route through the backend proxy so PDFs preview inline and keep their filename. */
-function AttachmentRow({ name, url }: { name: string; url: string }) {
+function AttachmentRow({
+  name,
+  url,
+  onPreview,
+}: {
+  name: string;
+  url: string;
+  onPreview: (target: DocumentPreviewTarget) => void;
+}) {
   const label = getDocLabel(name);
   const filename = `${name || 'document'}${guessExt(url)}`;
-  const previewUrl = proxyFileUrl(url, filename, true);
   const downloadUrl = proxyFileUrl(url, filename, false);
   const isImage = /\.(jpe?g|png|webp|gif)(\?|$)/i.test(url);
+  const open = () => onPreview({ url, title: label, fileName: filename });
 
   return (
     <div className="flex items-center gap-2 p-2 rounded-md border bg-background">
-      {isImage ? (
-        <img src={url} alt={label} className="h-10 w-10 rounded object-cover shrink-0" />
-      ) : (
-        <div className="h-10 w-10 rounded bg-muted grid place-items-center shrink-0">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground truncate" title={label}>{label}</p>
+      <button type="button" onClick={open} title="Open document" aria-label={`Open ${label}`} className="shrink-0">
+        {isImage ? (
+          <img src={url} alt={label} className="h-10 w-10 rounded object-cover" />
+        ) : (
+          <div className="h-10 w-10 rounded bg-muted grid place-items-center">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
+      </button>
+      <button type="button" onClick={open} className="min-w-0 flex-1 text-left" title="Open document">
+        <p className="text-sm font-medium text-foreground truncate hover:text-primary" title={label}>{label}</p>
         <p className="text-[11px] text-muted-foreground uppercase">{name}</p>
-      </div>
+      </button>
       <div className="flex items-center gap-1 shrink-0">
-        <a
-          href={previewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={open}
           className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
           title="View"
         >
           <Eye className="h-4 w-4" />
-        </a>
+        </button>
         <a
           href={downloadUrl}
           className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
@@ -344,4 +362,15 @@ function AttachmentRow({ name, url }: { name: string; url: string }) {
 function guessExt(url: string): string {
   const m = url.match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
   return m ? `.${m[1]}` : '';
+}
+
+/** Name that links to its profile, falling back to plain text when the record carries no user id. */
+function UserLink({ user, fallback = 'Unknown' }: { user?: { _id?: string; name?: string }; fallback?: string }) {
+  const name = user?.name || fallback;
+  if (!user?._id) return <span className="font-medium text-foreground">{name}</span>;
+  return (
+    <Link to={`/members/${user._id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+      {name}
+    </Link>
+  );
 }
