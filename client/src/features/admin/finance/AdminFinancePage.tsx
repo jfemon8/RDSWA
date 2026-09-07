@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useTabParam } from '@/hooks/useTabParam';
+import { useEventOptions, useCommitteeOptions } from '@/hooks/useLinkOptions';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -13,7 +14,7 @@ import {
   Pencil, Trash2, Calendar,
 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
-import { formatDate } from '@/lib/date';
+import { formatDate, toDateInput } from '@/lib/date';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import {
@@ -506,7 +507,7 @@ function ExpensesList() {
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '', event: '' });
+  const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '', expenseDate: '', event: '', committee: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
@@ -520,21 +521,17 @@ function ExpensesList() {
   const resetForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ title: '', amount: '', category: 'other', description: '', event: '' });
+    setForm({ title: '', amount: '', category: 'other', description: '', expenseDate: '', event: '', committee: '' });
     setErrors({});
   };
 
-  const { data: eventOptionsData } = useQuery({
-    queryKey: ['event-link-options'],
-    queryFn: async () => (await api.get('/events?limit=100')).data,
-  });
-  const eventOptions: any[] = eventOptionsData?.data || [];
+  const eventOptions = useEventOptions();
+  const committeeOptions = useCommitteeOptions();
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // An empty event must be dropped, or Mongoose rejects '' as an ObjectId.
+      // Blank links are sent as '' so the server can apply today's date, the current committee and no event.
       const payload: any = { ...form, amount: Number(form.amount) };
-      if (!payload.event) delete payload.event;
       if (editId) return (await api.patch(`/expenses/${editId}`, payload)).data;
       return (await api.post('/expenses', payload)).data;
     },
@@ -564,7 +561,9 @@ function ExpensesList() {
       amount: String(e.amount || ''),
       category: e.category || 'other',
       description: e.description || '',
+      expenseDate: e.expenseDate ? toDateInput(e.expenseDate) : '',
       event: (typeof e.event === 'object' ? e.event?._id : e.event) || '',
+      committee: (typeof e.committee === 'object' ? e.committee?._id : e.committee) || '',
     });
     setErrors({});
     setShowForm(true);
@@ -613,16 +612,43 @@ function ExpensesList() {
                   <option value="other">Other</option>
                 </select>
                 <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Expense Date</label>
+                  <input
+                    type="date"
+                    value={form.expenseDate}
+                    max={toDateInput(new Date())}
+                    onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  />
+                  <FieldError message={errors.expenseDate} />
+                </div>
+                <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Linked event</label>
                   <select
                     value={form.event}
                     onChange={(e) => setForm({ ...form, event: e.target.value })}
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
                   >
-                    <option value="" className="bg-card text-foreground">— None —</option>
+                    <option value="" className="bg-card text-foreground">Select Event</option>
                     {eventOptions.map((ev: any) => (
                       <option key={ev._id} value={ev._id} className="bg-card text-foreground">
                         {ev.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Committee</label>
+                  <select
+                    value={form.committee}
+                    onChange={(e) => setForm({ ...form, committee: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  >
+                    <option value="" className="bg-card text-foreground">Select Committee</option>
+                    {committeeOptions.map((c: any) => (
+                      <option key={c._id} value={c._id} className="bg-card text-foreground">
+                        {c.name}
+                        {c.isCurrent ? ' (current)' : ''}
                       </option>
                     ))}
                   </select>
@@ -682,16 +708,20 @@ function ExpensesList() {
                 <div className="hidden lg:block border rounded-lg overflow-hidden">
                   <table className="w-full text-sm table-fixed">
                     <colgroup>
-                      <col className="w-[38%]" />
-                      <col className="w-[18%]" />
-                      <col className="w-[14%]" />
-                      <col className="w-[18%]" />
+                      <col className="w-[26%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[11%]" />
+                      <col className="w-[15%]" />
+                      <col className="w-[15%]" />
                       <col className="w-[12%]" />
+                      <col className="w-[8%]" />
                     </colgroup>
                     <thead><tr className="bg-muted border-b">
                       <th className="text-left p-3 font-medium text-foreground">Title</th>
                       <th className="text-left p-3 font-medium text-foreground">Amount</th>
                       <th className="text-left p-3 font-medium text-foreground">Category</th>
+                      <th className="text-left p-3 font-medium text-foreground">Event</th>
+                      <th className="text-left p-3 font-medium text-foreground">Committee</th>
                       <th className="text-left p-3 font-medium text-foreground">Date</th>
                       <th className="text-right p-3 font-medium text-foreground">Actions</th>
                     </tr></thead>
@@ -701,7 +731,9 @@ function ExpensesList() {
                           <td className="p-3 text-foreground truncate" title={e.title}>{e.title}</td>
                           <td className="p-3 font-medium text-red-600 whitespace-nowrap">BDT {e.amount?.toLocaleString()}</td>
                           <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={e.category}>{e.category}</td>
-                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(e.createdAt)}</td>
+                          <td className="p-3 text-xs text-muted-foreground truncate" title={e.event?.title || ''}>{e.event?.title || '—'}</td>
+                          <td className="p-3 text-xs text-muted-foreground truncate" title={e.committee?.name || ''}>{e.committee?.name || '—'}</td>
+                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(e.expenseDate || e.createdAt)}</td>
                           <td className="p-3">{renderActions(e)}</td>
                         </tr>
                       ))}
@@ -719,7 +751,9 @@ function ExpensesList() {
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-2">
                         <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{e.category}</span>
-                        <span>{formatDate(e.createdAt)}</span>
+                        {e.event?.title && <span className="px-2 py-0.5 bg-muted rounded-full">{e.event.title}</span>}
+                        {e.committee?.name && <span className="px-2 py-0.5 bg-muted rounded-full">{e.committee.name}</span>}
+                        <span>{formatDate(e.expenseDate || e.createdAt)}</span>
                       </div>
                       <div className="pt-2 border-t">{renderActions(e)}</div>
                     </div>

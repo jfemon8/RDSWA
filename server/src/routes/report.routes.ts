@@ -49,7 +49,13 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     const start = new Date(yearFilter, 0, 1);
     const end = new Date(yearFilter + 1, 0, 1);
     donationMatch.createdAt = { $gte: start, $lt: end };
-    expenseMatch.createdAt = { $gte: start, $lt: end };
+    // Expenses can be back-dated, so the year follows expenseDate and falls back for rows recorded before it existed.
+    expenseMatch.$expr = {
+      $and: [
+        { $gte: [{ $ifNull: ['$expenseDate', '$createdAt'] }, start] },
+        { $lt: [{ $ifNull: ['$expenseDate', '$createdAt'] }, end] },
+      ],
+    };
   }
 
   const [donationsByMonth, donationsByType, expensesByCategory, totalDonations, totalExpenses, donationsByYear] = await Promise.all([
@@ -260,17 +266,25 @@ router.get('/finance/export', authenticate(), authorize(UserRole.ADMIN), asyncHa
   } else if (type === 'expenses') {
     const match: any = { isDeleted: false };
     if (yearFilter) {
-      match.createdAt = { $gte: new Date(yearFilter, 0, 1), $lt: new Date(yearFilter + 1, 0, 1) };
+      const start = new Date(yearFilter, 0, 1);
+      const end = new Date(yearFilter + 1, 0, 1);
+      match.$expr = {
+        $and: [
+          { $gte: [{ $ifNull: ['$expenseDate', '$createdAt'] }, start] },
+          { $lt: [{ $ifNull: ['$expenseDate', '$createdAt'] }, end] },
+        ],
+      };
     }
     const expenses = await Expense.find(match)
       .populate('event', 'title')
+      .populate('committee', 'name')
       .populate('createdBy', 'name')
-      .sort({ createdAt: -1 })
+      .sort({ expenseDate: -1, createdAt: -1 })
       .lean();
 
-    const header = 'Date,Title,Amount,Category,Event,Created By,Receipt\n';
+    const header = 'Date,Title,Amount,Category,Event,Committee,Created By,Receipt\n';
     const rows = expenses.map((e: any) =>
-      `${new Date(e.createdAt).toISOString().slice(0, 10)},${e.title.replace(/,/g, '')},${e.amount},${e.category},${(e.event?.title || '').replace(/,/g, '')},${(e.createdBy?.name || '').replace(/,/g, '')},${e.receiptUrl || ''}`
+      `${new Date(e.expenseDate || e.createdAt).toISOString().slice(0, 10)},${e.title.replace(/,/g, '')},${e.amount},${e.category},${(e.event?.title || '').replace(/,/g, '')},${(e.committee?.name || '').replace(/,/g, '')},${(e.createdBy?.name || '').replace(/,/g, '')},${e.receiptUrl || ''}`
     ).join('\n');
 
     res.setHeader('Content-Type', 'text/csv');

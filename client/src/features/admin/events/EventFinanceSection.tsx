@@ -8,7 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { FieldError } from "@/components/ui/FieldError";
 import { omitFieldError } from "@/lib/formErrors";
-import { formatDate } from "@/lib/date";
+import { formatDate, toDateInput } from "@/lib/date";
+import { useCommitteeOptions } from "@/hooks/useLinkOptions";
 import EventFinanceSummary from "@/components/ui/EventFinanceSummary";
 import DonationFormModal from "@/features/admin/donations/DonationFormModal";
 
@@ -34,6 +35,8 @@ export default function EventFinanceSection({ event }: { event: any }) {
     title: "",
     amount: "",
     category: "event",
+    expenseDate: "",
+    committee: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [donationOpen, setDonationOpen] = useState(false);
@@ -44,6 +47,8 @@ export default function EventFinanceSection({ event }: { event: any }) {
       (await api.get(`/expenses?event=${eventId}&limit=100`)).data,
   });
   const expenses: any[] = expenseData?.data || [];
+
+  const committeeOptions = useCommitteeOptions();
 
   const { data: donationData } = useQuery({
     queryKey: ["event-donations", eventId],
@@ -64,11 +69,19 @@ export default function EventFinanceSection({ event }: { event: any }) {
         title: form.title.trim(),
         amount: Number(form.amount),
         category: form.category,
+        expenseDate: form.expenseDate,
+        committee: form.committee,
         event: eventId,
       }),
     onSuccess: () => {
       refresh();
-      setForm({ title: "", amount: "", category: "event" });
+      setForm({
+        title: "",
+        amount: "",
+        category: "event",
+        expenseDate: "",
+        committee: "",
+      });
       toast.success("Expense added");
     },
     onError: (err: any) =>
@@ -183,6 +196,36 @@ export default function EventFinanceSection({ event }: { event: any }) {
             Add
           </motion.button>
         </div>
+
+        {/* Both stay blank by default, letting the server stamp today and the current committee. */}
+        <div className="flex flex-col sm:flex-row gap-2 mt-2">
+          <input
+            type="date"
+            value={form.expenseDate}
+            max={toDateInput(new Date())}
+            onChange={(e) => set({ expenseDate: e.target.value })}
+            className={`${field} sm:w-44`}
+          />
+          <select
+            value={form.committee}
+            onChange={(e) => set({ committee: e.target.value })}
+            className={`${field} sm:flex-1`}
+          >
+            <option value="" className="bg-card text-foreground">
+              Select Committee
+            </option>
+            {committeeOptions.map((c: any) => (
+              <option
+                key={c._id}
+                value={c._id}
+                className="bg-card text-foreground"
+              >
+                {c.name}
+                {c.isCurrent ? " (current)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
       </form>
 
       {expenses.length > 0 && (
@@ -202,7 +245,7 @@ export default function EventFinanceSection({ event }: { event: any }) {
                 {x.category}
               </span>
               <span className="text-muted-foreground">
-                {formatDate(x.createdAt)}
+                {formatDate(x.expenseDate || x.createdAt)}
               </span>
               <span className="ml-auto font-medium text-red-600 dark:text-red-400 whitespace-nowrap">
                 {money(x.amount)}
