@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
-import { Scale, Plus, X, Loader2, ExternalLink } from "lucide-react";
+import { Scale, Plus, X, Loader2, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmModal";
@@ -10,6 +10,12 @@ import { FieldError } from "@/components/ui/FieldError";
 import { omitFieldError } from "@/lib/formErrors";
 import { formatDate, toDateInput } from "@/lib/date";
 import { useCommitteeOptions } from "@/hooks/useLinkOptions";
+import ExpenseDetailsFields, {
+  itemsTotal,
+  type ExpenseItem,
+  type ExpenseAttachment,
+} from "@/components/ui/ExpenseDetailsFields";
+import ExpenseDetailsView from "@/components/ui/ExpenseDetailsView";
 import EventFinanceSummary from "@/components/ui/EventFinanceSummary";
 import DonationFormModal from "@/features/admin/donations/DonationFormModal";
 
@@ -38,6 +44,9 @@ export default function EventFinanceSection({ event }: { event: any }) {
     expenseDate: "",
     committee: "",
   });
+  const [items, setItems] = useState<ExpenseItem[]>([]);
+  const [attachments, setAttachments] = useState<ExpenseAttachment[]>([]);
+  const [showDetails, setShowDetails] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [donationOpen, setDonationOpen] = useState(false);
 
@@ -67,10 +76,12 @@ export default function EventFinanceSection({ event }: { event: any }) {
     mutationFn: () =>
       api.post("/expenses", {
         title: form.title.trim(),
-        amount: Number(form.amount),
+        amount: items.length > 0 ? itemsTotal(items) : Number(form.amount),
         category: form.category,
         expenseDate: form.expenseDate,
         committee: form.committee,
+        items: items.map((i) => ({ head: i.head.trim(), amount: Number(i.amount) })),
+        attachments,
         event: eventId,
       }),
     onSuccess: () => {
@@ -82,6 +93,9 @@ export default function EventFinanceSection({ event }: { event: any }) {
         expenseDate: "",
         committee: "",
       });
+      setItems([]);
+      setAttachments([]);
+      setShowDetails(false);
       toast.success("Expense added");
     },
     onError: (err: any) =>
@@ -102,8 +116,12 @@ export default function EventFinanceSection({ event }: { event: any }) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!form.title.trim()) errs.title = "Expense title is required";
-    if (!form.amount || Number(form.amount) <= 0)
+    if (items.length > 0) {
+      if (items.some((i) => !i.head.trim() || !i.amount || Number(i.amount) <= 0))
+        errs.items = "Every cost needs a name and an amount above zero";
+    } else if (!form.amount || Number(form.amount) <= 0) {
       errs.amount = "Amount must be greater than zero";
+    }
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
@@ -164,9 +182,11 @@ export default function EventFinanceSection({ event }: { event: any }) {
               type="number"
               min="1"
               placeholder="Amount"
-              value={form.amount}
+              value={items.length > 0 ? String(itemsTotal(items)) : form.amount}
               onChange={(e) => set({ amount: e.target.value })}
-              className={field}
+              readOnly={items.length > 0}
+              title={items.length > 0 ? "Totalled from the spending details" : undefined}
+              className={`${field} ${items.length > 0 ? "opacity-70" : ""}`}
             />
             <FieldError message={errors.amount} />
           </div>
@@ -226,6 +246,38 @@ export default function EventFinanceSection({ event }: { event: any }) {
             ))}
           </select>
         </div>
+
+        {/* Kept behind a toggle so the quick-add row stays a quick-add row. */}
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          {showDetails ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+          Spending details & documents
+          {items.length + attachments.length > 0
+            ? ` (${items.length + attachments.length})`
+            : ""}
+        </button>
+
+        {showDetails && (
+          <ExpenseDetailsFields
+            items={items}
+            attachments={attachments}
+            onItemsChange={(next) => {
+              setItems(next);
+              setErrors((prev) => omitFieldError(prev, "items"));
+            }}
+            onAttachmentsChange={setAttachments}
+            onError={(m) => toast.error(m)}
+            error={errors.items}
+            className="mt-2"
+          />
+        )}
       </form>
 
       {expenses.length > 0 && (
@@ -236,8 +288,9 @@ export default function EventFinanceSection({ event }: { event: any }) {
               initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: Math.min(i * 0.02, 0.3) }}
-              className="flex items-center gap-2 py-1.5 px-2.5 bg-muted rounded text-xs group"
+              className="py-1.5 px-2.5 bg-muted rounded text-xs group"
             >
+              <div className="flex items-center gap-2">
               <span className="font-medium text-foreground truncate">
                 {x.title}
               </span>
@@ -265,6 +318,12 @@ export default function EventFinanceSection({ event }: { event: any }) {
               >
                 <X className="h-3 w-3" />
               </button>
+              </div>
+              <ExpenseDetailsView
+                items={x.items}
+                attachments={x.attachments}
+                className="mt-2 pt-2 border-t border-border/60"
+              />
             </motion.div>
           ))}
         </div>

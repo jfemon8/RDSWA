@@ -4,7 +4,7 @@ import { authorize } from '../middlewares/rbac.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { createExpenseSchema, updateExpenseSchema } from '../validators/expense.validator';
-import { currentCommitteeId, resolveExpenseLinks } from '../services/expense.service';
+import { currentCommitteeId, resolveExpenseLinks, expenseTotal } from '../services/expense.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
@@ -39,16 +39,24 @@ router.post('/', authenticate(), authorize(UserRole.MODERATOR), validate({ body:
   if (!req.user) throw ApiError.unauthorized();
   const { expenseDate, event, committee, ...rest } = req.body;
   const links = resolveExpenseLinks({ expenseDate, event, committee }, await currentCommitteeId(), { isCreate: true });
-  const expense = await Expense.create({ ...rest, ...links, createdBy: req.user._id });
+  // A breakdown owns the total, so the stored amount is always its sum rather than a second figure that can drift.
+  const total = expenseTotal(rest.items);
+  const expense = await Expense.create({
+    ...rest,
+    ...(total === null ? {} : { amount: total }),
+    ...links,
+    createdBy: req.user._id,
+  });
   ApiResponse.created(res, expense, 'Expense created');
 }));
 
 router.patch('/:id', authenticate(), authorize(UserRole.MODERATOR), validate({ body: updateExpenseSchema }), auditLog('expense.update', 'expenses'), asyncHandler(async (req, res) => {
   const { expenseDate, event, committee, ...rest } = req.body;
   const links = resolveExpenseLinks({ expenseDate, event, committee }, await currentCommitteeId(), { isCreate: false });
+  const total = expenseTotal(rest.items);
   const expense = await Expense.findOneAndUpdate(
     { _id: req.params.id, isDeleted: false },
-    { $set: { ...rest, ...links } },
+    { $set: { ...rest, ...(total === null ? {} : { amount: total }), ...links } },
     { new: true }
   );
   if (!expense) throw ApiError.notFound('Expense not found');

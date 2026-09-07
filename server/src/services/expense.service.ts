@@ -12,6 +12,12 @@ export interface ExpenseLinkFields {
   committee?: unknown;
 }
 
+/** The breakdown's total, or null when there is no breakdown and the typed amount stands on its own. */
+export function expenseTotal(items?: Array<{ amount?: number }> | null): number | null {
+  if (!items || items.length === 0) return null;
+  return items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+}
+
 /** The id of the committee an unlinked expense belongs to, which is null while no committee is marked current. */
 export async function currentCommitteeId(): Promise<string | null> {
   const committee = await Committee.findOne({ isCurrent: true, isDeleted: false }).select('_id').lean();

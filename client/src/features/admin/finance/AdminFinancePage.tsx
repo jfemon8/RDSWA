@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useTabParam } from '@/hooks/useTabParam';
 import { useEventOptions, useCommitteeOptions } from '@/hooks/useLinkOptions';
+import ExpenseDetailsFields, { itemsTotal, type ExpenseItem, type ExpenseAttachment } from '@/components/ui/ExpenseDetailsFields';
+import ExpenseDetailsView from '@/components/ui/ExpenseDetailsView';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
@@ -508,6 +510,9 @@ function ExpensesList() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '', expenseDate: '', event: '', committee: '' });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [items, setItems] = useState<ExpenseItem[]>([]);
+  const [attachments, setAttachments] = useState<ExpenseAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
@@ -522,6 +527,8 @@ function ExpensesList() {
     setShowForm(false);
     setEditId(null);
     setForm({ title: '', amount: '', category: 'other', description: '', expenseDate: '', event: '', committee: '' });
+    setItems([]);
+    setAttachments([]);
     setErrors({});
   };
 
@@ -531,7 +538,12 @@ function ExpensesList() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       // Blank links are sent as '' so the server can apply today's date, the current committee and no event.
-      const payload: any = { ...form, amount: Number(form.amount) };
+      const payload: any = {
+        ...form,
+        amount: items.length > 0 ? itemsTotal(items) : Number(form.amount),
+        items: items.map((i) => ({ head: i.head.trim(), amount: Number(i.amount) })),
+        attachments,
+      };
       if (editId) return (await api.patch(`/expenses/${editId}`, payload)).data;
       return (await api.post('/expenses', payload)).data;
     },
@@ -565,6 +577,8 @@ function ExpensesList() {
       event: (typeof e.event === 'object' ? e.event?._id : e.event) || '',
       committee: (typeof e.committee === 'object' ? e.committee?._id : e.committee) || '',
     });
+    setItems((e.items || []).map((i: any) => ({ head: i.head || '', amount: String(i.amount ?? '') })));
+    setAttachments(e.attachments || []);
     setErrors({});
     setShowForm(true);
   };
@@ -590,7 +604,7 @@ function ExpensesList() {
             exit={{ opacity: 0, height: 0 }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
-            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Expense title is required'; if (!form.amount || Number(form.amount) <= 0) errs.amount = 'Valid amount is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Expense title is required'; if (items.length > 0) { if (items.some((i) => !i.head.trim() || !i.amount || Number(i.amount) <= 0)) errs.items = 'Every cost needs a name and an amount above zero'; } else if (!form.amount || Number(form.amount) <= 0) { errs.amount = 'Valid amount is required'; } if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
               <div>
                 <input placeholder="Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                   className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
@@ -598,8 +612,9 @@ function ExpensesList() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setErrors((prev) => { const { amount, ...rest } = prev; return rest; }); }}
-                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.amount ? 'border-red-500' : ''}`} required />
+                  <input type="number" placeholder="Amount" value={items.length > 0 ? String(itemsTotal(items)) : form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setErrors((prev) => { const { amount, ...rest } = prev; return rest; }); }}
+                    readOnly={items.length > 0} title={items.length > 0 ? 'Totalled from the spending details below' : undefined}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${items.length > 0 ? 'opacity-70' : ''} ${errors.amount ? 'border-red-500' : ''}`} required />
                   <FieldError message={errors.amount} />
                 </div>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -654,6 +669,14 @@ function ExpensesList() {
                   </select>
                 </div>
               </div>
+              <ExpenseDetailsFields
+                items={items}
+                attachments={attachments}
+                onItemsChange={(next) => { setItems(next); setErrors((prev) => { const { items: _items, ...rest } = prev; return rest; }); }}
+                onAttachmentsChange={setAttachments}
+                onError={(m) => toast.error(m)}
+                error={errors.items}
+              />
               <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Description..." minHeight="80px" />
               <div className="flex gap-2">
                 <button
@@ -726,9 +749,26 @@ function ExpensesList() {
                       <th className="text-right p-3 font-medium text-foreground">Actions</th>
                     </tr></thead>
                     <tbody>
-                      {expenses.map((e: any) => (
-                        <tr key={e._id} className="border-t hover:bg-accent/30">
-                          <td className="p-3 text-foreground truncate" title={e.title}>{e.title}</td>
+                      {expenses.map((e: any) => {
+                        const detailCount = (e.items?.length || 0) + (e.attachments?.length || 0);
+                        return (
+                        <Fragment key={e._id}>
+                        <tr className="border-t hover:bg-accent/30">
+                          <td className="p-3 text-foreground truncate">
+                            {detailCount > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setExpandedId(expandedId === e._id ? null : e._id)}
+                                title={expandedId === e._id ? 'Hide details' : 'Show details'}
+                                className="flex items-center gap-1.5 max-w-full hover:text-primary"
+                              >
+                                {expandedId === e._id ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
+                                <span className="truncate">{e.title}</span>
+                              </button>
+                            ) : (
+                              <span title={e.title}>{e.title}</span>
+                            )}
+                          </td>
                           <td className="p-3 font-medium text-red-600 whitespace-nowrap">BDT {e.amount?.toLocaleString()}</td>
                           <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={e.category}>{e.category}</td>
                           <td className="p-3 text-xs text-muted-foreground truncate" title={e.event?.title || ''}>{e.event?.title || '—'}</td>
@@ -736,7 +776,16 @@ function ExpensesList() {
                           <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(e.expenseDate || e.createdAt)}</td>
                           <td className="p-3">{renderActions(e)}</td>
                         </tr>
-                      ))}
+                        {expandedId === e._id && (
+                          <tr className="border-t bg-muted/30">
+                            <td colSpan={7} className="p-3">
+                              <ExpenseDetailsView items={e.items} attachments={e.attachments} />
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -755,6 +804,7 @@ function ExpensesList() {
                         {e.committee?.name && <span className="px-2 py-0.5 bg-muted rounded-full">{e.committee.name}</span>}
                         <span>{formatDate(e.expenseDate || e.createdAt)}</span>
                       </div>
+                      <ExpenseDetailsView items={e.items} attachments={e.attachments} className="mb-2" />
                       <div className="pt-2 border-t">{renderActions(e)}</div>
                     </div>
                   ))}
