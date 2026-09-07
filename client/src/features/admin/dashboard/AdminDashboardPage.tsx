@@ -1,59 +1,90 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import api from '@/lib/api';
-import { Users, Calendar, Banknote, FileText, Clock, UserCheck, TrendingUp, Shield, CheckCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, CountUp } from '@/components/reactbits';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useNavigate } from 'react-router-dom';
-import { formatDateCustom } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import api from "@/lib/api";
+import {
+  Users,
+  Calendar,
+  Wallet,
+  FileText,
+  Clock,
+  UserCheck,
+  TrendingUp,
+  Shield,
+  CheckCircle,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { FadeIn, CountUp } from "@/components/reactbits";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { useNavigate } from "react-router-dom";
+import { formatDateCustom } from "@/lib/date";
+import { buildFinanceTrend } from "@/lib/financeTrend";
+import Spinner from "@/components/ui/Spinner";
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+const COLORS = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#f97316",
+];
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'dashboard'],
+    queryKey: ["admin", "dashboard"],
     queryFn: async () => {
-      const { data } = await api.get('/admin/dashboard');
+      const { data } = await api.get("/admin/dashboard");
       return data;
     },
   });
 
   // Member analytics for charts
   const { data: memberData } = useQuery({
-    queryKey: ['reports', 'members'],
+    queryKey: ["reports", "members"],
     queryFn: async () => {
-      const { data } = await api.get('/reports/members');
+      const { data } = await api.get("/reports/members");
       return data;
     },
   });
 
   // Finance summary for chart
   const { data: financeData } = useQuery({
-    queryKey: ['reports', 'finance'],
+    queryKey: ["reports", "finance"],
     queryFn: async () => {
-      const { data } = await api.get('/reports/finance');
+      const { data } = await api.get("/reports/finance");
       return data;
     },
   });
 
   // Pending members for quick approvals
   const { data: pendingData } = useQuery({
-    queryKey: ['users', 'pending'],
+    queryKey: ["users", "pending"],
     queryFn: async () => {
-      const { data } = await api.get('/users?membershipStatus=pending&limit=5');
+      const { data } = await api.get("/users?membershipStatus=pending&limit=5");
       return data;
     },
   });
 
   // Recent audit logs
   const { data: logsData } = useQuery({
-    queryKey: ['admin', 'logs', 'recent'],
+    queryKey: ["admin", "logs", "recent"],
     queryFn: async () => {
-      const { data } = await api.get('/admin/logs?limit=8');
+      const { data } = await api.get("/admin/logs?limit=8");
       return data;
     },
   });
@@ -64,24 +95,67 @@ export default function AdminDashboardPage() {
 
   const stats = data?.data;
 
+  // Donations minus expenses, reused from the finance report this page already loads.
+  const balance = financeData?.data?.balance || 0;
+
   const cards = [
-    { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30', isCurrency: false },
-    { label: 'Approved Members', value: stats?.approvedMembers || 0, icon: UserCheck, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950/30', isCurrency: false },
-    { label: 'Pending Members', value: stats?.pendingMembers || 0, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-950/30', isCurrency: false },
-    { label: 'Total Events', value: stats?.totalEvents || 0, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-950/30', isCurrency: false },
-    { label: 'Total Donations', value: stats?.totalDonationsAmount || 0, icon: Banknote, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30', isCurrency: true },
-    { label: 'Pending Forms', value: stats?.pendingForms || 0, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30', isCurrency: false },
+    {
+      label: "Total Users",
+      value: stats?.totalUsers || 0,
+      icon: Users,
+      color: "text-blue-600",
+      bg: "bg-blue-50 dark:bg-blue-950/30",
+      isCurrency: false,
+    },
+    {
+      label: "Approved Members",
+      value: stats?.approvedMembers || 0,
+      icon: UserCheck,
+      color: "text-green-600",
+      bg: "bg-green-50 dark:bg-green-950/30",
+      isCurrency: false,
+    },
+    {
+      label: "Pending Members",
+      value: stats?.pendingMembers || 0,
+      icon: Clock,
+      color: "text-yellow-600",
+      bg: "bg-yellow-50 dark:bg-yellow-950/30",
+      isCurrency: false,
+    },
+    {
+      label: "Total Events",
+      value: stats?.totalEvents || 0,
+      icon: Calendar,
+      color: "text-purple-600",
+      bg: "bg-purple-50 dark:bg-purple-950/30",
+      isCurrency: false,
+    },
+    {
+      label: "Current Balance",
+      value: balance,
+      icon: Wallet,
+      color: balance < 0 ? "text-red-600" : "text-emerald-600",
+      bg:
+        balance < 0
+          ? "bg-red-50 dark:bg-red-950/30"
+          : "bg-emerald-50 dark:bg-emerald-950/30",
+      isCurrency: true,
+    },
+    {
+      label: "Pending Forms",
+      value: stats?.pendingForms || 0,
+      icon: FileText,
+      color: "text-orange-600",
+      bg: "bg-orange-50 dark:bg-orange-950/30",
+      isCurrency: false,
+    },
   ];
 
-  // Prepare chart data
-  const donationMonthly = (financeData?.data?.donationsByMonth || [])
-    .map((d: any) => ({
-      name: `${d._id.month}/${d._id.year}`,
-      amount: d.total,
-    }))
-    .reverse()
-    .slice(-12);
-
+  const financeMonthly = buildFinanceTrend(
+    financeData?.data?.donationsByMonth,
+    financeData?.data?.expensesByMonth,
+  );
   const memberByRole = (memberData?.data?.byRole || []).map((d: any) => ({
     name: d._id,
     value: d.count,
@@ -92,7 +166,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-4 sm:py-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+        Admin Dashboard
+      </h1>
 
       {/* Stats Cards */}
       <div className="grid grid-equal grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -100,18 +176,23 @@ export default function AdminDashboardPage() {
           const Icon = card.icon;
           return (
             <FadeIn key={card.label} direction="up" delay={i * 0.06}>
-              <div
-                className="border rounded-lg p-3 sm:p-5 bg-card"
-              >
+              <div className="border rounded-lg p-3 sm:p-5 bg-card">
                 <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
-                  <span className="text-xs sm:text-sm text-muted-foreground leading-tight break-words min-w-0">{card.label}</span>
-                  <div className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${card.bg}`}>
+                  <span className="text-xs sm:text-sm text-muted-foreground leading-tight break-words min-w-0">
+                    {card.label}
+                  </span>
+                  <div
+                    className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${card.bg}`}
+                  >
                     <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                   </div>
                 </div>
                 <p className="text-lg sm:text-2xl font-bold text-foreground">
                   {card.isCurrency ? (
-                    <>BDT <CountUp to={card.value} separator="," duration={1.5} /></>
+                    <>
+                      BDT{" "}
+                      <CountUp to={card.value} separator="," duration={1.5} />
+                    </>
                   ) : (
                     <CountUp to={card.value} separator="," duration={1.5} />
                   )}
@@ -124,24 +205,43 @@ export default function AdminDashboardPage() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Donation Trend Chart */}
+        {/* Donation & Expense Trend Chart */}
         <FadeIn direction="up" delay={0.4}>
           <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <h3 className="font-semibold text-foreground">Donation Trend</h3>
+              <h3 className="font-semibold text-foreground">
+                Donation &amp; Expense Trend
+              </h3>
             </div>
-            {donationMonthly.length > 0 ? (
+            {financeMonthly.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={donationMonthly}>
+                {/* Both bars read off one BDT axis, which is what makes the two months comparable. */}
+                <BarChart data={financeMonthly} barGap={2}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
-                  <Bar dataKey="amount" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Tooltip
+                    formatter={(v) => `BDT ${Number(v).toLocaleString()}`}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar
+                    dataKey="donations"
+                    name="Donations"
+                    fill="#059669"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="expenses"
+                    name="Expenses"
+                    fill="#dc2626"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">No donation data yet</div>
+              <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
+                No finance data yet
+              </div>
             )}
           </div>
         </FadeIn>
@@ -158,7 +258,15 @@ export default function AdminDashboardPage() {
                 <div className="w-full sm:w-3/5 h-[200px] sm:h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={memberByRole} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                      <Pie
+                        data={memberByRole}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={45}
+                      >
                         {memberByRole.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
@@ -169,16 +277,28 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex-1 space-y-1.5 w-full">
                   {memberByRole.map((r: any, i: number) => (
-                    <div key={r.name} className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="capitalize text-muted-foreground truncate">{r.name}</span>
-                      <span className="ml-auto font-medium text-foreground shrink-0">{r.value}</span>
+                    <div
+                      key={r.name}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                      />
+                      <span className="capitalize text-muted-foreground truncate">
+                        {r.name}
+                      </span>
+                      <span className="ml-auto font-medium text-foreground shrink-0">
+                        {r.value}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">No member data yet</div>
+              <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
+                No member data yet
+              </div>
             )}
           </div>
         </FadeIn>
@@ -192,11 +312,13 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-yellow-600" />
-                <h3 className="font-semibold text-foreground">Pending Approvals</h3>
+                <h3 className="font-semibold text-foreground">
+                  Pending Approvals
+                </h3>
               </div>
               {(stats?.pendingMembers || 0) > 5 && (
                 <button
-                  onClick={() => navigate('/admin/users')}
+                  onClick={() => navigate("/admin/users")}
                   className="text-xs text-primary hover:underline"
                 >
                   View all ({stats.pendingMembers})
@@ -225,20 +347,29 @@ export default function AdminDashboardPage() {
                     >
                       <div className="flex items-center gap-3">
                         {user.avatar ? (
-                          <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          <img
+                            src={user.avatar}
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-foreground">
-                            {user.name?.[0]?.toUpperCase() || '?'}
+                            {user.name?.[0]?.toUpperCase() || "?"}
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-medium text-foreground">{user.name}</p>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="text-sm font-medium text-foreground">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-muted-foreground mr-2">
-                          {user.batch || ''} {user.department ? `· ${user.department}` : ''}
+                          {user.batch || ""}{" "}
+                          {user.department ? `· ${user.department}` : ""}
                         </span>
                       </div>
                     </motion.div>
@@ -255,17 +386,21 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-foreground">Recent Activity</h3>
+                <h3 className="font-semibold text-foreground">
+                  Recent Activity
+                </h3>
               </div>
               <button
-                onClick={() => navigate('/admin/logs')}
+                onClick={() => navigate("/admin/logs")}
                 className="text-xs text-primary hover:underline"
               >
                 View all
               </button>
             </div>
             {recentLogs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">No recent activity</div>
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                No recent activity
+              </div>
             ) : (
               <div className="space-y-1">
                 {recentLogs.map((log: any, i: number) => (
@@ -276,16 +411,35 @@ export default function AdminDashboardPage() {
                     transition={{ delay: i * 0.04 }}
                     className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 transition-colors"
                   >
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      log.action?.includes('delete') || log.action?.includes('reject') ? 'bg-red-500'
-                        : log.action?.includes('create') || log.action?.includes('approve') ? 'bg-green-500'
-                        : 'bg-blue-500'
-                    }`} />
+                    <div
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        log.action?.includes("delete") ||
+                        log.action?.includes("reject")
+                          ? "bg-red-500"
+                          : log.action?.includes("create") ||
+                              log.action?.includes("approve")
+                            ? "bg-green-500"
+                            : "bg-blue-500"
+                      }`}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">
-                        {log.actor?._id ? <Link to={`/members/${log.actor._id}`} className="font-medium text-foreground hover:text-primary transition-colors">{log.actor.name}</Link> : <span className="font-medium text-foreground">System</span>}
+                        {log.actor?._id ? (
+                          <Link
+                            to={`/members/${log.actor._id}`}
+                            className="font-medium text-foreground hover:text-primary transition-colors"
+                          >
+                            {log.actor.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-foreground">
+                            System
+                          </span>
+                        )}
                         <span className="text-muted-foreground"> · </span>
-                        <span className="text-muted-foreground font-mono text-xs">{log.action}</span>
+                        <span className="text-muted-foreground font-mono text-xs">
+                          {log.action}
+                        </span>
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -306,11 +460,11 @@ function formatRelativeTime(dateStr: string): string {
   const now = Date.now();
   const diff = now - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
+  if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
-  return formatDateCustom(dateStr, { month: 'short', day: 'numeric' });
+  return formatDateCustom(dateStr, { month: "short", day: "numeric" });
 }

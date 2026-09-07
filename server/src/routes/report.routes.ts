@@ -58,7 +58,18 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     };
   }
 
-  const [donationsByMonth, donationsByType, expensesByCategory, totalDonations, totalExpenses, donationsByYear] = await Promise.all([
+  // Legacy rows predate expenseDate, so every expense date reads through the same fallback.
+  const expenseMonth = { $ifNull: ['$expenseDate', '$createdAt'] };
+
+  const [
+    donationsByMonth,
+    donationsByType,
+    expensesByCategory,
+    expensesByMonth,
+    totalDonations,
+    totalExpenses,
+    donationsByYear,
+  ] = await Promise.all([
     Donation.aggregate([
       { $match: donationMatch },
       { $group: {
@@ -75,6 +86,15 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     Expense.aggregate([
       { $match: expenseMatch },
       { $group: { _id: '$category', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+    ]),
+    Expense.aggregate([
+      { $match: expenseMatch },
+      { $group: {
+        _id: { year: { $year: expenseMonth }, month: { $month: expenseMonth } },
+        total: { $sum: '$amount' }, count: { $sum: 1 },
+      }},
+      { $sort: { '_id.year': -1, '_id.month': -1 } },
+      { $limit: 24 },
     ]),
     Donation.aggregate([
       { $match: donationMatch },
@@ -99,6 +119,7 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     donationsByMonth,
     donationsByType,
     expensesByCategory,
+    expensesByMonth,
     donationsByYear,
     totalDonations: totalDonations[0]?.total || 0,
     totalExpenses: totalExpenses[0]?.total || 0,
