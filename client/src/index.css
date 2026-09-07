@@ -3,14 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* ─────────────────────────────────────────────────────────────
-   * Brand palette — sourced from the Rangpur Association logo.
-   *   Emerald  #008f57  (logo primary, darkened for WCAG-safe contrast)
-   *   Red      #e03030  (destructive / errors)
-   *   Neutral  pure white / pure black backgrounds per user request
-   *   Light + dark variants are hand-balanced to stay ≥4.5:1 against
-   *   their foregrounds (WCAG AA).
-   * ───────────────────────────────────────────────────────────── */
+  /* Brand palette taken from the Rangpur Association logo, with emerald #008f57 and red #e03030 darkened and hand-balanced so both themes stay at WCAG AA contrast against their foregrounds. */
   :root {
     --background: 0 0% 100%;             /* pure white */
     --foreground: 0 0% 9%;                /* near-black neutral */
@@ -65,16 +58,9 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /* Tells the UA the page has matching styles for both schemes. Without
-       this CSS property, Android WebView (especially when wrapped by third-
-       party APK builders) forces light and makes matchMedia return false
-       even when the system is set to dark. */
+    /* Tells the UA both schemes are styled, without which Android WebView forces light and makes matchMedia report false even on a dark system. */
     color-scheme: light dark;
-    /* overflow-x: clip avoids the accidental horizontal scrollbar caused by
-       in-view animations (FadeIn direction="left" / motion transforms) and
-       sub-pixel rendering in mobile WebViews. Unlike overflow-x: hidden it
-       does not create a scroll container, so sticky/fixed descendants still
-       anchor to the viewport. Falls back to hidden on older browsers. */
+    /* `clip` stops the stray horizontal scrollbar from in-view animations without creating a scroll container, so sticky descendants still anchor to the viewport, with `hidden` as the older-browser fallback. */
     overflow-x: hidden;
     overflow-x: clip;
   }
@@ -175,14 +161,7 @@
   height: 100%;
 }
 
-/* Rotating border animation — on hover, a bright conic-gradient segment
-   orbits around the element's border, "tracing" a light streak around it.
-   Uses @property to make the conic-gradient's angle animatable (CSS custom
-   properties are stringly-typed by default and don't interpolate smoothly).
-   Colour is pulled from --primary-foreground so it contrasts against the
-   primary-filled hover state. Automatically tracks admin-configured colours.
-   Modern browsers only (Chrome 85+, Safari 16.4+, Firefox 128+); older UAs
-   gracefully fall back to a solid border with no animation. */
+/* Hover-only rotating border that needs @property to make the conic-gradient angle interpolate, draws its colour from --primary-foreground so admin theming carries through, and degrades to a plain border on browsers without @property. */
 @property --rdswa-rotate-angle {
   syntax: '<angle>';
   initial-value: 0deg;

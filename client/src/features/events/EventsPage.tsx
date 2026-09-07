@@ -225,11 +225,7 @@ export default function EventsPage() {
                   {events.map((e: any, i: number) => (
                     <Fragment key={e._id}>
                       <FadeIn delay={i * 0.05} direction="up" className="h-full">
-                        {/* Native CSS Grid equal-height pattern: `auto-rows-fr`
-                            on the grid + `flex flex-col h-full` on the card so
-                            the card stretches to fill the row regardless of
-                            content length. `<a>` defaults to inline — `flex`
-                            (which implies block-level) makes it respect height. */}
+                        {/* Equal-height grid cards come from `auto-rows-fr` plus `flex flex-col h-full`, with `flex` also lifting the inline `<a>` to block level so it respects the height. */}
                         <Link
                           to={`/events/${e._id}`}
                           className="flex flex-col h-full border rounded-xl overflow-hidden bg-card hover:border-primary/30 transition-colors"

@@ -37,9 +37,7 @@
       content="#042f1f"
       media="(prefers-color-scheme: dark)"
     />
-    <!-- Declares the page supports both colour schemes. Without this, Android
-         WebView (and some iOS embedded browsers) force light mode regardless
-         of the OS setting and make `prefers-color-scheme` media queries lie. -->
+    <!-- Declares support for both colour schemes, without which Android WebView and some embedded iOS browsers force light mode and make `prefers-color-scheme` queries lie. -->
     <meta name="color-scheme" content="light dark" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -78,18 +76,10 @@
       rel="stylesheet"
     />
 
-    <!-- Google AdSense ownership verification.
-         Hardcoded as a static <meta> (NOT JS-injected) because the AdSense
-         site-review crawler issues a plain HTTP fetch and looks for this
-         tag in the raw HTML response — it does not reliably execute JS for
-         the verification step. The publisher ID is public information
-         (visible in every served page anyway), so committing it is safe. -->
+    <!-- AdSense ownership verification, kept as a static tag rather than JS-injected because the site-review crawler reads the raw HTML response without reliably executing JS. -->
     <meta name="google-adsense-account" content="ca-pub-1036044341182474" />
 
-    <!-- Google Search Console site ownership verification. Same constraint as
-         AdSense: GSC's verification crawler reads the raw HTML response, so
-         this MUST be a static tag (not injected by react-helmet at runtime).
-         Required to submit /sitemap.xml and view indexing reports. -->
+    <!-- Search Console ownership verification, static for the same reason as AdSense: its crawler reads the raw HTML and never runs react-helmet. -->
     <meta
       name="google-site-verification"
       content="fuobzYJ0CaxpVnoQthO1nUT2_EfKd445J8pPB3035lU"
@@ -99,12 +89,7 @@
       content="_Operpd8gUpAS9nLvt371mm6_aD1MGeoLXvNlm2ifHI"
     />
 
-    <!-- Google AdSense script loader.
-         The script tag itself is env-gated — when VITE_ADSENSE_CLIENT is
-         unset (local dev), no network request is made and dev consoles
-         stay clean. In production the env var is set in Vercel and the
-         actual `adsbygoogle.js` script loads. The meta tag above is
-         independent of this gate so verification works in every env. -->
+    <!-- AdSense script loader, env-gated on VITE_ADSENSE_CLIENT so local dev makes no request while the verification meta above stays active in every environment. -->
     <script>
       (function () {
         var c = "%VITE_ADSENSE_CLIENT%";
@@ -119,24 +104,11 @@
       })();
     </script>
 
-    <!-- Microsoft Clarity loader.
-         Env-gated by VITE_CLARITY_PROJECT_ID (10-char alphanumeric ID
-         issued by clarity.microsoft.com). When unset (local dev) the
-         tracker doesn't load and no recordings/heatmaps are sent —
-         keeps dev sessions out of production analytics.
-         The standard Clarity bootstrap snippet defines a queueing shim
-         on `window.clarity` so calls (event/set/identify/etc.) made
-         before clarity.js finishes loading are buffered and replayed.
-         SPA route changes are handled automatically — Clarity hooks the
-         History API and detects pushState/replaceState transitions, so
-         no manual page-view dispatch is required (unlike GA4). -->
+    <!-- Microsoft Clarity loader, env-gated on VITE_CLARITY_PROJECT_ID so dev sessions stay out of analytics, using the stock bootstrap shim that queues early calls and follows SPA route changes on its own. -->
     <script>
       (function () {
         var id = "%VITE_CLARITY_PROJECT_ID%";
-        // Skip when the placeholder wasn't substituted (no env var set)
-        // or the ID is implausibly short. Clarity IDs are 10 chars but
-        // we keep the bound loose so the gate doesn't break if Microsoft
-        // ever changes the format.
+        // Skip an unsubstituted placeholder or an implausibly short id, with a loose bound so a format change at Microsoft cannot break the gate.
         if (!id || id.length < 6 || id.indexOf("VITE_") === 0) return;
         (function (c, l, a, r, i, t, y) {
           c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
@@ -146,9 +118,7 @@
       })();
     </script>
     <title>RDSWA - Rangpur Divisional Student Welfare Association</title>
-    <!-- FOUC prevention: resolve theme BEFORE React hydrates so the very first
-         paint uses the correct mode. Priority: localStorage → system → light.
-         Mirrors the logic in src/stores/themeStore.ts; keep them in sync. -->
+    <!-- Resolves the theme before React hydrates so the first paint is already correct, mirroring src/stores/themeStore.ts in the order localStorage → system → light. -->
     <script>
       (function () {
         try {

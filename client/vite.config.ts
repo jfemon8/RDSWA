@@ -47,31 +47,16 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
-        // Screenshots are optional — add them later by capturing the running
-        // app (see `next-steps.md`) and re-enable this block once the PNGs
-        // are in public/icons/. PWABuilder shows only a non-blocking warning
-        // when screenshots are missing.
+        // Screenshots stay out until PNGs land in public/icons/, since PWABuilder only raises a non-blocking warning without them.
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Ship updates the moment a new build deploys: the new SW skips the
-        // waiting state, claims all open tabs, and evicts stale precache
-        // entries. Without this, users keep a cached index.html that
-        // references old chunk hashes — which 404 after a rolling deploy
-        // and render blank pages until a manual hard-reload. SPA deep links
-        // (e.g. /dashboard/chat) also need navigateFallback so the SW
-        // returns the cached shell instead of a 404 when offline.
+        // A new worker takes over immediately so no one keeps a cached index.html pointing at chunk hashes that 404 after a rolling deploy, while navigateFallback serves the shell for SPA deep links offline.
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
-        // Anything that should NOT fall back to index.html. Without this,
-        // returning visitors with the SW installed get index.html served
-        // for paths like /ads.txt, /robots.txt, /sitemap.xml — which then
-        // appear as "404" or as HTML content where text was expected.
-        // AdSense crawlers don't run a SW, so they don't hit this — but
-        // the user-visible 404 / wrong content is still real and
-        // misleads any manual verification.
+        // Paths that must never fall back to index.html, or a returning visitor with the worker installed gets HTML where /ads.txt, /robots.txt or /sitemap.xml was expected.
         navigateFallbackDenylist: [
           /^\/api\//,
           /^\/ads\.txt$/,
@@ -103,37 +88,7 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // ── Offline-first endpoints (Bus Schedule, About/Settings, Blood Donors) ──
-          //
-          // Strategy: NetworkFirst with `networkTimeoutSeconds: 3`. This gives
-          // us the best of both worlds:
-          //   • Online (fast network): network response wins → fresh data.
-          //     The UI immediately reflects server-side changes on navigation.
-          //   • Online (slow / >3s network): timeout → cache fallback. Users
-          //     never wait indefinitely on a bad connection.
-          //   • Offline: the network fetch rejects immediately → cache
-          //     fallback. All previously-visited data stays accessible.
-          //
-          // We deliberately DON'T use StaleWhileRevalidate here: SWR returns
-          // the cached (potentially stale) response to the client even when
-          // online, and the fresh background response only updates the SW's
-          // cache. That means the TanStack in-memory cache gets the stale
-          // response and the UI shows stale data until the next navigation —
-          // a poor "just-came-online" sync experience.
-          //
-          // TanStack Query's refetchOnReconnect (default true) then triggers
-          // a refetch when the browser fires the 'online' event, which hits
-          // this rule and returns fresh data, completing the sync.
-          //
-          // The IndexedDB-backed TanStack persistence layer (see
-          // lib/queryPersister.ts) acts as a *second* independent offline
-          // source so even if Workbox evicts entries under quota pressure,
-          // the UI still hydrates from persisted query state.
-          //
-          // Placed BEFORE the generic /api/* rule so it takes priority.
-          // `purgeOnQuotaError: false` on these critical caches means the
-          // browser evicts *other* origins' storage (and our image cache,
-          // see below) before it touches Bus Schedule / Blood Donors data.
+          // Offline-first endpoints use NetworkFirst with a 3s timeout rather than StaleWhileRevalidate, because SWR would hand TanStack a stale response while online and leave the UI out of date until the next navigation.
           {
             urlPattern: /\/api\/bus\/.*$/i,
             handler: 'NetworkFirst',
@@ -176,10 +131,7 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Current-user profile. Cached so useAuth can hydrate the Zustand
-          // store on cold offline launches without wiping the access token.
-          // Kept short (7 days) because this response carries identity — we
-          // don't want a stale role/permission set lingering indefinitely.
+          // The current-user profile is cached so useAuth can hydrate on a cold offline launch, but only for 7 days since a stale role set must not linger.
           {
             urlPattern: /\/api\/users\/me$/i,
             handler: 'NetworkFirst',
@@ -190,11 +142,7 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Images (avatars, bus photos). Cloudinary URLs are content-hashed
-          // and immutable per URL — CacheFirst is ideal because the browser
-          // can skip the network entirely on repeat access.
-          // `purgeOnQuotaError: true` lets Workbox auto-drop THIS cache first
-          // when quota pressure hits, protecting the API data caches above.
+          // Cloudinary URLs are immutable per URL so CacheFirst can skip the network entirely, and purgeOnQuotaError lets this cache be dropped first to protect the API caches above.
           {
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*\.(?:png|jpg|jpeg|webp|gif|svg|avif)$/i,
             handler: 'CacheFirst',
@@ -243,9 +191,7 @@ export default defineConfig({
       },
     },
   },
-  // `vite preview` doesn't inherit `server.proxy` — it needs its own block.
-  // Without this, the built app hits /api on the preview server (4173) and
-  // 404s, making local PWA offline testing impossible.
+  // `vite preview` needs its own proxy block because it does not inherit `server.proxy`, without which the built app 404s on /api and local PWA offline testing is impossible.
   preview: {
     port: 4173,
     proxy: {

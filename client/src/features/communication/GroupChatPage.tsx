@@ -494,10 +494,7 @@ export default function GroupChatPage() {
           title={group.name}
           aria-label={`${group.name} — tap to view members`}
         >
-          {/* line-clamp-2 lets long group names (e.g. "Biochemistry &
-              Biotechnology") wrap onto a second line instead of being
-              aggressively truncated. leading-tight keeps header height
-              reasonable when the title occupies two lines. */}
+          {/* line-clamp-2 lets a long group name wrap to a second line rather than being truncated, with leading-tight keeping the header compact when it does. */}
           <h2 className="font-semibold text-sm leading-tight line-clamp-2 break-words">
             {group.name}
           </h2>

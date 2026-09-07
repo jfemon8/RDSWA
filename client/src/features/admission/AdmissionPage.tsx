@@ -71,8 +71,7 @@ export default function AdmissionPage() {
         </div>
       </div>
 
-      {/* Tab bar — underline indicator pattern matches ProfilePage / ChatHubPage.
-          layoutId animates the underline smoothly between tabs. */}
+      {/* Tab bar using the same underline indicator as ProfilePage and ChatHubPage, where layoutId animates it between tabs. */}
       <FadeIn delay={0.15} direction="up">
         <div className="flex gap-1 sm:gap-2 mb-6 border-b relative overflow-x-auto no-scrollbar -mx-3 sm:mx-0 px-3 sm:px-0">
           {TABS.map((t) => {
