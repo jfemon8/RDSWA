@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { proxyFileUrl } from '@/lib/fileProxy';
+import ZoomableImage from '@/components/ui/ZoomableImage';
 
 interface Props {
   images: Array<{ url: string; name?: string }>;
@@ -74,15 +75,12 @@ export default function ImageLightbox({ images, index, onClose, onIndexChange }:
           </button>
         )}
 
-        <motion.img
+        <ZoomableImage
           key={current.url}
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
           src={current.url}
           alt={current.name || ''}
-          className="max-h-[90vh] max-w-[90vw] object-contain rounded"
-          onClick={(e) => e.stopPropagation()}
+          stageClassName="h-[90vh] w-[90vw]"
+          imageClassName="rounded"
         />
         {images.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/50 text-white text-xs">

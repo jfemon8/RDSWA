@@ -8,6 +8,7 @@ import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import EmptyState from '@/components/ui/EmptyState';
+import ZoomableImage from '@/components/ui/ZoomableImage';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import Promo from '@/components/promo/Promo';
 
@@ -173,15 +174,7 @@ export default function GalleryPage() {
             >
               <X className="h-6 w-6" />
             </button>
-            <motion.img
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              src={lightbox}
-              alt=""
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <ZoomableImage src={lightbox} stageClassName="h-full w-full" />
           </motion.div>
         )}
       </AnimatePresence>

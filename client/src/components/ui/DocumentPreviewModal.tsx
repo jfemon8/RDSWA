@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { X, Loader2, ZoomIn, ZoomOut, RotateCw, Shrink, Maximize, Minimize, Download, ExternalLink, FileText } from 'lucide-react';
+import ZoomableImage from './ZoomableImage';
 import { proxyFileUrl } from '@/lib/fileProxy';
 
 // Lazy-loaded so react-pdf's worker bundle only arrives when a PDF is actually opened.
@@ -26,44 +26,8 @@ export default function DocumentPreviewModal({
   target: DocumentPreviewTarget | null;
   onClose: () => void;
 }) {
-  const [rotation, setRotation] = useState(0);
-  // A rotate() transform leaves the layout box unrotated, so a quarter turn needs its own scale to stay inside the frame.
-  const [fitScale, setFitScale] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  const measureFit = useCallback(() => {
-    const stage = stageRef.current;
-    const img = imgRef.current;
-    if (!stage || !img?.naturalWidth || !img.naturalHeight) return;
-
-    if (rotation % 180 === 0) {
-      setFitScale(1);
-      return;
-    }
-
-    // Size the image would take unrotated, derived from the natural ratio so the current scale never feeds back in.
-    const stageW = stage.clientWidth;
-    const stageH = stage.clientHeight;
-    const ratio = img.naturalWidth / img.naturalHeight;
-    const drawnW = Math.min(stageW, stageH * ratio);
-    const drawnH = drawnW / ratio;
-    if (!drawnW || !drawnH) return;
-
-    // A quarter turn swaps the axes, so the drawn height must fit the stage width.
-    setFitScale(Math.min(stageW / drawnH, stageH / drawnW, 1));
-  }, [rotation]);
-
-  useEffect(() => {
-    measureFit();
-  }, [measureFit, target?.url]);
-
-  useEffect(() => {
-    window.addEventListener('resize', measureFit);
-    return () => window.removeEventListener('resize', measureFit);
-  }, [measureFit]);
 
   useEffect(() => {
     const sync = () => setIsFullscreen(!!document.fullscreenElement);
@@ -86,12 +50,6 @@ export default function DocumentPreviewModal({
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [target, onClose]);
-
-  // A newly opened document starts upright, whatever the last one was left at.
-  useEffect(() => {
-    setRotation(0);
-    setFitScale(1);
-  }, [target?.url]);
 
   const url = target?.url || '';
   const name = target?.fileName || target?.title || 'document';
@@ -128,6 +86,7 @@ export default function DocumentPreviewModal({
               <X className="h-4 w-4" />
             </button>
 
+            <div ref={panelRef} className={isImage ? 'border rounded-xl bg-card overflow-hidden' : undefined}>
             {isPdf ? (
               <Suspense
                 fallback={
@@ -139,89 +98,43 @@ export default function DocumentPreviewModal({
                 <PdfViewer url={url} fileName={name} height={720} />
               </Suspense>
             ) : isImage ? (
-              <TransformWrapper
-                initialScale={1}
-                minScale={0.5}
-                maxScale={8}
-                centerOnInit
-                centerZoomedOut
-                doubleClick={{ mode: 'toggle', step: 1.4 }}
-                wheel={{ step: 0.15 }}
-                pinch={{ step: 5 }}
-              >
-                {({ zoomIn, zoomOut, resetTransform }) => (
-                  <div ref={panelRef} className="border rounded-xl bg-card overflow-hidden">
-                    <div className="flex items-center gap-2 px-3 py-2 border-b">
-                      <p className="text-sm font-medium text-foreground truncate flex-1" title={target.title}>
-                        {target.title || 'Document'}
-                      </p>
-                      <button type="button" onClick={() => zoomOut()} title="Zoom out" aria-label="Zoom out" className="p-1.5 rounded hover:bg-accent text-foreground">
-                        <ZoomOut className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => zoomIn()} title="Zoom in" aria-label="Zoom in" className="p-1.5 rounded hover:bg-accent text-foreground">
-                        <ZoomIn className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRotation((r) => (r + 90) % 360)}
-                        title="Rotate 90°"
-                        aria-label="Rotate 90 degrees"
-                        className="p-1.5 rounded hover:bg-accent text-foreground"
-                      >
-                        <RotateCw className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { resetTransform(); setRotation(0); }}
-                        title="Reset view"
-                        aria-label="Reset view"
-                        className="p-1.5 rounded hover:bg-accent text-foreground"
-                      >
-                        <Shrink className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={toggleFullscreen}
-                        title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-                        aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-                        className="p-1.5 rounded hover:bg-accent text-foreground"
-                      >
-                        {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                      </button>
-                      <a href={downloadUrl} title="Download" aria-label="Download" className="p-1.5 rounded hover:bg-accent text-foreground">
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </div>
-                    {/* touch-none hands every gesture to the zoom layer, so a pinch scales instead of scrolling the page. */}
-                    <div ref={stageRef} className="w-full" style={{ height: isFullscreen ? 'calc(100vh - 6rem)' : '70vh' }}>
-                      <TransformComponent
-                        wrapperStyle={{ width: '100%', height: '100%' }}
-                        contentStyle={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        wrapperClass="bg-black/5 dark:bg-black/40 touch-none"
-                      >
-                        <img
-                          ref={imgRef}
-                          src={url}
-                          alt={target.title || 'Document'}
-                          onLoad={measureFit}
-                          style={{ transform: `rotate(${rotation}deg) scale(${fitScale})` }}
-                          className="max-h-full max-w-full object-contain select-none transition-transform duration-200"
-                          draggable={false}
-                        />
-                      </TransformComponent>
-                    </div>
-                    <p className="px-3 py-2 text-[11px] text-muted-foreground border-t">
-                      Pinch, scroll or double-tap to zoom, drag to pan, and rotate for sideways scans.
+              <ZoomableImage
+                src={url}
+                alt={target.title || 'Document'}
+                stageClassName="w-full bg-black/5 dark:bg-black/40"
+                stageStyle={{ height: isFullscreen ? 'calc(100vh - 6rem)' : '70vh' }}
+                toolbar={({ zoomIn, zoomOut, rotate, reset }) => (
+                  <div className="flex items-center gap-2 px-3 py-2 border-b">
+                    <p className="text-sm font-medium text-foreground truncate flex-1" title={target.title}>
+                      {target.title || 'Document'}
                     </p>
+                    <button type="button" onClick={zoomOut} title="Zoom out" aria-label="Zoom out" className="p-1.5 rounded hover:bg-accent text-foreground">
+                      <ZoomOut className="h-4 w-4" />
+                    </button>
+                    <button type="button" onClick={zoomIn} title="Zoom in" aria-label="Zoom in" className="p-1.5 rounded hover:bg-accent text-foreground">
+                      <ZoomIn className="h-4 w-4" />
+                    </button>
+                    <button type="button" onClick={rotate} title="Rotate 90°" aria-label="Rotate 90 degrees" className="p-1.5 rounded hover:bg-accent text-foreground">
+                      <RotateCw className="h-4 w-4" />
+                    </button>
+                    <button type="button" onClick={reset} title="Reset view" aria-label="Reset view" className="p-1.5 rounded hover:bg-accent text-foreground">
+                      <Shrink className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleFullscreen}
+                      title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                      className="p-1.5 rounded hover:bg-accent text-foreground"
+                    >
+                      {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    </button>
+                    <a href={downloadUrl} title="Download" aria-label="Download" className="p-1.5 rounded hover:bg-accent text-foreground">
+                      <Download className="h-4 w-4" />
+                    </a>
                   </div>
                 )}
-              </TransformWrapper>
+              />
             ) : (
               <div className="border rounded-xl bg-card p-8 text-center">
                 <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
@@ -239,6 +152,12 @@ export default function DocumentPreviewModal({
                 </div>
               </div>
             )}
+            {isImage && (
+              <p className="px-3 py-2 text-[11px] text-muted-foreground border-t">
+                Pinch, scroll or double-tap to zoom, drag to pan, and rotate for sideways scans.
+              </p>
+            )}
+            </div>
           </motion.div>
         </motion.div>
       )}
