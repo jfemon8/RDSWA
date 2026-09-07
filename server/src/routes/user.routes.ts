@@ -15,6 +15,9 @@ import {
   listUsersQuerySchema,
   forceSetPasswordSchema,
 } from '../validators/user.validator';
+import mongoose from 'mongoose';
+import { Donation } from '../models';
+import { canSeeDonationDetails, donationScopeFilter } from '../services/userDonations.service';
 import { sendEmail } from '../config/mail';
 import { renderEmailLayout, getAppUrl, escapeHtml } from '../utils/emailTemplate';
 
@@ -60,6 +63,45 @@ router.get('/export/directory', authenticate(), authorize(UserRole.ADMIN), userC
 // Admin routes
 router.get('/', authenticate(), authorize(UserRole.MODERATOR), validate({ query: listUsersQuerySchema }), userController.listUsers);
 router.get('/:id', authenticate(true), userController.getUserById);
+
+// Anyone may see what a member has given in total, but only the member and Admin+ see the records behind it.
+router.get('/:id/donations', authenticate(true), asyncHandler(async (req, res) => {
+  const donorId = req.params.id as string;
+  if (!mongoose.Types.ObjectId.isValid(donorId)) throw ApiError.badRequest('Invalid user id');
+  const viewerId = req.user ? (req.user._id as any).toString() : undefined;
+  const canSeeDetails = canSeeDonationDetails(donorId, viewerId, req.user?.role);
+  const filter = donationScopeFilter(donorId, canSeeDetails);
+
+  const [totals, byType, donations] = await Promise.all([
+    Donation.aggregate([
+      { $match: filter },
+      { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 }, lastAt: { $max: '$donationDate' } } },
+    ]),
+    Donation.aggregate([
+      { $match: filter },
+      { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ]),
+    canSeeDetails
+      ? Donation.find(filter)
+          .select('amount type paymentMethod donationDate createdAt receiptNumber visibility campaign event note')
+          .populate('campaign', 'title')
+          .populate('event', 'title')
+          .sort({ donationDate: -1, createdAt: -1 })
+          .limit(100)
+          .lean()
+      : Promise.resolve([]),
+  ]);
+
+  ApiResponse.success(res, {
+    canSeeDetails,
+    total: totals[0]?.total || 0,
+    count: totals[0]?.count || 0,
+    lastDonationAt: totals[0]?.lastAt || null,
+    byType: canSeeDetails ? byType : [],
+    donations,
+  });
+}));
 
 // Admin+ can edit any user's profile
 router.patch('/:id/profile', authenticate(), authorize(UserRole.ADMIN), auditLog('user.admin_edit', 'users'), userController.adminUpdateUser);

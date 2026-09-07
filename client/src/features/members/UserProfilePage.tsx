@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import UserDonationSummary from "@/components/ui/UserDonationSummary";
 import {
   User,
   Phone,
@@ -443,6 +444,8 @@ export default function UserProfilePage() {
           </div>
         </div>
       </FadeIn>
+
+      <UserDonationSummary userId={id!} className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Info */}

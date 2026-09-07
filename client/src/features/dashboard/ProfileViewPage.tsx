@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/authStore';
+import UserDonationSummary from '@/components/ui/UserDonationSummary';
 import { Link } from 'react-router-dom';
 import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle, Users, Heart, Hash, IdCard, Clock, Award, Star } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -149,6 +150,8 @@ export default function ProfileViewPage() {
           </div>
         </div>
       </FadeIn>
+
+      <UserDonationSummary userId={u._id} className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Info */}
