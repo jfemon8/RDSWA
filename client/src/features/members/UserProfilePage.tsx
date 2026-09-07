@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import UserDonationSummary from "@/components/ui/UserDonationSummary";
 import {
   User,
@@ -47,6 +48,7 @@ function getOrdinal(n: number): string {
 }
 
 export default function UserProfilePage() {
+  const goBack = useBackNavigation("/members");
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: currentUser } = useAuthStore();
@@ -175,12 +177,14 @@ export default function UserProfilePage() {
     <div className="container mx-auto py-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <div className="flex items-center gap-3">
-          <Link
-            to="/members"
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Go back"
             className="p-2 rounded-lg hover:bg-accent transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          </button>
           <BlurText
             text={u.name || "User Profile"}
             className="text-2xl sm:text-3xl font-bold"

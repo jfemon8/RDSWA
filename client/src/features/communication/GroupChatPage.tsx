@@ -450,8 +450,6 @@ export default function GroupChatPage() {
 
   // No body scroll lock here, since its cleanup lagged AnimatePresence exits and left the next page mounting while still locked.
 
-  // ── Render ─────────────────────────────────────────────────────
-
   if (isLoading) {
     return <Spinner size="md" />;
   }

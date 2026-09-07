@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useBackNavigation } from '@/hooks/useBackNavigation';
 import {
   ArrowLeft, Pin, Lock, Send, Loader2, Trash2, Pencil,
   User as UserIcon, Clock, MessageSquare,
@@ -22,6 +23,7 @@ import Promo from '@/components/promo/Promo';
 export default function TopicDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const goBack = useBackNavigation('/dashboard/forum');
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const toast = useToast();
@@ -124,7 +126,7 @@ export default function TopicDetailPage() {
     <div className="container mx-auto">
       {/* Back button */}
       <button
-        onClick={() => navigate('/dashboard/forum')}
+        onClick={goBack}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Forum

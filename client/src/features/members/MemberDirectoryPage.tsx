@@ -1,6 +1,7 @@
 import { useMemo, useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Users, GraduationCap, Briefcase, MapPin, User, Award, Star } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,6 +36,8 @@ export default function MemberDirectoryPage({
   emptyLabel,
 }: MemberDirectoryPageProps) {
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
   const [homeDistrict, setHomeDistrict] = useState('');
@@ -43,7 +46,7 @@ export default function MemberDirectoryPage({
   const filters: Record<string, string> = {
     [flagFilter]: 'true',
   };
-  if (search) filters.search = search;
+  if (debouncedSearch) filters.search = debouncedSearch;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
   if (homeDistrict) filters.homeDistrict = homeDistrict;

@@ -674,10 +674,6 @@ function CellGroup({ cell }: { cell?: { firstMerit?: number; firstScore?: number
   );
 }
 
-// ═══════════════════════════════════════════════════════
-// Shared: session accordion (latest open by default, others collapsed)
-// ═══════════════════════════════════════════════════════
-
 /** One collapsible session block whose `defaultOpen` applies on mount only, after which the user's choice wins. */
 function SessionAccordion({
   session,

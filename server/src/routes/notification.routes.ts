@@ -137,7 +137,6 @@ router.post('/admin/bulk-delete', authenticate(), authorize(UserRole.ADMIN), asy
 
 // ── Push Subscription Endpoints ──
 
-// Get VAPID public key
 router.get('/push/vapid-key', authenticate(), asyncHandler(async (_req, res) => {
   ApiResponse.success(res, { publicKey: env.VAPID_PUBLIC_KEY || null });
 }));
@@ -172,7 +171,6 @@ router.delete('/push/unsubscribe', authenticate(), asyncHandler(async (req, res)
 
 // ── Notification Preferences ──
 
-// Get my notification preferences
 router.get('/preferences', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const user = await User.findById(req.user._id).select('notificationPrefs').lean();

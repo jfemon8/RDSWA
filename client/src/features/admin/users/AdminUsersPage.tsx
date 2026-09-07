@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -25,6 +26,8 @@ export default function AdminUsersPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -34,7 +37,7 @@ export default function AdminUsersPage() {
   const [forcePwdTarget, setForcePwdTarget] = useState<any | null>(null);
 
   const filters: Record<string, string> = {};
-  if (search) filters.search = search;
+  if (debouncedSearch) filters.search = debouncedSearch;
   if (role) filters.role = role;
   if (status) filters.membershipStatus = status;
 
@@ -227,7 +230,7 @@ export default function AdminUsersPage() {
               className="mb-4 p-3 rounded-lg border bg-primary/5 border-primary/20"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
+                <span className="text-sm font-medium text-foreground">{selectedIds.size} of {users.length} loaded selected</span>
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                   onClick={() => bulkApproveMutation.mutate([...selectedIds])}
                   disabled={bulkApproveMutation.isPending}
@@ -416,6 +419,8 @@ export default function AdminUsersPage() {
                           {isAdmin && (
                             <th className="p-3">
                               <input type="checkbox"
+                                title={`Select the ${users.length} users loaded so far`}
+                                aria-label={`Select the ${users.length} users loaded so far`}
                                 checked={users.length > 0 && users.every((u: any) => selectedIds.has(u._id))}
                                 onChange={(e) => {
                                   if (e.target.checked) setSelectedIds(new Set(users.map((u: any) => u._id)));

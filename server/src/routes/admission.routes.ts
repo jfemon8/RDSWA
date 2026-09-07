@@ -216,11 +216,7 @@ router.delete(
   })
 );
 
-// ── Session-level bulk ops (Moderator+) ──────────────────
-//
-// Sessions and categories are plain strings on each row, so these endpoints act across all rows at once instead of one by one.
-
-/** Clone every live row into a new target session, rejecting a target that already has rows so two sessions never silently merge. */
+/** Session-level bulk op for Moderator+ that clones every live row into a new target session, rejecting a target that already has rows so two sessions never silently merge. */
 const seatCloneSchema = z.object({
   sourceSession: z.string().trim().min(2).max(20),
   targetSession: z.string().trim().min(2).max(20),

@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { FileText, Download, Search, Mail, X, ChevronDown, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -40,18 +43,21 @@ export default function DocumentsPage() {
     window.open(proxyFileUrl(fileUrl, title, false), '_blank', 'noopener');
   };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['documents', category, search],
-    queryFn: async () => {
-      const params = new URLSearchParams({ limit: '50' });
-      if (category) params.set('category', category);
-      if (search) params.set('search', search);
-      const { data } = await api.get(`/documents?${params}`);
-      return data;
-    },
-  });
+  const debouncedSearch = useDebouncedValue(search);
 
-  const documents = data?.data || [];
+  const {
+    items: documents,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['documents', category, debouncedSearch],
+    path: '/documents',
+    filters: { category, search: debouncedSearch },
+    limit: 20,
+  });
   const categories = ['', 'policy', 'resolution', 'report', 'form', 'other'];
 
   const getFileIcon = (_type: string) => {
@@ -250,6 +256,12 @@ export default function DocumentsPage() {
             </FadeIn>
             );
           })}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={documents.length > 0 ? `All ${total} documents loaded` : undefined}
+          />
         </div>
       )}
 

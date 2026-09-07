@@ -121,6 +121,7 @@ export default function BusSchedulePage() {
     filters: scheduleFilters,
     limit: PAGE_LIMIT,
     enabled: view === 'schedules' && !!selectedRoute,
+    queryOptions: BUS_OFFLINE_OPTS,
   });
 
   // Counters (used for operator-detail view)
@@ -154,14 +155,15 @@ export default function BusSchedulePage() {
       if (!route?._id) continue;
       // Warmed through the shared options so it lands on exactly the key the list reads.
       prefetchClient
-        .prefetchInfiniteQuery(
-          infiniteListOptions({
+        .prefetchInfiniteQuery({
+          ...infiniteListOptions({
             queryKey: ['bus', 'schedules', { route: route._id }],
             path: '/bus/schedules',
             filters: { route: route._id },
             limit: PAGE_LIMIT,
-          })
-        )
+          }),
+          ...BUS_OFFLINE_OPTS,
+        })
         .catch(() => { /* ignore failure */ });
     }
   }, [operators, routes, prefetchClient]);

@@ -13,6 +13,8 @@ interface InfiniteListSource {
 
 interface UseInfiniteListOptions extends InfiniteListSource {
   enabled?: boolean;
+  /** Extra react-query options, such as the offline caching a page has already chosen. */
+  queryOptions?: Record<string, unknown>;
 }
 
 /** One page of any `ApiResponse.paginated` endpoint. */
@@ -48,9 +50,10 @@ export function infiniteListOptions({
 /** Reads a paginated endpoint one page at a time and hands back every row loaded so far. */
 export function useInfiniteList<T = any>({
   enabled = true,
+  queryOptions,
   ...source
 }: UseInfiniteListOptions) {
-  const query = useInfiniteQuery({ ...infiniteListOptions(source), enabled });
+  const query = useInfiniteQuery({ ...infiniteListOptions(source), enabled, ...queryOptions });
 
   const pages = query.data?.pages ?? [];
   const items = pages.flatMap((p) => p.data ?? []) as T[];

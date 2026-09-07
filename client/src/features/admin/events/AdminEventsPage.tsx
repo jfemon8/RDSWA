@@ -121,7 +121,7 @@ export default function AdminEventsPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: queryKeys.events.list({}),
+    queryKey: [...queryKeys.events.all, 'admin', 'list'],
     path: '/events',
     limit: 20,
   });

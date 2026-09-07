@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 import { queryKeys } from "@/lib/queryKeys";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
+import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 import { useEventOptions } from "@/hooks/useLinkOptions";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useAuthStore } from "@/stores/authStore";
@@ -82,16 +84,19 @@ export default function AdminBudgetPage() {
   if (statusFilter) filters.status = statusFilter;
   if (yearFilter) filters.fiscalYear = yearFilter;
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: budgets,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.budgets.list(filters),
-    queryFn: async () => {
-      const qs = new URLSearchParams({ limit: "50", ...filters }).toString();
-      const { data } = await api.get(`/budgets?${qs}`);
-      return data;
-    },
+    path: "/budgets",
+    filters,
+    limit: 20,
   });
-
-  const budgets: any[] = data?.data || [];
 
   const eventOptions = useEventOptions();
 
@@ -523,6 +528,12 @@ export default function AdminBudgetPage() {
               />
             </FadeIn>
           ))}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={budgets.length > 0 ? `All ${total} budgets loaded` : undefined}
+          />
         </div>
       )}
     </div>

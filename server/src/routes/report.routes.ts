@@ -382,10 +382,8 @@ router.post('/custom', authenticate(), authorize(UserRole.ADMIN), asyncHandler(a
   ApiResponse.success(res, { source, fields, totalRows: data.length, csv, data });
 }));
 
-// ─── Published Reports (approval workflow) ───
-// Admins generate and publish reports, stored as lightweight snapshots in a simple collection.
+// ─── Published Reports, an approval workflow whose published output is stored as a lightweight snapshot ───
 
-// Create a report snapshot for publishing
 router.post('/publish', authenticate(), authorize(UserRole.ADMIN), auditLog('report.publish', 'reports'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { title, type, data, fiscalYear } = req.body;

@@ -10,8 +10,6 @@ import { parsePagination, getSkip } from '../utils/pagination';
 
 const router = Router();
 
-// ─── Helpers ───
-
 /** Ensure a mentor's consultation group exists, creating it on the first active mentee with the mentor as creator and admin. */
 async function ensureConsultationGroup(mentorId: string, mentorName: string) {
   let group = await ChatGroup.findOne({
@@ -72,7 +70,6 @@ async function removeFromConsultationGroup(mentorId: string, menteeId: string) {
 
 // ─── Routes ───
 
-// Request mentorship (Member+)
 router.post('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { mentorId, area } = req.body;

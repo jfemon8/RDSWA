@@ -96,7 +96,7 @@ export default function LoginPage() {
       setUser(data.data.user);
       // Immediately fetch full profile to replace partial login data
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
-      navigate('/dashboard');
+      navigate(location.state?.from?.pathname || '/dashboard', { replace: true });
     } catch (err: any) {
       const fieldErrors = extractFieldErrors(err);
       if (fieldErrors) {

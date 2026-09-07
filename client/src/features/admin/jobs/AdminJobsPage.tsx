@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -16,6 +17,8 @@ export default function AdminJobsPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('');
 
   const {
@@ -26,9 +29,9 @@ export default function AdminJobsPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ['admin-jobs', search, typeFilter],
+    queryKey: ['admin-jobs', debouncedSearch, typeFilter],
     path: '/jobs',
-    filters: { search, type: typeFilter },
+    filters: { search: debouncedSearch, type: typeFilter },
     limit: 20,
   });
 

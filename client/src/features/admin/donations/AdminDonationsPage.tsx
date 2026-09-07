@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -22,6 +23,8 @@ export default function AdminDonationsPage() {
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   // null closes the form; a donation opens it for editing, `{}` for a new record.
@@ -35,9 +38,9 @@ export default function AdminDonationsPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ['admin-donations', search],
+    queryKey: ['admin-donations', debouncedSearch],
     path: '/donations',
-    filters: { search },
+    filters: { search: debouncedSearch },
     limit: 20,
   });
 

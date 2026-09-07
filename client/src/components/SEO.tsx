@@ -18,9 +18,6 @@ interface SEOProps {
   url?: string;
   type?: string;
 
-  // ---- Additive SEO controls ----------------------------------------------
-  // All optional with safe defaults, so existing call sites behave exactly as before.
-
   /** Explicit canonical URL, defaulting to the production origin plus the current pathname. */
   canonical?: string;
 

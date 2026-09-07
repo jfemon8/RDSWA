@@ -337,7 +337,6 @@ router.get('/role-history', authenticate(), authorize(UserRole.SUPER_ADMIN), asy
 
 // ─── Bulk Operations ───
 
-// Bulk approve members
 router.post('/bulk/approve', authenticate(), authorize(UserRole.MODERATOR), auditLog('admin.bulk_approve', 'users'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { userIds } = req.body;
@@ -442,7 +441,6 @@ router.post('/bulk/email', authenticate(), authorize(UserRole.SUPER_ADMIN), audi
 
 // ─── Backup & Restore ───
 
-// List all collections and their document counts
 router.get('/backup/info', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(BACKUP_RESTRICTED_SUPER_ADMINS), asyncHandler(async (_req, res) => {
   const db = mongoose.connection.db;
   if (!db) throw ApiError.internal('Database not connected');

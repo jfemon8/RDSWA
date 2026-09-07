@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2, Mail, X } from 'lucide-react';
@@ -30,6 +31,8 @@ export default function EventsPage() {
   const [type, setType] = useState('');
   const [committee, setCommittee] = useState('');
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [viewMode, setViewMode] = useTabParam<EventViewMode>(EVENT_VIEW_MODES, 'grid', 'viewMode');
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
@@ -37,7 +40,7 @@ export default function EventsPage() {
   if (status) filters.status = status;
   if (type) filters.type = type;
   if (committee) filters.committee = committee;
-  if (search) filters.search = search;
+  if (debouncedSearch) filters.search = debouncedSearch;
 
   const { data: committeesData } = useQuery({
     queryKey: queryKeys.committees.all,

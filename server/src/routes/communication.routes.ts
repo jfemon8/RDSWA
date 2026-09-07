@@ -8,6 +8,7 @@ import { ChatGroup, Message, ForumTopic, ForumReply, User } from '../models';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { escapeRegex } from '../utils/escapeRegex';
 import {
   broadcastChatMessage,
   broadcastChatMessageEdit,
@@ -145,7 +146,6 @@ const router = Router();
 
 // ── Chat Groups ──
 
-// List my groups (Admin+ sees all groups)
 router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const userId = req.user._id;
@@ -714,9 +714,7 @@ router.delete('/groups/:id', authenticate(), authorize(UserRole.ADMIN), asyncHan
 }));
 
 // ── Add/Remove Members ──
-// Permission: Admin+ for any group, OR creator of a custom group.
 
-// Add user to a group
 router.post('/groups/:id/members', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -782,7 +780,6 @@ router.delete('/groups/:id/leave', authenticate(), asyncHandler(async (req, res)
 
 // ── Join Requests ──
 
-// User requests to join a group
 router.post('/groups/:id/join', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -875,9 +872,8 @@ router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandle
   ApiResponse.success(res, null, `Request ${action}d`);
 }));
 
-// ── Direct Messages ──
+// ── Direct Messages, whose unread totals count DMs only since group readBy is too sparse to avoid phantom counts ──
 
-// Total unread for the current user counts DMs only, since group readBy is too sparse to avoid phantom counts.
 router.get('/messages/unread-count', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const userId = req.user._id;
@@ -1222,11 +1218,14 @@ router.delete('/dm/messages/:messageId/me', authenticate(), asyncHandler(async (
 
 // ── Forum ──
 
-// List forum topics
 router.get('/forum', authenticate(), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = { isDeleted: false };
   if (req.query.category) filter.category = req.query.category;
+  if (req.query.search) {
+    const term = String(req.query.search).trim();
+    if (term) filter.title = { $regex: escapeRegex(term), $options: 'i' };
+  }
 
   const [topics, total] = await Promise.all([
     ForumTopic.find(filter)
@@ -1366,7 +1365,6 @@ router.delete('/forum/:id', authenticate(), authorize(UserRole.MODERATOR), async
 
 // ── Announcement Channel ──
 
-// Post announcement to central group (Moderator+)
 router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { title, content, link } = req.body;

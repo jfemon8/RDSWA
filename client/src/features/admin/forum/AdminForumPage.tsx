@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -16,6 +17,7 @@ export default function AdminForumPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [category, setCategory] = useState('');
 
   const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
@@ -28,9 +30,9 @@ export default function AdminForumPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ['admin-forum', search, category],
+    queryKey: ['admin-forum', category, debouncedSearch],
     path: '/communication/forum',
-    filters: { category },
+    filters: { category, search: debouncedSearch },
     limit: 20,
   });
 
@@ -54,9 +56,7 @@ export default function AdminForumPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
   });
 
-  const filtered = search
-    ? topics.filter((t: any) => t.title?.toLowerCase().includes(search.toLowerCase()))
-    : topics;
+  const filtered = topics;
 
   return (
     <div className="container mx-auto py-4 sm:py-6">

@@ -70,6 +70,8 @@ export default function EventFinanceSection({ event }: { event: any }) {
     queryClient.invalidateQueries({ queryKey: ["event-finance", eventId] });
     queryClient.invalidateQueries({ queryKey: ["event-expenses", eventId] });
     queryClient.invalidateQueries({ queryKey: ["event-donations", eventId] });
+    queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    queryClient.invalidateQueries({ queryKey: ["reports"] });
   };
 
   const addExpense = useMutation({

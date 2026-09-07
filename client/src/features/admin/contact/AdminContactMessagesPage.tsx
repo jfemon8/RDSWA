@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -67,11 +68,13 @@ export default function AdminContactMessagesPage() {
 
   const [statusFilter, setStatusFilter] = useState<Status | ''>('');
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const filters: Record<string, string> = {};
   if (statusFilter) filters.status = statusFilter;
-  if (search) filters.search = search;
+  if (debouncedSearch) filters.search = debouncedSearch;
 
   const {
     items: messages,

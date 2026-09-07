@@ -1,3 +1,4 @@
+/** Vacation calendar of yearly holiday records, publicly readable and editable by Moderator+. */
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
@@ -11,8 +12,6 @@ import { UserRole } from '@rdswa/shared';
 import { createVacationSchema, updateVacationSchema } from '../validators/vacation.validator';
 
 const router = Router();
-
-/** Vacation calendar of yearly holiday records, publicly readable and editable by Moderator+. */
 
 // List all academic years newest first, with no auth required.
 router.get('/', asyncHandler(async (_req, res) => {

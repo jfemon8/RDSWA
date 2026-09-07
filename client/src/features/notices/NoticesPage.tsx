@@ -1,6 +1,7 @@
 import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
 import { FileText, AlertTriangle, Search, Archive, Mail, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -18,11 +19,13 @@ const PROMO_EVERY = 6;
 export default function NoticesPage() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [showArchived, setShowArchived] = useState(false);
 
   const filters: Record<string, string> = {};
   if (category) filters.category = category;
-  if (search.trim()) filters.search = search.trim();
+  if (debouncedSearch.trim()) filters.search = debouncedSearch.trim();
   if (showArchived) filters.archived = 'true';
 
   const {

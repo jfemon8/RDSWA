@@ -60,7 +60,6 @@ export class NotificationService {
     }
     // If digest is daily/weekly, the digest job will handle email
 
-    // 4. Web push (if enabled)
     if (prefs.push || force) {
       this.sendPushSafe(rid, title, message, link);
     }

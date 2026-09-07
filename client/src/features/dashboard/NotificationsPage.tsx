@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
@@ -17,12 +19,17 @@ export default function NotificationsPage() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: notifications,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: ['notifications'],
-    queryFn: async () => {
-      const { data } = await api.get('/notifications?limit=50');
-      return data;
-    },
+    path: '/notifications',
+    limit: 20,
   });
 
   const markReadMutation = useMutation({
@@ -58,7 +65,6 @@ export default function NotificationsPage() {
     if (target) navigate(target);
   };
 
-  const notifications = data?.data || [];
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   if (isLoading) {
@@ -156,6 +162,12 @@ export default function NotificationsPage() {
               </div>
             </FadeIn>
           ))}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={notifications.length > 0 ? `All ${total} notifications loaded` : undefined}
+          />
         </div>
       )}
     </div>

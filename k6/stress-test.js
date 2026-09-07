@@ -52,11 +52,7 @@ function authHeaders(token) {
   return h;
 }
 
-// ---------------------------------------------------------------------------
-// Setup — register + login once per VU to obtain a token
-// ---------------------------------------------------------------------------
-
-// Each VU registers on its first iteration and reuses the token from a VU-scoped variable, since setup() shares no state across VUs.
+// Setup registers each VU on its first iteration and reuses the token from a VU-scoped variable, since setup() shares no state across VUs.
 
 let vuToken = null;
 

@@ -9,6 +9,8 @@ import ExpenseDetailsView from '@/components/ui/ExpenseDetailsView';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import {
   Banknote, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
@@ -244,14 +246,18 @@ function DonationsList() {
   const [actionTarget, setActionTarget] = useState<{ id: string; action: string } | null>(null);
   const [donationType, setDonationType] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: donations,
+    total: donationTotal,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: ['donations', 'admin', donationType],
-    queryFn: async () => {
-      const params = new URLSearchParams({ limit: '50' });
-      if (donationType) params.set('type', donationType);
-      const { data } = await api.get(`/donations?${params}`);
-      return data;
-    },
+    path: '/donations',
+    filters: { type: donationType },
+    limit: 20,
   });
 
   const verifyMutation = useMutation({
@@ -267,7 +273,6 @@ function DonationsList() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Verification failed'); },
   });
 
-  const donations = data?.data || [];
 
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
@@ -496,6 +501,13 @@ function DonationsList() {
                 );
               })}
             </div>
+
+            <InfiniteScrollSentinel
+              hasNextPage={!!hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              fetchNextPage={fetchNextPage}
+              endLabel={donations.length > 0 ? `All ${donationTotal} donations loaded` : undefined}
+            />
           </>
         );
       })()}
@@ -515,12 +527,17 @@ function ExpensesList() {
   const [attachments, setAttachments] = useState<ExpenseAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: expenses,
+    total: expenseTotal,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: ['expenses'],
-    queryFn: async () => {
-      const { data } = await api.get('/expenses?limit=50');
-      return data;
-    },
+    path: '/expenses',
+    limit: 20,
   });
 
   const resetForm = () => {
@@ -583,7 +600,6 @@ function ExpensesList() {
     setShowForm(true);
   };
 
-  const expenses = data?.data || [];
 
   return (
     <div>
@@ -809,6 +825,13 @@ function ExpensesList() {
                     </div>
                   ))}
                 </div>
+
+                <InfiniteScrollSentinel
+                  hasNextPage={!!hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  fetchNextPage={fetchNextPage}
+                  endLabel={expenses.length > 0 ? `All ${expenseTotal} expenses loaded` : undefined}
+                />
               </>
             );
           })()}

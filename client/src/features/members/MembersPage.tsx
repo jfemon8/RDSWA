@@ -1,6 +1,7 @@
 import { useMemo, useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -30,6 +31,8 @@ const MEMBER_CATEGORIES: ReadonlyArray<{ key: CategoryKey; label: string; icon: 
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
   const [session, setSession] = useState('');
@@ -38,7 +41,7 @@ export default function MembersPage() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryKey>('');
 
   const filters: Record<string, string> = {};
-  if (search) filters.search = search;
+  if (debouncedSearch) filters.search = debouncedSearch;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
   if (session) filters.session = session;

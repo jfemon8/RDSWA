@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { ArrowLeft, Loader2, Paperclip, FileText, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
+import { useBackNavigation } from '@/hooks/useBackNavigation';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
@@ -19,6 +20,7 @@ const PdfViewer = lazy(() => import('@/components/ui/PdfViewer'));
 
 export default function NoticeDetailPage() {
   const { id } = useParams();
+  const goBack = useBackNavigation('/notices');
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.notices.detail(id!),
@@ -64,9 +66,13 @@ export default function NoticeDetailPage() {
         jsonLd={[noticeJsonLd, noticeBreadcrumbJsonLd]}
       />
       <FadeIn delay={0.05} direction="left">
-        <Link to="/notices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
+        <button
+          type="button"
+          onClick={goBack}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to Notices
-        </Link>
+        </button>
       </FadeIn>
 
       <FadeIn delay={0.1} direction="up">

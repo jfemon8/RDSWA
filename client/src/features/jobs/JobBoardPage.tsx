@@ -1,9 +1,12 @@
 import { useState, Fragment } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import { useTabParam } from "@/hooks/useTabParam";
 import { queryKeys } from "@/lib/queryKeys";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 import { useAuthStore } from "@/stores/authStore";
 import { UserRole } from "@rdswa/shared";
 import { hasMinRole } from "@/lib/roles";
@@ -95,19 +98,22 @@ export default function JobBoardPage() {
     return ["admin", "super_admin"].includes(user.role);
   };
 
-  const { data, isLoading } = useQuery({
-    queryKey: [...queryKeys.jobs.all, view, search, typeFilter],
-    queryFn: async () => {
-      if (view === "mine") {
-        const { data } = await api.get("/jobs/my/posts?limit=50");
-        return data;
-      }
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (typeFilter) params.set("type", typeFilter);
-      const { data } = await api.get(`/jobs?${params}`);
-      return data;
-    },
+  const debouncedSearch = useDebouncedValue(search);
+  const mine = view === "mine";
+
+  const {
+    items: jobs,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: [...queryKeys.jobs.all, view, debouncedSearch, typeFilter],
+    // "My posts" is its own endpoint, and it takes no search or type filter.
+    path: mine ? "/jobs/my/posts" : "/jobs",
+    filters: mine ? {} : { search: debouncedSearch, type: typeFilter },
+    limit: 20,
     enabled: view === "all" || !!user,
   });
 
@@ -184,7 +190,6 @@ export default function JobBoardPage() {
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
-  const jobs = data?.data || [];
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-12">
@@ -631,6 +636,12 @@ export default function JobBoardPage() {
               </Fragment>
             );
           })}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={jobs.length > 0 ? `All ${total} jobs loaded` : undefined}
+          />
         </div>
       )}
     </div>

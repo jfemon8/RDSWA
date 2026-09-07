@@ -2,6 +2,7 @@ import { useState, Fragment } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import {
   MessageSquare, Plus, Pin, Lock, Loader2, Search,
@@ -27,6 +28,7 @@ export default function ForumPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const {
     items: topics,
     total,
@@ -35,15 +37,13 @@ export default function ForumPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ['forum-topics', filterCategory],
+    queryKey: ['forum-topics', filterCategory, debouncedSearch],
     path: '/communication/forum',
-    filters: { category: filterCategory },
+    filters: { category: filterCategory, search: debouncedSearch },
     limit: 20,
   });
 
-  const filteredTopics = search
-    ? topics.filter((t: any) => t.title.toLowerCase().includes(search.toLowerCase()))
-    : topics;
+  const filteredTopics = topics;
 
   return (
     <div className="container mx-auto">

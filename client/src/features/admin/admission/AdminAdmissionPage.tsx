@@ -698,7 +698,6 @@ function SeatsSection() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Delete failed'),
   });
 
-  // ── Handlers ────────────────────────────────────────────
   /** Open the inline form inside the given session for editing a row. */
   const handleEdit = (r: any) => {
     setForm({
@@ -1436,11 +1435,7 @@ function RenameDialog({
   );
 }
 
-// ═══════════════════════════════════════════════════════
-// Cut-offs CRUD
-// ═══════════════════════════════════════════════════════
-
-/** Numeric fields are strings so empty inputs never become `0`, and an optional `_id` marks a row that already exists server-side. */
+/** Cut-offs CRUD, where numeric fields are strings so empty inputs never become `0` and an optional `_id` marks a row that already exists server-side. */
 interface CutoffUnitFields {
   _id?: string;
   firstMerit: string;
@@ -1627,7 +1622,6 @@ function CutoffsSection() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Delete failed'),
   });
 
-  // ── Handlers ────────────────────────────────────────────
   /** Editing any row loads the whole department, so a missing unit can be added alongside the edit. */
   const handleEdit = (r: any) => {
     const peers = rows.filter(
@@ -2106,10 +2100,6 @@ function CutoffsAdminTable({
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════
-// Shared form bits
-// ═══════════════════════════════════════════════════════
 
 /** Collapsible session card shared by Seats and Cut-offs, with the latest session open by default and an inline "Add row" button. */
 function AdminSessionAccordion({

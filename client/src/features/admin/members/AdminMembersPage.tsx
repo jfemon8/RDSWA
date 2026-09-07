@@ -5,6 +5,7 @@ import { Search, Ban, ExternalLink, Users, Clock, ShieldOff, Mail, Award, Star, 
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
@@ -27,6 +28,8 @@ export default function AdminMembersPage() {
   const confirm = useConfirm();
 
   const [search, setSearch] = useState('');
+  // Debounced so the list refetches once the typing settles, not on every keystroke.
+  const debouncedSearch = useDebouncedValue(search);
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
   const [showBulkEmail, setShowBulkEmail] = useState(false);
@@ -36,7 +39,7 @@ export default function AdminMembersPage() {
   const filters: Record<string, string> = {
     membershipStatus: 'approved',
   };
-  if (search) filters.search = search;
+  if (debouncedSearch) filters.search = debouncedSearch;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
 

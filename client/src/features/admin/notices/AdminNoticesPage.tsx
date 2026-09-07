@@ -1,10 +1,12 @@
 import { useState, useRef, lazy, Suspense } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors, getApiErrorMessage } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import { Plus, Loader2, Pencil, Trash2, Archive, FileText, Paperclip, Image as ImageIcon, X, Eye, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -49,12 +51,17 @@ export default function AdminNoticesPage() {
   const [viewId, setViewId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.notices.all,
-    queryFn: async () => {
-      const { data } = await api.get('/notices?limit=50');
-      return data;
-    },
+  const {
+    items: notices,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: [...queryKeys.notices.all, 'admin', 'list'],
+    path: '/notices',
+    limit: 20,
   });
 
   /** Build the payload by naming each field, so UI-only state can never leak into the request body. */
@@ -208,7 +215,6 @@ export default function AdminNoticesPage() {
     setForm((f) => ({ ...f, attachment: null }));
   };
 
-  const notices = data?.data || [];
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
@@ -478,6 +484,12 @@ export default function AdminNoticesPage() {
               </FadeIn>
             );
           })}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={notices.length > 0 ? `All ${total} notices loaded` : undefined}
+          />
         </div>
       )}
     </div>
