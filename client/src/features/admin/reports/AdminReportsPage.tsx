@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
+import { departmentShortName } from '@/lib/departmentCodes';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { Loader2, Users, TrendingUp, TrendingDown, Calendar, BarChart3, Vote, Wrench, Download, FileText, Banknote, Scale, Send, CheckCircle2 } from 'lucide-react';
@@ -15,6 +16,14 @@ import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { omitFieldError } from '@/lib/formErrors';
 import Spinner from '@/components/ui/Spinner';
+
+const ROW_HEIGHT = 28;
+const MIN_CHART_HEIGHT = 220;
+
+/** Chart height that gives every category its own row, since a fixed height makes Recharts hide labels. */
+function categoryChartHeight(rows: number): number {
+  return Math.max(MIN_CHART_HEIGHT, rows * ROW_HEIGHT + 40);
+}
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#14b8a6'];
 
@@ -82,6 +91,8 @@ function MembersReport() {
   if (isLoading) return <Spinner size="md" />;
 
   const { byRole = [], byBatch = [], byDepartment = [], byDistrict = [] } = data?.data || {};
+  // Both category charts share one height so the two cards line up side by side.
+  const categoryHeight = categoryChartHeight(Math.max(byDepartment.length, byDistrict.length));
 
   return (
     <div className="space-y-6">
@@ -136,11 +147,18 @@ function MembersReport() {
           <div className="border rounded-lg p-4 sm:p-6 bg-card">
             <h3 className="font-semibold text-foreground mb-4">Members by Department</h3>
             {byDepartment.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={byDepartment.slice(0, 10).map((d: any) => ({ dept: d._id, count: d.count }))} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="dept" tick={{ fontSize: 10 }} width={100} />
-                  <Tooltip />
+              <ResponsiveContainer width="100%" height={categoryHeight}>
+                <BarChart
+                  data={byDepartment.map((d: any) => ({ full: d._id, dept: departmentShortName(d._id), count: d.count }))}
+                  layout="vertical"
+                  margin={{ left: 4, right: 12, top: 4, bottom: 4 }}
+                >
+                  <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="dept" tick={{ fontSize: 11 }} width={72} interval={0} />
+                  <Tooltip
+                    formatter={(v) => [v, 'Members']}
+                    labelFormatter={(_l, payload) => payload?.[0]?.payload?.full ?? ''}
+                  />
                   <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -153,10 +171,14 @@ function MembersReport() {
           <div className="border rounded-lg p-4 sm:p-6 bg-card">
             <h3 className="font-semibold text-foreground mb-4">Members by District</h3>
             {byDistrict.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={byDistrict.slice(0, 10).map((d: any) => ({ district: d._id, count: d.count }))} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="district" tick={{ fontSize: 10 }} width={100} />
+              <ResponsiveContainer width="100%" height={categoryHeight}>
+                <BarChart
+                  data={byDistrict.map((d: any) => ({ district: d._id, count: d.count }))}
+                  layout="vertical"
+                  margin={{ left: 4, right: 12, top: 4, bottom: 4 }}
+                >
+                  <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="district" tick={{ fontSize: 11 }} width={90} interval={0} />
                   <Tooltip />
                   <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} />
                 </BarChart>
