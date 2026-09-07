@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import { departmentShortName } from '@/lib/departmentCodes';
+import { useCommitteeOptions } from '@/hooks/useLinkOptions';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { Loader2, Users, TrendingUp, TrendingDown, Calendar, BarChart3, Vote, Wrench, Download, FileText, Banknote, Scale, Send, CheckCircle2 } from 'lucide-react';
@@ -193,11 +194,17 @@ function MembersReport() {
 
 function FinanceReport() {
   const [year, setYear] = useState<string>('');
+  const [committee, setCommittee] = useState<string>('');
+  const committees = useCommitteeOptions();
+
   const { data, isLoading } = useQuery({
-    queryKey: ['reports', 'finance', year],
+    queryKey: ['reports', 'finance', year, committee],
     queryFn: async () => {
-      const params = year ? `?year=${year}` : '';
-      const { data } = await api.get(`/reports/finance${params}`);
+      const params = new URLSearchParams();
+      if (year) params.set('year', year);
+      if (committee) params.set('committee', committee);
+      const query = params.toString();
+      const { data } = await api.get(`/reports/finance${query ? `?${query}` : ''}`);
       return data;
     },
   });
@@ -219,8 +226,18 @@ function FinanceReport() {
         <div className="flex flex-col sm:flex-row sm:items-stretch gap-3">
           <select value={year} onChange={(e) => setYear(e.target.value)}
             className="w-full sm:w-auto sm:shrink-0 px-3 py-2 border rounded-md text-sm bg-card text-foreground">
-            <option value="">All Years</option>
-            {years.map((y: string) => <option key={y} value={y}>{y}</option>)}
+            <option value="" className="bg-card text-foreground">All Years</option>
+            {years.map((y: string) => <option key={y} value={y} className="bg-card text-foreground">{y}</option>)}
+          </select>
+          <select value={committee} onChange={(e) => setCommittee(e.target.value)}
+            title="Money received and spent during a committee's term"
+            className="w-full sm:w-auto sm:shrink-0 px-3 py-2 border rounded-md text-sm bg-card text-foreground">
+            <option value="" className="bg-card text-foreground">All Committees</option>
+            {committees.map((c: any) => (
+              <option key={c._id} value={c._id} className="bg-card text-foreground">
+                {c.name}{c.isCurrent ? ' (current)' : ''}
+              </option>
+            ))}
           </select>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:flex-1 w-full">
             <div className="border rounded-lg px-4 py-3 bg-card">

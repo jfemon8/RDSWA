@@ -8,6 +8,7 @@ import { ApiError } from '../utils/ApiError';
 import { User, Donation, Event, Expense, Budget, Vote } from '../models';
 import { UserRole } from '@rdswa/shared';
 import mongoose from 'mongoose';
+import { withinDates, effectiveDate, committeeTenure, expenseCommitteeMatch, addConditions } from '../services/financeScope';
 
 const router = Router();
 
@@ -41,25 +42,35 @@ router.get('/members', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
 // ─── Financial reports (enhanced) ───
 router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const yearFilter = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
+  const committeeFilter = (req.query.committee as string) || '';
 
   const donationMatch: any = { paymentStatus: 'completed', isDeleted: false };
   const expenseMatch: any = { isDeleted: false };
+  const donationWhere: any[] = [];
+  const expenseWhere: any[] = [];
 
   if (yearFilter) {
     const start = new Date(yearFilter, 0, 1);
     const end = new Date(yearFilter + 1, 0, 1);
-    donationMatch.createdAt = { $gte: start, $lt: end };
-    // Expenses can be back-dated, so the year follows expenseDate and falls back for rows recorded before it existed.
-    expenseMatch.$expr = {
-      $and: [
-        { $gte: [{ $ifNull: ['$expenseDate', '$createdAt'] }, start] },
-        { $lt: [{ $ifNull: ['$expenseDate', '$createdAt'] }, end] },
-      ],
-    };
+    // Both kinds can be back-dated, so the year follows the entered date and falls back for older rows.
+    donationWhere.push(withinDates('$donationDate', start, end));
+    expenseWhere.push(withinDates('$expenseDate', start, end));
   }
 
-  // Legacy rows predate expenseDate, so every expense date reads through the same fallback.
-  const expenseMonth = { $ifNull: ['$expenseDate', '$createdAt'] };
+  if (committeeFilter) {
+    const tenure = await committeeTenure(committeeFilter);
+    if (!tenure) throw ApiError.badRequest('Committee not found');
+    // Donations carry no committee of their own, so the term they fall in decides.
+    donationWhere.push(withinDates('$donationDate', tenure.start, tenure.end));
+    expenseWhere.push(expenseCommitteeMatch(committeeFilter, tenure));
+  }
+
+  addConditions(donationMatch, donationWhere);
+  addConditions(expenseMatch, expenseWhere);
+
+  // Legacy rows predate the explicit date fields, so every grouping reads through the same fallback.
+  const expenseMonth = effectiveDate('$expenseDate');
+  const donationDate = effectiveDate('$donationDate');
 
   const [
     donationsByMonth,
@@ -73,7 +84,7 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     Donation.aggregate([
       { $match: donationMatch },
       { $group: {
-        _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+        _id: { year: { $year: donationDate }, month: { $month: donationDate } },
         total: { $sum: '$amount' }, count: { $sum: 1 },
       }},
       { $sort: { '_id.year': -1, '_id.month': -1 } },
@@ -108,7 +119,7 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     Donation.aggregate([
       { $match: { paymentStatus: 'completed', isDeleted: false } },
       { $group: {
-        _id: { $year: '$createdAt' },
+        _id: { $year: donationDate },
         total: { $sum: '$amount' }, count: { $sum: 1 },
       }},
       { $sort: { _id: -1 } },
@@ -264,21 +275,29 @@ router.get('/donations', authenticate(), authorize(UserRole.MODERATOR), asyncHan
 router.get('/finance/export', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
   const type = (req.query.type as string) || 'donations';
   const yearFilter = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
+  const committeeFilter = (req.query.committee as string) || '';
+  // The export has to honour the same scope as the report, or a filtered view exports everything.
+  const tenure = committeeFilter ? await committeeTenure(committeeFilter) : null;
+  if (committeeFilter && !tenure) throw ApiError.badRequest('Committee not found');
 
   if (type === 'donations') {
     const match: any = { paymentStatus: 'completed', isDeleted: false };
+    const where: any[] = [];
     if (yearFilter) {
-      match.createdAt = { $gte: new Date(yearFilter, 0, 1), $lt: new Date(yearFilter + 1, 0, 1) };
+      where.push(withinDates('$donationDate', new Date(yearFilter, 0, 1), new Date(yearFilter + 1, 0, 1)));
     }
+    if (tenure) where.push(withinDates('$donationDate', tenure.start, tenure.end));
+    addConditions(match, where);
+
     const donations = await Donation.find(match)
       .populate('donor', 'name email')
       .populate('campaign', 'title')
-      .sort({ createdAt: -1 })
+      .sort({ donationDate: -1, createdAt: -1 })
       .lean();
 
     const header = 'Receipt,Date,Donor,Email,Amount,Type,Method,Transaction ID,Sender Number,Campaign,Visibility\n';
     const rows = donations.map((d: any) =>
-      `${d.receiptNumber || ''},${new Date(d.createdAt).toISOString().slice(0, 10)},${(d.donor?.name || d.donorName || 'Anonymous').replace(/,/g, '')},${d.donor?.email || d.donorEmail || ''},${d.amount},${d.type},${d.paymentMethod},${d.transactionId || ''},${d.senderNumber || ''},${(d.campaign?.title || '').replace(/,/g, '')},${d.visibility}`
+      `${d.receiptNumber || ''},${new Date(d.donationDate || d.createdAt).toISOString().slice(0, 10)},${(d.donor?.name || d.donorName || 'Anonymous').replace(/,/g, '')},${d.donor?.email || d.donorEmail || ''},${d.amount},${d.type},${d.paymentMethod},${d.transactionId || ''},${d.senderNumber || ''},${(d.campaign?.title || '').replace(/,/g, '')},${d.visibility}`
     ).join('\n');
 
     res.setHeader('Content-Type', 'text/csv');
@@ -286,16 +305,12 @@ router.get('/finance/export', authenticate(), authorize(UserRole.ADMIN), asyncHa
     res.send(header + rows);
   } else if (type === 'expenses') {
     const match: any = { isDeleted: false };
+    const where: any[] = [];
     if (yearFilter) {
-      const start = new Date(yearFilter, 0, 1);
-      const end = new Date(yearFilter + 1, 0, 1);
-      match.$expr = {
-        $and: [
-          { $gte: [{ $ifNull: ['$expenseDate', '$createdAt'] }, start] },
-          { $lt: [{ $ifNull: ['$expenseDate', '$createdAt'] }, end] },
-        ],
-      };
+      where.push(withinDates('$expenseDate', new Date(yearFilter, 0, 1), new Date(yearFilter + 1, 0, 1)));
     }
+    if (tenure) where.push(expenseCommitteeMatch(committeeFilter, tenure));
+    addConditions(match, where);
     const expenses = await Expense.find(match)
       .populate('event', 'title')
       .populate('committee', 'name')
