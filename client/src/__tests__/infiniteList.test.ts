@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { infiniteListOptions } from '@/hooks/useInfiniteList';
+import { infiniteListOptions, paginatedTotal } from '@/hooks/useInfiniteList';
 
 const get = vi.fn();
 vi.mock('@/lib/api', () => ({ default: { get: (...args: any[]) => get(...args) } }));
@@ -54,5 +54,26 @@ describe('infiniteListOptions paging', () => {
 
   it('stops when the endpoint returns no pagination block at all', () => {
     expect(next({ data: [] })).toBeUndefined();
+  });
+});
+
+describe('paginatedTotal', () => {
+  it('reads the count from the pagination block', () => {
+    expect(paginatedTotal(page(1, true))).toBe(57);
+  });
+
+  it('ignores a total sitting at the body root, which is where this has been misread before', () => {
+    // `ApiResponse.paginated` never puts total at the root, so a root-only body has no count to report.
+    expect(paginatedTotal({ data: [], total: 99 })).toBe(0);
+  });
+
+  it('reports zero rather than throwing on a missing or malformed body', () => {
+    expect(paginatedTotal(undefined)).toBe(0);
+    expect(paginatedTotal(null)).toBe(0);
+    expect(paginatedTotal({})).toBe(0);
+  });
+
+  it('reports a genuine zero as zero', () => {
+    expect(paginatedTotal({ data: [], pagination: { page: 1, total: 0, totalPages: 0, hasNext: false } })).toBe(0);
   });
 });

@@ -1,6 +1,5 @@
 /** Pure color helpers that return `null` on invalid hex and emit the space-separated `"H S% L%"` channels Tailwind's CSS variables expect. */
 
-/** `#008f57` → `{ r: 0, g: 143, b: 87 }`, or null if invalid. */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = hex.replace(/^#/, '').match(/^([\da-f]{6})$/i);
   if (!m) return null;

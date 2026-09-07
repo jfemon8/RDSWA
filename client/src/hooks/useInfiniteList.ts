@@ -47,6 +47,11 @@ export function infiniteListOptions({
   };
 }
 
+/** Row count from a paginated response body, which lives under `pagination` rather than at the root. */
+export function paginatedTotal(body: unknown): number {
+  return (body as ListPage | undefined)?.pagination?.total ?? 0;
+}
+
 /** Reads a paginated endpoint one page at a time and hands back every row loaded so far. */
 export function useInfiniteList<T = any>({
   enabled = true,

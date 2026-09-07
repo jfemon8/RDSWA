@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Search, Ban, ExternalLink, Users, Clock, ShieldOff, Mail, Award, Star, UserCog, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
-import { useInfiniteList } from '@/hooks/useInfiniteList';
+import { useInfiniteList, paginatedTotal } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -66,9 +66,9 @@ export default function AdminMembersPage() {
         api.get('/users?membershipStatus=suspended&limit=1'),
       ]);
       return {
-        approved: approved.data?.total ?? 0,
-        pending: pending.data?.total ?? 0,
-        suspended: suspended.data?.total ?? 0,
+        approved: paginatedTotal(approved.data),
+        pending: paginatedTotal(pending.data),
+        suspended: paginatedTotal(suspended.data),
       };
     },
     staleTime: 60_000,

@@ -1,6 +1,5 @@
 /** Promo (Google AdSense) slot configuration and route policy, where only the naming says "promo" since the `adsbygoogle` markup must stay exactly as Google specifies. */
 
-// Read at import time and empty in dev, where each placement's `min-height` still reserves space so ads cause no layout shift.
 export const PROMO_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined) ?? '';
 
 /** Slot IDs are public so they live in git, while the publisher ID stays in env to keep environments separated. */
