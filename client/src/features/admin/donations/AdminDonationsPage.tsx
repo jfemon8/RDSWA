@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -12,7 +12,7 @@ import { Search, CheckCircle, XCircle, Trash2, Eye, EyeOff, ChevronDown, Plus, P
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import DonationFormModal from './DonationFormModal';
 
 export default function AdminDonationsPage() {
@@ -22,19 +22,23 @@ export default function AdminDonationsPage() {
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [search, setSearch] = useState('');
-  const [page, setPage] = usePageParam();
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
   // null closes the form; a donation opens it for editing, `{}` for a new record.
   const [formTarget, setFormTarget] = useState<any | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-donations', search, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (search) params.set('search', search);
-      const { data } = await api.get(`/donations?${params}`);
-      return data;
-    },
+  const {
+    items: donations,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['admin-donations', search],
+    path: '/donations',
+    filters: { search },
+    limit: 20,
   });
 
   const verifyMutation = useMutation({
@@ -49,9 +53,6 @@ export default function AdminDonationsPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-donations'] }); toast.success('Donation deleted'); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
   });
-
-  const donations = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
@@ -75,7 +76,7 @@ export default function AdminDonationsPage() {
       <FadeIn direction="up">
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          <input value={search} onChange={(e) => { setSearch(e.target.value); }}
             placeholder="Search donations..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-sm" />
         </div>
       </FadeIn>
@@ -296,9 +297,12 @@ export default function AdminDonationsPage() {
         </FadeIn>
       )}
 
-      {pagination && pagination.totalPages > 1 && (
-        <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-      )}
+      <InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={donations.length > 0 ? `All ${total} donations loaded` : undefined}
+      />
     </div>
   );
 }

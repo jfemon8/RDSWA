@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -9,7 +9,7 @@ import { Search, Trash2, Pin, Lock } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 export default function AdminForumPage() {
   const queryClient = useQueryClient();
@@ -17,18 +17,21 @@ export default function AdminForumPage() {
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [page, setPage] = usePageParam();
 
   const CATEGORIES = ['General', 'Academic', 'Events', 'Career', 'Help', 'Off-Topic'];
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-forum', search, category, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (category) params.set('category', category);
-      const { data } = await api.get(`/communication/forum?${params}`);
-      return data;
-    },
+  const {
+    items: topics,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['admin-forum', search, category],
+    path: '/communication/forum',
+    filters: { category },
+    limit: 20,
   });
 
   const pinMutation = useMutation({
@@ -51,10 +54,6 @@ export default function AdminForumPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
   });
 
-  const topics = data?.data || [];
-  const total = data?.total || 0;
-  const totalPages = Math.ceil(total / 20);
-
   const filtered = search
     ? topics.filter((t: any) => t.title?.toLowerCase().includes(search.toLowerCase()))
     : topics;
@@ -70,7 +69,7 @@ export default function AdminForumPage() {
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search topics..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-sm" />
           </div>
-          <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+          <select value={category} onChange={(e) => { setCategory(e.target.value); }}
             className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-sm">
             <option value="">All Categories</option>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -185,9 +184,12 @@ export default function AdminForumPage() {
         </FadeIn>
       )}
 
-      {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-      )}
+      <InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={topics.length > 0 ? `All ${total} topics loaded` : undefined}
+      />
     </div>
   );
 }

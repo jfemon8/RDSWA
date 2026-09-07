@@ -1,9 +1,9 @@
 import { useState, useMemo, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2, Mail, X } from 'lucide-react';
@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
 
@@ -30,11 +30,10 @@ export default function EventsPage() {
   const [type, setType] = useState('');
   const [committee, setCommittee] = useState('');
   const [search, setSearch] = useState('');
-  const [page, setPage] = usePageParam();
   const [viewMode, setViewMode] = useTabParam<EventViewMode>(EVENT_VIEW_MODES, 'grid', 'viewMode');
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
-  const filters: Record<string, string> = { page: String(page), limit: '12' };
+  const filters: Record<string, string> = {};
   if (status) filters.status = status;
   if (type) filters.type = type;
   if (committee) filters.committee = committee;
@@ -49,17 +48,19 @@ export default function EventsPage() {
   });
   const committees: Array<{ _id: string; name: string; year?: string }> = committeesData?.data || [];
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: events,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.events.list(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/events?${params}`);
-      return data;
-    },
+    path: '/events',
+    filters,
+    limit: 12,
   });
-
-  const events = data?.data || [];
-  const pagination = data?.pagination;
 
   // Calendar data: fetch all events for the displayed month
   const calendarFilters: Record<string, string> = { limit: '100' };
@@ -125,7 +126,7 @@ export default function EventsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value); }}
               placeholder="Search events..."
               className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
@@ -154,7 +155,7 @@ export default function EventsPage() {
           {STATUSES.map((s) => (
             <button
               key={`s-${s}`}
-              onClick={() => { setStatus(s); setPage(1); }}
+              onClick={() => { setStatus(s); }}
               className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                 status === s ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
               }`}
@@ -166,7 +167,7 @@ export default function EventsPage() {
           {/* Type filter */}
           <select
             value={type}
-            onChange={(e) => { setType(e.target.value); setPage(1); }}
+            onChange={(e) => { setType(e.target.value); }}
             className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="">All Types</option>
@@ -177,7 +178,7 @@ export default function EventsPage() {
           {/* Committee filter */}
           <select
             value={committee}
-            onChange={(e) => { setCommittee(e.target.value); setPage(1); }}
+            onChange={(e) => { setCommittee(e.target.value); }}
             className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="">All Committees</option>
@@ -211,7 +212,7 @@ export default function EventsPage() {
                   ? 'No events match your filters. Try clearing them to see all events.'
                   : 'No events have been scheduled yet. Check back soon — new events are posted regularly.'}
                 primary={search || status || type || committee
-                  ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setStatus(''); setType(''); setCommittee(''); setPage(1); } }
+                  ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setStatus(''); setType(''); setCommittee(''); } }
                   : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
                 hint="Upcoming meetings, workshops, and social gatherings for RDSWA members appear here as soon as they are announced."
               />
@@ -283,11 +284,12 @@ export default function EventsPage() {
                   ))}
                 </div>
 
-                {pagination && pagination.totalPages > 1 && (
-                  <FadeIn>
-                    <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} size="md" />
-                  </FadeIn>
-                )}
+                <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={events.length > 0 ? `All ${total} events loaded` : undefined}
+          />
               </>
             )}
           </motion.div>

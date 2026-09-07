@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useIsRestoring } from '@tanstack/react-query';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList, infiniteListOptions } from '@/hooks/useInfiniteList';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 
@@ -28,7 +28,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
 import SharedEmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 
 const PAGE_LIMIT = 20;
@@ -51,7 +51,6 @@ export default function BusSchedulePage() {
   const [departureAfter, setDepartureAfter] = useState('');
   const [departureBefore, setDepartureBefore] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [page, setPage] = usePageParam();
   const [selectedRoute, setSelectedRoute] = useState<any>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);
@@ -97,23 +96,31 @@ export default function BusSchedulePage() {
     ...BUS_OFFLINE_OPTS,
   });
 
-  // Schedules for selected route (sorted ascending by departureTime)
-  const scheduleParams = useMemo(() => {
-    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_LIMIT) });
-    if (selectedRoute) params.set('route', selectedRoute._id);
-    if (departureAfter) params.set('departureAfter', departureAfter);
-    if (departureBefore) params.set('departureBefore', departureBefore);
-    return params.toString();
-  }, [page, selectedRoute, departureAfter, departureBefore]);
+  // Schedules for the selected route, sorted ascending by departureTime.
+  const scheduleFilters = useMemo(
+    () => ({
+      route: selectedRoute?._id,
+      departureAfter: departureAfter || undefined,
+      departureBefore: departureBefore || undefined,
+    }),
+    [selectedRoute, departureAfter, departureBefore]
+  );
 
-  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
-    queryKey: ['bus', 'schedules', scheduleParams],
-    queryFn: async () => {
-      const { data } = await api.get(`/bus/schedules?${scheduleParams}`);
-      return data;
-    },
+  const scheduleKey = ['bus', 'schedules', scheduleFilters];
+
+  const {
+    items: schedules,
+    total: scheduleTotal,
+    isLoading: schedulesLoading,
+    hasNextPage: hasMoreSchedules,
+    isFetchingNextPage: fetchingMoreSchedules,
+    fetchNextPage: fetchMoreSchedules,
+  } = useInfiniteList({
+    queryKey: scheduleKey,
+    path: '/bus/schedules',
+    filters: scheduleFilters,
+    limit: PAGE_LIMIT,
     enabled: view === 'schedules' && !!selectedRoute,
-    ...BUS_OFFLINE_OPTS,
   });
 
   // Counters (used for operator-detail view)
@@ -127,7 +134,6 @@ export default function BusSchedulePage() {
   });
 
   const routes = routesData?.data || [];
-  const schedules = schedulesData?.data || [];
   const operators = operatorsData?.data || [];
 
   // Once the lists resolve, warm each item's detail, reviews, and schedules in parallel, once per operator or route.
@@ -146,13 +152,20 @@ export default function BusSchedulePage() {
     }
     for (const route of routes) {
       if (!route?._id) continue;
-      const params = new URLSearchParams({ page: '1', limit: String(PAGE_LIMIT), route: route._id });
-      warm(['bus', 'schedules', params.toString()], `/bus/schedules?${params.toString()}`);
+      // Warmed through the shared options so it lands on exactly the key the list reads.
+      prefetchClient
+        .prefetchInfiniteQuery(
+          infiniteListOptions({
+            queryKey: ['bus', 'schedules', { route: route._id }],
+            path: '/bus/schedules',
+            filters: { route: route._id },
+            limit: PAGE_LIMIT,
+          })
+        )
+        .catch(() => { /* ignore failure */ });
     }
   }, [operators, routes, prefetchClient]);
-  const pagination = schedulesData?.pagination;
   const counters = countersData?.data || [];
-  const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 1;
 
   // Ensure schedules are sorted ascending by departureTime (server also sorts)
   const sortedSchedules = useMemo(() => {
@@ -198,8 +211,6 @@ export default function BusSchedulePage() {
   const hasActiveFilters = filterCategory || departureAfter || departureBefore;
 
   const handleTabChange = (newTab: Tab) => {
-    // setPage must precede setTab, because both write the same search params and the later call wins.
-    setPage(1);
     setTab(newTab);
     setSearch('');
     setSelectedRoute(null);
@@ -218,7 +229,6 @@ export default function BusSchedulePage() {
   const handleRouteClick = (route: any) => {
     setSelectedRoute(route);
     setView('schedules');
-    setPage(1);
   };
 
   const handleScheduleClick = (schedule: any) => {
@@ -345,13 +355,13 @@ export default function BusSchedulePage() {
               <div className="min-w-0">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Departure After</label>
                 <input type="time" value={departureAfter}
-                  onChange={(e) => { setDepartureAfter(e.target.value); setPage(1); }}
+                  onChange={(e) => { setDepartureAfter(e.target.value); }}
                   className="w-full lg:w-auto lg:min-w-[130px] px-3 py-2 border rounded-md text-sm bg-background" />
               </div>
               <div className="min-w-0">
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Departure Before</label>
                 <input type="time" value={departureBefore}
-                  onChange={(e) => { setDepartureBefore(e.target.value); setPage(1); }}
+                  onChange={(e) => { setDepartureBefore(e.target.value); }}
                   className="w-full lg:w-auto lg:min-w-[130px] px-3 py-2 border rounded-md text-sm bg-background" />
               </div>
               {hasActiveFilters && (
@@ -585,9 +595,12 @@ export default function BusSchedulePage() {
                     </div>
                   </FadeIn>
 
-                  {totalPages > 1 && (
-                    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-                  )}
+                  <InfiniteScrollSentinel
+                    hasNextPage={!!hasMoreSchedules}
+                    isFetchingNextPage={fetchingMoreSchedules}
+                    fetchNextPage={fetchMoreSchedules}
+                    endLabel={schedules.length > 0 ? `All ${scheduleTotal} schedules loaded` : undefined}
+                  />
                 </>
               )}
             </motion.div>

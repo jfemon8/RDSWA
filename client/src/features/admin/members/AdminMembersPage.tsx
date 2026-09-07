@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
 import { Search, Ban, ExternalLink, Users, Clock, ShieldOff, Mail, Award, Star, UserCog, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
 import { hasMinRole } from '@/lib/roles';
@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import SEO from '@/components/SEO';
 import { downloadTablePdf } from '@/lib/downloadPdf';
 
@@ -29,27 +29,29 @@ export default function AdminMembersPage() {
   const [search, setSearch] = useState('');
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
-  const [page, setPage] = usePageParam();
   const [showBulkEmail, setShowBulkEmail] = useState(false);
   const [bulkEmail, setBulkEmail] = useState({ subject: '', body: '' });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filters: Record<string, string> = {
-    page: String(page),
-    limit: '20',
     membershipStatus: 'approved',
   };
   if (search) filters.search = search;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: members,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.users.members(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/users?${params}`);
-      return data;
-    },
+    path: '/users',
+    filters,
+    limit: 20,
   });
 
   const { data: statsData } = useQuery<MemberStats>({
@@ -61,9 +63,9 @@ export default function AdminMembersPage() {
         api.get('/users?membershipStatus=suspended&limit=1'),
       ]);
       return {
-        approved: approved.data?.pagination?.total ?? 0,
-        pending: pending.data?.pagination?.total ?? 0,
-        suspended: suspended.data?.pagination?.total ?? 0,
+        approved: approved.data?.total ?? 0,
+        pending: pending.data?.total ?? 0,
+        suspended: suspended.data?.total ?? 0,
       };
     },
     staleTime: 60_000,
@@ -111,9 +113,6 @@ export default function AdminMembersPage() {
     },
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Bulk email failed'); },
   });
-
-  const members: any[] = data?.data || [];
-  const pagination = data?.pagination;
 
   const exportParams = new URLSearchParams();
   exportParams.set('membershipStatus', 'approved');
@@ -220,7 +219,7 @@ export default function AdminMembersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value); }}
               placeholder="Search by name, email, student ID..."
               className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
@@ -228,7 +227,7 @@ export default function AdminMembersPage() {
           <div className="grid grid-cols-2 sm:flex gap-2">
             <select
               value={batch}
-              onChange={(e) => { setBatch(e.target.value); setPage(1); }}
+              onChange={(e) => { setBatch(e.target.value); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0"
             >
               <option value="">All Batches</option>
@@ -238,7 +237,7 @@ export default function AdminMembersPage() {
             </select>
             <select
               value={department}
-              onChange={(e) => { setDepartment(e.target.value); setPage(1); }}
+              onChange={(e) => { setDepartment(e.target.value); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0"
             >
               <option value="">All Departments</option>
@@ -551,9 +550,12 @@ export default function AdminMembersPage() {
             ))}
           </div>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={members.length > 0 ? `All ${total} members loaded` : undefined}
+          />
         </FadeIn>
       )}
     </div>

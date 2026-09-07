@@ -5,7 +5,7 @@ import {
   CheckCircle2, Loader2, ExternalLink, User, Calendar,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import SEO from '@/components/SEO';
 import { formatDateTime } from '@/lib/date';
 
@@ -67,20 +67,24 @@ export default function AdminContactMessagesPage() {
 
   const [statusFilter, setStatusFilter] = useState<Status | ''>('');
   const [search, setSearch] = useState('');
-  const [page, setPage] = usePageParam();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filters: Record<string, string> = { page: String(page), limit: '20' };
+  const filters: Record<string, string> = {};
   if (statusFilter) filters.status = statusFilter;
   if (search) filters.search = search;
 
-  const { data: listData, isLoading } = useQuery({
+  const {
+    items: messages,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList<ContactMessage>({
     queryKey: queryKeys.contactMessages.list(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/settings/contact/messages?${params}`);
-      return data;
-    },
+    path: '/settings/contact/messages',
+    filters,
+    limit: 20,
   });
 
   const { data: stats } = useQuery<Stats>({
@@ -112,8 +116,7 @@ export default function AdminContactMessagesPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete'),
   });
 
-  const messages: ContactMessage[] = listData?.data || [];
-  const pagination = listData?.pagination;
+
 
   const statCards = [
     { key: 'new', label: 'New', value: stats?.new ?? 0, icon: Inbox, color: 'rgba(59, 130, 246, 0.15)' },
@@ -149,7 +152,7 @@ export default function AdminContactMessagesPage() {
               <motion.button
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { setStatusFilter(active ? '' : (s.key as Status)); setPage(1); }}
+                onClick={() => { setStatusFilter(active ? '' : (s.key as Status)); }}
                 className={`w-full text-left rounded-xl border transition-colors ${active ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}`}
               >
                 <SpotlightCard className="bg-card border-0 p-4" spotlightColor={s.color}>
@@ -176,14 +179,14 @@ export default function AdminContactMessagesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value); }}
               placeholder="Search by name, email, subject..."
               className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value as Status | ''); setPage(1); }}
+            onChange={(e) => { setStatusFilter(e.target.value as Status | ''); }}
             className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-foreground text-sm"
           >
             <option value="">All Statuses</option>
@@ -248,9 +251,12 @@ export default function AdminContactMessagesPage() {
             </AnimatePresence>
           </div>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={messages.length > 0 ? `All ${total} messages loaded` : undefined}
+          />
         </FadeIn>
       )}
 

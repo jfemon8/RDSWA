@@ -1,8 +1,6 @@
 import { useMemo, useState, Fragment } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
-import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { queryKeys } from '@/lib/queryKeys';
 import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -14,7 +12,7 @@ import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 
 // One in-feed promo per six member cards, the balance point between dominating the grid and missing short pages.
@@ -38,9 +36,8 @@ export default function MembersPage() {
   const [homeDistrict, setHomeDistrict] = useState('');
   const [profession, setProfession] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryKey>('');
-  const [page, setPage] = usePageParam();
 
-  const filters: Record<string, string> = { page: String(page), limit: '20' };
+  const filters: Record<string, string> = {};
   if (search) filters.search = search;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
@@ -52,17 +49,19 @@ export default function MembersPage() {
   else if (categoryFilter === 'advisor') filters.isAdvisor = 'true';
   else if (categoryFilter === 'senior_advisor') filters.isSeniorAdvisor = 'true';
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: members,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.users.members(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/users/members?${params}`);
-      return data;
-    },
+    path: '/users/members',
+    filters,
+    limit: 20,
   });
-
-  const members = data?.data || [];
-  const pagination = data?.pagination;
 
   const allDistricts = useMemo(() => {
     const all = Object.values(districts).flat();
@@ -102,7 +101,7 @@ export default function MembersPage() {
               key={cat.key}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => { setCategoryFilter(cat.key); setPage(1); }}
+              onClick={() => { setCategoryFilter(cat.key); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 categoryFilter === cat.key
                   ? 'bg-primary text-primary-foreground'
@@ -123,33 +122,33 @@ export default function MembersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value); }}
               placeholder="Search by name, email, student ID, profession..."
               className="w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
           <input
             value={batch}
-            onChange={(e) => { setBatch(e.target.value); setPage(1); }}
+            onChange={(e) => { setBatch(e.target.value); }}
             placeholder="Batch"
             type="number"
             className="w-full sm:w-24 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <input
             value={session}
-            onChange={(e) => { setSession(e.target.value); setPage(1); }}
+            onChange={(e) => { setSession(e.target.value); }}
             placeholder="Session"
             className="w-full sm:w-28 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <input
             value={department}
-            onChange={(e) => { setDepartment(e.target.value); setPage(1); }}
+            onChange={(e) => { setDepartment(e.target.value); }}
             placeholder="Department"
             className="w-full sm:w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <select
             value={homeDistrict}
-            onChange={(e) => { setHomeDistrict(e.target.value); setPage(1); }}
+            onChange={(e) => { setHomeDistrict(e.target.value); }}
             className="w-full sm:w-40 px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="">All Districts</option>
@@ -159,7 +158,7 @@ export default function MembersPage() {
           </select>
           <input
             value={profession}
-            onChange={(e) => { setProfession(e.target.value); setPage(1); }}
+            onChange={(e) => { setProfession(e.target.value); }}
             placeholder="Profession"
             className="w-full sm:w-36 px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
@@ -191,7 +190,7 @@ export default function MembersPage() {
                   icon: X,
                   onClick: () => {
                     setSearch(''); setBatch(''); setDepartment(''); setSession('');
-                    setHomeDistrict(''); setProfession(''); setPage(1);
+                    setHomeDistrict(''); setProfession('');
                   },
                 }
               : undefined
@@ -310,9 +309,12 @@ export default function MembersPage() {
             })}
           </div>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={members.length > 0 ? `All ${total} members loaded` : undefined}
+          />
         </>
       )}
         </div>

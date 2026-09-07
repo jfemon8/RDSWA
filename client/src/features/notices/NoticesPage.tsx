@@ -1,8 +1,6 @@
 import { useState, Fragment } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
-import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { queryKeys } from '@/lib/queryKeys';
 import { FileText, AlertTriangle, Search, Archive, Mail, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -11,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
 import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 
 // One in-feed promo per N notice cards, spaced slightly tighter than events because notices are shorter.
@@ -21,24 +19,25 @@ export default function NoticesPage() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [page, setPage] = usePageParam();
 
-  const filters: Record<string, string> = { page: String(page), limit: '12' };
+  const filters: Record<string, string> = {};
   if (category) filters.category = category;
   if (search.trim()) filters.search = search.trim();
   if (showArchived) filters.archived = 'true';
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: notices,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.notices.list(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/notices?${params}`);
-      return data;
-    },
+    path: '/notices',
+    filters,
+    limit: 12,
   });
-
-  const notices = data?.data || [];
-  const pagination = data?.pagination;
   const categories = ['', 'general', 'academic', 'event', 'urgent', 'financial', 'other'];
 
   return (
@@ -64,7 +63,7 @@ export default function NoticesPage() {
             type="text"
             placeholder="Search notices..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { setSearch(e.target.value); }}
             className="w-full pl-10 pr-4 py-2.5 border rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           />
         </div>
@@ -74,7 +73,7 @@ export default function NoticesPage() {
       <FadeIn delay={0.2}>
         <div className="flex items-center gap-2 mb-8 flex-wrap">
           {categories.map((c) => (
-            <button key={c} onClick={() => { setCategory(c); setPage(1); }}
+            <button key={c} onClick={() => { setCategory(c); }}
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors capitalize ${
                 category === c ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
               }`}
@@ -84,7 +83,7 @@ export default function NoticesPage() {
           ))}
           <div className="ml-auto">
             <button
-              onClick={() => { setShowArchived(!showArchived); setPage(1); }}
+              onClick={() => { setShowArchived(!showArchived); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 showArchived ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' : 'hover:bg-accent'
               }`}
@@ -110,9 +109,9 @@ export default function NoticesPage() {
               ? 'There are no archived notices. Older notices are archived here once they become inactive.'
               : 'No notices have been posted yet. Check back soon or contact an admin for the latest updates.'}
           primary={search
-            ? { label: 'Clear Search', icon: X, onClick: () => { setSearch(''); setPage(1); } }
+            ? { label: 'Clear Search', icon: X, onClick: () => { setSearch(''); } }
             : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
-          secondary={!search && !showArchived ? { label: 'View Archived', icon: Archive, onClick: () => { setShowArchived(true); setPage(1); } } : undefined}
+          secondary={!search && !showArchived ? { label: 'View Archived', icon: Archive, onClick: () => { setShowArchived(true); } } : undefined}
           hint="Important announcements, academic updates and urgent notices from RDSWA appear here."
         />
       ) : (
@@ -126,7 +125,7 @@ export default function NoticesPage() {
                 className="text-sm text-muted-foreground mb-4"
               >
                 Showing results for "<span className="font-medium text-foreground">{search}</span>"
-                {pagination && ` (${pagination.total} found)`}
+                {` (${total} found)`}
               </motion.p>
             )}
           </AnimatePresence>
@@ -174,11 +173,12 @@ export default function NoticesPage() {
             ))}
           </div>
 
-          {pagination && pagination.totalPages > 1 && (
-            <FadeIn>
-              <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} size="md" />
-            </FadeIn>
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={notices.length > 0 ? `All ${total} notices loaded` : undefined}
+          />
         </>
       )}
     </div>

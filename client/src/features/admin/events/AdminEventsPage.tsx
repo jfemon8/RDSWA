@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePageParam } from "@/hooks/usePageParam";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { FieldError } from "@/components/ui/FieldError";
@@ -42,7 +42,7 @@ import ImageUpload from "@/components/ui/ImageUpload";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import Spinner from "@/components/ui/Spinner";
-import Pagination from "@/components/ui/Pagination";
+import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 import { deriveEventStatus, getAttendanceWindow } from "@rdswa/shared";
 import { useAuth } from "@/hooks/useAuth";
 import AttendanceDateField, {
@@ -96,7 +96,6 @@ export default function AdminEventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [page, setPage] = usePageParam();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -114,12 +113,17 @@ export default function AdminEventsPage() {
   const [registrationFields, setRegistrationFields] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.events.list({ page: String(page) }),
-    queryFn: async () => {
-      const { data } = await api.get(`/events?page=${page}&limit=20`);
-      return data;
-    },
+  const {
+    items: events,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: queryKeys.events.list({}),
+    path: '/events',
+    limit: 20,
   });
 
   // Committees list for the "Event Organizing Committee" dropdown.
@@ -232,8 +236,6 @@ export default function AdminEventsPage() {
     setShowForm(true);
   };
 
-  const events = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
@@ -729,13 +731,12 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {pagination && pagination.totalPages > 1 && (
-        <Pagination
-          page={page}
-          totalPages={pagination.totalPages}
-          onChange={setPage}
-        />
-      )}
+      <InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={events.length > 0 ? `All ${total} events loaded` : undefined}
+      />
     </div>
   );
 }

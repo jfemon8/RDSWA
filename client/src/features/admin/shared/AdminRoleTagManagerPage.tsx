@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2, UserMinus, Search, Plus, X, Briefcase, Building2 } from 'lucide-react';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 /** Which boolean flag this page manages */
 type TagFlag = 'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor';
@@ -71,16 +71,21 @@ export default function AdminRoleTagManagerPage({
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
-  const [page, setPage] = usePageParam();
   const [showAdd, setShowAdd] = useState(false);
   const [addSearch, setAddSearch] = useState('');
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['users', `tag-manager-${flagFilter}`, page],
-    queryFn: async () => {
-      const { data } = await api.get(`/users?${flagFilter}=true&limit=20&page=${page}`);
-      return data;
-    },
+  const {
+    items: users,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['users', `tag-manager-${flagFilter}`],
+    path: '/users',
+    filters: { [flagFilter]: 'true' },
+    limit: 20,
   });
 
   // Search users without this tag for the add panel, across all users when allowAnyUser is set.
@@ -115,8 +120,6 @@ export default function AdminRoleTagManagerPage({
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to revoke'),
   });
 
-  const users = data?.data || [];
-  const pagination = data?.pagination;
   const candidates = (candidatesData?.data || []).filter(
     (u: any) => !u[flagFilter]
   );
@@ -302,9 +305,12 @@ export default function AdminRoleTagManagerPage({
               })}
             </div>
 
-            {pagination && pagination.totalPages > 1 && (
-              <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-            )}
+            <InfiniteScrollSentinel
+              hasNextPage={!!hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              fetchNextPage={fetchNextPage}
+              endLabel={users.length > 0 ? `All ${total} members loaded` : undefined}
+            />
           </>
         )}
       </div>

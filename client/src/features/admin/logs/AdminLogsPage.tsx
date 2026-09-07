@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
-import { usePageParam } from "@/hooks/usePageParam";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 import { useTabParam } from "@/hooks/useTabParam";
 import api from "@/lib/api";
 import {
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { formatDateTime } from "@/lib/date";
 import Spinner from "@/components/ui/Spinner";
-import Pagination from "@/components/ui/Pagination";
+import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 
 type Tab = "audit" | "login" | "suspicious";
 const TABS: readonly Tab[] = ["audit", "login", "suspicious"];
@@ -73,24 +73,23 @@ export default function AdminLogsPage() {
 
 function AuditLogsTab() {
   const navigate = useNavigate();
-  const [page, setPage] = usePageParam("auditPage");
   const [action, setAction] = useState("");
   const [resource, setResource] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "logs", page, action, resource],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: "30" });
-      if (action) params.set("action", action);
-      if (resource) params.set("resource", resource);
-      const { data } = await api.get(`/admin/logs?${params}`);
-      return data;
-    },
+  const {
+    items: logs,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ["admin", "logs", action, resource],
+    path: "/admin/logs",
+    filters: { action, resource },
+    limit: 30,
   });
-
-  const logs = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <>
@@ -100,7 +99,6 @@ function AuditLogsTab() {
             value={action}
             onChange={(e) => {
               setAction(e.target.value);
-              setPage(1);
             }}
             placeholder="Search actions (e.g. approve, create, delete)..."
             className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 sm:flex-1 sm:min-w-0"
@@ -109,7 +107,6 @@ function AuditLogsTab() {
             value={resource}
             onChange={(e) => {
               setResource(e.target.value);
-              setPage(1);
             }}
             className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-foreground text-sm sm:flex-shrink-0"
           >
@@ -400,13 +397,12 @@ function AuditLogsTab() {
             </div>
           </FadeIn>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={pagination.totalPages}
-              onChange={setPage}
-            />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={logs.length > 0 ? `All ${total} entries loaded` : undefined}
+          />
         </>
       )}
     </>
@@ -415,21 +411,21 @@ function AuditLogsTab() {
 
 function LoginHistoryTab() {
   const navigate = useNavigate();
-  const [page, setPage] = usePageParam("loginPage");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "login-history", page, statusFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: "30" });
-      if (statusFilter) params.set("status", statusFilter);
-      const { data } = await api.get(`/admin/login-history?${params}`);
-      return data;
-    },
+  const {
+    items: history,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ["admin", "login-history", statusFilter],
+    path: "/admin/login-history",
+    filters: { status: statusFilter },
+    limit: 30,
   });
-
-  const history = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <>
@@ -440,7 +436,6 @@ function LoginHistoryTab() {
               key={s}
               onClick={() => {
                 setStatusFilter(s);
-                setPage(1);
               }}
               className={`px-3 py-1.5 text-sm rounded-md border capitalize ${
                 statusFilter === s
@@ -635,13 +630,12 @@ function LoginHistoryTab() {
             </div>
           </FadeIn>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={pagination.totalPages}
-              onChange={setPage}
-            />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={history.length > 0 ? `All ${total} sign-ins loaded` : undefined}
+          />
         </>
       )}
     </>

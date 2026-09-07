@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -9,23 +9,26 @@ import { Trash2 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 export default function AdminMentorshipPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
   const [statusFilter, setStatusFilter] = useState('');
-  const [page, setPage] = usePageParam();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-mentorships', statusFilter, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (statusFilter) params.set('status', statusFilter);
-      const { data } = await api.get(`/mentorships/admin/all?${params}`);
-      return data;
-    },
+  const {
+    items: mentorships,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['admin-mentorships', statusFilter],
+    path: '/mentorships/admin/all',
+    filters: { status: statusFilter },
+    limit: 20,
   });
 
   const deleteMutation = useMutation({
@@ -34,8 +37,6 @@ export default function AdminMentorshipPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
   });
 
-  const mentorships = data?.data || [];
-  const pagination = data?.pagination;
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -50,7 +51,7 @@ export default function AdminMentorshipPage() {
 
       <FadeIn direction="up">
         <div className="flex gap-2 mb-6">
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); }}
             className="w-full sm:w-auto px-3 py-2 border rounded-md bg-card text-sm">
             <option value="">All Status</option>
             <option value="pending">Pending</option>
@@ -158,9 +159,12 @@ export default function AdminMentorshipPage() {
         </FadeIn>
       )}
 
-      {pagination && pagination.totalPages > 1 && (
-        <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-      )}
+      <InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={mentorships.length > 0 ? `All ${total} mentorships loaded` : undefined}
+      />
     </div>
   );
 }

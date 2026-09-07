@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn } from '@/components/reactbits';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -15,7 +15,7 @@ import { stripHtml } from '@/lib/stripHtml';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 type Tab = 'send' | 'history';
 const TABS: readonly Tab[] = ['send', 'history'];
@@ -162,17 +162,20 @@ function HistoryPanel() {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [typeFilter, setTypeFilter] = useState('');
-  const [page, setPage] = usePageParam();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'notifications', 'all', typeFilter, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ limit: '30', page: String(page) });
-      if (typeFilter) params.set('type', typeFilter);
-      const { data } = await api.get(`/notifications/admin/all?${params}`);
-      return data;
-    },
+  const {
+    items: notifications,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['admin', 'notifications', 'all', typeFilter],
+    path: '/notifications/admin/all',
+    filters: { type: typeFilter },
+    limit: 30,
   });
 
   const bulkDeleteMutation = useMutation({
@@ -185,8 +188,6 @@ function HistoryPanel() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Bulk delete failed'),
   });
 
-  const notifications = data?.data || [];
-  const pagination = data?.pagination;
 
   const toggleSelect = (id: string) => {
     const next = new Set(selectedIds);
@@ -205,13 +206,13 @@ function HistoryPanel() {
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {pagination?.total ?? 0} total notifications
+            {total} total notifications
           </span>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={typeFilter}
-            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            onChange={(e) => { setTypeFilter(e.target.value); }}
             className="px-3 py-1.5 border rounded-md bg-card text-foreground text-sm"
           >
             <option value="">All types</option>
@@ -293,9 +294,12 @@ function HistoryPanel() {
             ))}
           </div>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={notifications.length > 0 ? `All ${total} notifications loaded` : undefined}
+          />
         </>
       )}
     </FadeIn>

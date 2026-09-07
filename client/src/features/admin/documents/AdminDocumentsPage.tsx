@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
@@ -13,7 +13,7 @@ import { FadeIn } from '@/components/reactbits';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { proxyFileUrl } from '@/lib/fileProxy';
 import { formatDateTime } from '@/lib/date';
 
@@ -85,14 +85,17 @@ export default function AdminDocumentsPage() {
   const [originalFileName, setOriginalFileName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [page, setPage] = usePageParam();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-documents', page],
-    queryFn: async () => {
-      const { data } = await api.get(`/documents?page=${page}&limit=20`);
-      return data;
-    },
+  const {
+    items: docs,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['admin-documents'],
+    path: '/documents',
+    limit: 20,
   });
 
   const saveMutation = useMutation({
@@ -157,8 +160,7 @@ export default function AdminDocumentsPage() {
     saveMutation.mutate();
   };
 
-  const docs = data?.data || [];
-  const pagination = data?.pagination;
+
 
   const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
@@ -576,9 +578,12 @@ export default function AdminDocumentsPage() {
             </div>
           </FadeIn>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={docs.length > 0 ? `All ${total} documents loaded` : undefined}
+          />
         </>
       )}
     </div>

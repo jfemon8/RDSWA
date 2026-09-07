@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
@@ -9,7 +9,7 @@ import { Search, Trash2, ExternalLink, Briefcase } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 export default function AdminJobsPage() {
   const queryClient = useQueryClient();
@@ -17,17 +17,19 @@ export default function AdminJobsPage() {
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [page, setPage] = usePageParam();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-jobs', search, typeFilter, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (search) params.set('search', search);
-      if (typeFilter) params.set('type', typeFilter);
-      const { data } = await api.get(`/jobs?${params}`);
-      return data;
-    },
+  const {
+    items: jobs,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['admin-jobs', search, typeFilter],
+    path: '/jobs',
+    filters: { search, type: typeFilter },
+    limit: 20,
   });
 
   const deleteMutation = useMutation({
@@ -36,8 +38,6 @@ export default function AdminJobsPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
   });
 
-  const jobs = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-6">
@@ -47,10 +47,10 @@ export default function AdminJobsPage() {
         <div className="flex flex-col sm:flex-row gap-2 mb-4 sm:mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            <input value={search} onChange={(e) => { setSearch(e.target.value); }}
               placeholder="Search jobs..." className="w-full pl-10 pr-3 py-2.5 border rounded-md bg-card text-sm" />
           </div>
-          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); }}
             className="w-full sm:w-auto px-3 py-2.5 border rounded-md bg-card text-sm">
             <option value="">All Types</option>
             <option value="full-time">Full Time</option>
@@ -203,9 +203,12 @@ export default function AdminJobsPage() {
         </FadeIn>
       )}
 
-      {pagination && pagination.totalPages > 1 && (
-        <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-      )}
+      <InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={jobs.length > 0 ? `All ${total} jobs loaded` : undefined}
+      />
     </div>
   );
 }

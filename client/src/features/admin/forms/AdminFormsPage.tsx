@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
-import { usePageParam } from '@/hooks/usePageParam';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useToast } from '@/components/ui/Toast';
 import { CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2, Eye, Download, Clock, Paperclip } from 'lucide-react';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import RichContent from '@/components/ui/RichContent';
 import { proxyFileUrl } from '@/lib/fileProxy';
 import { getDocLabel, DEFAULT_MEMBERSHIP_CRITERIA, type MembershipCriteria } from '@/lib/membershipDocs';
@@ -25,21 +25,25 @@ export default function AdminFormsPage() {
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [page, setPage] = usePageParam();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 
-  const filters: Record<string, string> = { page: String(page), limit: '20' };
+  const filters: Record<string, string> = {};
   if (statusFilter) filters.status = statusFilter;
   if (typeFilter) filters.type = typeFilter;
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: forms,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: ['forms', 'admin', filters],
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/forms?${params}`);
-      return data;
-    },
+    path: '/forms',
+    filters,
+    limit: 20,
   });
 
   const { data: criteriaData } = useQuery<MembershipCriteria>({
@@ -64,9 +68,6 @@ export default function AdminFormsPage() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Review failed'); },
   });
 
-  const forms = data?.data || [];
-  const pagination = data?.pagination;
-
   return (
     <FadeIn direction="up">
       <div className="container mx-auto">
@@ -77,7 +78,7 @@ export default function AdminFormsPage() {
             {['', 'pending', 'under_review', 'approved', 'rejected'].map((s) => (
               <button
                 key={s}
-                onClick={() => { setStatusFilter(s); setPage(1); }}
+                onClick={() => { setStatusFilter(s); }}
                 className={`flex items-center justify-center px-3 py-2 sm:py-1.5 text-sm rounded-md border capitalize whitespace-nowrap transition-colors ${
                   statusFilter === s ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
                 }`}>
@@ -87,7 +88,7 @@ export default function AdminFormsPage() {
           </div>
           <select
             value={typeFilter}
-            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            onChange={(e) => { setTypeFilter(e.target.value); }}
             className={`w-full sm:w-auto sm:ml-auto px-3 py-2 sm:py-1.5 border rounded-md bg-card text-foreground text-sm transition-colors ${
               typeFilter ? 'font-medium border-foreground/30' : ''
             }`}
@@ -286,9 +287,12 @@ export default function AdminFormsPage() {
           </div>
         )}
 
-        {pagination && pagination.totalPages > 1 && (
-          <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-        )}
+        <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={forms.length > 0 ? `All ${total} forms loaded` : undefined}
+          />
       </div>
     </FadeIn>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useToast } from '@/components/ui/Toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { FieldError } from '@/components/ui/FieldError';
 import { omitFieldError } from '@/lib/formErrors';
 
@@ -27,25 +27,29 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
-  const [page, setPage] = usePageParam();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [bulkEmail, setBulkEmail] = useState({ subject: '', body: '' });
   // Force-password modal state — { user } when open, null when closed.
   const [forcePwdTarget, setForcePwdTarget] = useState<any | null>(null);
 
-  const filters: Record<string, string> = { page: String(page), limit: '20' };
+  const filters: Record<string, string> = {};
   if (search) filters.search = search;
   if (role) filters.role = role;
   if (status) filters.membershipStatus = status;
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: users,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.users.list(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/users?${params}`);
-      return data;
-    },
+    path: '/users',
+    filters,
+    limit: 20,
   });
 
   const approveMutation = useMutation({
@@ -123,9 +127,6 @@ export default function AdminUsersPage() {
     onError: (err: any) => { toast.error(err.response?.data?.message || 'Bulk email failed'); },
   });
 
-  const users = data?.data || [];
-  const pagination = data?.pagination;
-
   // Build export URL with current filters (no pagination — exports ALL matching rows)
   const exportParams = new URLSearchParams();
   if (search) exportParams.set('search', search);
@@ -188,11 +189,11 @@ export default function AdminUsersPage() {
         <div className="flex flex-col sm:flex-row gap-2 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            <input value={search} onChange={(e) => { setSearch(e.target.value); }}
               placeholder="Search users..." className="w-full pl-10 pr-3 py-2 border rounded-md bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
           </div>
           <div className="grid grid-cols-2 sm:flex gap-2">
-            <select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}
+            <select value={role} onChange={(e) => { setRole(e.target.value); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">
               <option value="">All Roles</option>
               <option value="user">User</option>
@@ -203,7 +204,7 @@ export default function AdminUsersPage() {
                   the tier is hidden from UI. Filtering by `admin` returns
                   super_admins too via the backend's tier-aware role match. */}
             </select>
-            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+            <select value={status} onChange={(e) => { setStatus(e.target.value); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">
               <option value="">All Status</option>
               <option value="none">No Application</option>
@@ -536,9 +537,12 @@ export default function AdminUsersPage() {
             })()}
           </FadeIn>
 
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={users.length > 0 ? `All ${total} users loaded` : undefined}
+          />
         </>
       )}
 

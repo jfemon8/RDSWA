@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
-import { usePageParam } from '@/hooks/usePageParam';
 import {
   Shield, Check, X, History, ArrowRight,
   GraduationCap, Award, Star, Zap,
 } from 'lucide-react';
 import { UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES } from '@rdswa/shared';
-import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 const ROLE_COLORS: Record<string, string> = {
   guest: 'bg-muted text-muted-foreground',
@@ -300,23 +298,24 @@ export default function AdminRolesPage() {
 }
 
 function RoleHistorySection() {
-  const [page, setPage] = usePageParam();
   const [typeFilter, setTypeFilter] = useState('');
 
-  const filters: Record<string, string> = { page: String(page), limit: '15' };
+  const filters: Record<string, string> = {};
   if (typeFilter) filters.assignmentType = typeFilter;
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: history,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: ['admin', 'role-history', filters],
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/admin/role-history?${params}`);
-      return data;
-    },
+    path: '/admin/role-history',
+    filters,
+    limit: 15,
   });
-
-  const history = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <FadeIn direction="up" delay={0.4}>
@@ -330,7 +329,7 @@ function RoleHistorySection() {
             {['', 'auto', 'manual'].map((t) => (
               <button
                 key={t}
-                onClick={() => { setTypeFilter(t); setPage(1); }}
+                onClick={() => { setTypeFilter(t); }}
                 className={`px-2.5 py-1 text-xs rounded-md border capitalize ${
                   typeFilter === t ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
                 }`}
@@ -473,9 +472,12 @@ function RoleHistorySection() {
           </>
         )}
 
-        {pagination && pagination.totalPages > 1 && (
-          <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
-        )}
+        <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={history.length > 0 ? `All ${total} entries loaded` : undefined}
+          />
       </div>
     </FadeIn>
   );

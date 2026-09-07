@@ -1,8 +1,6 @@
 import { useState, Fragment } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
-import api from '@/lib/api';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate, formatTime } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Users, FileText, X, Mail } from 'lucide-react';
@@ -10,7 +8,7 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
 
@@ -20,24 +18,25 @@ const PROMO_EVERY = 5;
 
 export default function MeetingRecordsPage() {
   const [status, setStatus] = useState('');
-  const [page, setPage] = usePageParam();
 
   const filters: Record<string, string> = {
-    page: String(page), limit: '20', type: 'meeting',
+    type: 'meeting',
   };
   if (status) filters.status = status;
 
-  const { data, isLoading } = useQuery({
+  const {
+    items: meetings,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
     queryKey: queryKeys.events.list(filters),
-    queryFn: async () => {
-      const params = new URLSearchParams(filters);
-      const { data } = await api.get(`/events?${params}`);
-      return data;
-    },
+    path: '/events',
+    filters,
+    limit: 20,
   });
-
-  const meetings = data?.data || [];
-  const pagination = data?.pagination;
 
   return (
     <div className="container mx-auto py-6 md:py-12">
@@ -54,7 +53,7 @@ export default function MeetingRecordsPage() {
           {['', 'upcoming', 'ongoing', 'completed'].map((s) => (
             <button
               key={s}
-              onClick={() => { setStatus(s); setPage(1); }}
+              onClick={() => { setStatus(s); }}
               className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                 status === s ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
               }`}
@@ -75,7 +74,7 @@ export default function MeetingRecordsPage() {
             ? `No ${status} meetings are listed. Try a different status filter or view all meetings.`
             : 'No committee or general meeting records are available yet. Records are added after meetings are held.'}
           primary={status
-            ? { label: 'View All Meetings', icon: X, onClick: () => { setStatus(''); setPage(1); } }
+            ? { label: 'View All Meetings', icon: X, onClick: () => { setStatus(''); } }
             : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
           hint="Meeting agendas, attendance and minutes are documented here for members to review."
         />
@@ -137,11 +136,12 @@ export default function MeetingRecordsPage() {
             ))}
           </div>
 
-          {pagination && pagination.totalPages > 1 && (
-            <FadeIn>
-              <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} size="md" />
-            </FadeIn>
-          )}
+          <InfiniteScrollSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            endLabel={meetings.length > 0 ? `All ${total} meetings loaded` : undefined}
+          />
         </>
       )}
     </div>

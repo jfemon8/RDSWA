@@ -1,7 +1,7 @@
 import { useState, Fragment } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import {
   MessageSquare, Plus, Pin, Lock, Loader2, Search,
@@ -15,7 +15,7 @@ import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 
 const PROMO_EVERY = 6;
@@ -27,21 +27,19 @@ export default function ForumPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
   const [search, setSearch] = useState('');
-  const [page, setPage] = usePageParam();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['forum-topics', page, filterCategory],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (filterCategory) params.set('category', filterCategory);
-      const { data } = await api.get(`/communication/forum?${params}`);
-      return data;
-    },
+  const {
+    items: topics,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['forum-topics', filterCategory],
+    path: '/communication/forum',
+    filters: { category: filterCategory },
+    limit: 20,
   });
-
-  const topics = data?.data || [];
-  const total = data?.total || 0;
-  const totalPages = Math.ceil(total / 20);
 
   const filteredTopics = search
     ? topics.filter((t: any) => t.title.toLowerCase().includes(search.toLowerCase()))
@@ -178,10 +176,12 @@ export default function ForumPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-      )}
+<InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={topics.length > 0 ? `All ${total} topics loaded` : undefined}
+      />
     </div>
   );
 }

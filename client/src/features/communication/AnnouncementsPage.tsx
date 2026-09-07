@@ -1,7 +1,7 @@
 import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usePageParam } from '@/hooks/usePageParam';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
@@ -14,7 +14,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
-import Pagination from '@/components/ui/Pagination';
+import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 
 const PROMO_EVERY = 6;
@@ -23,21 +23,21 @@ export default function AnnouncementsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [page, setPage] = usePageParam();
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['announcements', page],
-    queryFn: async () => {
-      const { data } = await api.get(`/communication/announcements?page=${page}&limit=20`);
-      return data;
-    },
+  const {
+    items: announcements,
+    total,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList({
+    queryKey: ['announcements'],
+    path: '/communication/announcements',
+    limit: 20,
   });
-
-  const announcements = data?.data || [];
-  const total = data?.total || 0;
-  const totalPages = Math.ceil(total / 20);
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
@@ -130,10 +130,12 @@ export default function AnnouncementsPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-      )}
+<InfiniteScrollSentinel
+        hasNextPage={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        endLabel={announcements.length > 0 ? `All ${total} announcements loaded` : undefined}
+      />
     </div>
   );
 }
