@@ -373,9 +373,9 @@ function EventsReport() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="events" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="avgAttendance" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="registered" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="events" name="Events" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="avgAttendance" name="Avg Attendance" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="registered" name="Register" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : <EmptyChart />}
