@@ -190,12 +190,7 @@ export default function DashboardPage() {
         </FadeIn>
       )}
 
-      {/* Bottom-of-dashboard responsive display promo. Mobile anchor ad
-          (sticky bottom) is configured separately in AdSense Console →
-          Privacy & messaging → Ads → Auto ads → enable ONLY "Anchor" with
-          URL targeting `/dashboard` and device targeting "mobile" — that
-          UX cannot be implemented from React because anchor ads must be
-          owned by the AdSense auto-ads runtime to behave correctly. */}
+      {/* Bottom-of-dashboard display promo, while the mobile anchor ad is configured in the AdSense console because anchor ads must be owned by the auto-ads runtime. */}
       <div className="mt-8 empty:hidden">
         <Promo kind="displayResponsive" minHeight={250} />
       </div>

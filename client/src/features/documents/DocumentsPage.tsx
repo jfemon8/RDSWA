@@ -109,8 +109,7 @@ export default function DocumentsPage() {
         </div>
       </FadeIn>
 
-      {/* lg+ adds a sticky right-rail promo. Below lg the sidebar is hidden
-          and the document list takes the full container width. */}
+      {/* On lg+ a sticky right-rail promo appears, and below lg the document list takes the full container width. */}
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {isLoading ? (
@@ -265,9 +264,7 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* Bottom display banner — appears below the document list on every
-          breakpoint. Distinct from the sidebar promo so we get one
-          impression on mobile (where the sidebar is hidden). */}
+      {/* Bottom banner on every breakpoint, kept distinct from the sidebar promo so mobile still gets one impression. */}
       {documents.length > 0 && (
         <div className="mt-8 empty:hidden">
           <Promo kind="displayResponsive" minHeight={250} />

@@ -135,10 +135,7 @@ export default function TopicDetailPage() {
       {/* Topic */}
       <FadeIn direction="up" distance={20}>
         <div className="bg-card border rounded-lg p-4 sm:p-5 mb-4">
-          {/* Meta row: category chip + pin/lock indicators + action icons.
-              Actions sit on their own row end so the title below can use the
-              full card width and wrap naturally (BlurText's flex-wrap layout
-              forced one-word-per-line in the narrow leftover space). */}
+          {/* Meta row keeps its actions at its own row end so the title below can use the full card width and wrap naturally. */}
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
               {topic.isPinned && <Pin className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
@@ -238,10 +235,7 @@ export default function TopicDetailPage() {
         </div>
       </FadeIn>
 
-      {/* In-article promo between topic body and replies — the natural
-          break point on a Reddit-style thread. No FadeIn wrapper because
-          Promo animates itself and the wrapper would block `empty:hidden`
-          collapse when the slot is unfilled. */}
+      {/* In-article promo at the body-to-replies break, with no FadeIn wrapper because that would block `empty:hidden` from collapsing an unfilled slot. */}
       <div className="mb-4 empty:hidden">
         <Promo kind="inArticle" minHeight={250} />
       </div>

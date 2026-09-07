@@ -118,14 +118,7 @@ export default function HomePage() {
         description="RDSWA — Rangpur Divisional Student Welfare Association at the University of Barishal. Member directory, events, notices, blood donor network, Rangpur–Barishal bus schedule, scholarships, committees, alumni, and more for BU Rangpur students. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়।"
         keywords="RDSWA, Rangpur Divisional Student Welfare Association, University of Barishal, BU Rangpur, রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়, Barishal University Rangpur students, Rangpur student association, BU student welfare, Bangladesh student welfare association, Rangpur to Barishal bus, BU blood donor"
       />
-      {/*
-        Visually-hidden semantic <h1> for crawlers + screen readers. The
-        BlurText animated heading inside the hero is a <div>, so without
-        this every page would lose its primary heading anchor and
-        accessibility/SEO audits flag the issue. `sr-only` keeps the
-        rendered UI visually identical — only assistive tech and search
-        engines see this string.
-      */}
+      {/* Visually-hidden semantic `<h1>`, because the animated hero heading is a `<div>` and the page would otherwise have no primary heading for crawlers or screen readers. */}
       <h1 className="sr-only">
         RDSWA — Rangpur Divisional Student Welfare Association, University of
         Barishal · রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়
@@ -142,9 +135,7 @@ export default function HomePage() {
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="eager"
               />
-              {/* Theme-aware dim overlay so foreground text stays legible on
-                  any uploaded image. Triple-stop gradient keeps the centre
-                  slightly lighter than the edges. */}
+              {/* Theme-aware dim overlay whose triple-stop gradient keeps the centre lighter, so foreground text stays legible on any uploaded image. */}
               <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/55 to-background/85" />
             </>
           )}
@@ -490,14 +481,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Promo — multiplex placed just before the CTA so it sits above the
-          footer without breaking the hero/CTA composition. Home page is
-          flow-based (no main+sidebar grid), so the desktop "sidebar" promo
-          requested for richer pages is intentionally not used here — adding
-          a floating right-rail would clash with the centered hero.
-          `empty:hidden` collapses the whole section (incl. py-8) when the
-          Promo returns null (dev / unfilled / blocked route) so no empty
-          padding band appears between Services and CTA. */}
+      {/* Multiplex promo just above the CTA, where `empty:hidden` collapses the whole section when the slot goes unfilled. */}
       <section className="container mx-auto py-8 empty:hidden">
         <Promo kind="multiplex" minHeight={300} />
       </section>

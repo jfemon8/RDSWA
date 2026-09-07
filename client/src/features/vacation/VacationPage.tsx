@@ -96,9 +96,7 @@ export default function VacationPage() {
         {pageSubtitle}
       </p>
 
-      {/* lg+ adds a sticky right-rail promo. Below lg the sidebar is hidden
-          and the main column takes the full container width. Same layout
-          pattern used by DocumentsPage / HomePage. */}
+      {/* On lg+ a sticky right-rail promo appears, and below lg the main column takes the full container width. */}
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
           {isLoading ? (
@@ -116,9 +114,7 @@ export default function VacationPage() {
                 <YearCard vacation={latest} highlight />
               </FadeIn>
 
-              {/* In-flow display ad between the latest year and the archive
-                  list. Returns null when AdSense env vars aren't configured,
-                  so the layout collapses cleanly in dev. */}
+              {/* In-flow display ad between the latest year and the archive, collapsing cleanly when AdSense env vars are unset. */}
               {older.length > 0 && (
                 <Promo kind="displayResponsive" minHeight={250} />
               )}
@@ -191,8 +187,7 @@ export default function VacationPage() {
           )}
         </div>
 
-        {/* lg+ sticky right-rail promo. Hidden on mobile; lg:empty:hidden
-            collapses the slot when AdSense returns no fill. */}
+        {/* Sticky right-rail promo on lg+, where `lg:empty:hidden` collapses the slot when AdSense returns no fill. */}
         <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
           <Promo kind="sidebar" minHeight={600} />
         </aside>
@@ -320,11 +315,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
         </>
       )}
 
-      {/* Attachments — rendered directly so members can read them in place.
-          Images use a thumbnail grid that opens ImageLightbox on click;
-          PDFs use the project's PdfViewer (lazy-loaded react-pdf with zoom,
-          fullscreen, page jump); other docs fall back to a card with
-          Open + Download buttons. */}
+      {/* Attachments render in place, with a thumbnail grid for images, PdfViewer for PDFs, and an Open or Download card for anything else. */}
       {classified.length > 0 && (
         <div className="mt-6 space-y-5">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">

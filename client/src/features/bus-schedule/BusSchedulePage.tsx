@@ -390,9 +390,7 @@ export default function BusSchedulePage() {
         </motion.button>
       )}
 
-      {/* lg+ split: routes/schedules content on the left, sticky promo on
-          the right. Below lg the sidebar collapses so the schedule grid /
-          operator cards keep their full-width design unchanged. */}
+      {/* On lg+ the content splits with a sticky promo on the right, and below lg the sidebar collapses so the schedule grid keeps its full-width design. */}
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {isLoading ? (
@@ -674,9 +672,7 @@ export default function BusSchedulePage() {
         </AnimatePresence>
       )}
 
-      {/* Bottom display banner — full-width below the active view. Renders
-          on every breakpoint so mobile (where the sidebar is hidden) still
-          gets one impression per page view. */}
+      {/* Full-width bottom banner on every breakpoint, so mobile still gets one impression where the sidebar is hidden. */}
       <div className="mt-8 empty:hidden">
         <Promo kind="displayResponsive" minHeight={250} />
       </div>

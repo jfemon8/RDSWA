@@ -63,9 +63,7 @@ export default function CommitteePage() {
         direction="bottom"
       />
 
-      {/* lg+ split: committee cards on the left, sticky promo on the right.
-          On smaller screens the sidebar collapses and the committee grid
-          flows full-width identical to the previous layout. */}
+      {/* On lg+ the committee cards split against a sticky promo, and smaller screens keep the original full-width grid. */}
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {committees.length === 0 ? (

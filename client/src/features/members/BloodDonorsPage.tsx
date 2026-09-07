@@ -234,11 +234,7 @@ export default function BloodDonorsPage() {
         </div>
       )}
 
-      {/* Bottom-only multiplex. Blood donor lookup is a health-emergency
-          utility — keeping the upper portion of the page promo-free is an
-          intentional UX choice (and avoids any policy risk around mixing
-          monetization with health-emergency content). The promo only
-          surfaces after the user has already seen the donor list. */}
+      {/* Bottom-only multiplex, keeping this health-emergency lookup promo-free until the reader has already seen the donor list. */}
       {donors.length > 0 && (
         <div className="mt-10 empty:hidden">
           <Promo kind="multiplex" minHeight={300} />

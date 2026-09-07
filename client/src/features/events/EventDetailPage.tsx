@@ -529,11 +529,7 @@ export default function EventDetailPage() {
         </div>
       </FadeIn>
 
-      {/* In-article promo placed after the description, before secondary
-          panels (attendance, photos, feedback). This is the natural reading
-          break and gets the highest viewability. Promo has its own fade
-          animation, so no FadeIn wrapper — wrapping would prevent
-          `empty:hidden` from collapsing the gap when the slot is unfilled. */}
+      {/* In-article promo at the reading break after the description, with no FadeIn wrapper because that would stop `empty:hidden` collapsing an unfilled slot. */}
       <div className="mb-8 empty:hidden">
         <Promo kind="inArticle" minHeight={250} />
       </div>

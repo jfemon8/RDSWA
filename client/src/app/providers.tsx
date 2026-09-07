@@ -71,10 +71,7 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <HelmetProvider>
-      {/* PersistQueryClientProvider hydrates the query cache from IndexedDB
-          on mount (before children render) and then persists subsequent
-          writes. Queries opt in via `meta: { persist: true }` — see
-          lib/queryPersister.ts. */}
+      {/* PersistQueryClientProvider hydrates the query cache from IndexedDB before children render, and only queries marked `meta: { persist: true }` are stored. */}
       <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <BrowserRouter>
           <ScrollToTop />

@@ -203,9 +203,7 @@ export default function AdminUsersPage() {
               <option value="member">Member</option>
               <option value="moderator">Moderator</option>
               <option value="admin">Admin</option>
-              {/* `super_admin` is intentionally NOT exposed as a filter option —
-                  the tier is hidden from UI. Filtering by `admin` returns
-                  super_admins too via the backend's tier-aware role match. */}
+              {/* `super_admin` is deliberately absent as a filter option, since filtering by `admin` already returns super admins through the backend's tier-aware match. */}
             </select>
             <select value={status} onChange={(e) => { setStatus(e.target.value); }}
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0">

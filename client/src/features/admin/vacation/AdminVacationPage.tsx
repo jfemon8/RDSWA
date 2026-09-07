@@ -211,9 +211,7 @@ export default function AdminVacationPage() {
         </motion.button>
       </div>
 
-      {/* Page-content editor — SuperAdmin only. Lives on this page so admins
-          who manage vacation calendars find the related copy editor in the
-          same place, instead of buried under /admin/settings. */}
+      {/* SuperAdmin-only page-content editor, kept here so the vacation copy sits beside the calendar it describes rather than under /admin/settings. */}
       {isSuperAdmin && <VacationPageContentSection />}
 
       <AnimatePresence>

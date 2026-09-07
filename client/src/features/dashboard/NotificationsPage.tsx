@@ -123,12 +123,7 @@ export default function NotificationsPage() {
                     )}
                     <Bell className="h-3.5 w-3.5 text-primary shrink-0" /> {n.title}
                   </p>
-                  {/* Notification messages may be plain text (with \n line
-                      breaks and tabs) or rich HTML. RichContent's prose
-                      styling collapses whitespace, so plain text with
-                      newlines would render as one flowing paragraph. Detect
-                      HTML by looking for any tag — fall back to a
-                      whitespace-preserving paragraph otherwise. */}
+                  {/* Notification bodies may be plain text or HTML, so anything without a tag renders in a whitespace-preserving paragraph rather than through prose styling that would collapse its newlines. */}
                   {/<[a-z][\s\S]*>/i.test(n.message || '') ? (
                     <RichContent html={n.message} className="text-sm text-muted-foreground mt-1 text-justify" />
                   ) : (

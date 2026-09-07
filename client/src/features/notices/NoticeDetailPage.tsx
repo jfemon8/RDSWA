@@ -117,9 +117,7 @@ export default function NoticeDetailPage() {
         <RichContent html={notice.content} />
       </FadeIn>
 
-      {/* In-article promo after the notice body, above attachments. Promo
-          has its own fade animation; wrapping with FadeIn would block the
-          `empty:hidden` collapse when the slot is unfilled. */}
+      {/* In-article promo between the notice body and its attachments, with no FadeIn wrapper because that would block `empty:hidden` collapsing an unfilled slot. */}
       <div className="mt-8 empty:hidden">
         <Promo kind="inArticle" minHeight={250} />
       </div>

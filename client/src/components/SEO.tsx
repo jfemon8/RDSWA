@@ -116,9 +116,7 @@ export default function SEO({
       <meta name="twitter:description" content={desc} />
       <meta name="twitter:image" content={ogImage} />
 
-      {/* hreflang alternates — emitted only when callers opt in by passing
-          `alternates`. Pair each language entry with an "x-default" so
-          Google can fall back for unmatched locales. */}
+      {/* hreflang alternates, emitted only when callers pass `alternates`, each paired with an "x-default" so Google can fall back for unmatched locales. */}
       {alternates?.map((alt) => (
         <link key={alt.hreflang} rel="alternate" hrefLang={alt.hreflang} href={alt.href} />
       ))}

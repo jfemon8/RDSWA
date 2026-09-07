@@ -222,15 +222,7 @@ export default function ProfilePage() {
                 disabled={!form.bloodGroup}
                 hint={!form.bloodGroup ? 'Select your blood group first to enable this option.' : undefined}
               />
-              {/*
-                Last Donation Date is opt-in metadata only meaningful when
-                the user is actively offering as a donor — so it's nested
-                under the donor checkbox. AnimatePresence drives a smooth
-                expand/collapse so the form doesn't jump when the user
-                toggles the checkbox. Leaving the field empty keeps the
-                public donor card clean (the BloodDonorsPage already
-                conditionals the row on `lastDonationDate` truthy).
-              */}
+              {/* Last Donation Date sits under the donor checkbox because it only means anything for an active donor, with AnimatePresence keeping the toggle from making the form jump. */}
               <AnimatePresence initial={false}>
                 {form.isBloodDonor && (
                   <motion.div

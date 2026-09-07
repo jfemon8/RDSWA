@@ -274,10 +274,7 @@ export default function EventsPage() {
                           </div>
                         </Link>
                       </FadeIn>
-                      {/* In-feed promo every Nth card. Spans all grid columns
-                          via col-span so it reads as a content break, not a
-                          stray oversized card. Skipped on the very last card
-                          to avoid trailing the list with an ad. */}
+                      {/* In-feed promo every Nth card, spanning all grid columns so it reads as a content break and never trails the list. */}
                       {(i + 1) % PROMO_EVERY === 0 && i < events.length - 1 && (
                         <div className="sm:col-span-2 lg:col-span-3 empty:hidden">
                           <Promo kind="infeed" minHeight={180} />

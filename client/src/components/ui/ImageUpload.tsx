@@ -119,12 +119,7 @@ export default function ImageUpload({
               alt=""
               className={`object-cover ${circular ? 'h-24 w-24 rounded-full' : 'h-32 w-full max-w-xs'}`}
             />
-            {/* Always-visible action buttons. Previously hidden with
-                `sm:opacity-0 sm:group-hover:opacity-100`, but the parent
-                never had the `group` class, so on desktop the hover never
-                triggered and the buttons were permanently invisible.
-                Keep them visible with a strong backdrop + ring so they
-                read clearly against any image underneath. */}
+            {/* Action buttons stay visible behind a backdrop and ring, because the old hover-reveal never fired without a `group` class on the parent. */}
             <div className="absolute top-1.5 right-1.5 flex gap-1.5">
               <motion.button
                 type="button"

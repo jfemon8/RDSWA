@@ -174,11 +174,7 @@ export default function JobDetailPage() {
         </div>
       </FadeIn>
 
-      {/* In-article promo between description and requirements — highest
-          viewability point on a job-detail page. Career-intent contextual
-          ads here typically have the strongest CPM. No FadeIn wrapper:
-          Promo animates itself, and the wrapper would block `empty:hidden`
-          collapse when the slot is unfilled. */}
+      {/* In-article promo between description and requirements, with no FadeIn wrapper because that would block `empty:hidden` collapsing an unfilled slot. */}
       <div className="mb-4 sm:mb-6 empty:hidden">
         <Promo kind="inArticle" minHeight={250} />
       </div>

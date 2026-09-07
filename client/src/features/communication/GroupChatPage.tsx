@@ -508,10 +508,7 @@ export default function GroupChatPage() {
           </p>
         </button>
 
-        {/* Search stays in the header (primary action). Pin, Mute, Leave,
-            Delete moved into the kebab menu so the group name has room to
-            breathe — previously 5 icons squeezed the title down to ~80px
-            on mobile and long names became "Soil S...". */}
+        {/* Search stays in the header while Pin, Mute, Leave and Delete moved into the kebab menu, because five icons squeezed the title to about 80px on mobile. */}
         <button
           onClick={() => setShowSearch((v) => !v)}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"

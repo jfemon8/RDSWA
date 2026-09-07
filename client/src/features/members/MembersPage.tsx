@@ -168,9 +168,7 @@ export default function MembersPage() {
         </div>
       </FadeIn>
 
-      {/* Main + sidebar layout on lg+. Below lg the sidebar collapses and
-          the main column gets full width — design stays identical to the
-          pre-promo version for tablet/mobile. */}
+      {/* Main and sidebar split on lg+, with the main column taking full width below lg. */}
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {isLoading ? (
@@ -321,10 +319,7 @@ export default function MembersPage() {
         </>
       )}
         </div>
-        {/* Right rail — sticky vertical promo on lg+. Hidden below lg so
-            the small-screen layout stays full-width and identical to the
-            previous design. `self-start` keeps the promo top-aligned in the
-            flex row regardless of how tall the member list grows. */}
+        {/* Sticky right rail on lg+ only, where `self-start` keeps the promo top-aligned however tall the member list grows. */}
         <aside className="hidden lg:block lg:empty:hidden w-72 shrink-0 sticky top-20 self-start">
           <Promo kind="sidebar" minHeight={600} />
         </aside>

@@ -42,10 +42,7 @@ export default function ImageLightbox({ images, index, onClose, onIndexChange }:
         >
           <X className="h-5 w-5" />
         </button>
-        {/* Routes through the backend proxy for cross-origin (Cloudinary)
-            URLs so `Content-Disposition: attachment` is set server-side —
-            the HTML `download` attribute alone is ignored by browsers on
-            cross-origin links. Same-origin URLs pass through unchanged. */}
+        {/* Cross-origin Cloudinary URLs go through the backend proxy so `Content-Disposition: attachment` is set server-side, since the HTML `download` attribute is ignored on cross-origin links. */}
         <a
           href={proxyFileUrl(current.url, current.name, false)}
           download={current.name}

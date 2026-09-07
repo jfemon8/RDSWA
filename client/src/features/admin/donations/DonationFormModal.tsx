@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Search, UserCheck, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
+import { titleCase } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors, omitFieldError } from '@/lib/formErrors';
@@ -235,7 +236,7 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
               <div>
                 <label className={label}>Type</label>
                 <select value={form.type} onChange={(e) => set({ type: e.target.value })} className={field}>
-                  {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {TYPES.map((t) => <option key={t} value={t}>{titleCase(t)}</option>)}
                 </select>
               </div>
               <div>
@@ -259,7 +260,7 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
               <div>
                 <label className={label}>Payment Method</label>
                 <select value={form.paymentMethod} onChange={(e) => set({ paymentMethod: e.target.value })} className={field}>
-                  {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                  {METHODS.map((m) => <option key={m} value={m}>{titleCase(m)}</option>)}
                 </select>
               </div>
               <div>
@@ -276,7 +277,7 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
               <div>
                 <label className={label}>Status</label>
                 <select value={form.paymentStatus} onChange={(e) => set({ paymentStatus: e.target.value })} className={field}>
-                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {STATUSES.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}
                 </select>
               </div>
             </div>
@@ -315,8 +316,8 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
               <div>
                 <label className={label}>Visibility</label>
                 <select value={form.visibility} onChange={(e) => set({ visibility: e.target.value })} className={field}>
-                  <option value="public">public</option>
-                  <option value="private">private</option>
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
                 </select>
               </div>
               <div>

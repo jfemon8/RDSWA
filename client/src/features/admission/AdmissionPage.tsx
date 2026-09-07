@@ -116,8 +116,7 @@ export default function AdmissionPage() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Bottom promo — single slot below the active tab. Kept distinct from
-          the rest of the page so it never wraps the data tables themselves. */}
+      {/* Bottom promo in its own slot below the active tab, so it never wraps the data tables themselves. */}
       <div className="mt-10 empty:hidden">
         <Promo kind="displayResponsive" minHeight={250} />
       </div>

@@ -195,8 +195,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
             </Link>
           )}
 
-          {/* Reaction picker — absolutely positioned so it pops ABOVE the bubble
-              without pushing any content. Click outside closes it (see useEffect). */}
+          {/* Reaction picker, absolutely positioned so it pops above the bubble without pushing content, and closed by the outside-click effect. */}
           <AnimatePresence>
             {showPicker && (
               <div

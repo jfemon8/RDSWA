@@ -126,8 +126,7 @@ export default function MemberDirectoryPage({
         </div>
       </FadeIn>
 
-      {/* lg+ adds a sticky right-rail promo column. Below lg the layout
-          collapses to full-width and behaves identically to before. */}
+      {/* On lg+ a sticky right-rail promo column appears, and below lg the layout collapses to full width. */}
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {isLoading ? (

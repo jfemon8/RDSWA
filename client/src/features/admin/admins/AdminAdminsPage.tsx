@@ -199,11 +199,7 @@ export default function AdminAdminsPage() {
                       >
                         {admin.name}
                       </button>
-                      {/* SuperAdmins and Admins are both shown as "Admin" — the
-                          super_admin tier is intentionally hidden from UI for
-                          confidentiality. The demote button below still keys off
-                          `admin.role === 'super_admin'` so the underlying tier
-                          gates the action correctly. */}
+                      {/* SuperAdmins render as "Admin" to keep the tier out of the UI, while the demote button below still keys off the real `super_admin` role. */}
                       <span className="px-2 py-0.5 text-xs rounded-full font-medium whitespace-nowrap bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                         Admin
                       </span>
