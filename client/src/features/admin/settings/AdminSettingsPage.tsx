@@ -594,7 +594,10 @@ function OrganizationsTab({ settings: s }: { settings: any }) {
             <input value={org.name} placeholder="Organization Name" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], name: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
             <RichTextEditor value={org.description} onChange={(v) => { const o = [...orgs]; o[i] = { ...o[i], description: v }; setOrgs(o); }} placeholder="Description..." minHeight="80px" />
             <input value={org.website} placeholder="Website URL" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], website: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-            <input value={org.logo} placeholder="Logo URL" onChange={(e) => { const o = [...orgs]; o[i] = { ...o[i], logo: e.target.value }; setOrgs(o); }} className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Logo</label>
+              <ImageUpload value={org.logo} onChange={(url) => { const o = [...orgs]; o[i] = { ...o[i], logo: url }; setOrgs(o); }} folder="organizations" />
+            </div>
           </motion.div>
         ))}
         {orgs.length === 0 && <p className="text-sm text-muted-foreground">No organizations yet.</p>}

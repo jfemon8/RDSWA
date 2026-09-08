@@ -1,10 +1,21 @@
-import { ExternalLink, Eye, Activity, Map, Lightbulb, ShieldCheck, AlertTriangle, Copy, Check, MousePointerClick } from 'lucide-react';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, BlurText } from '@/components/reactbits';
-import { useToast } from '@/components/ui/Toast';
-import SEO from '@/components/SEO';
-import { CLARITY_PROJECT_ID, isClarityEnabled } from '@/lib/clarity';
+import {
+  ExternalLink,
+  Eye,
+  Activity,
+  Map,
+  Lightbulb,
+  ShieldCheck,
+  AlertTriangle,
+  Copy,
+  Check,
+  MousePointerClick,
+} from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { FadeIn, BlurText } from "@/components/reactbits";
+import { useToast } from "@/components/ui/Toast";
+import SEO from "@/components/SEO";
+import { CLARITY_PROJECT_ID, isClarityEnabled } from "@/lib/clarity";
 
 /** Launcher and status surface for Microsoft Clarity, which blocks iframe embedding and is gated by AdminRoleGuard at the route level. */
 export default function AdminClarityPage() {
@@ -19,7 +30,7 @@ export default function AdminClarityPage() {
   // so admins still land in the right place after picking their project.
   const baseUrl = CLARITY_PROJECT_ID
     ? `https://clarity.microsoft.com/projects/view/${CLARITY_PROJECT_ID}`
-    : 'https://clarity.microsoft.com';
+    : "https://clarity.microsoft.com";
   const dashboardUrl = CLARITY_PROJECT_ID ? `${baseUrl}/dashboard` : baseUrl;
   const recordingsUrl = CLARITY_PROJECT_ID ? `${baseUrl}/recordings` : baseUrl;
   const heatmapsUrl = CLARITY_PROJECT_ID ? `${baseUrl}/heatmaps` : baseUrl;
@@ -29,16 +40,20 @@ export default function AdminClarityPage() {
     try {
       await navigator.clipboard.writeText(CLARITY_PROJECT_ID);
       setCopied(true);
-      toast.success('Project ID copied');
+      toast.success("Project ID copied");
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error('Failed to copy');
+      toast.error("Failed to copy");
     }
   };
 
   return (
     <div className="space-y-6">
-      <SEO title="User Activity" description="Microsoft Clarity user-activity monitoring for RDSWA administrators." noindex />
+      <SEO
+        title="User Activity"
+        description="Microsoft Clarity user-activity monitoring for RDSWA administrators."
+        noindex
+      />
 
       <FadeIn direction="up" delay={0}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
@@ -47,7 +62,7 @@ export default function AdminClarityPage() {
               className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center"
               initial={{ scale: 0, rotate: -90 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
               <Eye className="h-6 w-6 text-primary" />
             </motion.div>
@@ -60,7 +75,8 @@ export default function AdminClarityPage() {
                 direction="bottom"
               />
               <p className="text-sm text-muted-foreground mt-1">
-                Watch session recordings, heatmaps, and behaviour insights powered by Microsoft Clarity.
+                Watch session recordings, heatmaps, and behaviour insights
+                powered by Microsoft Clarity.
               </p>
             </div>
           </div>
@@ -78,7 +94,7 @@ export default function AdminClarityPage() {
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
                   className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center"
                 >
                   <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -89,7 +105,7 @@ export default function AdminClarityPage() {
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
                   className="h-10 w-10 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center"
                 >
                   <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -98,12 +114,12 @@ export default function AdminClarityPage() {
             </AnimatePresence>
             <div className="min-w-0">
               <h2 className="font-semibold text-base">
-                {enabled ? 'Tracking active' : 'Tracking not configured'}
+                {enabled ? "Tracking active" : "Tracking not configured"}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {enabled
-                  ? 'Session recordings, heatmaps, and behaviour signals are being captured in real time.'
-                  : 'Set VITE_CLARITY_PROJECT_ID in the deployment environment to start recording sessions.'}
+                  ? "Session recordings, heatmaps, and behaviour signals are being captured in real time."
+                  : "Set VITE_CLARITY_PROJECT_ID in the deployment environment to start recording sessions."}
               </p>
             </div>
           </div>
@@ -115,7 +131,9 @@ export default function AdminClarityPage() {
                   Project ID
                 </p>
                 <div className="flex items-center justify-between gap-2 mt-1">
-                  <code className="text-sm font-mono truncate">{CLARITY_PROJECT_ID}</code>
+                  <code className="text-sm font-mono truncate">
+                    {CLARITY_PROJECT_ID}
+                  </code>
                   <motion.button
                     onClick={copyProjectId}
                     whileTap={{ scale: 0.9 }}
@@ -150,7 +168,9 @@ export default function AdminClarityPage() {
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
                   Tool
                 </p>
-                <p className="text-sm mt-1">Microsoft Clarity · free, unlimited sessions</p>
+                <p className="text-sm mt-1">
+                  Microsoft Clarity · free, unlimited sessions
+                </p>
               </div>
             </div>
           )}
@@ -164,7 +184,7 @@ export default function AdminClarityPage() {
             href={dashboardUrl}
             icon={Activity}
             title="Dashboard"
-            subtitle="Live overview — sessions, top pages, browser/device split"
+            subtitle="Live overview of user activity, top pages, and key metrics"
           />
           <ActionCard
             href={recordingsUrl}
@@ -184,45 +204,6 @@ export default function AdminClarityPage() {
             title="Smart Insights"
             subtitle="Auto-detected rage clicks, dead clicks, excessive scrolling, JS errors"
           />
-        </div>
-      </FadeIn>
-
-      {/* Help / how-this-works */}
-      <FadeIn direction="up" delay={0.25}>
-        <div className="bg-card border rounded-xl p-5">
-          <h3 className="font-semibold mb-3">How this works</h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>
-                Every visitor session — whether they're logged in or browsing anonymously — is recorded as a replayable video. Mouse movement, clicks, scrolls, and form interactions are captured. Personal text input (passwords, fields marked sensitive) is automatically masked.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>
-                Heatmaps aggregate clicks and scrolls across all visitors — so you can see exactly which buttons get used, which sections get ignored, and where users drop off.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>
-                To grant another administrator direct access to the Clarity dashboard, open <code className="text-xs">clarity.microsoft.com</code> → Settings → Team → <em>Add team member</em> → enter their email → role <strong>Admin</strong> or <strong>Team Member</strong> → Add. They'll get an invite email.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>
-                Local development never sends data: <code className="text-xs">VITE_CLARITY_PROJECT_ID</code> is unset in <code className="text-xs">.env</code>, so the tracker is silently disabled — your dev sessions don't pollute production recordings.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>
-                Clarity is free and unlimited — no traffic caps, no upgrade prompt. Microsoft funds it as a way to encourage AI training on UX behaviour data (anonymised).
-              </span>
-            </li>
-          </ul>
         </div>
       </FadeIn>
     </div>
@@ -254,7 +235,9 @@ function ActionCard({ href, icon: Icon, title, subtitle }: ActionCardProps) {
           <h3 className="font-semibold text-sm">{title}</h3>
           <ExternalLink className="h-3 w-3 text-muted-foreground" />
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-3">{subtitle}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-3">
+          {subtitle}
+        </p>
       </div>
     </motion.a>
   );
