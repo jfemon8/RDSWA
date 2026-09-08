@@ -10,6 +10,7 @@ import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
+import { committeeDisplayName, memberDisplayPosition } from '@/lib/committee';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -81,7 +82,7 @@ export default function CommitteePage() {
               <div className="border rounded-xl overflow-hidden bg-card">
                 <div className="p-6 border-b bg-muted/30">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">{c.name}</h2>
+                    <h2 className="text-xl font-semibold">{committeeDisplayName(c)}</h2>
                     {c.isCurrent && (
                       <motion.span
                         className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full"
@@ -147,7 +148,7 @@ function MemberCard({ member }: { member: any }) {
           {isLeader ? <Crown className="h-3 w-3 text-yellow-500" /> : <Users className="h-3 w-3 text-primary" />}
           {member.user?.name || 'Unknown'}
         </p>
-        <p className="text-xs text-muted-foreground capitalize">{member.position?.replace(/_/g, ' ')}</p>
+        <p className="text-xs text-muted-foreground capitalize">{memberDisplayPosition(member)}</p>
         {member.positionBn && (
           <p className="text-xs text-muted-foreground/70">{member.positionBn}</p>
         )}

@@ -3,6 +3,10 @@ import { committeeService } from '../services/committee.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
+import { invalidateCachePrefix } from '../middlewares/cache.middleware';
+
+/** Committee writes move the current-committee flag between rows, so the cached public lists must not outlive them. */
+const invalidateCommitteeCache = () => invalidateCachePrefix('/api/committees');
 
 export const getAll = asyncHandler(async (_req: Request, res: Response) => {
   const committees = await committeeService.getAll();
@@ -22,16 +26,19 @@ export const getById = asyncHandler(async (req: Request, res: Response) => {
 export const create = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const committee = await committeeService.create(req.body, (req.user._id as any).toString());
+  await invalidateCommitteeCache();
   ApiResponse.created(res, committee, 'Committee created');
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
   const committee = await committeeService.update(req.params.id as string, req.body);
+  await invalidateCommitteeCache();
   ApiResponse.success(res, committee, 'Committee updated');
 });
 
 export const addMember = asyncHandler(async (req: Request, res: Response) => {
   const committee = await committeeService.addMember(req.params.id as string, req.body);
+  await invalidateCommitteeCache();
   ApiResponse.success(res, committee, 'Member added to committee');
 });
 
@@ -40,15 +47,18 @@ export const removeMember = asyncHandler(async (req: Request, res: Response) => 
     req.params.id as string,
     req.params.userId as string
   );
+  await invalidateCommitteeCache();
   ApiResponse.success(res, committee, 'Member removed from committee');
 });
 
 export const archive = asyncHandler(async (req: Request, res: Response) => {
   const committee = await committeeService.archive(req.params.id as string);
+  await invalidateCommitteeCache();
   ApiResponse.success(res, committee, 'Committee archived');
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
   await committeeService.delete(req.params.id as string);
+  await invalidateCommitteeCache();
   ApiResponse.success(res, null, 'Committee deleted');
 });

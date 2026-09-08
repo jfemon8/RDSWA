@@ -16,6 +16,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
+import { committeeDisplayName } from '@/lib/committee';
 
 // One in-feed promo per six event cards, unobtrusive yet frequent enough on a twelve-per-page list.
 const PROMO_EVERY = 6;
@@ -49,7 +50,7 @@ export default function EventsPage() {
       return data;
     },
   });
-  const committees: Array<{ _id: string; name: string; year?: string }> = committeesData?.data || [];
+  const committees: Array<{ _id: string; name: string; year?: string; isCurrent?: boolean }> = committeesData?.data || [];
 
   const {
     items: events,
@@ -187,7 +188,7 @@ export default function EventsPage() {
             <option value="">All Committees</option>
             {committees.map((c) => (
               <option key={c._id} value={c._id}>
-                {c.name}{c.year ? ` (${c.year})` : ''}
+                {committeeDisplayName(c)}{c.year ? ` (${c.year})` : ''}
               </option>
             ))}
           </select>
@@ -262,7 +263,7 @@ export default function EventsPage() {
                                 <div className="flex items-center gap-1">
                                   <Building2 className="h-3.5 w-3.5" />
                                   <span className="truncate">
-                                    {typeof e.committee === 'object' ? e.committee.name : 'Committee'}
+                                    {typeof e.committee === 'object' ? committeeDisplayName(e.committee) : 'Committee'}
                                   </span>
                                 </div>
                               )}

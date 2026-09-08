@@ -21,6 +21,7 @@ import { FadeIn } from '@/components/reactbits';
 import { formatDate, toDateInput } from '@/lib/date';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import Spinner from '@/components/ui/Spinner';
+import { committeeDisplayName } from '@/lib/committee';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -678,8 +679,7 @@ function ExpensesList() {
                     <option value="" className="bg-card text-foreground">Select Committee</option>
                     {committeeOptions.map((c: any) => (
                       <option key={c._id} value={c._id} className="bg-card text-foreground">
-                        {c.name}
-                        {c.isCurrent ? ' (current)' : ''}
+                        {committeeDisplayName(c)}
                       </option>
                     ))}
                   </select>
@@ -788,7 +788,7 @@ function ExpensesList() {
                           <td className="p-3 font-medium text-red-600 whitespace-nowrap">BDT {e.amount?.toLocaleString()}</td>
                           <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={e.category}>{e.category}</td>
                           <td className="p-3 text-xs text-muted-foreground truncate" title={e.event?.title || ''}>{e.event?.title || '—'}</td>
-                          <td className="p-3 text-xs text-muted-foreground truncate" title={e.committee?.name || ''}>{e.committee?.name || '—'}</td>
+                          <td className="p-3 text-xs text-muted-foreground truncate" title={committeeDisplayName(e.committee)}>{committeeDisplayName(e.committee) || '—'}</td>
                           <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(e.expenseDate || e.createdAt)}</td>
                           <td className="p-3">{renderActions(e)}</td>
                         </tr>
@@ -817,7 +817,7 @@ function ExpensesList() {
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-2">
                         <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{e.category}</span>
                         {e.event?.title && <span className="px-2 py-0.5 bg-muted rounded-full">{e.event.title}</span>}
-                        {e.committee?.name && <span className="px-2 py-0.5 bg-muted rounded-full">{e.committee.name}</span>}
+                        {e.committee?.name && <span className="px-2 py-0.5 bg-muted rounded-full">{committeeDisplayName(e.committee)}</span>}
                         <span>{formatDate(e.expenseDate || e.createdAt)}</span>
                       </div>
                       <ExpenseDetailsView items={e.items} attachments={e.attachments} className="mb-2" />

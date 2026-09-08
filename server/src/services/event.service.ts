@@ -226,7 +226,7 @@ export class EventService {
     const [events, total] = await Promise.all([
       Event.find(filter)
         .populate('createdBy', 'name avatar')
-        .populate('committee', 'name')
+        .populate('committee', 'name isCurrent')
         .sort({ startDate: -1 })
         .skip(getSkip({ page, limit }))
         .limit(limit),
@@ -245,7 +245,7 @@ export class EventService {
   async getById(id: string, requesterId?: string): Promise<any> {
     const event = await Event.findOne({ _id: id, isDeleted: false })
       .populate('createdBy', 'name avatar')
-      .populate('committee', 'name')
+      .populate('committee', 'name isCurrent')
       .populate('attendance.user', 'name avatar department batch studentId')
       .populate('attendance.verifiedBy', 'name')
       .populate('photos.taggedUsers', 'name avatar');

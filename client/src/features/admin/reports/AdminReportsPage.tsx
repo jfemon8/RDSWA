@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { omitFieldError } from '@/lib/formErrors';
 import Spinner from '@/components/ui/Spinner';
+import { committeeDisplayName } from '@/lib/committee';
 
 const ROW_HEIGHT = 28;
 const MIN_CHART_HEIGHT = 220;
@@ -235,7 +236,7 @@ function FinanceReport() {
             <option value="" className="bg-card text-foreground">All Committees</option>
             {committees.map((c: any) => (
               <option key={c._id} value={c._id} className="bg-card text-foreground">
-                {c.name}{c.isCurrent ? ' (current)' : ''}
+                {committeeDisplayName(c)}
               </option>
             ))}
           </select>

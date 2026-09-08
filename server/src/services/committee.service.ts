@@ -5,17 +5,28 @@ import { getAutoRoleConfig } from '../utils/getAutoRoleConfig';
 import { UserRole } from '@rdswa/shared';
 import mongoose from 'mongoose';
 
+interface CommitteeMemberInput {
+  user: string;
+  position: string;
+  positionBn?: string;
+  designation?: string;
+  responsibilities?: string;
+}
+
 interface CreateCommitteeInput {
   name: string;
   tenure: { startDate: string; endDate?: string };
   isCurrent?: boolean;
   description?: string;
-  members?: Array<{
-    user: string;
-    position: string;
-    positionBn?: string;
-    responsibilities?: string;
-  }>;
+  members?: CommitteeMemberInput[];
+}
+
+/** Turn a stored position slug into the wording used in error messages, e.g. "general_secretary" → "General Secretary". */
+function formatPosition(position: string): string {
+  return position
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 export class CommitteeService {
@@ -40,23 +51,19 @@ export class CommitteeService {
   }
 
   async create(input: CreateCommitteeInput, createdBy: string): Promise<ICommitteeDocument> {
-    // If marking as current, archive any existing current committees
-    if (input.isCurrent) {
-      const existingCurrent = await Committee.find({ isCurrent: true, isDeleted: false });
-      for (const c of existingCurrent) {
-        c.isCurrent = false;
-        if (!c.tenure.endDate) c.tenure.endDate = new Date();
-        await c.save();
-        await this.applyArchiveTransitions(c);
-      }
-    }
+    const startDate = new Date(input.tenure.startDate);
+    const endDate = input.tenure.endDate ? new Date(input.tenure.endDate) : undefined;
+    // A committee is current precisely while it has no end date, so at most one may be open at a time.
+    const isCurrent = !endDate;
+
+    await this.validateMemberInputs(input.members || []);
+
+    if (isCurrent) await this.closeOpenCommittees(startDate);
 
     const committee = await Committee.create({
       ...input,
-      tenure: {
-        startDate: new Date(input.tenure.startDate),
-        endDate: input.tenure.endDate ? new Date(input.tenure.endDate) : undefined,
-      },
+      isCurrent,
+      tenure: { startDate, endDate },
       members: input.members?.map((m) => ({
         ...m,
         user: new mongoose.Types.ObjectId(m.user),
@@ -82,42 +89,87 @@ export class CommitteeService {
     const committee = await Committee.findOne({ _id: id, isDeleted: false });
     if (!committee) throw ApiError.notFound('Committee not found');
 
-    if (input.isCurrent) {
-      const existingCurrent = await Committee.find({
-        isCurrent: true,
-        _id: { $ne: id },
-        isDeleted: false,
-      });
-      for (const c of existingCurrent) {
-        c.isCurrent = false;
-        if (!c.tenure.endDate) c.tenure.endDate = new Date();
-        await c.save();
-        await this.applyArchiveTransitions(c);
-      }
-    }
-
     const wasCurrent = committee.isCurrent;
 
     if (input.name !== undefined) committee.name = input.name;
     if (input.description !== undefined) committee.description = input.description;
-    if (input.isCurrent !== undefined) committee.isCurrent = input.isCurrent;
     if (input.tenure) {
       if (input.tenure.startDate) committee.tenure.startDate = new Date(input.tenure.startDate);
-      if (input.tenure.endDate) committee.tenure.endDate = new Date(input.tenure.endDate);
+      // An empty end date is a deliberate clear, which reopens this committee as the current one.
+      if (input.tenure.endDate !== undefined) {
+        // `set` is used so clearing the date unsets the stored field rather than leaving the old value.
+        committee.set('tenure.endDate', input.tenure.endDate ? new Date(input.tenure.endDate) : undefined);
+      }
     }
+
+    committee.isCurrent = !committee.tenure.endDate;
+
+    if (committee.isCurrent) await this.closeOpenCommittees(committee.tenure.startDate, id);
 
     await committee.save();
 
     if (wasCurrent && !committee.isCurrent) {
       await this.applyArchiveTransitions(committee);
+    } else if (!wasCurrent && committee.isCurrent) {
+      await this.assignAutoRoles(committee);
     }
 
     return committee;
   }
 
+  /**
+   * Close every other open committee so only one sits without an end date, dating each one
+   * to the incoming committee's start so the two tenures meet rather than overlap.
+   */
+  private async closeOpenCommittees(newStartDate: Date, exceptId?: string): Promise<void> {
+    const filter: Record<string, unknown> = {
+      isDeleted: false,
+      $or: [{ isCurrent: true }, { 'tenure.endDate': { $exists: false } }, { 'tenure.endDate': null }],
+    };
+    if (exceptId) filter._id = { $ne: exceptId };
+
+    const openCommittees = await Committee.find(filter);
+    for (const c of openCommittees) {
+      c.isCurrent = false;
+      if (!c.tenure.endDate) c.tenure.endDate = newStartDate;
+      await c.save();
+      await this.applyArchiveTransitions(c);
+    }
+  }
+
+  /**
+   * Reject a member list that breaks the one-holder rule — the same user twice, or two people
+   * sharing a position that only one member may hold.
+   */
+  private async validateMemberInputs(members: CommitteeMemberInput[]): Promise<void> {
+    if (members.length === 0) return;
+
+    const seenUsers = new Set<string>();
+    for (const m of members) {
+      if (seenUsers.has(m.user)) throw ApiError.badRequest('The same user cannot be added twice to one committee');
+      seenUsers.add(m.user);
+    }
+
+    const uniquePositions = await this.uniquePositions();
+    const seenPositions = new Set<string>();
+    for (const m of members) {
+      if (!uniquePositions.includes(m.position)) continue;
+      if (seenPositions.has(m.position)) {
+        throw ApiError.conflict(`Only one ${formatPosition(m.position)} is allowed in a committee`);
+      }
+      seenPositions.add(m.position);
+    }
+  }
+
+  /** Positions only one sitting member may hold, taken from the same config that drives auto-roles. */
+  private async uniquePositions(): Promise<string[]> {
+    const cfg = await getAutoRoleConfig();
+    return cfg.allAutoPositions;
+  }
+
   async addMember(
     committeeId: string,
-    memberInput: { user: string; position: string; positionBn?: string; responsibilities?: string }
+    memberInput: CommitteeMemberInput
   ): Promise<ICommitteeDocument> {
     const committee = await Committee.findOne({ _id: committeeId, isDeleted: false });
     if (!committee) throw ApiError.notFound('Committee not found');
@@ -127,10 +179,24 @@ export class CommitteeService {
     );
     if (existing) throw ApiError.conflict('User is already a member of this committee');
 
+    // Only sitting members hold a post, so removing one leaves the seat free for anyone — the same person included.
+    const uniquePositions = await this.uniquePositions();
+    if (uniquePositions.includes(memberInput.position)) {
+      const seatTaken = committee.members.some(
+        (m) => m.position === memberInput.position && !m.leftAt
+      );
+      if (seatTaken) {
+        throw ApiError.conflict(
+          `This committee already has a ${formatPosition(memberInput.position)}. Remove the current one before assigning a new person.`
+        );
+      }
+    }
+
     committee.members.push({
       user: new mongoose.Types.ObjectId(memberInput.user),
       position: memberInput.position,
       positionBn: memberInput.positionBn,
+      designation: memberInput.designation,
       responsibilities: memberInput.responsibilities,
       joinedAt: new Date(),
     } as any);

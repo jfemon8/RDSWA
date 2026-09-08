@@ -31,6 +31,7 @@ import { deriveEventStatus, getAttendanceWindow } from "@rdswa/shared";
 import AttendanceDateField from "@/components/ui/AttendanceDateField";
 import EventFinanceSummary from "@/components/ui/EventFinanceSummary";
 import Promo from "@/components/promo/Promo";
+import { committeeDisplayName } from "@/lib/committee";
 import {
   buildEventSchema,
   buildBreadcrumbSchema,
@@ -241,7 +242,7 @@ export default function EventDetailPage() {
               <span>Organized by </span>
               <Link to="/committee" className="text-primary hover:underline">
                 {typeof event.committee === "object"
-                  ? event.committee.name
+                  ? committeeDisplayName(event.committee)
                   : "Committee"}
               </Link>
             </div>

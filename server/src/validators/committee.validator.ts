@@ -22,5 +22,6 @@ export const addCommitteeMemberSchema = z.object({
   user: z.string().min(1, 'User ID is required'),
   position: z.string().min(1, 'Position is required'),
   positionBn: z.string().optional(),
+  designation: z.string().max(100).optional(),
   responsibilities: z.string().optional(),
 });

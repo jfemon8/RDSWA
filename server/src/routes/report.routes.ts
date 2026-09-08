@@ -313,7 +313,7 @@ router.get('/finance/export', authenticate(), authorize(UserRole.ADMIN), asyncHa
     addConditions(match, where);
     const expenses = await Expense.find(match)
       .populate('event', 'title')
-      .populate('committee', 'name')
+      .populate('committee', 'name isCurrent')
       .populate('createdBy', 'name')
       .sort({ expenseDate: -1, createdAt: -1 })
       .lean();

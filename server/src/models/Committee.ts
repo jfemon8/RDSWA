@@ -11,6 +11,8 @@ export interface ICommitteeDocument extends Document {
     user: mongoose.Types.ObjectId;
     position: string;
     positionBn?: string;
+    /** Free-text title shown instead of the generic `member` position, e.g. "Executive Member". */
+    designation?: string;
     responsibilities?: string;
     joinedAt: Date;
     leftAt?: Date;
@@ -36,6 +38,7 @@ const committeeSchema = new Schema<ICommitteeDocument>(
         user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         position: { type: String, required: true },
         positionBn: String,
+        designation: { type: String, trim: true },
         responsibilities: String,
         joinedAt: { type: Date, default: Date.now },
         leftAt: Date,

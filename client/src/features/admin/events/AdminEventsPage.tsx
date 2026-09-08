@@ -54,6 +54,7 @@ import { fetchCsv, saveTextFile } from "@/lib/downloadCsv";
 import { downloadTablePdf } from "@/lib/downloadPdf";
 import EventRegistrationsSection from "./EventRegistrationsSection";
 import EventFinanceSection from "./EventFinanceSection";
+import { committeeDisplayName } from "@/lib/committee";
 
 /** First problem that would make a question set unusable, or null when it is fine. */
 function validateQuestions(fields: any[]): string | null {
@@ -134,7 +135,7 @@ export default function AdminEventsPage() {
       return data;
     },
   });
-  const committees: Array<{ _id: string; name: string; year?: string }> =
+  const committees: Array<{ _id: string; name: string; year?: string; isCurrent?: boolean }> =
     committeesData?.data || [];
 
   const saveMutation = useMutation({
@@ -421,7 +422,7 @@ export default function AdminEventsPage() {
                     <option value="">— None —</option>
                     {committees.map((c) => (
                       <option key={c._id} value={c._id}>
-                        {c.name}
+                        {committeeDisplayName(c)}
                         {c.year ? ` (${c.year})` : ""}
                       </option>
                     ))}
@@ -652,7 +653,7 @@ export default function AdminEventsPage() {
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                           <Building2 className="h-3 w-3" />
                           {typeof e.committee === "object"
-                            ? e.committee.name
+                            ? committeeDisplayName(e.committee)
                             : "Committee"}
                         </span>
                       )}
@@ -994,7 +995,7 @@ function EventDetailPanel({ event }: { event: any }) {
             <span>Organized by </span>
             <span className="text-foreground font-medium">
               {typeof fullEvent.committee === "object"
-                ? fullEvent.committee.name
+                ? committeeDisplayName(fullEvent.committee)
                 : "Committee"}
             </span>
           </span>
