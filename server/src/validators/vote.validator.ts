@@ -17,19 +17,36 @@ const voteBaseSchema = z.object({
   eligibleRoles: z.array(z.string()).optional(),
 });
 
-export const createVoteSchema = voteBaseSchema.refine(
-  (data) => new Date(data.endTime) > new Date(data.startTime),
-  { message: 'End time must be after start time', path: ['endTime'] }
+/** A restricted poll saved with an empty list would admit nobody, so the list it restricts by is required. */
+function withEligibilityChecks<T extends z.ZodTypeAny>(schema: T) {
+  return schema
+    .refine(
+      (data: any) => data.eligibleVoters !== 'batch_specific' || (data.eligibleBatches || []).length > 0,
+      { message: 'Pick at least one batch', path: ['eligibleBatches'] }
+    )
+    .refine(
+      (data: any) => data.eligibleVoters !== 'role_specific' || (data.eligibleRoles || []).length > 0,
+      { message: 'Pick at least one role', path: ['eligibleRoles'] }
+    );
+}
+
+export const createVoteSchema = withEligibilityChecks(
+  voteBaseSchema.refine(
+    (data) => new Date(data.endTime) > new Date(data.startTime),
+    { message: 'End time must be after start time', path: ['endTime'] }
+  )
 );
 
-export const updateVoteSchema = voteBaseSchema.partial().refine(
-  (data) => {
-    if (data.startTime && data.endTime) {
-      return new Date(data.endTime) > new Date(data.startTime);
-    }
-    return true;
-  },
-  { message: 'End time must be after start time', path: ['endTime'] }
+export const updateVoteSchema = withEligibilityChecks(
+  voteBaseSchema.partial().refine(
+    (data) => {
+      if (data.startTime && data.endTime) {
+        return new Date(data.endTime) > new Date(data.startTime);
+      }
+      return true;
+    },
+    { message: 'End time must be after start time', path: ['endTime'] }
+  )
 );
 
 export const castVoteSchema = z.object({

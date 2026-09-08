@@ -1,6 +1,6 @@
 import { Vote, IVoteDocument, IUserDocument } from '../models';
 import { ApiError } from '../utils/ApiError';
-import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY, isEligibleVoter } from '@rdswa/shared';
 import mongoose from 'mongoose';
 import { broadcastVoteUpdate, broadcastVoteStatus } from '../socket';
 
@@ -48,16 +48,8 @@ export class VoteService {
     if (!vote) throw ApiError.notFound('Vote not found');
     if (vote.status !== 'active') throw ApiError.badRequest('This vote is not currently active');
 
-    // Check eligibility
-    if (vote.eligibleVoters === 'batch_specific' && user.batch) {
-      if (!vote.eligibleBatches.includes(user.batch)) {
-        throw ApiError.forbidden('You are not eligible to vote in this poll');
-      }
-    }
-    if (vote.eligibleVoters === 'role_specific') {
-      if (!vote.eligibleRoles.includes(user.role)) {
-        throw ApiError.forbidden('You are not eligible to vote in this poll');
-      }
+    if (!isEligibleVoter(vote, user)) {
+      throw ApiError.forbidden('You are not eligible to vote in this poll');
     }
 
     const userId = (user._id as any).toString();
@@ -94,16 +86,8 @@ export class VoteService {
     if (!vote) throw ApiError.notFound('Vote not found');
     if (vote.status !== 'active') throw ApiError.badRequest('This vote is not currently active');
 
-    // Check eligibility (same as castVote)
-    if (vote.eligibleVoters === 'batch_specific' && user.batch) {
-      if (!vote.eligibleBatches.includes(user.batch)) {
-        throw ApiError.forbidden('You are not eligible for this poll');
-      }
-    }
-    if (vote.eligibleVoters === 'role_specific') {
-      if (!vote.eligibleRoles.includes(user.role)) {
-        throw ApiError.forbidden('You are not eligible for this poll');
-      }
+    if (!isEligibleVoter(vote, user)) {
+      throw ApiError.forbidden('You are not eligible for this poll');
     }
 
     const userId = (user._id as any).toString();

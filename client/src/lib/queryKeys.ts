@@ -42,6 +42,8 @@ export const queryKeys = {
     all: ['settings'] as const,
     /** Admin read of the same endpoint, which returns fields the public response strips out. */
     admin: ['settings', 'admin'] as const,
+    /** Batches, sessions and faculties, served from their own public endpoint. */
+    academic: ['academic-config'] as const,
   },
   contactMessages: {
     all: ['contact-messages'] as const,

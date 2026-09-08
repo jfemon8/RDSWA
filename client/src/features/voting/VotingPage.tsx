@@ -3,13 +3,15 @@ import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import Spinner from '@/components/ui/Spinner';
 
-import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward, Mail } from 'lucide-react';
+import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward, Mail, Users } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { useVoteSocket } from '@/hooks/useSocket';
 import SEO from '@/components/SEO';
+import { useAuthStore } from '@/stores/authStore';
+import { describeEligibility, isEligibleVoter } from '@rdswa/shared';
 
 export default function VotingPage() {
   const { data, isLoading } = useQuery({
@@ -157,12 +159,15 @@ function CountdownDisplay({ endTime }: { endTime: string }) {
 
 function VoteCard({ vote }: { vote: any }) {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [selected, setSelected] = useState<string>('');
   const [liveOptions, setLiveOptions] = useState<any[] | null>(null);
   const [liveTotalVotes, setLiveTotalVotes] = useState<number | null>(null);
 
   const [hasVoted, setHasVoted] = useState(!!vote.hasVoted);
   const isActive = vote.status === 'active';
+  const isRestricted = vote.eligibleVoters && vote.eligibleVoters !== 'all_members';
+  const canVote = isEligibleVoter(vote, { batch: user?.batch, role: user?.role });
   const showResults = vote.status === 'published' || (vote.status === 'closed' && vote.isResultPublic);
 
   // Real-time updates via Socket.IO
@@ -278,8 +283,15 @@ function VoteCard({ vote }: { vote: any }) {
         })}
       </div>
 
+      {isActive && isRestricted && (
+        <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1 capitalize">
+          <Users className="h-3.5 w-3.5 shrink-0" />
+          {describeEligibility(vote, (b) => String(b))}
+        </p>
+      )}
+
       <AnimatePresence>
-        {isActive && !hasVoted && (
+        {isActive && !hasVoted && canVote && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -309,6 +321,10 @@ function VoteCard({ vote }: { vote: any }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {isActive && !hasVoted && !canVote && (
+        <p className="mt-3 text-sm text-muted-foreground">This poll is not open to you.</p>
+      )}
 
       {hasVoted && isActive && (
         <p className="mt-3 text-sm text-green-600 flex items-center gap-1">
