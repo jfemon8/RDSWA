@@ -66,14 +66,19 @@ export const getPaymentMethods = asyncHandler(async (_req: Request, res: Respons
   if (gw?.bkash?.isActive && gw.bkash.number) methods.push({ provider: 'bkash', number: gw.bkash.number, accountType: gw.bkash.accountType });
   if (gw?.nagad?.isActive && gw.nagad.number) methods.push({ provider: 'nagad', number: gw.nagad.number, accountType: gw.nagad.accountType });
   if (gw?.rocket?.isActive && gw.rocket.number) methods.push({ provider: 'rocket', number: gw.rocket.number, accountType: gw.rocket.accountType });
-  if (gw?.bank?.isActive && gw.bank.accountNumber) {
+  if (gw?.upay?.isActive && gw.upay.number) methods.push({ provider: 'upay', number: gw.upay.number, accountType: gw.upay.accountType });
+
+  // Fall back to the legacy single `bank` field for settings rows saved before multi-bank support.
+  const banks = gw?.banks?.length ? gw.banks : gw?.bank ? [gw.bank] : [];
+  for (const bank of banks) {
+    if (!bank?.isActive || !bank.accountNumber) continue;
     methods.push({
       provider: 'bank',
-      bankName: gw.bank.bankName,
-      branchName: gw.bank.branchName,
-      accountName: gw.bank.accountName,
-      accountNumber: gw.bank.accountNumber,
-      routingNumber: gw.bank.routingNumber,
+      bankName: bank.bankName,
+      branchName: bank.branchName,
+      accountName: bank.accountName,
+      accountNumber: bank.accountNumber,
+      routingNumber: bank.routingNumber,
     });
   }
 

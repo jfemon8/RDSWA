@@ -147,7 +147,7 @@ export default function AdminDonationsPage() {
             );
             const renderDetails = (d: any) => (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
-                {['bkash', 'nagad', 'rocket'].includes(d.paymentMethod) && d.senderNumber && (
+                {['bkash', 'nagad', 'rocket', 'upay'].includes(d.paymentMethod) && d.senderNumber && (
                   <div><span className="text-muted-foreground">Sender Number</span><p className="font-medium text-foreground font-mono break-all">{d.senderNumber}</p></div>
                 )}
                 {d.paymentMethod === 'bank' && (

@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { omitFieldError } from '@/lib/formErrors';
 import { queryKeys } from '@/lib/queryKeys';
-import { Save, Loader2, CreditCard, Landmark } from 'lucide-react';
+import { Save, Loader2, CreditCard, Landmark, Plus, Trash2 } from 'lucide-react';
 
 interface MobileGatewayEntry { number: string; accountType: string; isActive: boolean }
 interface BankEntry { bankName: string; branchName: string; accountName: string; accountNumber: string; routingNumber: string; isActive: boolean }
-interface PaymentGateway {
-  bkash: MobileGatewayEntry;
-  nagad: MobileGatewayEntry;
-  rocket: MobileGatewayEntry;
-  bank: BankEntry;
-}
+
+const MOBILE_METHODS = ['bkash', 'nagad', 'rocket', 'upay'] as const;
+type MobileMethod = (typeof MOBILE_METHODS)[number];
+
+const MOBILE_LABELS: Record<MobileMethod, string> = {
+  bkash: 'bKash',
+  nagad: 'Nagad',
+  rocket: 'Rocket',
+  upay: 'Upay',
+};
+
+type PaymentGateway = Record<MobileMethod, MobileGatewayEntry> & { banks: BankEntry[] };
 
 const DEFAULT_MOBILE: MobileGatewayEntry = { number: '', accountType: 'personal', isActive: false };
 const DEFAULT_BANK: BankEntry = { bankName: '', branchName: '', accountName: '', accountNumber: '', routingNumber: '', isActive: false };
@@ -24,13 +30,14 @@ const DEFAULT_GATEWAY: PaymentGateway = {
   bkash: { ...DEFAULT_MOBILE },
   nagad: { ...DEFAULT_MOBILE },
   rocket: { ...DEFAULT_MOBILE },
-  bank: { ...DEFAULT_BANK },
+  upay: { ...DEFAULT_MOBILE },
+  banks: [{ ...DEFAULT_BANK }],
 };
 
 const BD_MOBILE_REGEX = /^01[3-9]\d{8}$/;
 const BD_ROCKET_REGEX = /^01[3-9]\d{8,9}$/;
 
-function isValidMobileFormat(method: 'bkash' | 'nagad' | 'rocket', num: string): boolean {
+function isValidMobileFormat(method: MobileMethod, num: string): boolean {
   if (num === '') return true;
   return method === 'rocket' ? BD_ROCKET_REGEX.test(num) : BD_MOBILE_REGEX.test(num);
 }
@@ -52,12 +59,15 @@ export default function AdminPaymentConfigPage() {
 
   useEffect(() => {
     if (data?.data) {
-      const s = data.data;
+      const gw = data.data.paymentGateway;
+      // Settings saved before multi-bank support only carry the single `bank` field.
+      const savedBanks: BankEntry[] = gw?.banks?.length ? gw.banks : gw?.bank ? [gw.bank] : [];
       setForm({
-        bkash: { ...DEFAULT_MOBILE, ...s.paymentGateway?.bkash },
-        nagad: { ...DEFAULT_MOBILE, ...s.paymentGateway?.nagad },
-        rocket: { ...DEFAULT_MOBILE, ...s.paymentGateway?.rocket },
-        bank: { ...DEFAULT_BANK, ...s.paymentGateway?.bank },
+        bkash: { ...DEFAULT_MOBILE, ...gw?.bkash },
+        nagad: { ...DEFAULT_MOBILE, ...gw?.nagad },
+        rocket: { ...DEFAULT_MOBILE, ...gw?.rocket },
+        upay: { ...DEFAULT_MOBILE, ...gw?.upay },
+        banks: savedBanks.length ? savedBanks.map((b) => ({ ...DEFAULT_BANK, ...b })) : [{ ...DEFAULT_BANK }],
       });
     }
   }, [data]);
@@ -76,17 +86,18 @@ export default function AdminPaymentConfigPage() {
 
     // Collect every problem so each field shows its own message at once.
     const errs: Record<string, string> = {};
-    for (const method of ['bkash', 'nagad', 'rocket'] as const) {
+    for (const method of MOBILE_METHODS) {
       if (!isValidMobileFormat(method, form[method].number)) {
         const hint = method === 'rocket' ? '01XXXXXXXXX বা 01XXXXXXXXXX' : '01XXXXXXXXX';
         errs[method] = `সঠিক মোবাইল নম্বর দিন (${hint})`;
       }
     }
-    if (form.bank.isActive) {
-      if (!form.bank.bankName.trim()) errs.bankName = 'ব্যাংকের নাম আবশ্যক';
-      if (!form.bank.accountName.trim()) errs.accountName = 'অ্যাকাউন্ট নাম আবশ্যক';
-      if (!form.bank.accountNumber.trim()) errs.accountNumber = 'অ্যাকাউন্ট নম্বর আবশ্যক';
-    }
+    form.banks.forEach((bank, i) => {
+      if (!bank.isActive) return;
+      if (!bank.bankName.trim()) errs[`banks.${i}.bankName`] = 'ব্যাংকের নাম আবশ্যক';
+      if (!bank.accountName.trim()) errs[`banks.${i}.accountName`] = 'অ্যাকাউন্ট টাইটেল আবশ্যক';
+      if (!bank.accountNumber.trim()) errs[`banks.${i}.accountNumber`] = 'অ্যাকাউন্ট নম্বর আবশ্যক';
+    });
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
@@ -96,9 +107,20 @@ export default function AdminPaymentConfigPage() {
     saveMutation.mutate();
   };
 
-  const updateBank = (field: keyof BankEntry, value: string | boolean) => {
-    setForm({ ...form, bank: { ...form.bank, [field]: value } });
-    setErrors((prev) => omitFieldError(prev, field as string));
+  const updateBank = (index: number, field: keyof BankEntry, value: string | boolean) => {
+    setForm({
+      ...form,
+      banks: form.banks.map((b, i) => (i === index ? { ...b, [field]: value } : b)),
+    });
+    setErrors((prev) => omitFieldError(prev, `banks.${index}.${field}`));
+  };
+
+  const addBank = () => setForm({ ...form, banks: [...form.banks, { ...DEFAULT_BANK }] });
+
+  const removeBank = (index: number) => {
+    setForm({ ...form, banks: form.banks.filter((_, i) => i !== index) });
+    // Error keys are index-based, so drop them all rather than leave them pointing at the wrong card.
+    setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith('banks.'))));
   };
 
   if (isLoading) {
@@ -134,11 +156,11 @@ export default function AdminPaymentConfigPage() {
             <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
               <CreditCard className="h-4 w-4" /> Mobile Banking
             </h2>
-            {(['bkash', 'nagad', 'rocket'] as const).map((method, i) => (
+            {MOBILE_METHODS.map((method, i) => (
               <FadeIn key={method} direction="up" delay={i * 0.08}>
                 <div className="border rounded-lg p-4 bg-card space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground capitalize">{method}</span>
+                    <span className="font-medium text-foreground">{MOBILE_LABELS[method]}</span>
                     <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                       <input
                         type="checkbox"
@@ -190,73 +212,112 @@ export default function AdminPaymentConfigPage() {
           {/* Bank Account Section */}
           <FadeIn direction="up" delay={0.3}>
             <div className="space-y-4">
-              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                <Landmark className="h-4 w-4" /> Bank Account
-              </h2>
-              <div className="border rounded-lg p-4 bg-card space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">Bank Transfer</span>
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.bank.isActive}
-                      onChange={(e) => updateBank('isActive', e.target.checked)}
-                      className="rounded border-input"
-                    />
-                    Active
-                  </label>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Bank Name *</label>
-                    <input
-                      placeholder="e.g. Sonali Bank"
-                      value={form.bank.bankName}
-                      onChange={(e) => updateBank('bankName', e.target.value)}
-                      className={`${inputClass} ${errors.bankName ? 'border-destructive' : ''}`}
-                    />
-                    <FieldError message={errors.bankName} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Branch Name</label>
-                    <input
-                      placeholder="e.g. Barishal University Branch"
-                      value={form.bank.branchName}
-                      onChange={(e) => updateBank('branchName', e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Account Name *</label>
-                    <input
-                      placeholder="Account holder name"
-                      value={form.bank.accountName}
-                      onChange={(e) => updateBank('accountName', e.target.value)}
-                      className={`${inputClass} ${errors.accountName ? 'border-destructive' : ''}`}
-                    />
-                    <FieldError message={errors.accountName} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Account Number *</label>
-                    <input
-                      placeholder="Account number"
-                      value={form.bank.accountNumber}
-                      onChange={(e) => updateBank('accountNumber', e.target.value)}
-                      className={`${inputClass} ${errors.accountNumber ? 'border-destructive' : ''}`}
-                    />
-                    <FieldError message={errors.accountNumber} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-xs text-muted-foreground mb-1 block">Routing Number</label>
-                    <input
-                      placeholder="Routing number"
-                      value={form.bank.routingNumber}
-                      onChange={(e) => updateBank('routingNumber', e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <Landmark className="h-4 w-4" /> Bank Account
+                </h2>
+                <motion.button
+                  type="button"
+                  onClick={addBank}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md text-foreground hover:bg-accent transition-colors"
+                >
+                  <Plus className="h-4 w-4" /> Add More
+                </motion.button>
               </div>
+              <AnimatePresence initial={false}>
+                {form.banks.map((bank, index) => (
+                  <motion.div
+                    key={index}
+                    layout
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    className="border rounded-lg p-4 bg-card space-y-3 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium text-foreground">
+                        Bank Transfer{form.banks.length > 1 ? ` ${index + 1}` : ''}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={bank.isActive}
+                            onChange={(e) => updateBank(index, 'isActive', e.target.checked)}
+                            className="rounded border-input"
+                          />
+                          Active
+                        </label>
+                        {form.banks.length > 1 && (
+                          <motion.button
+                            type="button"
+                            onClick={() => removeBank(index)}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Remove this bank account"
+                            className="p-1.5 rounded-md text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Bank Name *</label>
+                        <input
+                          placeholder="e.g. Sonali Bank"
+                          value={bank.bankName}
+                          onChange={(e) => updateBank(index, 'bankName', e.target.value)}
+                          className={`${inputClass} ${errors[`banks.${index}.bankName`] ? 'border-destructive' : ''}`}
+                        />
+                        <FieldError message={errors[`banks.${index}.bankName`]} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Branch Name</label>
+                        <input
+                          placeholder="e.g. Barishal University Branch"
+                          value={bank.branchName}
+                          onChange={(e) => updateBank(index, 'branchName', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Account Title *</label>
+                        <input
+                          placeholder="Account holder name"
+                          value={bank.accountName}
+                          onChange={(e) => updateBank(index, 'accountName', e.target.value)}
+                          className={`${inputClass} ${errors[`banks.${index}.accountName`] ? 'border-destructive' : ''}`}
+                        />
+                        <FieldError message={errors[`banks.${index}.accountName`]} />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Account Number *</label>
+                        <input
+                          placeholder="Account number"
+                          value={bank.accountNumber}
+                          onChange={(e) => updateBank(index, 'accountNumber', e.target.value)}
+                          className={`${inputClass} ${errors[`banks.${index}.accountNumber`] ? 'border-destructive' : ''}`}
+                        />
+                        <FieldError message={errors[`banks.${index}.accountNumber`]} />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-xs text-muted-foreground mb-1 block">Routing Number</label>
+                        <input
+                          placeholder="Routing number"
+                          value={bank.routingNumber}
+                          onChange={(e) => updateBank(index, 'routingNumber', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </FadeIn>
 

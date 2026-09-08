@@ -11,7 +11,7 @@ export interface IDonationDocument extends Document {
   campaign?: mongoose.Types.ObjectId;
   /** Event this money was raised for, so income can sit beside its budget and expenses. */
   event?: mongoose.Types.ObjectId;
-  paymentMethod: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash' | 'other';
+  paymentMethod: 'bkash' | 'nagad' | 'rocket' | 'upay' | 'bank' | 'cash' | 'other';
   senderNumber?: string;
   transactionId?: string;
   senderBankName?: string;
@@ -47,7 +47,7 @@ const donationSchema = new Schema<IDonationDocument>(
     type: { type: String, enum: ['one-time', 'monthly', 'event-based', 'construction-fund', 'membership'], default: 'one-time' },
     campaign: { type: Schema.Types.ObjectId, ref: 'DonationCampaign' },
     event: { type: Schema.Types.ObjectId, ref: 'Event' },
-    paymentMethod: { type: String, enum: ['bkash', 'nagad', 'rocket', 'bank', 'cash', 'other'], required: true },
+    paymentMethod: { type: String, enum: ['bkash', 'nagad', 'rocket', 'upay', 'bank', 'cash', 'other'], required: true },
     senderNumber: String,
     transactionId: String,
     senderBankName: String,

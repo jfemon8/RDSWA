@@ -289,10 +289,13 @@ router.patch('/payment', authenticate(), authorize(UserRole.MODERATOR), auditLog
   // Strip _id from each provider subdocument
   const gateway = req.body.paymentGateway || {};
   const cleanGateway: Record<string, any> = {};
+  const stripId = (config: any) => {
+    const { _id, ...rest } = config || {};
+    return rest;
+  };
   for (const [provider, config] of Object.entries(gateway)) {
     if (provider === '_id') continue;
-    const { _id, ...rest } = config as any;
-    cleanGateway[provider] = rest;
+    cleanGateway[provider] = Array.isArray(config) ? config.map(stripId) : stripId(config);
   }
   const settings = await SiteSettings.findOneAndUpdate(
     {},

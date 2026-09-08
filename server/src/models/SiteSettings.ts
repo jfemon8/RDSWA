@@ -77,6 +77,8 @@ export interface ISiteSettingsDocument extends Document {
     bkash?: { number: string; accountType: string; isActive: boolean };
     nagad?: { number: string; accountType: string; isActive: boolean };
     rocket?: { number: string; accountType: string; isActive: boolean };
+    upay?: { number: string; accountType: string; isActive: boolean };
+    /** Legacy single bank account, superseded by `banks` but still read for old rows. */
     bank?: {
       bankName: string;
       branchName: string;
@@ -85,6 +87,14 @@ export interface ISiteSettingsDocument extends Document {
       routingNumber: string;
       isActive: boolean;
     };
+    banks?: Array<{
+      bankName: string;
+      branchName: string;
+      accountName: string;
+      accountNumber: string;
+      routingNumber: string;
+      isActive: boolean;
+    }>;
   };
   academicConfig: {
     batches: string[];
@@ -112,6 +122,18 @@ export interface ISiteSettingsDocument extends Document {
   updatedBy?: mongoose.Types.ObjectId;
   updatedAt: Date;
 }
+
+const bankAccountSchema = new Schema(
+  {
+    bankName: { type: String },
+    branchName: { type: String },
+    accountName: { type: String },
+    accountNumber: { type: String },
+    routingNumber: { type: String },
+    isActive: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
 
 const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
   {
@@ -243,6 +265,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       bkash: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
       nagad: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
       rocket: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
+      upay: { number: { type: String }, accountType: { type: String }, isActive: { type: Boolean, default: false } },
       bank: {
         bankName: { type: String },
         branchName: { type: String },
@@ -251,6 +274,7 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
         routingNumber: { type: String },
         isActive: { type: Boolean, default: false },
       },
+      banks: { type: [bankAccountSchema], default: [] },
     },
     academicConfig: {
       batches: {

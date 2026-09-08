@@ -10,7 +10,7 @@ import { extractFieldErrors, omitFieldError } from '@/lib/formErrors';
 import { toDateInput } from '@/lib/date';
 
 const TYPES = ['one-time', 'monthly', 'event-based', 'construction-fund', 'membership'];
-const METHODS = ['bkash', 'nagad', 'rocket', 'bank', 'cash', 'other'];
+const METHODS = ['bkash', 'nagad', 'rocket', 'upay', 'bank', 'cash', 'other'];
 const STATUSES = ['pending', 'completed', 'failed', 'refunded', 'revision'];
 
 interface DonationFormModalProps {
@@ -282,7 +282,7 @@ export default function DonationFormModal({ donation, onClose }: DonationFormMod
               </div>
             </div>
 
-            {['bkash', 'nagad', 'rocket'].includes(form.paymentMethod) && (
+            {['bkash', 'nagad', 'rocket', 'upay'].includes(form.paymentMethod) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={label}>Sender Number</label>

@@ -259,7 +259,9 @@ function DonationForm({
 
   const selectedCampaign = campaigns.find((c) => c._id === form.campaign);
 
-  const isMobile = ["bkash", "nagad", "rocket"].includes(form.paymentMethod);
+  const isMobile = ["bkash", "nagad", "rocket", "upay"].includes(
+    form.paymentMethod,
+  );
   const isBank = form.paymentMethod === "bank";
   const isCash = form.paymentMethod === "cash";
 
@@ -613,6 +615,7 @@ function DonationForm({
           <option value="bkash">bKash</option>
           <option value="nagad">Nagad</option>
           <option value="rocket">Rocket</option>
+          <option value="upay">Upay</option>
           <option value="bank">Bank Transfer</option>
           <option value="cash">Cash</option>
         </select>
