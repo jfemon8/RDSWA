@@ -67,6 +67,9 @@ export type { IChatGroupDocument } from './ChatGroup';
 export { Message } from './Message';
 export type { IMessageDocument } from './Message';
 
+export { AnnouncementComment } from './AnnouncementComment';
+export type { IAnnouncementCommentDocument } from './AnnouncementComment';
+
 export { ForumTopic } from './ForumTopic';
 export type { IForumTopicDocument } from './ForumTopic';
 

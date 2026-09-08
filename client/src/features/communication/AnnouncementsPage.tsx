@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
@@ -19,18 +19,15 @@ import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import RichContent from '@/components/ui/RichContent';
+import ImageUpload from '@/components/ui/ImageUpload';
+import { parseAnnouncement } from './announcementFormat';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 
-/** Announcements are stored as one message body, with the title in front of the content. */
-function parseAnnouncement(raw: string | undefined): { title: string; body: string } {
-  const match = raw?.match(/^\*\*(.+?)\*\*\n\n([\s\S]*)$/);
-  return { title: match ? match[1] : 'Announcement', body: match ? match[2] : raw || '' };
-}
 
 const PROMO_EVERY = 6;
 
 export default function AnnouncementsPage() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -112,12 +109,13 @@ export default function AnnouncementsPage() {
         <div className="space-y-3">
           {announcements.map((ann: any, i: number) => {
             const { title, body } = parseAnnouncement(ann.content);
+            const image = ann.attachments?.find((a: any) => a.kind === 'image');
 
             if (editingId === ann._id) {
               return (
                 <AnnouncementForm
                   key={ann._id}
-                  announcement={{ _id: ann._id, title, content: body }}
+                  announcement={{ _id: ann._id, title, content: body, image }}
                   onSaved={() => { setEditingId(null); refresh(); }}
                   onCancel={() => setEditingId(null)}
                 />
@@ -129,7 +127,16 @@ export default function AnnouncementsPage() {
               <FadeIn delay={i * 0.04} direction="up" distance={15}>
                 <motion.div
                   whileHover={{ y: -2 }}
-                  className="bg-card border rounded-lg p-4 sm:p-5 overflow-hidden"
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => navigate(`/dashboard/announcements/${ann._id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/dashboard/announcements/${ann._id}`);
+                    }
+                  }}
+                  className="bg-card border rounded-lg p-4 sm:p-5 overflow-hidden cursor-pointer hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -141,14 +148,15 @@ export default function AnnouncementsPage() {
                         {canManage(ann) && (
                           <div className="flex shrink-0 -mt-1">
                             <button
-                              onClick={() => { setEditingId(ann._id); setShowCreate(false); }}
+                              onClick={(e) => { e.stopPropagation(); setEditingId(ann._id); setShowCreate(false); }}
                               title="Edit announcement"
                               className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={async () => {
+                              onClick={async (e) => {
+                                e.stopPropagation();
                                 const ok = await confirm({
                                   title: 'Delete Announcement',
                                   message: `Delete "${title}"? Members keep the notification they already received.`,
@@ -165,9 +173,12 @@ export default function AnnouncementsPage() {
                           </div>
                         )}
                       </div>
-                      <RichContent html={body} className="text-sm text-muted-foreground" />
-                      <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground pt-2 border-t flex-wrap">
-                        <Link to={`/members/${ann.sender?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors min-w-0">
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                        <Link
+                          to={`/members/${ann.sender?._id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1 hover:text-primary transition-colors min-w-0"
+                        >
                           <UserIcon className="h-3 w-3 shrink-0" />
                           <span className="truncate">{ann.sender?.name || 'Unknown'}</span>
                         </Link>
@@ -205,21 +216,25 @@ function AnnouncementForm({
   onSaved,
   onCancel,
 }: {
-  announcement?: { _id: string; title: string; content: string };
+  announcement?: { _id: string; title: string; content: string; image?: any };
   onSaved: () => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState(announcement?.title || '');
   const [content, setContent] = useState(announcement?.content || '');
+  const [imageUrl, setImageUrl] = useState<string>(announcement?.image?.url || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const toast = useToast();
   const isEdit = !!announcement;
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      isEdit
-        ? api.patch(`/communication/announcements/${announcement._id}`, { title, content })
-        : api.post('/communication/announcements', { title, content }),
+    mutationFn: () => {
+      // An empty URL clears the image on edit, which the server reads as an explicit removal.
+      const payload = { title, content, image: imageUrl ? { url: imageUrl } : null };
+      return isEdit
+        ? api.patch(`/communication/announcements/${announcement._id}`, payload)
+        : api.post('/communication/announcements', payload);
+    },
     onSuccess: () => {
       toast.success(isEdit ? 'Announcement updated' : 'Announcement posted!');
       onSaved();
@@ -262,6 +277,10 @@ function AnnouncementForm({
             className={`w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.title ? 'border-red-500' : ''}`}
           />
           <FieldError message={errors.title} />
+        </div>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">Image (optional)</label>
+          <ImageUpload value={imageUrl} onChange={setImageUrl} folder="announcements" />
         </div>
         <div>
           <RichTextEditor

@@ -4,7 +4,7 @@ import { authorize } from '../middlewares/rbac.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { ChatGroup, Message, ForumTopic, ForumReply, User } from '../models';
+import { ChatGroup, Message, ForumTopic, ForumReply, User, Notification, AnnouncementComment } from '../models';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
@@ -1444,7 +1444,7 @@ async function findEditableAnnouncement(messageId: string, user: any) {
 
 router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { title, content, link } = req.body;
+  const { title, content, link, image } = req.body;
   if (!title || !content) throw ApiError.badRequest('Title and content are required');
 
   // Find or create the central announcement group
@@ -1464,6 +1464,7 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
     group: centralGroup._id,
     sender: req.user._id,
     content: composeAnnouncement(title, content),
+    attachments: image?.url ? [{ kind: 'image', ...image }] : [],
     // The announcement channel and the group's own chat share this collection, so only the
     // messages published here are announcements — a chat message in the group is not one.
     isAnnouncement: true,
@@ -1512,6 +1513,202 @@ router.get('/announcements', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.paginated(res, messages, total, page, limit);
 }));
 
+/** The reaction set, mirroring the ones a social feed offers. */
+const REACTION_TYPES = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'];
+
+/** Counts per reaction plus the viewer's own, which is all a reaction bar needs to render. */
+function summariseReactions(reactions: Array<{ user: any; emoji?: string; type?: string }>, viewerId: string) {
+  const counts: Record<string, number> = {};
+  let mine: string | null = null;
+  for (const r of reactions || []) {
+    const key = (r.emoji || r.type) as string;
+    if (!key) continue;
+    counts[key] = (counts[key] || 0) + 1;
+    if (r.user.toString() === viewerId) mine = key;
+  }
+  return { counts, total: Object.values(counts).reduce((a, b) => a + b, 0), mine };
+}
+
+/** Applies a reaction the way a social feed does: same one again removes it, a different one replaces it. */
+function toggleReaction<T extends { user: any }>(
+  reactions: T[],
+  viewerId: string,
+  type: string | null,
+  make: (type: string) => T
+): T[] {
+  const others = reactions.filter((r) => r.user.toString() !== viewerId);
+  return type ? [...others, make(type)] : others;
+}
+
+// Read one announcement, for its own page
+router.get('/announcements/:id', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const message = await Message.findOne({
+    _id: req.params.id as string,
+    isDeleted: false,
+    isAnnouncement: true,
+  }).populate('sender', 'name avatar');
+  if (!message) throw ApiError.notFound('Announcement not found');
+
+  const viewerId = (req.user._id as any).toString();
+  ApiResponse.success(res, {
+    ...message.toObject(),
+    reactionSummary: summariseReactions(message.reactions as any, viewerId),
+  });
+}));
+
+// React to an announcement — a null type clears the viewer's reaction
+router.post('/announcements/:id/react', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { type } = req.body;
+  if (type !== null && !REACTION_TYPES.includes(type)) throw ApiError.badRequest('Unknown reaction');
+
+  const message = await Message.findOne({ _id: req.params.id as string, isDeleted: false, isAnnouncement: true });
+  if (!message) throw ApiError.notFound('Announcement not found');
+
+  const viewerId = (req.user._id as any).toString();
+  message.reactions = toggleReaction(message.reactions as any, viewerId, type, (t) => ({
+    user: req.user!._id,
+    emoji: t,
+    reactedAt: new Date(),
+  })) as any;
+  await message.save();
+
+  ApiResponse.success(res, summariseReactions(message.reactions as any, viewerId));
+}));
+
+// Comments on an announcement, replies nested one level under their parent
+router.get('/announcements/:id/comments', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const viewerId = (req.user._id as any).toString();
+
+  const comments = await AnnouncementComment.find({
+    announcement: req.params.id as string,
+    isDeleted: false,
+  })
+    .populate('author', 'name avatar')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const shape = (c: any) => ({
+    ...c,
+    reactions: undefined,
+    reactionSummary: summariseReactions(c.reactions, viewerId),
+  });
+
+  const roots = comments.filter((c) => !c.parent).map(shape);
+  const byParent = new Map<string, any[]>();
+  for (const c of comments) {
+    if (!c.parent) continue;
+    const key = c.parent.toString();
+    byParent.set(key, [...(byParent.get(key) || []), shape(c)]);
+  }
+
+  ApiResponse.success(res, roots.map((r: any) => ({ ...r, replies: byParent.get(r._id.toString()) || [] })));
+}));
+
+// Post a comment, or a reply when `parentId` is given — writing takes a membership, reacting does not
+router.post('/announcements/:id/comments', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { content, parentId } = req.body;
+  if (!content?.trim()) throw ApiError.badRequest('Comment cannot be empty');
+
+  const announcement = await Message.findOne({ _id: req.params.id as string, isDeleted: false, isAnnouncement: true });
+  if (!announcement) throw ApiError.notFound('Announcement not found');
+
+  let parent = null;
+  if (parentId) {
+    parent = await AnnouncementComment.findOne({ _id: parentId, announcement: announcement._id, isDeleted: false });
+    if (!parent) throw ApiError.notFound('Comment not found');
+    // A reply to a reply is attached to the thread it belongs to, keeping the tree one level deep.
+    if (parent.parent) parent = await AnnouncementComment.findById(parent.parent);
+  }
+
+  const comment = await AnnouncementComment.create({
+    announcement: announcement._id,
+    author: req.user._id,
+    content: content.trim(),
+    parent: parent?._id,
+  });
+  await comment.populate('author', 'name avatar');
+
+  // Tell whoever is being answered, unless they are answering themselves.
+  const notifyId = parent ? parent.author.toString() : announcement.sender.toString();
+  if (notifyId !== (req.user._id as any).toString()) {
+    await Notification.create({
+      recipient: notifyId,
+      type: 'announcement',
+      title: parent ? 'New reply to your comment' : 'New comment on your announcement',
+      message: `${req.user.name}: ${content.trim().slice(0, 120)}`,
+      link: `/dashboard/announcements/${announcement._id}`,
+    });
+  }
+
+  ApiResponse.created(res, { ...comment.toObject(), replies: [], reactionSummary: { counts: {}, total: 0, mine: null } });
+}));
+
+/** A comment its author wrote, or any comment when the viewer moderates. */
+async function findManageableComment(commentId: string, user: any) {
+  const comment = await AnnouncementComment.findOne({ _id: commentId, isDeleted: false });
+  if (!comment) throw ApiError.notFound('Comment not found');
+
+  const isAuthor = comment.author.toString() === user._id.toString();
+  const isModerator = ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+  if (!isAuthor && !isModerator) {
+    throw ApiError.forbidden('Only the author or a moderator can change this comment');
+  }
+  return comment;
+}
+
+// Edit a comment — its author, or any moderator
+router.patch('/announcements/comments/:commentId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { content } = req.body;
+  if (!content?.trim()) throw ApiError.badRequest('Comment cannot be empty');
+
+  const comment = await findManageableComment(req.params.commentId as string, req.user);
+
+  comment.content = content.trim();
+  comment.isEdited = true;
+  await comment.save();
+  await comment.populate('author', 'name avatar');
+
+  ApiResponse.success(res, comment, 'Comment updated');
+}));
+
+// Delete a comment — its author, or any moderator
+router.delete('/announcements/comments/:commentId', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const comment = await findManageableComment(req.params.commentId as string, req.user);
+
+  comment.isDeleted = true;
+  await comment.save();
+  // Replies lose their thread with the comment they answered.
+  await AnnouncementComment.updateMany({ parent: comment._id }, { $set: { isDeleted: true } });
+
+  ApiResponse.success(res, null, 'Comment deleted');
+}));
+
+// React to a comment — a null type clears the viewer's reaction
+router.post('/announcements/comments/:commentId/react', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { type } = req.body;
+  if (type !== null && !REACTION_TYPES.includes(type)) throw ApiError.badRequest('Unknown reaction');
+
+  const comment = await AnnouncementComment.findOne({ _id: req.params.commentId as string, isDeleted: false });
+  if (!comment) throw ApiError.notFound('Comment not found');
+
+  const viewerId = (req.user._id as any).toString();
+  comment.reactions = toggleReaction(comment.reactions as any, viewerId, type, (t) => ({
+    user: req.user!._id,
+    type: t,
+    reactedAt: new Date(),
+  })) as any;
+  await comment.save();
+
+  ApiResponse.success(res, summariseReactions(comment.reactions as any, viewerId));
+}));
+
 // Edit an announcement — its author, or any Admin
 router.patch('/announcements/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
@@ -1520,6 +1717,10 @@ router.patch('/announcements/:id', authenticate(), asyncHandler(async (req, res)
 
   const message = await findEditableAnnouncement(req.params.id as string, req.user);
   message.content = composeAnnouncement(title.trim(), content);
+  // An absent `image` key leaves the current one alone, while an explicit null clears it.
+  if (req.body.image !== undefined) {
+    message.attachments = req.body.image?.url ? ([{ kind: 'image', ...req.body.image }] as any) : ([] as any);
+  }
   message.isEdited = true;
   await message.save();
   await message.populate('sender', 'name avatar');
