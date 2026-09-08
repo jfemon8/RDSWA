@@ -705,8 +705,8 @@ function DonationsList({ committeeId }: { committeeId: string }) {
                             {isActionOpen && (
                               <motion.div
                                 initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+                                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                                 className="overflow-hidden text-left"
                               >
                                 {renderRevisionForm(d)}
@@ -799,8 +799,8 @@ function DonationsList({ committeeId }: { committeeId: string }) {
                       {isActionOpen && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+                          exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                           className="overflow-hidden"
                         >
                           {renderRevisionForm(d)}
@@ -811,8 +811,8 @@ function DonationsList({ committeeId }: { committeeId: string }) {
                       {isExpanded && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+                          exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                           className="overflow-hidden mt-2"
                         >
                           {renderDetails(d)}
@@ -979,8 +979,8 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
             <form
@@ -1522,8 +1522,8 @@ function CampaignsList({ committeeId }: { committeeId: string }) {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
             <form

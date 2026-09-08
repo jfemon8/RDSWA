@@ -136,7 +136,7 @@ function OperatorsList() {
       </div>
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
               <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); if (!form.name.trim()) { setErrors({ name: 'Operator name is required' }); return; } saveMutation.mutate(); }} className="space-y-3">
                 <div>
@@ -200,7 +200,7 @@ function OperatorsList() {
                 </div>
                 <AnimatePresence>
                   {expandedId === o._id && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} className="overflow-hidden">
                       <div className="px-3 pb-3 pt-0 border-t mx-3 mb-3 space-y-2 text-xs">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
                           <div><span className="text-muted-foreground">Type:</span> <span className="capitalize text-foreground">{o.scheduleType}</span></div>
@@ -300,7 +300,7 @@ function RoutesList() {
       </div>
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
               <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.origin.trim()) errs.origin = 'Origin is required'; if (!form.destination.trim()) errs.destination = 'Destination is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -377,7 +377,7 @@ function RoutesList() {
                 </div>
                 <AnimatePresence>
                   {expandedId === r._id && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} className="overflow-hidden">
                       <div className="px-3 pb-3 pt-0 border-t mx-3 mb-3 space-y-2 text-xs">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
                           <div><span className="text-muted-foreground">Type:</span> <span className="capitalize text-foreground">{r.routeType}</span></div>
@@ -577,7 +577,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
 
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
               <form noValidate onSubmit={(e) => {
                 e.preventDefault(); setErrors({});
@@ -666,7 +666,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
                 </div>
                 <AnimatePresence>
                   {form.isSpecialSchedule && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} className="space-y-3 overflow-hidden">
                       <input placeholder="Note (e.g. Eid special, Winter schedule)" value={form.specialScheduleNote}
                         onChange={(e) => setForm({ ...form, specialScheduleNote: e.target.value })}
                         className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
@@ -932,7 +932,7 @@ function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => v
 
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} transition={{ duration: 0.3 }} className="overflow-hidden">
             <div className="border rounded-lg p-4 sm:p-6 bg-card mb-4">
               <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.name.trim()) errs.name = 'Counter name is required'; if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -981,7 +981,7 @@ function OperatorCounters({ operator, onBack }: { operator: any; onBack: () => v
                 </div>
                 <AnimatePresence>
                   {expandedId === c._id && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} className="overflow-hidden">
                       <div className="px-3 pb-3 pt-0 border-t mx-3 mb-3 space-y-2 text-xs">
                         <div className="grid grid-cols-2 gap-2 pt-2">
                           {c.location && <div><span className="text-muted-foreground">Location:</span> <span className="text-foreground">{c.location}</span></div>}

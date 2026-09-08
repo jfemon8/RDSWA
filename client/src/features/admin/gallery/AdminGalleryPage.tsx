@@ -97,8 +97,8 @@ export default function AdminGalleryPage() {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
@@ -254,8 +254,8 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
         {showUpload && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >

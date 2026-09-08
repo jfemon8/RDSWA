@@ -803,7 +803,7 @@ function AcademicConfigSection() {
           </div>
           <AnimatePresence>
             {faculties.map((fac, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="border rounded-lg p-4 space-y-3 relative mb-3">
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0, overflow: "hidden" }} className="border rounded-lg p-4 space-y-3 relative mb-3">
                 <button type="button" onClick={() => setFaculties(faculties.filter((_, idx) => idx !== i))} className="absolute top-3 right-3 text-muted-foreground hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Faculty Name</label>

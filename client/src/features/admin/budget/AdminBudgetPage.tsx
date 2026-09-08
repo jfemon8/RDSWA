@@ -8,7 +8,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 import { useEventOptions } from "@/hooks/useLinkOptions";
-import { useConfirm } from "@/components/ui/ConfirmModal";
+import { useConfirm, usePrompt } from "@/components/ui/ConfirmModal";
 import { useAuthStore } from "@/stores/authStore";
 import { hasMinRole } from "@/lib/roles";
 import { UserRole } from "@rdswa/shared";
@@ -66,6 +66,7 @@ export default function AdminBudgetPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
+  const prompt = usePrompt();
   const { user } = useAuthStore();
   const isAdmin = user?.role ? hasMinRole(user.role, UserRole.ADMIN) : false;
   const isSuperAdmin = user?.role
@@ -255,7 +256,17 @@ export default function AdminBudgetPage() {
   };
 
   const handleReject = async (id: string) => {
-    const reason = window.prompt("Reason for rejection:") || "";
+    const reason = await prompt({
+      title: "Reject Budget",
+      message: "The requester sees this reason, so say what needs changing.",
+      label: "Reason for rejection",
+      placeholder: "e.g. Transport estimate is too high",
+      confirmLabel: "Reject",
+      variant: "danger",
+      multiline: true,
+      required: true,
+    });
+    if (reason === null) return;
     reviewMutation.mutate({ id, status: "rejected", reason });
   };
 

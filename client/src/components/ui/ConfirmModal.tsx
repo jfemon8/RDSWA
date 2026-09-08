@@ -13,8 +13,25 @@ interface ConfirmOptions {
   requireTypeToConfirm?: string;
 }
 
+/** A modal that asks for a value rather than a yes/no, replacing `window.prompt`. */
+export interface PromptOptions {
+  title?: string;
+  message?: string;
+  label?: string;
+  placeholder?: string;
+  defaultValue?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  multiline?: boolean;
+  /** Blocks confirmation until something is typed. */
+  required?: boolean;
+  variant?: 'danger' | 'warning' | 'info';
+}
+
 interface ConfirmContextValue {
   confirm: (options: ConfirmOptions) => Promise<boolean>;
+  /** Resolves with the typed value, or null when the user backs out. */
+  prompt: (options: PromptOptions) => Promise<string | null>;
 }
 
 const ConfirmContext = createContext<ConfirmContextValue | null>(null);
@@ -23,6 +40,12 @@ export function useConfirm() {
   const ctx = useContext(ConfirmContext);
   if (!ctx) throw new Error('useConfirm must be used within ConfirmProvider');
   return ctx.confirm;
+}
+
+export function usePrompt() {
+  const ctx = useContext(ConfirmContext);
+  if (!ctx) throw new Error('usePrompt must be used within ConfirmProvider');
+  return ctx.prompt;
 }
 
 const variantStyles = {
@@ -62,30 +85,44 @@ const variantIconFallback = {
 } as const;
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{
-    options: ConfirmOptions;
-    resolve: (value: boolean) => void;
-  } | null>(null);
+  const [state, setState] = useState<
+    | { kind: 'confirm'; options: ConfirmOptions; resolve: (value: boolean) => void }
+    | { kind: 'prompt'; options: PromptOptions; resolve: (value: string | null) => void }
+    | null
+  >(null);
   const [typedText, setTypedText] = useState('');
+  const [inputValue, setInputValue] = useState('');
 
   const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
       setTypedText('');
-      setState({ options, resolve });
+      setState({ kind: 'confirm', options, resolve });
+    });
+  }, []);
+
+  const prompt = useCallback((options: PromptOptions): Promise<string | null> => {
+    return new Promise<string | null>((resolve) => {
+      setInputValue(options.defaultValue || '');
+      setState({ kind: 'prompt', options, resolve });
     });
   }, []);
 
   const handleClose = (result: boolean) => {
-    state?.resolve(result);
+    if (state?.kind === 'prompt') state.resolve(result ? inputValue.trim() : null);
+    else state?.resolve(result);
     setState(null);
     setTypedText('');
+    setInputValue('');
   };
 
   useBodyScrollLock(!!state);
 
   // Keyboard handling — Escape to cancel, Enter to confirm (when unlocked)
-  const typeToConfirm = state?.options.requireTypeToConfirm;
+  const promptOptions = state?.kind === 'prompt' ? state.options : null;
+  const typeToConfirm = state?.kind === 'confirm' ? state.options.requireTypeToConfirm : undefined;
   const typeMatches = !typeToConfirm || typedText.trim() === typeToConfirm.trim();
+  // A prompt that demands a value keeps its confirm button locked until one is typed.
+  const canSubmit = typeMatches && (!promptOptions?.required || inputValue.trim().length > 0);
   useEffect(() => {
     if (!state) return;
     const onKey = (e: KeyboardEvent) => {
@@ -95,8 +132,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       } else if (e.key === 'Enter' && !e.shiftKey) {
         // Don't auto-submit while the user is typing the confirmation text
         const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-        if (typeMatches) {
+        // Enter submits a single-line prompt, which is how the native dialog behaved.
+        const inSingleLinePrompt = !!promptOptions && !promptOptions.multiline && target?.tagName === 'INPUT';
+        if (!inSingleLinePrompt && target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+        if (canSubmit) {
           e.preventDefault();
           handleClose(true);
         }
@@ -105,15 +144,15 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, typeMatches]);
+  }, [state, canSubmit]);
 
-  const variant = state?.options.variant || 'danger';
+  const variant = state?.options.variant || (promptOptions ? 'info' : 'danger');
   const styles = variantStyles[variant];
   const Icon = styles.Icon || variantIconFallback[variant];
   const isDestructive = variant === 'danger';
 
   return (
-    <ConfirmContext.Provider value={{ confirm }}>
+    <ConfirmContext.Provider value={{ confirm, prompt }}>
       {children}
       <AnimatePresence>
         {state && (
@@ -198,7 +237,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                     transition={{ delay: 0.1 }}
                     className="text-lg sm:text-xl font-bold text-foreground mb-2 tracking-tight"
                   >
-                    {state.options.title || 'Are you sure?'}
+                    {state.options.title || (promptOptions ? 'Enter a value' : 'Are you sure?')}
                   </motion.h3>
                   <motion.p
                     id="confirm-modal-message"
@@ -209,6 +248,43 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   >
                     {state.options.message}
                   </motion.p>
+
+                  {/* Prompt input, which is what replaces `window.prompt` across the app. */}
+                  {promptOptions && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="mt-4 text-left"
+                    >
+                      {promptOptions.label && (
+                        <label htmlFor="prompt-modal-input" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                          {promptOptions.label}
+                        </label>
+                      )}
+                      {promptOptions.multiline ? (
+                        <textarea
+                          id="prompt-modal-input"
+                          value={inputValue}
+                          onChange={(e) => setInputValue(e.target.value)}
+                          placeholder={promptOptions.placeholder}
+                          rows={3}
+                          autoFocus
+                          className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      ) : (
+                        <input
+                          id="prompt-modal-input"
+                          type="text"
+                          value={inputValue}
+                          onChange={(e) => setInputValue(e.target.value)}
+                          placeholder={promptOptions.placeholder}
+                          autoFocus
+                          className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      )}
+                    </motion.div>
+                  )}
 
                   {/* Type-to-confirm input for high-stakes actions */}
                   {typeToConfirm && (
@@ -253,9 +329,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   </button>
                   <motion.button
                     onClick={() => handleClose(true)}
-                    disabled={!typeMatches}
-                    whileHover={typeMatches ? { scale: 1.02 } : {}}
-                    whileTap={typeMatches ? { scale: 0.97 } : {}}
+                    disabled={!canSubmit}
+                    whileHover={canSubmit ? { scale: 1.02 } : {}}
+                    whileTap={canSubmit ? { scale: 0.97 } : {}}
                     className={`flex-1 px-4 py-2.5 sm:py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${styles.button}`}
                   >
                     {state.options.confirmLabel || 'Confirm'}

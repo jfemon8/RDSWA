@@ -9,13 +9,15 @@ interface RichContentProps {
 export default function RichContent({ html, className = '' }: RichContentProps) {
   if (!html) return null;
 
+  // Must stay in step with what RichTextEditor can produce, or a saved format is silently dropped on display.
   const clean = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'del',
       'ul', 'ol', 'li', 'blockquote', 'hr', 'h1', 'h2', 'h3', 'h4',
-      'a', 'code', 'pre',
+      'a', 'code', 'pre', 'span', 'mark', 'sub', 'sup',
     ],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    // DOMPurify sanitises the declarations inside `style`, which carries text colour and alignment.
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'style', 'data-color'],
   });
 
   return (

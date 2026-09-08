@@ -182,8 +182,8 @@ export default function AdminCommitteesPage() {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
@@ -404,8 +404,8 @@ export default function AdminCommitteesPage() {
                   {expandedId === c._id && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+                      exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
@@ -534,8 +534,8 @@ function MemberPicker({
         {supportsDesignation(position) && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
@@ -609,8 +609,8 @@ function StagedMembersField({
         {showPicker && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
@@ -739,8 +739,8 @@ function CommitteeMembersPanel({
         {showAdd && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >

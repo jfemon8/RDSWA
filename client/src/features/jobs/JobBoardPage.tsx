@@ -283,8 +283,8 @@ export default function JobBoardPage() {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             className="mb-6 sm:mb-8 overflow-hidden"
           >
             <div className="border rounded-xl p-4 sm:p-6 bg-card space-y-3 sm:space-y-4">

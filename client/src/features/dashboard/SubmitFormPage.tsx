@@ -190,8 +190,8 @@ export default function SubmitFormPage() {
           {isMembershipForm && !alreadyMember && !alreadyPending && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+              exit={{ opacity: 0, height: 0, overflow: "hidden" }}
               className="mb-4 p-4 rounded-xl border bg-primary/5 border-primary/20"
             >
               <div className="flex items-start gap-3">
@@ -218,8 +218,8 @@ export default function SubmitFormPage() {
           {isAlumniForm && canApplyAlumni && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+              exit={{ opacity: 0, height: 0, overflow: "hidden" }}
               className="mb-4 p-4 rounded-xl border bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800"
             >
               <div className="flex items-start gap-3">
