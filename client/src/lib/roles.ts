@@ -1,4 +1,4 @@
-import { UserRole, ROLE_HIERARCHY, TIER_HIERARCHY } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 
 /** Role display config: label, color classes */
 const ROLE_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -22,24 +22,6 @@ export function getRoleConfig(role: string) {
 /** Get the highest (primary) role label */
 export function getPrimaryRoleLabel(role: string): string {
   return getRoleConfig(role).label;
-}
-
-/** Every tier a user effectively holds, skipping guest and user for members and excluding the tag roles rendered from their own flags. */
-export function getEffectiveRoles(role: string): string[] {
-  const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
-  if (idx < 0) return [role];
-
-  // Only include tier roles at or below the user's hierarchy level
-  const effective = TIER_HIERARCHY.filter(
-    (r) => ROLE_HIERARCHY.indexOf(r) <= idx
-  ).reverse();
-
-  // Skip guest and user for anyone who is member+
-  if (idx >= ROLE_HIERARCHY.indexOf(UserRole.MEMBER)) {
-    return effective.filter((r) => r !== UserRole.GUEST && r !== UserRole.USER);
-  }
-
-  return effective;
 }
 
 /** Check if a role meets or exceeds a minimum role */

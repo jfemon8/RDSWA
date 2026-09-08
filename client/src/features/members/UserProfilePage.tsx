@@ -26,8 +26,6 @@ import {
   Hash,
   IdCard,
   Clock,
-  Award,
-  Star,
   Pencil,
   Save,
   X,
@@ -35,7 +33,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn, BlurText } from "@/components/reactbits";
-import { getEffectiveRoles, getRoleConfig } from "@/lib/roles";
+import ProfileBadges from "@/components/ui/ProfileBadges";
 import { UserRole } from "@rdswa/shared";
 import { useToast } from "@/components/ui/Toast";
 import Spinner from "@/components/ui/Spinner";
@@ -377,73 +375,7 @@ export default function UserProfilePage() {
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-bold">{u.name}</h2>
               {u.nameBn && <p className="text-muted-foreground">{u.nameBn}</p>}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                {u.role &&
-                  getEffectiveRoles(u.role).map((r: string, i: number) => {
-                    const rc = getRoleConfig(r);
-                    return (
-                      <motion.span
-                        key={r}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 260,
-                          damping: 20,
-                          delay: i * 0.04,
-                        }}
-                        className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${rc.bg} ${rc.text}`}
-                      >
-                        {rc.label}
-                      </motion.span>
-                    );
-                  })}
-                {u.isAlumni && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20,
-                      delay: 0.3,
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full"
-                  >
-                    <GraduationCap className="h-3 w-3" /> Alumni
-                  </motion.span>
-                )}
-                {u.isAdvisor && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20,
-                      delay: 0.32,
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-full"
-                  >
-                    <Award className="h-3 w-3" /> Advisor
-                  </motion.span>
-                )}
-                {u.isSeniorAdvisor && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20,
-                      delay: 0.34,
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full"
-                  >
-                    <Star className="h-3 w-3" /> Senior Advisor
-                  </motion.span>
-                )}
-              </div>
+              <ProfileBadges user={u} className="mt-2" />
             </div>
           </div>
         </div>

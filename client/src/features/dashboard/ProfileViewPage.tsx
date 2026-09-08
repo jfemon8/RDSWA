@@ -1,10 +1,10 @@
 import { useAuthStore } from '@/stores/authStore';
 import UserDonationSummary from '@/components/ui/UserDonationSummary';
 import { Link } from 'react-router-dom';
-import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle, Users, Heart, Hash, IdCard, Clock, Award, Star } from 'lucide-react';
+import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Briefcase, Globe, Facebook, Linkedin, Building2, AlertTriangle, Users, Heart, Hash, IdCard, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
-import { getEffectiveRoles, getRoleConfig } from '@/lib/roles';
+import ProfileBadges from '@/components/ui/ProfileBadges';
 import { formatDate as formatDateBST } from '@/lib/date';
 
 function getOrdinal(n: number): string {
@@ -100,52 +100,7 @@ export default function ProfileViewPage() {
               <h2 className="text-xl font-bold truncate">{u.nickName || u.name}</h2>
               {u.nickName && <p className="text-sm text-muted-foreground truncate">{u.name}</p>}
               {u.nameBn && <p className="text-muted-foreground">{u.nameBn}</p>}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                {getEffectiveRoles(u.role).map((r: string, i: number) => {
-                  const rc = getRoleConfig(r);
-                  return (
-                    <motion.span
-                      key={r}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 20, delay: i * 0.04 }}
-                      className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${rc.bg} ${rc.text}`}
-                    >
-                      {rc.label}
-                    </motion.span>
-                  );
-                })}
-                {u.isAlumni && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full"
-                  >
-                    <GraduationCap className="h-3 w-3" /> Alumni
-                  </motion.span>
-                )}
-                {u.isAdvisor && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.32 }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 rounded-full"
-                  >
-                    <Award className="h-3 w-3" /> Advisor
-                  </motion.span>
-                )}
-                {u.isSeniorAdvisor && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.34 }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full"
-                  >
-                    <Star className="h-3 w-3" /> Senior Advisor
-                  </motion.span>
-                )}
-              </div>
+              <ProfileBadges user={u} className="mt-2" />
             </div>
           </div>
         </div>

@@ -37,7 +37,12 @@ export class CommitteeService {
   }
 
   async getCurrent() {
-    const committee = await Committee.findOne({ isCurrent: true, isDeleted: false })
+    // The end date is the real signal, so a row whose flag was never reconciled still resolves correctly.
+    const committee = await Committee.findOne({
+      isDeleted: false,
+      $or: [{ isCurrent: true }, { 'tenure.endDate': { $exists: false } }, { 'tenure.endDate': null }],
+    })
+      .sort({ 'tenure.startDate': -1 })
       .populate('members.user', 'name nameBn avatar department batch phone email');
     if (!committee) throw ApiError.notFound('No current committee found');
     return committee;
@@ -95,9 +100,8 @@ export class CommitteeService {
     if (input.description !== undefined) committee.description = input.description;
     if (input.tenure) {
       if (input.tenure.startDate) committee.tenure.startDate = new Date(input.tenure.startDate);
-      // An empty end date is a deliberate clear, which reopens this committee as the current one.
+      // An empty end date is a deliberate clear that reopens this committee, so `set` is used to unset the stored field.
       if (input.tenure.endDate !== undefined) {
-        // `set` is used so clearing the date unsets the stored field rather than leaving the old value.
         committee.set('tenure.endDate', input.tenure.endDate ? new Date(input.tenure.endDate) : undefined);
       }
     }
@@ -115,6 +119,31 @@ export class CommitteeService {
     }
 
     return committee;
+  }
+
+  /** Reconcile stale `isCurrent` flags against the end dates, closing every open committee but the newest on the start date of the one that followed it. */
+  async syncCurrentFlags(): Promise<number> {
+    const committees = await Committee.find({ isDeleted: false }).sort({ 'tenure.startDate': 1 });
+    let changed = 0;
+
+    for (let i = 0; i < committees.length; i++) {
+      const committee = committees[i]!;
+      const next = committees[i + 1];
+      const wasCurrent = committee.isCurrent;
+
+      if (!committee.tenure.endDate && next) {
+        committee.tenure.endDate = next.tenure.startDate;
+      }
+      committee.isCurrent = !committee.tenure.endDate;
+
+      if (!committee.isModified()) continue;
+
+      await committee.save();
+      changed++;
+      if (wasCurrent && !committee.isCurrent) await this.applyArchiveTransitions(committee);
+    }
+
+    return changed;
   }
 
   /**

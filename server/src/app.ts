@@ -24,6 +24,7 @@ import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
 import { syncRolesOnStart } from './jobs/roleSyncOnStart';
+import { syncCommitteeCurrentFlags } from './jobs/committeeCurrentSync';
 import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
@@ -79,6 +80,9 @@ async function start() {
 
   // Initialize central + department groups
   initializeGroups();
+
+  // Committee flags first — the role sync below reads isCurrent to decide who holds an auto-role.
+  await syncCommitteeCurrentFlags();
 
   // One-time role sync — ensures DB matches new auto-assignment rules
   syncRolesOnStart();

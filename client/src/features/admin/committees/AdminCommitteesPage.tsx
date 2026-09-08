@@ -29,6 +29,7 @@ import Spinner from "@/components/ui/Spinner";
 import {
   UNIQUE_POSITIONS,
   formatPosition,
+  isCurrentCommittee,
   memberDisplayPosition,
   supportsDesignation,
   takenUniquePositions,
@@ -326,7 +327,7 @@ export default function AdminCommitteesPage() {
                           {c.name}
                         </button>
                       </h3>
-                      {c.isCurrent && (
+                      {isCurrentCommittee(c) && (
                         <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
                           Current
                         </span>
@@ -362,7 +363,7 @@ export default function AdminCommitteesPage() {
                     >
                       <Pencil className="h-4 w-4 text-foreground" />
                     </button>
-                    {c.isCurrent && (
+                    {isCurrentCommittee(c) && (
                       <button
                         onClick={async () => {
                           const ok = await confirm({
@@ -426,11 +427,7 @@ export default function AdminCommitteesPage() {
   );
 }
 
-/**
- * Search-and-pick form for one committee member, shared by the create form and the per-committee panel.
- * Posts that only one member may hold are disabled once taken, and the free-text designation
- * only appears for the generic Member post.
- */
+/** Search-and-pick form for one committee member, shared by the create form and the per-committee panel. */
 function MemberPicker({
   takenPositions,
   excludedUserIds,

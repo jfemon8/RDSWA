@@ -10,7 +10,7 @@ import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
-import { committeeDisplayName, memberDisplayPosition } from '@/lib/committee';
+import { committeeDisplayName, isCurrentCommittee, memberDisplayPosition } from '@/lib/committee';
 
 export default function CommitteePage() {
   const { data, isLoading } = useQuery({
@@ -83,7 +83,7 @@ export default function CommitteePage() {
                 <div className="p-6 border-b bg-muted/30">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">{committeeDisplayName(c)}</h2>
-                    {c.isCurrent && (
+                    {isCurrentCommittee(c) && (
                       <motion.span
                         className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full"
                         initial={{ scale: 0 }}
