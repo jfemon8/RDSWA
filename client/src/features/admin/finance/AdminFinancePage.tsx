@@ -1,46 +1,94 @@
-import { Fragment, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'motion/react';
-import api from '@/lib/api';
-import { useTabParam } from '@/hooks/useTabParam';
-import { useEventOptions, useCommitteeOptions } from '@/hooks/useLinkOptions';
-import ExpenseDetailsFields, { itemsTotal, type ExpenseItem, type ExpenseAttachment } from '@/components/ui/ExpenseDetailsFields';
-import ExpenseDetailsView from '@/components/ui/ExpenseDetailsView';
-import { useToast } from '@/components/ui/Toast';
-import { FieldError } from '@/components/ui/FieldError';
-import { extractFieldErrors } from '@/lib/formErrors';
-import { useInfiniteList } from '@/hooks/useInfiniteList';
-import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
-import RichTextEditor from '@/components/ui/RichTextEditor';
+import { Fragment, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "motion/react";
+import api from "@/lib/api";
+import { useTabParam } from "@/hooks/useTabParam";
+import { useEventOptions, useCommitteeOptions } from "@/hooks/useLinkOptions";
+import ExpenseDetailsFields, {
+  itemsTotal,
+  type ExpenseItem,
+  type ExpenseAttachment,
+} from "@/components/ui/ExpenseDetailsFields";
+import ExpenseDetailsView from "@/components/ui/ExpenseDetailsView";
+import { useToast } from "@/components/ui/Toast";
+import { FieldError } from "@/components/ui/FieldError";
+import { extractFieldErrors } from "@/lib/formErrors";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
+import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
-  Banknote, Loader2, CheckCircle, XCircle, TrendingUp, TrendingDown,
-  Plus, Download, RotateCcw, MessageSquare, ChevronDown, ChevronUp,
-  Pencil, Trash2, Calendar,
-} from 'lucide-react';
-import { FadeIn } from '@/components/reactbits';
-import { formatDate, toDateInput } from '@/lib/date';
-import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
-import { committeeDisplayName } from '@/lib/committee';
+  Banknote,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  Download,
+  RotateCcw,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Trash2,
+  Calendar,
+} from "lucide-react";
+import { FadeIn } from "@/components/reactbits";
+import { formatDate, toDateInput } from "@/lib/date";
+import { useConfirm } from "@/components/ui/ConfirmModal";
+import Spinner from "@/components/ui/Spinner";
+import { committeeDisplayName } from "@/lib/committee";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-} from 'recharts';
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
-const CHART_COLORS = ['#2563eb', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
+const CHART_COLORS = [
+  "#2563eb",
+  "#16a34a",
+  "#eab308",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#f97316",
+];
 
-type FinanceTab = 'donations' | 'expenses' | 'campaigns' | 'events';
-const FINANCE_TABS: readonly FinanceTab[] = ['donations', 'expenses', 'campaigns', 'events'];
+type FinanceTab = "donations" | "expenses" | "campaigns" | "events";
+const FINANCE_TABS: readonly FinanceTab[] = [
+  "donations",
+  "expenses",
+  "campaigns",
+  "events",
+];
 
 export default function AdminFinancePage() {
-  const [tab, setTab] = useTabParam<FinanceTab>(FINANCE_TABS, 'donations');
-  const [yearFilter, setYearFilter] = useState<string>('');
+  const [tab, setTab] = useTabParam<FinanceTab>(FINANCE_TABS, "donations");
+  const [yearFilter, setYearFilter] = useState<string>("");
+  const [committeeFilter, setCommitteeFilter] = useState<string>("");
+
+  const committees = useCommitteeOptions();
+
+  // Both filters narrow the same report, so they travel together in the query string and the key.
+  const reportParams = new URLSearchParams();
+  if (yearFilter) reportParams.set("year", yearFilter);
+  if (committeeFilter) reportParams.set("committee", committeeFilter);
 
   const { data: reportData } = useQuery({
-    queryKey: ['reports', 'finance', yearFilter],
+    queryKey: ["reports", "finance", yearFilter, committeeFilter],
     queryFn: async () => {
-      const params = yearFilter ? `?year=${yearFilter}` : '';
-      const { data } = await api.get(`/reports/finance${params}`);
+      const query = reportParams.toString();
+      const { data } = await api.get(
+        `/reports/finance${query ? `?${query}` : ""}`,
+      );
       return data;
     },
   });
@@ -50,58 +98,80 @@ export default function AdminFinancePage() {
   // Build chart data
   const monthlyChartData = (report?.donationsByMonth || [])
     .map((m: any) => ({
-      name: `${m._id.year}-${String(m._id.month).padStart(2, '0')}`,
+      name: `${m._id.year}-${String(m._id.month).padStart(2, "0")}`,
       donations: m.total,
       count: m.count,
     }))
     .reverse();
 
   const typeChartData = (report?.donationsByType || []).map((t: any) => ({
-    name: t._id || 'Other',
+    name: t._id || "Other",
     value: t.total,
   }));
 
-  const expenseCategoryData = (report?.expensesByCategory || []).map((c: any) => ({
-    name: c._id || 'Other',
-    value: c.total,
-  }));
+  const expenseCategoryData = (report?.expensesByCategory || []).map(
+    (c: any) => ({
+      name: c._id || "Other",
+      value: c.total,
+    }),
+  );
 
   const yearOptions = (report?.donationsByYear || []).map((y: any) => y._id);
 
   const summaryCards = [
     {
-      label: 'Total Donations',
+      label: "Total Donations",
       value: `BDT ${(report?.totalDonations || 0).toLocaleString()}`,
       icon: TrendingUp,
-      iconColor: 'text-green-600',
-      valueColor: 'text-green-600',
+      iconColor: "text-green-600",
+      valueColor: "text-green-600",
     },
     {
-      label: 'Total Expenses',
+      label: "Total Expenses",
       value: `BDT ${(report?.totalExpenses || 0).toLocaleString()}`,
       icon: TrendingDown,
-      iconColor: 'text-red-600',
-      valueColor: 'text-red-600',
+      iconColor: "text-red-600",
+      valueColor: "text-red-600",
     },
     {
-      label: 'Balance',
+      label: "Balance",
       value: `BDT ${(report?.balance || 0).toLocaleString()}`,
       icon: Banknote,
-      iconColor: 'text-primary',
-      valueColor: (report?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600',
+      iconColor: "text-primary",
+      valueColor:
+        (report?.balance || 0) >= 0 ? "text-green-600" : "text-red-600",
     },
   ];
 
-  const exportCSV = (type: 'donations' | 'expenses') => {
-    const params = yearFilter ? `&year=${yearFilter}` : '';
-    window.open(`${api.defaults.baseURL}/reports/finance/export?type=${type}${params}`, '_blank');
+  const exportCSV = (type: "donations" | "expenses") => {
+    const params = new URLSearchParams(reportParams);
+    params.set("type", type);
+    window.open(
+      `${api.defaults.baseURL}/reports/finance/export?${params}`,
+      "_blank",
+    );
   };
 
   return (
     <div className="container mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Finance</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+          Finance
+        </h1>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <select
+            value={committeeFilter}
+            onChange={(e) => setCommitteeFilter(e.target.value)}
+            title="Money received and spent during a committee's term"
+            className="px-3 py-2 sm:py-1.5 border rounded-md bg-card text-foreground text-sm w-full sm:w-auto"
+          >
+            <option value="">All Committees</option>
+            {committees.map((c: any) => (
+              <option key={c._id} value={c._id}>
+                {committeeDisplayName(c)}
+              </option>
+            ))}
+          </select>
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
@@ -109,18 +179,20 @@ export default function AdminFinancePage() {
           >
             <option value="">All Years</option>
             {yearOptions.map((y: number) => (
-              <option key={y} value={y}>{y}</option>
+              <option key={y} value={y}>
+                {y}
+              </option>
             ))}
           </select>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
             <button
-              onClick={() => exportCSV('donations')}
+              onClick={() => exportCSV("donations")}
               className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 border rounded-md text-sm hover:bg-accent whitespace-nowrap"
             >
               <Download className="h-3.5 w-3.5 shrink-0" /> Donations CSV
             </button>
             <button
-              onClick={() => exportCSV('expenses')}
+              onClick={() => exportCSV("expenses")}
               className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 border rounded-md text-sm hover:bg-accent whitespace-nowrap"
             >
               <Download className="h-3.5 w-3.5 shrink-0" /> Expenses CSV
@@ -135,105 +207,162 @@ export default function AdminFinancePage() {
           const Icon = card.icon;
           return (
             <FadeIn key={card.label} direction="up" delay={i * 0.06}>
-              <div
-                className="border rounded-lg p-4 sm:p-6 bg-card"
-              >
+              <div className="border rounded-lg p-4 sm:p-6 bg-card">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">{card.label}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {card.label}
+                  </span>
                   <Icon className={`h-5 w-5 ${card.iconColor}`} />
                 </div>
-                <p className={`text-2xl font-bold ${card.valueColor}`}>{card.value}</p>
+                <p className={`text-2xl font-bold ${card.valueColor}`}>
+                  {card.value}
+                </p>
               </div>
             </FadeIn>
           );
         })}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <FadeIn delay={0.1} direction="up">
-          <div className="border rounded-lg p-4 bg-card">
-            <h3 className="text-sm font-medium text-foreground mb-3">Monthly Donations</h3>
-            {monthlyChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={monthlyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
-                  <Bar dataKey="donations" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-10">No data</p>
+      {/* Records beside the charts: the tab content takes two columns, the charts stack in the third. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 min-w-0">
+          {/* Tabs */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b overflow-x-auto">
+            {(["donations", "expenses", "campaigns", "events"] as const).map(
+              (t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 capitalize whitespace-nowrap ${
+                    tab === t
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t === "events" ? "Event P&L" : t}
+                </button>
+              ),
             )}
           </div>
-        </FadeIn>
 
-        <FadeIn delay={0.15} direction="up">
-          <div className="border rounded-lg p-4 bg-card">
-            <h3 className="text-sm font-medium text-foreground mb-3">Donations by Type</h3>
-            {typeChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={typeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {typeChartData.map((_: any, i: number) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-10">No data</p>
-            )}
-          </div>
-        </FadeIn>
+          <FadeIn key={tab} direction="up" duration={0.4}>
+            {tab === "donations" && <DonationsList />}
+            {tab === "expenses" && <ExpensesList />}
+            {tab === "campaigns" && <CampaignsList />}
+            {tab === "events" && <EventFinanceList />}
+          </FadeIn>
+        </div>
 
-        <FadeIn delay={0.2} direction="up">
-          <div className="border rounded-lg p-4 bg-card">
-            <h3 className="text-sm font-medium text-foreground mb-3">Expenses by Category</h3>
-            {expenseCategoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={expenseCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {expenseCategoryData.map((_: any, i: number) => (
-                      <Cell key={i} fill={CHART_COLORS[(i + 3) % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => `BDT ${Number(v).toLocaleString()}`} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-10">No data</p>
-            )}
-          </div>
-        </FadeIn>
+        <div className="flex flex-col gap-4 min-w-0">
+          <FadeIn delay={0.1} direction="up">
+            <div className="border rounded-lg p-4 bg-card">
+              <h3 className="text-sm font-medium text-foreground mb-3">
+                Monthly Donations
+              </h3>
+              {monthlyChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={monthlyChartData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="opacity-30"
+                    />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(v) => `BDT ${Number(v).toLocaleString()}`}
+                    />
+                    <Bar
+                      dataKey="donations"
+                      fill="#2563eb"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">
+                  No data
+                </p>
+              )}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.15} direction="up">
+            <div className="border rounded-lg p-4 bg-card">
+              <h3 className="text-sm font-medium text-foreground mb-3">
+                Donations by Type
+              </h3>
+              {typeChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={typeChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label
+                    >
+                      {typeChartData.map((_: any, i: number) => (
+                        <Cell
+                          key={i}
+                          fill={CHART_COLORS[i % CHART_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v) => `BDT ${Number(v).toLocaleString()}`}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">
+                  No data
+                </p>
+              )}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2} direction="up">
+            <div className="border rounded-lg p-4 bg-card">
+              <h3 className="text-sm font-medium text-foreground mb-3">
+                Expenses by Category
+              </h3>
+              {expenseCategoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={expenseCategoryData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label
+                    >
+                      {expenseCategoryData.map((_: any, i: number) => (
+                        <Cell
+                          key={i}
+                          fill={CHART_COLORS[(i + 3) % CHART_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v) => `BDT ${Number(v).toLocaleString()}`}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">
+                  No data
+                </p>
+              )}
+            </div>
+          </FadeIn>
+        </div>
       </div>
-
-      {/* Tabs */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b overflow-x-auto">
-        {(['donations', 'expenses', 'campaigns', 'events'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 capitalize whitespace-nowrap ${
-              tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t === 'events' ? 'Event P&L' : t}
-          </button>
-        ))}
-      </div>
-
-      <FadeIn key={tab} direction="up" duration={0.4}>
-        {tab === 'donations' && <DonationsList />}
-        {tab === 'expenses' && <ExpensesList />}
-        {tab === 'campaigns' && <CampaignsList />}
-        {tab === 'events' && <EventFinanceList />}
-      </FadeIn>
     </div>
   );
 }
@@ -243,9 +372,12 @@ function DonationsList() {
   const toast = useToast();
   const confirm = useConfirm();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [revisionNote, setRevisionNote] = useState('');
-  const [actionTarget, setActionTarget] = useState<{ id: string; action: string } | null>(null);
-  const [donationType, setDonationType] = useState('');
+  const [revisionNote, setRevisionNote] = useState("");
+  const [actionTarget, setActionTarget] = useState<{
+    id: string;
+    action: string;
+  } | null>(null);
+  const [donationType, setDonationType] = useState("");
 
   const {
     items: donations,
@@ -255,64 +387,107 @@ function DonationsList() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ['donations', 'admin', donationType],
-    path: '/donations',
+    queryKey: ["donations", "admin", donationType],
+    path: "/donations",
     filters: { type: donationType },
     limit: 20,
   });
 
   const verifyMutation = useMutation({
-    mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) =>
-      api.patch(`/donations/${id}/verify`, { paymentStatus: status, revisionNote: note }),
+    mutationFn: ({
+      id,
+      status,
+      note,
+    }: {
+      id: string;
+      status: string;
+      note?: string;
+    }) =>
+      api.patch(`/donations/${id}/verify`, {
+        paymentStatus: status,
+        revisionNote: note,
+      }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['donations'] });
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ["donations"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
       setActionTarget(null);
-      setRevisionNote('');
-      toast.success(variables.status === 'completed' ? 'Donation verified' : variables.status === 'failed' ? 'Donation rejected' : 'Revision requested');
+      setRevisionNote("");
+      toast.success(
+        variables.status === "completed"
+          ? "Donation verified"
+          : variables.status === "failed"
+            ? "Donation rejected"
+            : "Revision requested",
+      );
     },
-    onError: (err: any) => { toast.error(err.response?.data?.message || 'Verification failed'); },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Verification failed");
+    },
   });
 
-
-  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (isLoading)
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
 
   return (
     <div>
       <div className="flex flex-wrap gap-2 mb-4">
         {[
-          { key: '', label: 'All Types' },
-          { key: 'one-time', label: 'One-time' },
-          { key: 'monthly', label: 'Monthly' },
-          { key: 'membership', label: 'Membership' },
-          { key: 'event-based', label: 'Event-based' },
-          { key: 'construction-fund', label: 'Construction Fund' },
+          { key: "", label: "All Types" },
+          { key: "one-time", label: "One-time" },
+          { key: "monthly", label: "Monthly" },
+          { key: "membership", label: "Membership" },
+          { key: "event-based", label: "Event-based" },
+          { key: "construction-fund", label: "Construction Fund" },
         ].map((t) => (
           <button
             key={t.key}
             onClick={() => setDonationType(t.key)}
             className={`px-3 py-1.5 text-sm rounded-md border ${
-              donationType === t.key ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent'
-            }`}>
+              donationType === t.key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "hover:bg-accent"
+            }`}
+          >
             {t.label}
           </button>
         ))}
       </div>
       {(() => {
         const renderStatusBadge = (d: any) => (
-          <span className={`px-2 py-0.5 rounded-full text-xs capitalize whitespace-nowrap ${
-            d.paymentStatus === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-            : d.paymentStatus === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-            : d.paymentStatus === 'revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-          }`}>{d.paymentStatus}</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs capitalize whitespace-nowrap ${
+              d.paymentStatus === "completed"
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                : d.paymentStatus === "failed"
+                  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                  : d.paymentStatus === "revision"
+                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+            }`}
+          >
+            {d.paymentStatus}
+          </span>
         );
-        const renderActionButtons = (d: any, isExpanded: boolean, isActionOpen: boolean) => (
-          <div className="flex items-center gap-1 flex-wrap">
-            {(d.paymentStatus === 'pending' || d.paymentStatus === 'revision') && (
+        const renderActionButtons = (
+          d: any,
+          isExpanded: boolean,
+          isActionOpen: boolean,
+          alignEnd = false,
+        ) => (
+          <div
+            className={`flex items-center gap-1 flex-wrap ${alignEnd ? "justify-end" : ""}`}
+          >
+            {(d.paymentStatus === "pending" ||
+              d.paymentStatus === "revision") && (
               <>
                 <button
-                  onClick={() => verifyMutation.mutate({ id: d._id, status: 'completed' })}
+                  onClick={() =>
+                    verifyMutation.mutate({ id: d._id, status: "completed" })
+                  }
                   className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded"
                   title="Accept"
                 >
@@ -320,8 +495,14 @@ function DonationsList() {
                 </button>
                 <button
                   onClick={async () => {
-                    const ok = await confirm({ title: 'Reject Donation', message: `Reject donation of ${d.amount} from ${d.donorName || 'this donor'}?`, confirmLabel: 'Reject', variant: 'danger' });
-                    if (ok) verifyMutation.mutate({ id: d._id, status: 'failed' });
+                    const ok = await confirm({
+                      title: "Reject Donation",
+                      message: `Reject donation of ${d.amount} from ${d.donorName || "this donor"}?`,
+                      confirmLabel: "Reject",
+                      variant: "danger",
+                    });
+                    if (ok)
+                      verifyMutation.mutate({ id: d._id, status: "failed" });
                   }}
                   className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
                   title="Reject"
@@ -329,7 +510,11 @@ function DonationsList() {
                   <XCircle className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setActionTarget(isActionOpen ? null : { id: d._id, action: 'revision' })}
+                  onClick={() =>
+                    setActionTarget(
+                      isActionOpen ? null : { id: d._id, action: "revision" },
+                    )
+                  }
                   className="p-1.5 text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded"
                   title="Request Revision"
                 >
@@ -341,7 +526,11 @@ function DonationsList() {
               onClick={() => setExpandedId(isExpanded ? null : d._id)}
               className="p-1.5 text-muted-foreground hover:bg-accent rounded"
             >
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </button>
           </div>
         );
@@ -356,7 +545,13 @@ function DonationsList() {
             />
             <div className="flex gap-1 mt-1">
               <button
-                onClick={() => verifyMutation.mutate({ id: d._id, status: 'revision', note: revisionNote })}
+                onClick={() =>
+                  verifyMutation.mutate({
+                    id: d._id,
+                    status: "revision",
+                    note: revisionNote,
+                  })
+                }
                 disabled={verifyMutation.isPending}
                 className="px-2 py-1 bg-orange-600 text-white rounded text-xs disabled:opacity-50"
               >
@@ -364,7 +559,10 @@ function DonationsList() {
                 Send Revision
               </button>
               <button
-                onClick={() => { setActionTarget(null); setRevisionNote(''); }}
+                onClick={() => {
+                  setActionTarget(null);
+                  setRevisionNote("");
+                }}
                 className="px-2 py-1 border rounded text-xs"
               >
                 Cancel
@@ -373,15 +571,35 @@ function DonationsList() {
           </div>
         );
         const renderDetails = (d: any) => (
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p>Type: <span className="capitalize">{d.type?.replace('-', ' ')}</span></p>
-            <p>Visibility: {d.visibility}</p>
-            {d.receiptNumber && <p className="break-all">Receipt: {d.receiptNumber}</p>}
-            {d.note && <p className="break-words">Note: {d.note}</p>}
-            {d.isRecurring && <p>Recurring: {d.recurringInterval}</p>}
-            {d.revisionNote && <p className="text-orange-600 break-words">Revision note: {d.revisionNote}</p>}
-            {d.campaign && <p className="break-words">Campaign: {d.campaign?.title || d.campaign}</p>}
-            {d.verifiedBy && <p className="break-words">Verified by: {d.verifiedBy?.name || d.verifiedBy}</p>}
+          <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground text-left">
+            <span>
+              Type:{" "}
+              <span className="capitalize">{d.type?.replace("-", " ")}</span>
+            </span>
+            <span>Visibility: {d.visibility}</span>
+            {d.receiptNumber && (
+              <span className="break-all">Receipt: {d.receiptNumber}</span>
+            )}
+            {d.isRecurring && <span>Recurring: {d.recurringInterval}</span>}
+            {d.campaign && (
+              <span className="break-words">
+                Campaign: {d.campaign?.title || d.campaign}
+              </span>
+            )}
+            {d.verifiedBy && (
+              <span className="break-words">
+                Verified by: {d.verifiedBy?.name || d.verifiedBy}
+              </span>
+            )}
+            {/* Free text runs long, so it takes its own line rather than fighting for room on the chip row. */}
+            {d.note && (
+              <span className="basis-full break-words">Note: {d.note}</span>
+            )}
+            {d.revisionNote && (
+              <span className="basis-full text-orange-600 break-words">
+                Revision note: {d.revisionNote}
+              </span>
+            )}
           </div>
         );
 
@@ -394,60 +612,129 @@ function DonationsList() {
                   <col className="w-[17%]" />
                   <col className="w-[11%]" />
                   <col className="w-[10%]" />
-                  <col className="w-[20%]" />
+                  <col className="w-[19%]" />
                   <col className="w-[11%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[20%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[18%]" />
                 </colgroup>
-                <thead><tr className="bg-muted border-b">
-                  <th className="text-left p-3 font-medium text-foreground">Donor</th>
-                  <th className="text-left p-3 font-medium text-foreground">Amount</th>
-                  <th className="text-left p-3 font-medium text-foreground">Method</th>
-                  <th className="text-left p-3 font-medium text-foreground">TxID / Sender</th>
-                  <th className="text-left p-3 font-medium text-foreground">Status</th>
-                  <th className="text-left p-3 font-medium text-foreground">Date</th>
-                  <th className="text-left p-3 font-medium text-foreground">Actions</th>
-                </tr></thead>
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="text-left p-3 font-medium text-foreground">
+                      Donor
+                    </th>
+                    <th className="text-left p-3 font-medium text-foreground">
+                      Amount
+                    </th>
+                    <th className="text-left p-3 font-medium text-foreground">
+                      Method
+                    </th>
+                    <th className="text-left p-3 font-medium text-foreground">
+                      TxID / Sender
+                    </th>
+                    <th className="text-left p-3 font-medium text-foreground">
+                      Status
+                    </th>
+                    <th className="text-left p-3 font-medium text-foreground">
+                      Date
+                    </th>
+                    <th className="text-right p-3 font-medium text-foreground">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
                 <tbody>
                   {donations.map((d: any) => {
                     const isExpanded = expandedId === d._id;
                     const isActionOpen = actionTarget?.id === d._id;
                     return (
+                      <Fragment key={d._id}>
                       <motion.tr
-                        key={d._id}
                         layout
                         className="border-t hover:bg-accent/30 align-top"
                       >
                         <td className="p-3">
-                          <p className="text-foreground truncate" title={d.donor?.name || d.donorName || 'Anonymous'}>{d.donor?.name || d.donorName || 'Anonymous'}</p>
-                          <p className="text-xs text-muted-foreground truncate" title={d.donor?.email || d.donorEmail || ''}>{d.donor?.email || d.donorEmail || ''}</p>
+                          <p
+                            className="text-foreground truncate"
+                            title={d.donor?.name || d.donorName || "Anonymous"}
+                          >
+                            {d.donor?.name || d.donorName || "Anonymous"}
+                          </p>
+                          <p
+                            className="text-xs text-muted-foreground truncate"
+                            title={d.donor?.email || d.donorEmail || ""}
+                          >
+                            {d.donor?.email || d.donorEmail || ""}
+                          </p>
                         </td>
-                        <td className="p-3 font-medium text-foreground whitespace-nowrap">BDT {d.amount?.toLocaleString()}</td>
-                        <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={d.paymentMethod}>{d.paymentMethod}</td>
+                        <td className="p-3 font-medium text-foreground whitespace-nowrap">
+                          BDT {d.amount?.toLocaleString()}
+                        </td>
+                        <td
+                          className="p-3 capitalize text-xs text-muted-foreground truncate"
+                          title={d.paymentMethod}
+                        >
+                          {d.paymentMethod}
+                        </td>
                         <td className="p-3 text-xs text-muted-foreground min-w-0">
-                          {d.transactionId && <p className="truncate" title={d.transactionId}>TxID: {d.transactionId}</p>}
-                          {d.senderNumber && <p className="truncate" title={d.senderNumber}>Sender: {d.senderNumber}</p>}
+                          {d.transactionId && (
+                            <p className="truncate" title={d.transactionId}>
+                              TxID: {d.transactionId}
+                            </p>
+                          )}
+                          {d.senderNumber && (
+                            <p className="truncate" title={d.senderNumber}>
+                              Sender: {d.senderNumber}
+                            </p>
+                          )}
                         </td>
                         <td className="p-3">{renderStatusBadge(d)}</td>
-                        <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(d.createdAt)}</td>
-                        <td className="p-3">
-                          {renderActionButtons(d, isExpanded, isActionOpen)}
+                        <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDate(d.createdAt)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {renderActionButtons(
+                            d,
+                            isExpanded,
+                            isActionOpen,
+                            true,
+                          )}
+                          {/* Only the icon row follows the column's right alignment, so the revision form below it reads left-to-right. */}
                           <AnimatePresence>
                             {isActionOpen && (
-                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden text-left"
+                              >
                                 {renderRevisionForm(d)}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2">
-                                {renderDetails(d)}
                               </motion.div>
                             )}
                           </AnimatePresence>
                         </td>
                       </motion.tr>
+
+                      {/* The panel needs a row of its own since an eighth cell falls outside the seven fixed columns, and that row stays mounted so the panel can collapse smoothly instead of vanishing with it. */}
+                      <tr>
+                        <td colSpan={7} className="p-0">
+                          <AnimatePresence initial={false}>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-3 py-2 border-t bg-muted/30">
+                                  {renderDetails(d)}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </td>
+                      </tr>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -460,25 +747,47 @@ function DonationsList() {
                 const isExpanded = expandedId === d._id;
                 const isActionOpen = actionTarget?.id === d._id;
                 return (
-                  <motion.div key={d._id} layout className="border rounded-lg p-4 bg-card">
+                  <motion.div
+                    key={d._id}
+                    layout
+                    className="border rounded-lg p-4 bg-card"
+                  >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground font-medium break-words">{d.donor?.name || d.donorName || 'Anonymous'}</p>
+                        <p className="text-foreground font-medium break-words">
+                          {d.donor?.name || d.donorName || "Anonymous"}
+                        </p>
                         {(d.donor?.email || d.donorEmail) && (
-                          <p className="text-xs text-muted-foreground break-all">{d.donor?.email || d.donorEmail}</p>
+                          <p className="text-xs text-muted-foreground break-all">
+                            {d.donor?.email || d.donorEmail}
+                          </p>
                         )}
-                        <p className="text-lg font-semibold text-foreground mt-1">BDT {d.amount?.toLocaleString()}</p>
+                        <p className="text-lg font-semibold text-foreground mt-1">
+                          BDT {d.amount?.toLocaleString()}
+                        </p>
                       </div>
                       {renderStatusBadge(d)}
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
-                      <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{d.paymentMethod}</span>
+                      <span className="px-2 py-0.5 bg-muted rounded-full capitalize">
+                        {d.paymentMethod}
+                      </span>
                       <span>{formatDate(d.createdAt)}</span>
                     </div>
                     {(d.transactionId || d.senderNumber) && (
                       <div className="text-xs text-muted-foreground mb-3 space-y-0.5">
-                        {d.transactionId && <p className="break-all"><span className="font-medium">TxID:</span> {d.transactionId}</p>}
-                        {d.senderNumber && <p className="break-all"><span className="font-medium">Sender:</span> {d.senderNumber}</p>}
+                        {d.transactionId && (
+                          <p className="break-all">
+                            <span className="font-medium">TxID:</span>{" "}
+                            {d.transactionId}
+                          </p>
+                        )}
+                        {d.senderNumber && (
+                          <p className="break-all">
+                            <span className="font-medium">Sender:</span>{" "}
+                            {d.senderNumber}
+                          </p>
+                        )}
                       </div>
                     )}
                     <div className="pt-2 border-t">
@@ -486,14 +795,24 @@ function DonationsList() {
                     </div>
                     <AnimatePresence>
                       {isActionOpen && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
                           {renderRevisionForm(d)}
                         </motion.div>
                       )}
                     </AnimatePresence>
                     <AnimatePresence>
                       {isExpanded && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2">
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden mt-2"
+                        >
                           {renderDetails(d)}
                         </motion.div>
                       )}
@@ -507,7 +826,11 @@ function DonationsList() {
               hasNextPage={!!hasNextPage}
               isFetchingNextPage={isFetchingNextPage}
               fetchNextPage={fetchNextPage}
-              endLabel={donations.length > 0 ? `All ${donationTotal} donations loaded` : undefined}
+              endLabel={
+                donations.length > 0
+                  ? `All ${donationTotal} donations loaded`
+                  : undefined
+              }
             />
           </>
         );
@@ -522,7 +845,15 @@ function ExpensesList() {
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: '', amount: '', category: 'other', description: '', expenseDate: '', event: '', committee: '' });
+  const [form, setForm] = useState({
+    title: "",
+    amount: "",
+    category: "other",
+    description: "",
+    expenseDate: "",
+    event: "",
+    committee: "",
+  });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [items, setItems] = useState<ExpenseItem[]>([]);
   const [attachments, setAttachments] = useState<ExpenseAttachment[]>([]);
@@ -536,15 +867,23 @@ function ExpensesList() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ['expenses'],
-    path: '/expenses',
+    queryKey: ["expenses"],
+    path: "/expenses",
     limit: 20,
   });
 
   const resetForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ title: '', amount: '', category: 'other', description: '', expenseDate: '', event: '', committee: '' });
+    setForm({
+      title: "",
+      amount: "",
+      category: "other",
+      description: "",
+      expenseDate: "",
+      event: "",
+      committee: "",
+    });
     setItems([]);
     setAttachments([]);
     setErrors({});
@@ -559,54 +898,74 @@ function ExpensesList() {
       const payload: any = {
         ...form,
         amount: items.length > 0 ? itemsTotal(items) : Number(form.amount),
-        items: items.map((i) => ({ head: i.head.trim(), amount: Number(i.amount) })),
+        items: items.map((i) => ({
+          head: i.head.trim(),
+          amount: Number(i.amount),
+        })),
         attachments,
       };
       if (editId) return (await api.patch(`/expenses/${editId}`, payload)).data;
-      return (await api.post('/expenses', payload)).data;
+      return (await api.post("/expenses", payload)).data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
-      toast.success(editId ? 'Expense updated' : 'Expense added');
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success(editId ? "Expense updated" : "Expense added");
       resetForm();
     },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to save expense'); } },
+    onError: (err: any) => {
+      const fe = extractFieldErrors(err);
+      if (fe) {
+        setErrors(fe);
+      } else {
+        toast.error(err.response?.data?.message || "Failed to save expense");
+      }
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/expenses/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
-      toast.success('Expense deleted');
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Expense deleted");
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete expense'),
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Failed to delete expense"),
   });
 
   const startEdit = (e: any) => {
     setEditId(e._id);
     setForm({
-      title: e.title || '',
-      amount: String(e.amount || ''),
-      category: e.category || 'other',
-      description: e.description || '',
-      expenseDate: e.expenseDate ? toDateInput(e.expenseDate) : '',
-      event: (typeof e.event === 'object' ? e.event?._id : e.event) || '',
-      committee: (typeof e.committee === 'object' ? e.committee?._id : e.committee) || '',
+      title: e.title || "",
+      amount: String(e.amount || ""),
+      category: e.category || "other",
+      description: e.description || "",
+      expenseDate: e.expenseDate ? toDateInput(e.expenseDate) : "",
+      event: (typeof e.event === "object" ? e.event?._id : e.event) || "",
+      committee:
+        (typeof e.committee === "object" ? e.committee?._id : e.committee) ||
+        "",
     });
-    setItems((e.items || []).map((i: any) => ({ head: i.head || '', amount: String(i.amount ?? '') })));
+    setItems(
+      (e.items || []).map((i: any) => ({
+        head: i.head || "",
+        amount: String(i.amount ?? ""),
+      })),
+    );
     setAttachments(e.attachments || []);
     setErrors({});
     setShowForm(true);
   };
 
-
   return (
     <div>
       <div className="flex justify-end mb-4">
         <button
-          onClick={() => { resetForm(); setShowForm(true); }}
+          onClick={() => {
+            resetForm();
+            setShowForm(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
         >
           <Plus className="h-4 w-4" /> Add Expense
@@ -617,25 +976,87 @@ function ExpensesList() {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
-            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Expense title is required'; if (items.length > 0) { if (items.some((i) => !i.head.trim() || !i.amount || Number(i.amount) <= 0)) errs.items = 'Every cost needs a name and an amount above zero'; } else if (!form.amount || Number(form.amount) <= 0) { errs.amount = 'Valid amount is required'; } if (Object.keys(errs).length) { setErrors(errs); return; } saveMutation.mutate(); }} className="space-y-3">
+            <form
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault();
+                setErrors({});
+                const errs: Record<string, string> = {};
+                if (!form.title.trim())
+                  errs.title = "Expense title is required";
+                if (items.length > 0) {
+                  if (
+                    items.some(
+                      (i) =>
+                        !i.head.trim() || !i.amount || Number(i.amount) <= 0,
+                    )
+                  )
+                    errs.items =
+                      "Every cost needs a name and an amount above zero";
+                } else if (!form.amount || Number(form.amount) <= 0) {
+                  errs.amount = "Valid amount is required";
+                }
+                if (Object.keys(errs).length) {
+                  setErrors(errs);
+                  return;
+                }
+                saveMutation.mutate();
+              }}
+              className="space-y-3"
+            >
               <div>
-                <input placeholder="Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
-                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                <input
+                  placeholder="Title"
+                  value={form.title}
+                  onChange={(e) => {
+                    setForm({ ...form, title: e.target.value });
+                    setErrors((prev) => {
+                      const { title, ...rest } = prev;
+                      return rest;
+                    });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? "border-red-500" : ""}`}
+                  required
+                />
                 <FieldError message={errors.title} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <input type="number" placeholder="Amount" value={items.length > 0 ? String(itemsTotal(items)) : form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setErrors((prev) => { const { amount, ...rest } = prev; return rest; }); }}
-                    readOnly={items.length > 0} title={items.length > 0 ? 'Totalled from the spending details below' : undefined}
-                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${items.length > 0 ? 'opacity-70' : ''} ${errors.amount ? 'border-red-500' : ''}`} required />
+                  <input
+                    type="number"
+                    placeholder="Amount"
+                    value={
+                      items.length > 0 ? String(itemsTotal(items)) : form.amount
+                    }
+                    onChange={(e) => {
+                      setForm({ ...form, amount: e.target.value });
+                      setErrors((prev) => {
+                        const { amount, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
+                    readOnly={items.length > 0}
+                    title={
+                      items.length > 0
+                        ? "Totalled from the spending details below"
+                        : undefined
+                    }
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${items.length > 0 ? "opacity-70" : ""} ${errors.amount ? "border-red-500" : ""}`}
+                    required
+                  />
                   <FieldError message={errors.amount} />
                 </div>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm">
+                <select
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm({ ...form, category: e.target.value })
+                  }
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                >
                   <option value="event">Event</option>
                   <option value="office">Office</option>
                   <option value="transport">Transport</option>
@@ -644,41 +1065,65 @@ function ExpensesList() {
                   <option value="other">Other</option>
                 </select>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Expense Date</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Expense Date
+                  </label>
                   <input
                     type="date"
                     value={form.expenseDate}
                     max={toDateInput(new Date())}
-                    onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, expenseDate: e.target.value })
+                    }
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
                   />
                   <FieldError message={errors.expenseDate} />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Linked event</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Linked event
+                  </label>
                   <select
                     value={form.event}
-                    onChange={(e) => setForm({ ...form, event: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, event: e.target.value })
+                    }
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
                   >
-                    <option value="" className="bg-card text-foreground">Select Event</option>
+                    <option value="" className="bg-card text-foreground">
+                      Select Event
+                    </option>
                     {eventOptions.map((ev: any) => (
-                      <option key={ev._id} value={ev._id} className="bg-card text-foreground">
+                      <option
+                        key={ev._id}
+                        value={ev._id}
+                        className="bg-card text-foreground"
+                      >
                         {ev.title}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Committee</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Committee
+                  </label>
                   <select
                     value={form.committee}
-                    onChange={(e) => setForm({ ...form, committee: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, committee: e.target.value })
+                    }
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
                   >
-                    <option value="" className="bg-card text-foreground">Select Committee</option>
+                    <option value="" className="bg-card text-foreground">
+                      Select Committee
+                    </option>
                     {committeeOptions.map((c: any) => (
-                      <option key={c._id} value={c._id} className="bg-card text-foreground">
+                      <option
+                        key={c._id}
+                        value={c._id}
+                        className="bg-card text-foreground"
+                      >
                         {committeeDisplayName(c)}
                       </option>
                     ))}
@@ -688,21 +1133,42 @@ function ExpensesList() {
               <ExpenseDetailsFields
                 items={items}
                 attachments={attachments}
-                onItemsChange={(next) => { setItems(next); setErrors((prev) => { const { items: _items, ...rest } = prev; return rest; }); }}
+                onItemsChange={(next) => {
+                  setItems(next);
+                  setErrors((prev) => {
+                    const { items: _items, ...rest } = prev;
+                    return rest;
+                  });
+                }}
                 onAttachmentsChange={setAttachments}
                 onError={(m) => toast.error(m)}
                 error={errors.items}
               />
-              <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Description..." minHeight="80px" />
+              <RichTextEditor
+                value={form.description}
+                onChange={(v) => setForm({ ...form, description: v })}
+                placeholder="Description..."
+                minHeight="80px"
+              />
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={saveMutation.isPending}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
                 >
-                  {saveMutation.isPending ? 'Saving...' : editId ? 'Update' : 'Add'}
+                  {saveMutation.isPending
+                    ? "Saving..."
+                    : editId
+                      ? "Update"
+                      : "Add"}
                 </button>
-                <button type="button" onClick={resetForm} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-4 py-2 border rounded-md text-sm"
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </motion.div>
@@ -710,7 +1176,9 @@ function ExpensesList() {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
       ) : (
         <>
           {(() => {
@@ -726,10 +1194,10 @@ function ExpensesList() {
                 <button
                   onClick={async () => {
                     const ok = await confirm({
-                      title: 'Delete Expense',
+                      title: "Delete Expense",
                       message: `Delete "${e.title}"? This action cannot be undone.`,
-                      confirmLabel: 'Delete',
-                      variant: 'danger',
+                      confirmLabel: "Delete",
+                      variant: "danger",
                     });
                     if (ok) deleteMutation.mutate(e._id);
                   }}
@@ -755,51 +1223,102 @@ function ExpensesList() {
                       <col className="w-[12%]" />
                       <col className="w-[8%]" />
                     </colgroup>
-                    <thead><tr className="bg-muted border-b">
-                      <th className="text-left p-3 font-medium text-foreground">Title</th>
-                      <th className="text-left p-3 font-medium text-foreground">Amount</th>
-                      <th className="text-left p-3 font-medium text-foreground">Category</th>
-                      <th className="text-left p-3 font-medium text-foreground">Event</th>
-                      <th className="text-left p-3 font-medium text-foreground">Committee</th>
-                      <th className="text-left p-3 font-medium text-foreground">Date</th>
-                      <th className="text-right p-3 font-medium text-foreground">Actions</th>
-                    </tr></thead>
+                    <thead>
+                      <tr className="bg-muted border-b">
+                        <th className="text-left p-3 font-medium text-foreground">
+                          Title
+                        </th>
+                        <th className="text-left p-3 font-medium text-foreground">
+                          Amount
+                        </th>
+                        <th className="text-left p-3 font-medium text-foreground">
+                          Category
+                        </th>
+                        <th className="text-left p-3 font-medium text-foreground">
+                          Event
+                        </th>
+                        <th className="text-left p-3 font-medium text-foreground">
+                          Committee
+                        </th>
+                        <th className="text-left p-3 font-medium text-foreground">
+                          Date
+                        </th>
+                        <th className="text-right p-3 font-medium text-foreground">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {expenses.map((e: any) => {
-                        const detailCount = (e.items?.length || 0) + (e.attachments?.length || 0);
+                        const detailCount =
+                          (e.items?.length || 0) + (e.attachments?.length || 0);
                         return (
-                        <Fragment key={e._id}>
-                        <tr className="border-t hover:bg-accent/30">
-                          <td className="p-3 text-foreground truncate">
-                            {detailCount > 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => setExpandedId(expandedId === e._id ? null : e._id)}
-                                title={expandedId === e._id ? 'Hide details' : 'Show details'}
-                                className="flex items-center gap-1.5 max-w-full hover:text-primary"
+                          <Fragment key={e._id}>
+                            <tr className="border-t hover:bg-accent/30">
+                              <td className="p-3 text-foreground truncate">
+                                {detailCount > 0 ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setExpandedId(
+                                        expandedId === e._id ? null : e._id,
+                                      )
+                                    }
+                                    title={
+                                      expandedId === e._id
+                                        ? "Hide details"
+                                        : "Show details"
+                                    }
+                                    className="flex items-center gap-1.5 max-w-full hover:text-primary"
+                                  >
+                                    {expandedId === e._id ? (
+                                      <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                                    ) : (
+                                      <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                                    )}
+                                    <span className="truncate">{e.title}</span>
+                                  </button>
+                                ) : (
+                                  <span title={e.title}>{e.title}</span>
+                                )}
+                              </td>
+                              <td className="p-3 font-medium text-red-600 whitespace-nowrap">
+                                BDT {e.amount?.toLocaleString()}
+                              </td>
+                              <td
+                                className="p-3 capitalize text-xs text-muted-foreground truncate"
+                                title={e.category}
                               >
-                                {expandedId === e._id ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
-                                <span className="truncate">{e.title}</span>
-                              </button>
-                            ) : (
-                              <span title={e.title}>{e.title}</span>
+                                {e.category}
+                              </td>
+                              <td
+                                className="p-3 text-xs text-muted-foreground truncate"
+                                title={e.event?.title || ""}
+                              >
+                                {e.event?.title || "—"}
+                              </td>
+                              <td
+                                className="p-3 text-xs text-muted-foreground truncate"
+                                title={committeeDisplayName(e.committee)}
+                              >
+                                {committeeDisplayName(e.committee) || "—"}
+                              </td>
+                              <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+                                {formatDate(e.expenseDate || e.createdAt)}
+                              </td>
+                              <td className="p-3">{renderActions(e)}</td>
+                            </tr>
+                            {expandedId === e._id && (
+                              <tr className="border-t bg-muted/30">
+                                <td colSpan={7} className="p-3">
+                                  <ExpenseDetailsView
+                                    items={e.items}
+                                    attachments={e.attachments}
+                                  />
+                                </td>
+                              </tr>
                             )}
-                          </td>
-                          <td className="p-3 font-medium text-red-600 whitespace-nowrap">BDT {e.amount?.toLocaleString()}</td>
-                          <td className="p-3 capitalize text-xs text-muted-foreground truncate" title={e.category}>{e.category}</td>
-                          <td className="p-3 text-xs text-muted-foreground truncate" title={e.event?.title || ''}>{e.event?.title || '—'}</td>
-                          <td className="p-3 text-xs text-muted-foreground truncate" title={committeeDisplayName(e.committee)}>{committeeDisplayName(e.committee) || '—'}</td>
-                          <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{formatDate(e.expenseDate || e.createdAt)}</td>
-                          <td className="p-3">{renderActions(e)}</td>
-                        </tr>
-                        {expandedId === e._id && (
-                          <tr className="border-t bg-muted/30">
-                            <td colSpan={7} className="p-3">
-                              <ExpenseDetailsView items={e.items} attachments={e.attachments} />
-                            </td>
-                          </tr>
-                        )}
-                        </Fragment>
+                          </Fragment>
                         );
                       })}
                     </tbody>
@@ -811,16 +1330,34 @@ function ExpensesList() {
                   {expenses.map((e: any) => (
                     <div key={e._id} className="border rounded-lg p-4 bg-card">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="text-foreground font-medium break-words flex-1 min-w-0">{e.title}</p>
-                        <p className="font-semibold text-red-600 whitespace-nowrap shrink-0">BDT {e.amount?.toLocaleString()}</p>
+                        <p className="text-foreground font-medium break-words flex-1 min-w-0">
+                          {e.title}
+                        </p>
+                        <p className="font-semibold text-red-600 whitespace-nowrap shrink-0">
+                          BDT {e.amount?.toLocaleString()}
+                        </p>
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-2">
-                        <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{e.category}</span>
-                        {e.event?.title && <span className="px-2 py-0.5 bg-muted rounded-full">{e.event.title}</span>}
-                        {e.committee?.name && <span className="px-2 py-0.5 bg-muted rounded-full">{committeeDisplayName(e.committee)}</span>}
+                        <span className="px-2 py-0.5 bg-muted rounded-full capitalize">
+                          {e.category}
+                        </span>
+                        {e.event?.title && (
+                          <span className="px-2 py-0.5 bg-muted rounded-full">
+                            {e.event.title}
+                          </span>
+                        )}
+                        {e.committee?.name && (
+                          <span className="px-2 py-0.5 bg-muted rounded-full">
+                            {committeeDisplayName(e.committee)}
+                          </span>
+                        )}
                         <span>{formatDate(e.expenseDate || e.createdAt)}</span>
                       </div>
-                      <ExpenseDetailsView items={e.items} attachments={e.attachments} className="mb-2" />
+                      <ExpenseDetailsView
+                        items={e.items}
+                        attachments={e.attachments}
+                        className="mb-2"
+                      />
                       <div className="pt-2 border-t">{renderActions(e)}</div>
                     </div>
                   ))}
@@ -830,7 +1367,11 @@ function ExpensesList() {
                   hasNextPage={!!hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
                   fetchNextPage={fetchNextPage}
-                  endLabel={expenses.length > 0 ? `All ${expenseTotal} expenses loaded` : undefined}
+                  endLabel={
+                    expenses.length > 0
+                      ? `All ${expenseTotal} expenses loaded`
+                      : undefined
+                  }
                 />
               </>
             );
@@ -846,34 +1387,52 @@ function CampaignsList() {
   const toast = useToast();
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', targetAmount: '', startDate: '', endDate: '' });
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    targetAmount: "",
+    startDate: "",
+    endDate: "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
-    queryKey: ['donations', 'campaigns'],
+    queryKey: ["donations", "campaigns"],
     queryFn: async () => {
-      const { data } = await api.get('/donations/campaigns');
+      const { data } = await api.get("/donations/campaigns");
       return data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post('/donations/campaigns', { ...form, targetAmount: Number(form.targetAmount) }),
+    mutationFn: () =>
+      api.post("/donations/campaigns", {
+        ...form,
+        targetAmount: Number(form.targetAmount),
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['donations', 'campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ["donations", "campaigns"] });
       setShowForm(false);
-      toast.success('Campaign created');
+      toast.success("Campaign created");
     },
-    onError: (err: any) => { const fe = extractFieldErrors(err); if (fe) { setErrors(fe); } else { toast.error(err.response?.data?.message || 'Failed to create campaign'); } },
+    onError: (err: any) => {
+      const fe = extractFieldErrors(err);
+      if (fe) {
+        setErrors(fe);
+      } else {
+        toast.error(err.response?.data?.message || "Failed to create campaign");
+      }
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/donations/campaigns/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['donations', 'campaigns'] });
-      toast.success('Campaign deleted');
+      queryClient.invalidateQueries({ queryKey: ["donations", "campaigns"] });
+      toast.success("Campaign deleted");
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete campaign'),
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Failed to delete campaign"),
   });
 
   const campaigns = data?.data || [];
@@ -893,27 +1452,84 @@ function CampaignsList() {
         {showForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="border rounded-lg p-4 sm:p-6 bg-card mb-4"
           >
-            <form noValidate onSubmit={(e) => { e.preventDefault(); setErrors({}); const errs: Record<string, string> = {}; if (!form.title.trim()) errs.title = 'Campaign title is required'; if (!form.targetAmount || Number(form.targetAmount) <= 0) errs.targetAmount = 'Valid target amount is required'; if (Object.keys(errs).length) { setErrors(errs); return; } createMutation.mutate(); }} className="space-y-3">
+            <form
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault();
+                setErrors({});
+                const errs: Record<string, string> = {};
+                if (!form.title.trim())
+                  errs.title = "Campaign title is required";
+                if (!form.targetAmount || Number(form.targetAmount) <= 0)
+                  errs.targetAmount = "Valid target amount is required";
+                if (Object.keys(errs).length) {
+                  setErrors(errs);
+                  return;
+                }
+                createMutation.mutate();
+              }}
+              className="space-y-3"
+            >
               <div>
-                <input placeholder="Campaign Title" value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
-                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? 'border-red-500' : ''}`} required />
+                <input
+                  placeholder="Campaign Title"
+                  value={form.title}
+                  onChange={(e) => {
+                    setForm({ ...form, title: e.target.value });
+                    setErrors((prev) => {
+                      const { title, ...rest } = prev;
+                      return rest;
+                    });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.title ? "border-red-500" : ""}`}
+                  required
+                />
                 <FieldError message={errors.title} />
               </div>
-              <RichTextEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Description..." minHeight="80px" />
+              <RichTextEditor
+                value={form.description}
+                onChange={(v) => setForm({ ...form, description: v })}
+                placeholder="Description..."
+                minHeight="80px"
+              />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <input type="number" placeholder="Target Amount" value={form.targetAmount} onChange={(e) => { setForm({ ...form, targetAmount: e.target.value }); setErrors((prev) => { const { targetAmount, ...rest } = prev; return rest; }); }}
-                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.targetAmount ? 'border-red-500' : ''}`} required />
+                  <input
+                    type="number"
+                    placeholder="Target Amount"
+                    value={form.targetAmount}
+                    onChange={(e) => {
+                      setForm({ ...form, targetAmount: e.target.value });
+                      setErrors((prev) => {
+                        const { targetAmount, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
+                    className={`w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm ${errors.targetAmount ? "border-red-500" : ""}`}
+                    required
+                  />
                   <FieldError message={errors.targetAmount} />
                 </div>
-                <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
-                <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm" />
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) =>
+                    setForm({ ...form, startDate: e.target.value })
+                  }
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                />
+                <input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) =>
+                    setForm({ ...form, endDate: e.target.value })
+                  }
+                  className="px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                />
               </div>
               <div className="flex gap-2">
                 <button
@@ -923,7 +1539,13 @@ function CampaignsList() {
                 >
                   Create
                 </button>
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-md text-sm">Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 border rounded-md text-sm"
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </motion.div>
@@ -931,28 +1553,34 @@ function CampaignsList() {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
       ) : (
         <div className="space-y-3">
           {campaigns.map((c: any, i: number) => (
             <FadeIn key={c._id} direction="up" delay={i * 0.06}>
-              <div
-                className="border rounded-lg p-4 sm:p-6 bg-card"
-              >
+              <div className="border rounded-lg p-4 sm:p-6 bg-card">
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground">{c.title}</h3>
-                    <p className="text-sm text-muted-foreground capitalize">{c.status}</p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {c.status}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <p className="font-semibold text-foreground flex items-center gap-1 text-sm"><Banknote className="h-4 w-4 shrink-0" /> BDT {c.raisedAmount?.toLocaleString()} / {c.targetAmount?.toLocaleString()}</p>
+                    <p className="font-semibold text-foreground flex items-center gap-1 text-sm">
+                      <Banknote className="h-4 w-4 shrink-0" /> BDT{" "}
+                      {c.raisedAmount?.toLocaleString()} /{" "}
+                      {c.targetAmount?.toLocaleString()}
+                    </p>
                     <button
                       onClick={async () => {
                         const ok = await confirm({
-                          title: 'Delete Campaign',
+                          title: "Delete Campaign",
                           message: `Delete "${c.title}"? This cannot be undone.`,
-                          confirmLabel: 'Delete',
-                          variant: 'danger',
+                          confirmLabel: "Delete",
+                          variant: "danger",
                         });
                         if (ok) deleteMutation.mutate(c._id);
                       }}
@@ -964,7 +1592,12 @@ function CampaignsList() {
                   </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
-                  <div className="bg-primary rounded-full h-2" style={{ width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%` }} />
+                  <div
+                    className="bg-primary rounded-full h-2"
+                    style={{
+                      width: `${Math.min(100, (c.raisedAmount / c.targetAmount) * 100)}%`,
+                    }}
+                  />
                 </div>
               </div>
             </FadeIn>
@@ -978,9 +1611,9 @@ function CampaignsList() {
 /** Per-event financial report covering budget, income and expense. */
 function EventFinanceList() {
   const { data, isLoading } = useQuery({
-    queryKey: ['reports', 'finance', 'events'],
+    queryKey: ["reports", "finance", "events"],
     queryFn: async () => {
-      const { data } = await api.get('/reports/finance/events');
+      const { data } = await api.get("/reports/finance/events");
       return data;
     },
   });
@@ -1015,12 +1648,24 @@ function EventFinanceList() {
           </colgroup>
           <thead>
             <tr className="bg-muted border-b">
-              <th className="text-left p-3 font-medium text-foreground">Event</th>
-              <th className="text-right p-3 font-medium text-foreground">Budget</th>
-              <th className="text-right p-3 font-medium text-foreground">Income</th>
-              <th className="text-right p-3 font-medium text-foreground">Expense</th>
-              <th className="text-right p-3 font-medium text-foreground">Net</th>
-              <th className="text-left p-3 font-medium text-foreground">Status</th>
+              <th className="text-left p-3 font-medium text-foreground">
+                Event
+              </th>
+              <th className="text-right p-3 font-medium text-foreground">
+                Budget
+              </th>
+              <th className="text-right p-3 font-medium text-foreground">
+                Income
+              </th>
+              <th className="text-right p-3 font-medium text-foreground">
+                Expense
+              </th>
+              <th className="text-right p-3 font-medium text-foreground">
+                Net
+              </th>
+              <th className="text-left p-3 font-medium text-foreground">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -1040,20 +1685,37 @@ function EventFinanceList() {
                   className="border-t hover:bg-accent/30"
                 >
                   <td className="p-3 text-foreground">
-                    <p className="truncate" title={e.eventTitle || 'Unknown event'}>{e.eventTitle || 'Unknown event'}</p>
+                    <p
+                      className="truncate"
+                      title={e.eventTitle || "Unknown event"}
+                    >
+                      {e.eventTitle || "Unknown event"}
+                    </p>
                     {e.eventDate && (
-                      <p className="text-[11px] text-muted-foreground">{formatDate(e.eventDate)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {formatDate(e.eventDate)}
+                      </p>
                     )}
                   </td>
-                  <td className="p-3 text-right text-foreground whitespace-nowrap">BDT {budget.toLocaleString()}</td>
-                  <td className="p-3 text-right text-green-600 font-medium whitespace-nowrap">BDT {income.toLocaleString()}</td>
-                  <td className="p-3 text-right text-red-600 font-medium whitespace-nowrap">BDT {actual.toLocaleString()}</td>
-                  <td className={`p-3 text-right font-medium whitespace-nowrap ${inDeficit ? 'text-red-600' : 'text-green-600'}`}>
-                    {inDeficit ? '−' : '+'} BDT {Math.abs(net).toLocaleString()}
+                  <td className="p-3 text-right text-foreground whitespace-nowrap">
+                    BDT {budget.toLocaleString()}
+                  </td>
+                  <td className="p-3 text-right text-green-600 font-medium whitespace-nowrap">
+                    BDT {income.toLocaleString()}
+                  </td>
+                  <td className="p-3 text-right text-red-600 font-medium whitespace-nowrap">
+                    BDT {actual.toLocaleString()}
+                  </td>
+                  <td
+                    className={`p-3 text-right font-medium whitespace-nowrap ${inDeficit ? "text-red-600" : "text-green-600"}`}
+                  >
+                    {inDeficit ? "−" : "+"} BDT {Math.abs(net).toLocaleString()}
                   </td>
                   <td className="p-3 text-xs">
                     {e.status ? (
-                      <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground whitespace-nowrap">{e.status}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground whitespace-nowrap">
+                        {e.status}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -1083,32 +1745,46 @@ function EventFinanceList() {
             >
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-foreground font-medium break-words">{e.eventTitle || 'Unknown event'}</p>
+                  <p className="text-foreground font-medium break-words">
+                    {e.eventTitle || "Unknown event"}
+                  </p>
                   {e.eventDate && (
-                    <p className="text-xs text-muted-foreground">{formatDate(e.eventDate)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(e.eventDate)}
+                    </p>
                   )}
                 </div>
                 {e.status && (
-                  <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground text-xs whitespace-nowrap shrink-0">{e.status}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground text-xs whitespace-nowrap shrink-0">
+                    {e.status}
+                  </span>
                 )}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div>
                   <p className="text-muted-foreground">Budget</p>
-                  <p className="font-medium text-foreground">BDT {budget.toLocaleString()}</p>
+                  <p className="font-medium text-foreground">
+                    BDT {budget.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Income</p>
-                  <p className="font-medium text-green-600">BDT {income.toLocaleString()}</p>
+                  <p className="font-medium text-green-600">
+                    BDT {income.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Expense</p>
-                  <p className="font-medium text-red-600">BDT {actual.toLocaleString()}</p>
+                  <p className="font-medium text-red-600">
+                    BDT {actual.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Net</p>
-                  <p className={`font-medium ${inDeficit ? 'text-red-600' : 'text-green-600'}`}>
-                    {inDeficit ? '−' : '+'} BDT {Math.abs(net).toLocaleString()}
+                  <p
+                    className={`font-medium ${inDeficit ? "text-red-600" : "text-green-600"}`}
+                  >
+                    {inDeficit ? "−" : "+"} BDT {Math.abs(net).toLocaleString()}
                   </p>
                 </div>
               </div>
