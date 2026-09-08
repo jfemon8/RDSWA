@@ -189,6 +189,12 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      // Socket.IO handshakes on /socket.io and then upgrades, so it needs `ws` as well as the target.
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   // `vite preview` needs its own proxy block because it does not inherit `server.proxy`, without which the built app 404s on /api and local PWA offline testing is impossible.
@@ -198,6 +204,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,
       },
     },
   },

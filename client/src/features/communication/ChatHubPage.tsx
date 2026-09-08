@@ -1,16 +1,20 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { usePresence, useDMSocket, useGroupActivitySocket } from '@/hooks/useSocket';
 import {
   Search, MessagesSquare, MailOpen, Globe, Building2, Hash,
-  Plus, ChevronRight,
+  Plus, ChevronRight, Users, UserPlus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import PresenceBadge from '@/components/chat/PresenceBadge';
 import { useAuthStore } from '@/stores/authStore';
+import { useToast } from '@/components/ui/Toast';
+import { hasMinRole } from '@/lib/roles';
+import { UserRole } from '@rdswa/shared';
+import CreateGroupForm from '@/components/chat/CreateGroupForm';
 import { formatDateCustom } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
 
@@ -83,6 +87,10 @@ function readInitialTab(urlTab: string | null): Tab {
 
 export default function ChatHubPage() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const isMod = !!user?.role && hasMinRole(user.role, UserRole.MODERATOR);
   const [searchParams, setSearchParams] = useSearchParams();
   // Preserve the selected tab across conversation entry/exit. Priority:
   //   1. ?tab= in URL (shareable / deep-linkable)
@@ -120,6 +128,25 @@ export default function ChatHubPage() {
       const { data } = await api.get('/communication/groups');
       return data.data as any[];
     },
+  });
+
+  // Discoverable groups, loaded only while the Groups tab is open since it is the only place they show.
+  const { data: browseGroups } = useQuery({
+    queryKey: ['browse-groups'],
+    queryFn: async () => {
+      const { data } = await api.get('/communication/groups/browse');
+      return data.data as any[];
+    },
+    enabled: tab === 'groups',
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: (groupId: string) => api.post(`/communication/groups/${groupId}/join`),
+    onSuccess: () => {
+      toast.success('Join request submitted!');
+      queryClient.invalidateQueries({ queryKey: ['browse-groups'] });
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to send join request'),
   });
 
   // Member search for the "New chat" popover.
@@ -216,14 +243,42 @@ export default function ChatHubPage() {
           direction="bottom"
         />
         <div className="flex items-center gap-2">
+          {isMod && (
+            <button
+              onClick={() => { setShowCreateGroup((v) => !v); setShowNewChat(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
+            >
+              <Users className="h-4 w-4" /> New Group
+            </button>
+          )}
           <button
-            onClick={() => setShowNewChat((v) => !v)}
+            onClick={() => { setShowNewChat((v) => !v); setShowCreateGroup(false); }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> New Chat
           </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showCreateGroup && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
+            exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <CreateGroupForm
+              onCreated={() => {
+                setShowCreateGroup(false);
+                queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+              }}
+              onCancel={() => setShowCreateGroup(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* New-chat inline popover */}
       <AnimatePresence>
@@ -335,18 +390,54 @@ export default function ChatHubPage() {
             </p>
             <p className="text-xs mt-1">
               Tap "New Chat" to start a conversation or{' '}
-              <Link to="/dashboard/groups" className="text-primary hover:underline">browse groups</Link>.
+              <button type="button" onClick={() => setTab('groups')} className="text-primary hover:underline">browse groups</button>.
             </p>
           </div>
         </FadeIn>
       ) : (
-        <div className="space-y-1">
-          {filtered.map((item, i) => (
-            <FadeIn key={`${item.kind}-${item.id}`} delay={i * 0.03} direction="up" distance={10}>
+        // `layout` animates the reorder, and the entry animation is tied to mount rather than to
+        // scrolling into view — a scroll-triggered one leaves rows that merely moved stuck at opacity 0.
+        <motion.div layout className="space-y-1">
+          {filtered.map((item) => (
+            <motion.div
+              key={`${item.kind}-${item.id}`}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
               <ConversationTile item={item} online={item.kind === 'dm' ? online.has(item.id) : false} />
-            </FadeIn>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
+      )}
+
+      {tab === 'groups' && (browseGroups?.length || 0) > 0 && (
+        <FadeIn direction="up" delay={0.1}>
+          <div className="mt-6">
+            <h2 className="text-sm font-semibold text-muted-foreground mb-2">Groups you can join</h2>
+            <div className="space-y-1">
+              {(browseGroups || []).map((g: any) => (
+                <div key={g._id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate text-foreground">{g.name}</p>
+                    <p className="text-xs text-muted-foreground">{g.members?.length || 0} members</p>
+                  </div>
+                  <button
+                    onClick={() => joinMutation.mutate(g._id)}
+                    disabled={joinMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-xs hover:bg-accent shrink-0 disabled:opacity-50"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" /> Join
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
       )}
     </div>
   );
@@ -359,6 +450,7 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
   return (
     <Link
       to={item.to}
+      state={item.kind === 'dm' ? { partner: { _id: item.id, name: item.name, avatar: item.avatar } } : undefined}
       className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
     >
       {/* Avatar */}

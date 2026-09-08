@@ -47,7 +47,7 @@ export default function StarredMessagesPage() {
     // DM: the other side is either sender or recipient
     const partnerId = m.recipient || m.sender?._id;
     if (partnerId) return `/dashboard/messages?with=${partnerId}#msg-${m._id}`;
-    return '/dashboard/messages';
+    return '/dashboard/chat';
   };
 
   return (

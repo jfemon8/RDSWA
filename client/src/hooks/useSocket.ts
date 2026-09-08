@@ -93,7 +93,10 @@ export function useChatSocket(
     if (!groupId) return;
     const s = getSocket();
 
-    s.emit('chat:join', groupId);
+    // Rooms live on the server socket, so a reconnect drops them and the chat goes quiet until remount.
+    const join = () => s.emit('chat:join', groupId);
+    join();
+    s.on('connect', join);
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ['group', groupId] });
     const handleMessage = (data: any) => {
@@ -115,6 +118,7 @@ export function useChatSocket(
 
     return () => {
       s.emit('chat:leave', groupId);
+      s.off('connect', join);
       s.off('chat:message', handleMessage);
       s.off('chat:message:edit', handleEdit);
       s.off('chat:message:delete', handleDelete);

@@ -25,7 +25,8 @@ function broadcastPresence(userId: string, online: boolean): void {
 export function initSocket(httpServer: HTTPServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: env.CLIENT_URL,
+      // Split the same way Express does, or a comma-separated list matches no origin at all.
+      origin: env.CLIENT_URL.split(',').map((u) => u.trim()),
       credentials: true,
     },
     path: '/socket.io',

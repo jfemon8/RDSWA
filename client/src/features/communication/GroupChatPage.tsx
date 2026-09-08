@@ -259,7 +259,7 @@ export default function GroupChatPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-groups"] });
       toast.success("You left the group");
-      navigate("/dashboard/groups");
+      navigate("/dashboard/chat", { replace: true });
     },
     onError: (err: any) =>
       toast.error(err?.response?.data?.message || "Failed to leave"),
@@ -270,7 +270,7 @@ export default function GroupChatPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-groups"] });
       toast.success("Group deleted");
-      navigate("/dashboard/groups");
+      navigate("/dashboard/chat", { replace: true });
     },
     onError: (err: any) =>
       toast.error(err?.response?.data?.message || "Failed to delete"),
@@ -471,7 +471,7 @@ export default function GroupChatPage() {
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">
         <button
-          onClick={() => navigate("/dashboard/chat")}
+          onClick={() => navigate("/dashboard/chat", { replace: true })}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
           aria-label="Back"
         >
@@ -533,7 +533,7 @@ export default function GroupChatPage() {
                 exit={{ opacity: 0, y: -6, scale: 0.96 }}
                 transition={{ duration: 0.15 }}
                 role="menu"
-                className="absolute right-0 top-full mt-1 w-56 bg-popover border rounded-md shadow-xl py-1 z-50"
+                className="absolute right-0 top-full mt-1 w-56 bg-popover border rounded-md shadow-xl py-1 z-[60]"
               >
                 <button
                   type="button"

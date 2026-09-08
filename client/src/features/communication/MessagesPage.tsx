@@ -1,16 +1,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useDMSocket, useTypingState, usePresence } from '@/hooks/useSocket';
 import {
-  MessagesSquare, Send, Loader2, Search, ArrowLeft,
+  Loader2, Search, ArrowLeft,
   User as UserIcon, X, MoreVertical, Star, Trash2, UserCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, BlurText } from '@/components/reactbits';
-import { formatDateCustom } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import MessageList from '@/components/chat/MessageList';
@@ -22,13 +20,24 @@ import type { ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
 import type { ReplyData } from '@/components/chat/ReplyPreview';
 import Spinner from '@/components/ui/Spinner';
 
+interface Partner {
+  _id: string;
+  name: string;
+  avatar?: string;
+}
+
 export default function MessagesPage() {
   const navigate = useNavigate();
-  const [selectedUser, setSelectedUser] = useState<{ _id: string; name: string; avatar?: string } | null>(null);
+  const location = useLocation();
+  // The hub passes the partner along, which lets the thread render on the first paint.
+  const passedPartner = (location.state as { partner?: Partner } | null)?.partner;
   const [searchParams] = useSearchParams();
   const withUserId = searchParams.get('with');
+  const [selectedUser, setSelectedUser] = useState<Partner | null>(
+    passedPartner && passedPartner._id === withUserId ? passedPartner : null
+  );
 
-  // A `?with=<userId>` param auto-opens that conversation once, whenever the param changes.
+  // Only look the partner up when they were not handed over, e.g. on a deep link or a page reload.
   useEffect(() => {
     if (!withUserId || selectedUser?._id === withUserId) return;
     let cancelled = false;
@@ -40,198 +49,26 @@ export default function MessagesPage() {
           setSelectedUser({ _id: u._id, name: u.name, avatar: u.avatar });
         }
       } catch {
-        /* silent — fall back to list view */
+        /* silent — the hub link below is the way out */
       }
     })();
     return () => { cancelled = true; };
   }, [withUserId, selectedUser?._id]);
 
-  // Back always returns to the unified Chat Hub, since the older messages list has no tabs to return to.
+  // Back always returns to the unified Chat Hub, replacing the entry so Back from there does not re-enter the thread.
   const handleBack = () => {
     setSelectedUser(null);
-    navigate('/dashboard/chat');
+    navigate('/dashboard/chat', { replace: true });
   };
 
-  return (
-    <div>
-      <AnimatePresence mode="wait">
-        {selectedUser ? (
-          <motion.div
-            key="chat"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChatView
-              partner={selectedUser}
-              onBack={handleBack}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ConversationList onSelect={setSelectedUser} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+  // This route only ever opens one thread; the hub is the list, so a bare visit belongs there.
+  if (!withUserId) return <Navigate to="/dashboard/chat" replace />;
 
-// ── Conversation list ────────────────────────────────────────────────
+  // Nothing is rendered while the partner resolves, since showing another screen first would
+  // flash a page the reader never asked for.
+  if (!selectedUser) return <Spinner size="md" />;
 
-function ConversationList({
-  onSelect,
-}: {
-  onSelect: (user: { _id: string; name: string; avatar?: string }) => void;
-}) {
-  const [search, setSearch] = useState('');
-  const [showNewChat, setShowNewChat] = useState(false);
-
-  useDMSocket(undefined);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['dm-conversations'],
-    queryFn: async () => {
-      const { data } = await api.get('/communication/dm');
-      return data.data;
-    },
-  });
-
-  const conversations = data || [];
-
-  const partnerIds = useMemo(
-    () => conversations.map((c: any) => c.user?._id).filter(Boolean),
-    [conversations]
-  );
-  const { online } = usePresence(partnerIds);
-
-  const { data: searchResults } = useQuery({
-    queryKey: ['member-search', search],
-    queryFn: async () => {
-      const { data } = await api.get(`/users/members?search=${encodeURIComponent(search)}&limit=10`);
-      return data.data;
-    },
-    enabled: showNewChat && search.length >= 2,
-  });
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <BlurText text="Messages" className="text-2xl sm:text-3xl font-bold" delay={50} />
-        <button
-          onClick={() => setShowNewChat(!showNewChat)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
-        >
-          <Send className="h-4 w-4" /> New Chat
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {showNewChat && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-4"
-          >
-            <div className="bg-card border rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-2">Start a conversation</h3>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search members..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  autoFocus
-                />
-              </div>
-              {searchResults && searchResults.length > 0 && (
-                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                  {searchResults.map((u: any) => (
-                    <button
-                      key={u._id}
-                      onClick={() => {
-                        onSelect({ _id: u._id, name: u.name, avatar: u.avatar });
-                        setShowNewChat(false);
-                        setSearch('');
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left hover:bg-accent transition-colors"
-                    >
-                      <Avatar src={u.avatar} name={u.name} />
-                      <span className="text-sm">{u.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isLoading ? (
-        <Spinner size="md" />
-      ) : conversations.length === 0 ? (
-        <FadeIn direction="up">
-          <div className="text-center py-12">
-            <MessagesSquare className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No messages yet. Start a conversation!</p>
-          </div>
-        </FadeIn>
-      ) : (
-        <div className="space-y-1">
-          {conversations.map((conv: any, i: number) => {
-            const isOnline = conv.user && online.has(conv.user._id);
-            return (
-              <FadeIn key={conv.user?._id || i} delay={i * 0.03} direction="up" distance={12}>
-                <button
-                  onClick={() => conv.user && onSelect(conv.user)}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card text-left hover:bg-accent transition-colors"
-                >
-                  <div className="relative shrink-0">
-                    <Avatar src={conv.user?.avatar} name={conv.user?.name} />
-                    {isOnline && (
-                      <span className="absolute bottom-0 right-0">
-                        <PresenceBadge online size={10} />
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium truncate">{conv.user?.name || 'Unknown'}</span>
-                      <span className="text-[11px] text-muted-foreground shrink-0">
-                        {formatTimeAgo(conv.lastMessage?.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {conv.lastMessage?.content || lastMessagePreview(conv.lastMessage)}
-                    </p>
-                  </div>
-                  {conv.unreadCount > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shrink-0"
-                    >
-                      {conv.unreadCount}
-                    </motion.span>
-                  )}
-                </button>
-              </FadeIn>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  return <ChatView partner={selectedUser} onBack={handleBack} />;
 }
 
 // ── DM Chat view ─────────────────────────────────────────────────────
@@ -685,29 +522,3 @@ function Avatar({ src, name }: { src?: string; name?: string }) {
   );
 }
 
-function lastMessagePreview(msg?: { attachments?: Array<{ kind: string; name?: string; contact?: { name?: string } }> }): string {
-  const att = msg?.attachments?.[0];
-  if (!att) return '';
-  switch (att.kind) {
-    case 'image': return '📷 Image';
-    case 'video': return '🎬 Video';
-    case 'audio': return '🎵 Audio';
-    case 'pdf': return '📄 PDF';
-    case 'file': return `📎 ${att.name || 'File'}`;
-    case 'contact': return `👤 ${att.contact?.name || 'Contact'}`;
-    default: return 'Attachment';
-  }
-}
-
-function formatTimeAgo(dateStr?: string): string {
-  if (!dateStr) return '';
-  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (seconds < 60) return 'Now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return formatDateCustom(dateStr, { month: 'short', day: 'numeric' });
-}
