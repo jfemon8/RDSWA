@@ -7,6 +7,7 @@ import { SUPER_ADMIN_EMAILS } from '../config/constants';
 import { FilterQuery } from 'mongoose';
 import { notificationService } from './notification.service';
 import { ensureDepartmentGroup, ensureCentralGroup } from '../jobs/groupInitializer';
+import { validateAcademicFields } from '../utils/validateAcademicFields';
 
 /** Fields that can be marked private by users */
 const PRIVATE_FIELDS = [
@@ -81,9 +82,11 @@ export class UserService {
     // Strip undefined values (from Zod transforms) so Mongoose doesn't set fields to null
     const data = JSON.parse(JSON.stringify(rawData));
 
-    // Fetch old department before updating (for group membership management)
-    const oldUser = data.department ? await User.findById(userId).select('department').lean() : null;
+    // The previous values drive both the group-membership sync and the academic checks below.
+    const oldUser = await User.findById(userId).select('department batch session faculty').lean();
     const oldDepartment = oldUser?.department;
+
+    await validateAcademicFields(data, oldUser || {});
 
     const user = await User.findByIdAndUpdate(
       userId,

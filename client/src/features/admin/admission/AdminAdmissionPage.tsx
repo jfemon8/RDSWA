@@ -19,6 +19,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import Spinner from '@/components/ui/Spinner';
 import PdfPreviewModal, { type PdfPreviewTarget } from '@/components/ui/PdfPreviewModal';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useAcademicConfig } from '@/hooks/useAcademicConfig';
 
 /** Local copy of the PDF-detection heuristic used on the public page. */
 function isPdfAttachment(a: { type?: string; url?: string; name?: string }): boolean {
@@ -1535,12 +1536,8 @@ function CutoffsSection() {
 
   // Faculty + Department dropdowns are driven by SiteSettings.academicConfig
   // — the same source the rest of the platform uses.
-  const { data: academicResp } = useQuery({
-    queryKey: ['settings', 'academic-config'],
-    queryFn: async () => (await api.get('/settings/academic-config')).data,
-    staleTime: 30 * 60 * 1000,
-  });
-  const faculties: Array<{ name: string; departments: string[] }> = academicResp?.data?.faculties || [];
+  const { config: academicConfig } = useAcademicConfig();
+  const faculties = academicConfig.faculties;
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.admission.cutoffs(),

@@ -14,6 +14,7 @@ import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
+import { useAcademicConfig } from '@/hooks/useAcademicConfig';
 
 const PROMO_EVERY = 6;
 
@@ -38,6 +39,7 @@ export default function MemberDirectoryPage({
   const [search, setSearch] = useState('');
   // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
+  const { config: academicConfig, departments } = useAcademicConfig();
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
   const [homeDistrict, setHomeDistrict] = useState('');
@@ -94,19 +96,28 @@ export default function MemberDirectoryPage({
               className="w-full pl-10 pr-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
-          <input
+          <select
             value={batch}
             onChange={(e) => { setBatch(e.target.value); }}
-            placeholder="Batch"
-            type="number"
-            className="w-full sm:w-24 px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-          <input
+            aria-label="Filter by batch"
+            className="w-full sm:w-32 px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="">All Batches</option>
+            {academicConfig.batches.map((b) => (
+              <option key={b} value={parseInt(b, 10) || b}>{b}</option>
+            ))}
+          </select>
+          <select
             value={department}
             onChange={(e) => { setDepartment(e.target.value); }}
-            placeholder="Department"
-            className="w-full sm:w-36 px-3 py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+            aria-label="Filter by department"
+            className="w-full sm:w-44 px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="">All Departments</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
           <select
             value={homeDistrict}
             onChange={(e) => { setHomeDistrict(e.target.value); }}

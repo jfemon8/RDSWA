@@ -17,6 +17,7 @@ import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import SEO from '@/components/SEO';
 import { downloadTablePdf } from '@/lib/downloadPdf';
+import { useAcademicConfig } from '@/hooks/useAcademicConfig';
 
 type MemberStats = { approved: number; pending: number; suspended: number };
 
@@ -74,14 +75,7 @@ export default function AdminMembersPage() {
     staleTime: 60_000,
   });
 
-  const { data: academicConfig } = useQuery({
-    queryKey: ['academic-config'],
-    queryFn: async () => {
-      const { data } = await api.get('/settings/academic-config');
-      return data.data;
-    },
-    staleTime: 5 * 60_000,
-  });
+  const { config: academicConfig, departments } = useAcademicConfig();
 
   const suspendMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/suspend`, { reason: 'Suspended by admin' }),
@@ -234,7 +228,7 @@ export default function AdminMembersPage() {
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0"
             >
               <option value="">All Batches</option>
-              {(academicConfig?.batches || []).map((b: string) => (
+              {academicConfig.batches.map((b: string) => (
                 <option key={b} value={b}>Batch {b}</option>
               ))}
             </select>
@@ -244,7 +238,7 @@ export default function AdminMembersPage() {
               className="px-3 py-2 border rounded-md bg-card text-foreground text-sm min-w-0"
             >
               <option value="">All Departments</option>
-              {(academicConfig?.faculties || []).flatMap((f: any) => f.departments || []).map((d: string) => (
+              {departments.map((d: string) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>

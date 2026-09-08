@@ -26,6 +26,7 @@ import {
 import { formatDate, formatDateTime } from "@/lib/date";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import Spinner from "@/components/ui/Spinner";
+import { useAcademicConfig } from "@/hooks/useAcademicConfig";
 
 const emptyForm = {
   title: "",
@@ -70,17 +71,8 @@ export default function AdminVotingPage() {
   });
 
   // Batches come from the academic config so the poll offers exactly what profiles can be set to.
-  const { data: academicConfig } = useQuery({
-    queryKey: queryKeys.settings.academic,
-    queryFn: async () => {
-      const { data } = await api.get("/settings/academic-config");
-      return data.data;
-    },
-    staleTime: 5 * 60_000,
-  });
-  const batchOptions: Array<{ label: string; value: number }> = (
-    academicConfig?.batches || []
-  )
+  const { config: academicConfig } = useAcademicConfig();
+  const batchOptions: Array<{ label: string; value: number }> = academicConfig.batches
     .map((b: string) => ({ label: b, value: parseInt(b, 10) }))
     .filter((b: { value: number }) => !isNaN(b.value));
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useTabParam } from '@/hooks/useTabParam';
@@ -13,12 +13,7 @@ import ImageUpload from '@/components/ui/ImageUpload';
 import { divisions, districts, upazilas, type Division } from '@/data/bdGeo';
 import { useToast } from '@/components/ui/Toast';
 import { extractFieldErrors } from '@/lib/formErrors';
-
-interface AcademicConfig {
-  batches: string[];
-  sessions: string[];
-  faculties: Array<{ name: string; departments: string[] }>;
-}
+import { useAcademicConfig } from '@/hooks/useAcademicConfig';
 
 type ProfileTab = 'personal' | 'academic' | 'professional' | 'social';
 const PROFILE_TABS: readonly ProfileTab[] = ['personal', 'academic', 'professional', 'social'];
@@ -31,14 +26,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useTabParam<ProfileTab>(PROFILE_TABS, 'personal');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: academicData } = useQuery({
-    queryKey: ['settings', 'academic-config'],
-    queryFn: async () => {
-      const { data } = await api.get('/settings/academic-config');
-      return data.data as AcademicConfig;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  const { config: academicData } = useAcademicConfig();
 
   const ac = academicData || { batches: [], sessions: [], faculties: [] };
 
