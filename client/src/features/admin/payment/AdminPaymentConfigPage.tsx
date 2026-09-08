@@ -40,7 +40,7 @@ export default function AdminPaymentConfigPage() {
   const toast = useToast();
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.settings.all,
+    queryKey: queryKeys.settings.admin,
     queryFn: async () => {
       const { data } = await api.get('/settings');
       return data;

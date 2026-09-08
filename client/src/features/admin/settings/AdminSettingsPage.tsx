@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useToast } from '@/components/ui/Toast';
 import { Save, Loader2, Plus, Trash2, GraduationCap, Palette, RotateCcw, Megaphone } from 'lucide-react';
 import ImageUpload from '@/components/ui/ImageUpload';
@@ -36,7 +37,7 @@ export default function AdminSettingsPage() {
   const effectiveTab: Tab = tab === 'adsense' && !canManageAdsense ? 'general' : tab;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['settings', 'admin'],
+    queryKey: queryKeys.settings.admin,
     queryFn: async () => { const { data } = await api.get('/settings'); return data; },
     staleTime: 0,
   });

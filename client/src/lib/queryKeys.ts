@@ -40,6 +40,8 @@ export const queryKeys = {
   },
   settings: {
     all: ['settings'] as const,
+    /** Admin read of the same endpoint, which returns fields the public response strips out. */
+    admin: ['settings', 'admin'] as const,
   },
   contactMessages: {
     all: ['contact-messages'] as const,

@@ -12,6 +12,7 @@ import { useGroupActivitySocket } from '@/hooks/useSocket';
 import ScrollToTop from '@/components/ScrollToTop';
 import Spinner from '@/components/ui/Spinner';
 import { persistOptions } from '@/lib/queryPersister';
+import { useSessionCacheReset } from '@/hooks/useSessionCacheReset';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +65,11 @@ function GroupActivityListener() {
   return null;
 }
 
+function SessionCacheReset() {
+  useSessionCacheReset();
+  return null;
+}
+
 interface ProvidersProps {
   children: ReactNode;
 }
@@ -78,6 +84,7 @@ export default function Providers({ children }: ProvidersProps) {
           <ToastProvider>
             <ConfirmProvider>
               <AuthInitializer>
+                <SessionCacheReset />
                 <DynamicSiteMeta />
                 <BrandColorsApplier />
                 <GroupActivityListener />
