@@ -14,6 +14,8 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
+import RichTextEditor from '@/components/ui/RichTextEditor';
+import { stripHtml } from '@/lib/stripHtml';
 
 const GROUP_TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
@@ -186,7 +188,7 @@ export default function GroupsPage() {
                           </span>
                         </div>
                         {group.description && (
-                          <p className="text-xs text-muted-foreground truncate">{group.description}</p>
+                          <p className="text-xs text-muted-foreground truncate">{stripHtml(group.description)}</p>
                         )}
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <Users className="h-3 w-3" />
@@ -212,7 +214,7 @@ export default function GroupsPage() {
                         </span>
                       </div>
                       {group.description && (
-                        <p className="text-xs text-muted-foreground truncate">{group.description}</p>
+                        <p className="text-xs text-muted-foreground truncate">{stripHtml(group.description)}</p>
                       )}
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
@@ -290,12 +292,11 @@ function CreateGroupForm({
           />
           <FieldError message={errors.name} />
         </div>
-        <textarea
-          placeholder="Description"
+        <RichTextEditor
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+          onChange={setDescription}
+          placeholder="Description..."
+          minHeight="80px"
         />
         <div className="flex gap-2 justify-end">
           <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-muted-foreground hover:bg-accent rounded-md">

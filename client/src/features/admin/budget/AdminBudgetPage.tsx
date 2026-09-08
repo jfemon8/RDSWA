@@ -13,7 +13,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { hasMinRole } from "@/lib/roles";
 import { UserRole } from "@rdswa/shared";
 import { formatDate } from "@/lib/date";
-import { stripHtml } from "@/lib/stripHtml";
+import RichTextEditor from "@/components/ui/RichTextEditor";
+import RichContent from "@/components/ui/RichContent";
 import {
   Plus,
   Pencil,
@@ -343,14 +344,11 @@ export default function AdminBudgetPage() {
                   />
                   <FieldError message={errors.title} />
                 </div>
-                <textarea
-                  placeholder="Description"
+                <RichTextEditor
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                  rows={2}
-                  className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
+                  onChange={(v) => setForm({ ...form, description: v })}
+                  placeholder="Description..."
+                  minHeight="80px"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -688,9 +686,10 @@ function BudgetRow({
           >
             <div className="border-t p-4 space-y-3">
               {budget.description && (
-                <p className="text-sm text-muted-foreground">
-                  {stripHtml(budget.description)}
-                </p>
+                <RichContent
+                  html={budget.description}
+                  className="text-sm text-muted-foreground"
+                />
               )}
               {status === "rejected" && budget.rejectionReason && (
                 <div className="flex items-start gap-2 p-3 rounded-md bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-xs">

@@ -13,6 +13,7 @@ import PresenceBadge from '@/components/chat/PresenceBadge';
 import { formatDateCustom, formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
+import { stripHtml } from '@/lib/stripHtml';
 
 /** Unified chat hub listing DMs, groups, and starred items, holding no chat state and only routing to the dedicated pages. */
 
@@ -186,7 +187,7 @@ export default function ChatHubPage() {
         id: g._id,
         name: g.name,
         avatar: g.avatar,
-        subtitle: g.description || `${g.members?.length || 0} members`,
+        subtitle: stripHtml(g.description) || `${g.members?.length || 0} members`,
         timestamp: g.updatedAt,
         // Server reports per-group unread count via aggregation on the
         // /communication/groups endpoint — see its handler for the query.
