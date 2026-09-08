@@ -207,7 +207,7 @@ export default function AdminRolesPage() {
 
           {/* Desktop matrix — table, fits without scroll at lg+ */}
           <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-[480px]">
               <thead>
                 <tr className="border-b bg-muted">
                   <th className="text-left p-2 font-medium text-foreground sticky left-0 bg-muted z-10 min-w-[140px]">Module : Action</th>
@@ -347,8 +347,8 @@ function RoleHistorySection() {
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden lg:block overflow-hidden">
-              <table className="w-full text-sm table-fixed">
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-sm table-fixed min-w-[800px]">
                 <colgroup>
                   <col className="w-[22%]" />
                   <col className="w-[22%]" />

@@ -248,8 +248,8 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden sm:block border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="hidden sm:block border rounded-lg overflow-x-auto">
+            <table className="w-full text-sm min-w-[680px]">
               <thead>
                 <tr className="bg-muted border-b">
                   <th className="text-left p-3 font-medium text-foreground w-12">#</th>

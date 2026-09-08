@@ -11,6 +11,7 @@ import { ApiError } from '../utils/ApiError';
 import { Expense } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { committeeTenure, expenseCommitteeMatch, addConditions } from '../services/financeScope';
 
 const router = Router();
 
@@ -19,7 +20,14 @@ router.get('/', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(asyn
   const filter: any = { isDeleted: false };
   if (req.query.category) filter.category = req.query.category;
   if (req.query.event) filter.event = req.query.event;
-  if (req.query.committee) filter.committee = req.query.committee;
+
+  if (req.query.committee) {
+    const committeeId = req.query.committee as string;
+    const tenure = await committeeTenure(committeeId);
+    if (!tenure) throw ApiError.badRequest('Committee not found');
+    // Same rule as the finance report, so the list and the totals above it never disagree.
+    addConditions(filter, [expenseCommitteeMatch(committeeId, tenure)]);
+  }
 
   const [expenses, total] = await Promise.all([
     Expense.find(filter)

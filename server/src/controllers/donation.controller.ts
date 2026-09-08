@@ -145,8 +145,8 @@ export const getReceipt = asyncHandler(async (req: Request, res: Response) => {
   res.send(html);
 });
 
-export const listCampaigns = asyncHandler(async (_req: Request, res: Response) => {
-  const campaigns = await donationService.listCampaigns();
+export const listCampaigns = asyncHandler(async (req: Request, res: Response) => {
+  const campaigns = await donationService.listCampaigns(req.query.committee as string | undefined);
   ApiResponse.success(res, campaigns);
 });
 

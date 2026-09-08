@@ -819,7 +819,8 @@ function CustomReportBuilder() {
 
             {result.data?.length > 0 ? (
               <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                <table className="w-full text-xs min-w-[400px]">
+                {/* The columns here are whatever fields the admin picked, so the table sizes to its content and the box scrolls. */}
+                <table className="w-full text-xs">
                   <thead className="sticky top-0">
                     <tr className="bg-muted border-b">
                       {result.fields.map((f: string) => (

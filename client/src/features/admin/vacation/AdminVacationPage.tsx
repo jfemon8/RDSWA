@@ -780,8 +780,8 @@ function VacationDetails({ vacation }: { vacation: Vacation }) {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden sm:block border rounded-md overflow-hidden bg-card">
-            <table className="w-full text-sm">
+          <div className="hidden sm:block border rounded-md overflow-x-auto bg-card">
+            <table className="w-full text-sm min-w-[680px]">
               <thead>
                 <tr className="bg-muted/60 border-b">
                   <th className="text-left p-2.5 font-medium text-foreground w-10">#</th>

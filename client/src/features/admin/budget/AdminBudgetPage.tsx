@@ -691,8 +691,8 @@ function BudgetRow({
                 </div>
               )}
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto hidden sm:block">
+                <table className="w-full text-sm min-w-[560px]">
                   <thead>
                     <tr className="border-b text-xs text-muted-foreground">
                       <th className="text-left py-1.5 font-medium">Category</th>
@@ -765,6 +765,64 @@ function BudgetRow({
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              {/* Mobile card list — one card per line item, so nothing has to scroll sideways. */}
+              <div className="sm:hidden space-y-2">
+                {(budget.items || []).map((it: any, i: number) => (
+                  <div key={i} className="border rounded-md p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium capitalize text-foreground">
+                        {it.category}
+                      </p>
+                      <p className="text-sm text-foreground whitespace-nowrap">
+                        {(it.estimatedAmount || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    {it.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 break-words">
+                        {it.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t text-xs">
+                      <span className="text-muted-foreground">Actual</span>
+                      {isAdmin && status === "approved" ? (
+                        <input
+                          type="number"
+                          min="0"
+                          value={actuals[i] ?? 0}
+                          onChange={(e) =>
+                            setActuals({
+                              ...actuals,
+                              [i]: Number(e.target.value) || 0,
+                            })
+                          }
+                          className="w-24 px-2 py-1 border rounded bg-card text-foreground text-xs text-right"
+                        />
+                      ) : (
+                        <span className="text-foreground">
+                          {it.actualAmount != null
+                            ? it.actualAmount.toLocaleString()
+                            : "—"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t text-xs font-semibold">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="text-foreground">
+                    {(budget.totalAmount || 0).toLocaleString()}
+                    {" / "}
+                    {status === "executed"
+                      ? totalActual.toLocaleString()
+                      : isAdmin && status === "approved"
+                        ? Object.values(actuals)
+                            .reduce((s, n) => s + n, 0)
+                            .toLocaleString()
+                        : "—"}
+                  </span>
+                </div>
               </div>
 
               {isAdmin && status === "approved" && (

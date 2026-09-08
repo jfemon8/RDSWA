@@ -139,10 +139,27 @@ router.get('/finance', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
 }));
 
 // ─── Event-based finance report ───
-router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (_req, res) => {
+router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const committeeFilter = (req.query.committee as string) || '';
+
+  // An event belongs to the committee it is tagged with, or failing that to whichever one was sitting when it ran.
+  let eventScope: any = { $exists: true };
+  if (committeeFilter) {
+    const tenure = await committeeTenure(committeeFilter);
+    if (!tenure) throw ApiError.badRequest('Committee not found');
+    const events = await Event.find({
+      isDeleted: false,
+      $or: [
+        { committee: committeeFilter },
+        { committee: null, startDate: { $gte: tenure.start, $lt: tenure.end } },
+      ],
+    }).select('_id').lean();
+    eventScope = { $in: events.map((e) => e._id) };
+  }
+
   const [eventExpenses, eventBudgets, eventIncome] = await Promise.all([
     Expense.aggregate([
-      { $match: { isDeleted: false, event: { $exists: true } } },
+      { $match: { isDeleted: false, event: eventScope } },
       { $group: {
         _id: '$event',
         totalExpense: { $sum: '$amount' },
@@ -160,7 +177,7 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
       { $sort: { eventDate: -1 } },
     ]),
     Budget.aggregate([
-      { $match: { isDeleted: false, event: { $exists: true } } },
+      { $match: { isDeleted: false, event: eventScope } },
       { $group: {
         _id: '$event',
         totalBudget: { $sum: '$totalAmount' },
@@ -176,7 +193,7 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
       }},
     ]),
     Donation.aggregate([
-      { $match: { isDeleted: false, paymentStatus: 'completed', event: { $exists: true } } },
+      { $match: { isDeleted: false, paymentStatus: 'completed', event: eventScope } },
       { $group: {
         _id: '$event',
         totalIncome: { $sum: '$amount' },

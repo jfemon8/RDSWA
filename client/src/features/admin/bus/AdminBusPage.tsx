@@ -733,8 +733,8 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
       ) : (
         <FadeIn direction="up" duration={0.4}>
           {/* Desktop table */}
-          <div className="hidden lg:block border rounded-lg overflow-hidden">
-            <table className="w-full text-sm table-fixed">
+          <div className="hidden lg:block border rounded-lg overflow-x-auto">
+            <table className="w-full text-sm table-fixed min-w-[680px]">
               <colgroup>
                 <col className="w-[12%]" />
                 <col className="w-[12%]" />

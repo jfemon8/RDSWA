@@ -990,8 +990,8 @@ function SeatsSessionBody({
               <Trash2 className="h-3 w-3" />
             </motion.button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto hidden sm:block">
+            <table className="w-full text-sm min-w-[800px]">
               <thead className="bg-muted/10">
                 <tr>
                   <th className="px-3 py-2 text-left">University</th>
@@ -1036,6 +1036,38 @@ function SeatsSessionBody({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile card list — one card per university, so no column is pushed off-screen. */}
+          <div className="sm:hidden divide-y">
+            {items.map((r: any) => (
+              <div key={r._id} className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium text-foreground break-words">{r.universityName}</p>
+                  <div className="flex shrink-0">
+                    <button onClick={() => onEdit(r)} className="p-1.5 rounded hover:bg-accent" title="Edit">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDeleteRow(r)}
+                      className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 mt-2 text-center">
+                  {([['A', r.aUnit || 0], ['B', r.bUnit || 0], ['C', r.cUnit || 0], ['Total', (r.aUnit || 0) + (r.bUnit || 0) + (r.cUnit || 0)]] as const).map(([label, value]) => (
+                    <div key={label} className={label === 'Total' ? 'font-medium' : ''}>
+                      <p className="text-[10px] text-muted-foreground uppercase">{label}</p>
+                      <p className="text-sm tabular-nums text-foreground">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Order: {r.sortOrder || 0}</p>
+              </div>
+            ))}
           </div>
         </div>
       ))}
@@ -2049,8 +2081,9 @@ function CutoffsAdminTable({
   onDelete: (r: any) => void;
 }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs sm:text-sm">
+    <>
+    <div className="overflow-x-auto hidden sm:block">
+      <table className="w-full text-xs sm:text-sm min-w-[1000px]">
         <thead className="bg-muted/40">
           <tr>
             <th className="px-3 py-2 text-left">Faculty</th>
@@ -2098,6 +2131,44 @@ function CutoffsAdminTable({
         </tbody>
       </table>
     </div>
+
+    {/* Mobile card list — one card per cut-off row, so the four score columns stack instead of scrolling. */}
+    <div className="sm:hidden divide-y">
+      {rows.map((r: any) => (
+        <div key={r._id} className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground break-words">{r.department}</p>
+              <p className="text-xs text-muted-foreground break-words">{r.faculty} · Unit {r.unit}</p>
+            </div>
+            <div className="flex shrink-0">
+              <button onClick={() => onEdit(r)} className="p-1.5 rounded hover:bg-accent" title="Edit">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => onDelete(r)}
+                className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500"
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+            <span className="text-muted-foreground tabular-nums">
+              1st: {r.firstPositionMerit ?? '—'} / {r.firstPositionScore?.toFixed(2) ?? '—'}
+            </span>
+            <span className="text-muted-foreground tabular-nums">
+              Last: {r.lastPositionMerit ?? '—'} / {r.lastPositionScore?.toFixed(2) ?? '—'}
+            </span>
+          </div>
+          {r.dataSource && (
+            <p className="text-[11px] text-muted-foreground mt-1 break-words">Source: {r.dataSource}</p>
+          )}
+        </div>
+      ))}
+    </div>
+    </>
   );
 }
 

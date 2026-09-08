@@ -422,8 +422,9 @@ function SeatsTable({ rows }: { rows: SeatRow[] }) {
   );
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <>
+    <div className="overflow-x-auto hidden sm:block">
+      <table className="w-full text-sm min-w-[800px]">
         <thead className="bg-primary/10 text-foreground">
           <tr>
             <th className="px-3 py-2 text-left font-semibold border-b w-32">Category</th>
@@ -473,6 +474,40 @@ function SeatsTable({ rows }: { rows: SeatRow[] }) {
         </tbody>
       </table>
     </div>
+
+    {/* Mobile card list — one card per university, so the unit counts read without sideways scrolling. */}
+    <div className="sm:hidden space-y-2">
+      {grouped.map(([category, items]) => (
+        <div key={category} className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase">{category}</p>
+          {items.map((r) => {
+            const rowTotal = (r.aUnit || 0) + (r.bUnit || 0) + (r.cUnit || 0);
+            return (
+              <div key={r._id} className="border rounded-lg p-3 bg-card">
+                <p className="text-sm font-medium text-foreground break-words">{r.universityName}</p>
+                <div className="grid grid-cols-4 gap-2 mt-2 text-center">
+                  {([['A', r.aUnit], ['B', r.bUnit], ['C', r.cUnit], ['Total', rowTotal]] as const).map(([label, value]) => (
+                    <div key={label} className={label === 'Total' ? 'font-semibold' : ''}>
+                      <p className="text-[10px] text-muted-foreground uppercase">{label}</p>
+                      <p className="text-sm tabular-nums text-foreground">{value || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      <div className="border rounded-lg p-3 bg-primary/10 grid grid-cols-4 gap-2 text-center font-bold">
+        {([['A', totals.a], ['B', totals.b], ['C', totals.c], ['Total', totals.a + totals.b + totals.c]] as const).map(([label, value]) => (
+          <div key={label}>
+            <p className="text-[10px] text-muted-foreground uppercase">{label}</p>
+            <p className="text-sm tabular-nums text-foreground">{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+    </>
   );
 }
 
@@ -576,8 +611,9 @@ function CutoffsTable({ rows }: { rows: CutoffRow[] }) {
   }, [rows]);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs sm:text-sm">
+    <>
+    <div className="overflow-x-auto hidden md:block">
+      <table className="w-full text-xs sm:text-sm min-w-[1200px]">
         <thead className="bg-primary/10 text-foreground">
           <tr>
             <th rowSpan={3} className="px-3 py-2 text-left font-semibold border-b border-r align-middle">Faculty</th>
@@ -628,6 +664,45 @@ function CutoffsTable({ rows }: { rows: CutoffRow[] }) {
         </tbody>
       </table>
     </div>
+
+    {/* Mobile card list — the three units stack per department instead of thirteen columns going off-screen. */}
+    <div className="md:hidden space-y-3">
+      {pivot.map(([faculty, deptRows]) => (
+        <div key={faculty} className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase">{faculty}</p>
+          {deptRows.map((row) => (
+            <div key={`${faculty}::${row.department}`} className="border rounded-lg p-3 bg-card">
+              <p className="text-sm font-medium text-foreground break-words">{row.department}</p>
+              <div className="mt-2 space-y-1.5">
+                {(['A', 'B', 'C'] as const).map((u) => {
+                  const c = row.cells[u];
+                  return (
+                    <div key={u} className="flex items-center gap-2 text-xs">
+                      <span className="w-12 shrink-0 font-medium text-foreground">{u} Unit</span>
+                      {c ? (
+                        <span className="text-muted-foreground tabular-nums">
+                          1st: {c.firstMerit ?? '—'} / {c.firstScore?.toFixed(2) ?? '—'}
+                          {' · '}
+                          Last: {c.lastMerit ?? '—'} / {c.lastScore?.toFixed(2) ?? '—'}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">Not offered</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {row.dataSource && (
+                <p className="text-[11px] text-muted-foreground mt-2 pt-2 border-t break-words">
+                  Source: {row.dataSource}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+    </>
   );
 }
 

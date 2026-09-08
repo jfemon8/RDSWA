@@ -10,6 +10,7 @@ import ExpenseDetailsFields, {
   type ExpenseAttachment,
 } from "@/components/ui/ExpenseDetailsFields";
 import ExpenseDetailsView from "@/components/ui/ExpenseDetailsView";
+import RichContent from "@/components/ui/RichContent";
 import { useToast } from "@/components/ui/Toast";
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
@@ -246,10 +247,10 @@ export default function AdminFinancePage() {
           </div>
 
           <FadeIn key={tab} direction="up" duration={0.4}>
-            {tab === "donations" && <DonationsList />}
-            {tab === "expenses" && <ExpensesList />}
-            {tab === "campaigns" && <CampaignsList />}
-            {tab === "events" && <EventFinanceList />}
+            {tab === "donations" && <DonationsList committeeId={committeeFilter} />}
+            {tab === "expenses" && <ExpensesList committeeId={committeeFilter} />}
+            {tab === "campaigns" && <CampaignsList committeeId={committeeFilter} />}
+            {tab === "events" && <EventFinanceList committeeId={committeeFilter} />}
           </FadeIn>
         </div>
 
@@ -367,7 +368,7 @@ export default function AdminFinancePage() {
   );
 }
 
-function DonationsList() {
+function DonationsList({ committeeId }: { committeeId: string }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
@@ -387,9 +388,9 @@ function DonationsList() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ["donations", "admin", donationType],
+    queryKey: ["donations", "admin", donationType, committeeId],
     path: "/donations",
-    filters: { type: donationType },
+    filters: { type: donationType, committee: committeeId },
     limit: 20,
   });
 
@@ -606,8 +607,8 @@ function DonationsList() {
         return (
           <>
             {/* Desktop table */}
-            <div className="hidden lg:block border rounded-lg overflow-hidden">
-              <table className="w-full text-sm table-fixed">
+            <div className="hidden lg:block border rounded-lg overflow-x-auto">
+              <table className="w-full text-sm table-fixed min-w-[900px]">
                 <colgroup>
                   <col className="w-[17%]" />
                   <col className="w-[11%]" />
@@ -839,7 +840,7 @@ function DonationsList() {
   );
 }
 
-function ExpensesList() {
+function ExpensesList({ committeeId }: { committeeId: string }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
@@ -867,8 +868,9 @@ function ExpensesList() {
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteList({
-    queryKey: ["expenses"],
+    queryKey: ["expenses", committeeId],
     path: "/expenses",
+    filters: { committee: committeeId },
     limit: 20,
   });
 
@@ -1182,7 +1184,35 @@ function ExpensesList() {
       ) : (
         <>
           {(() => {
-            const renderActions = (e: any) => (
+            const renderExpenseDetails = (e: any) => (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span>
+                    Category: <span className="capitalize">{e.category}</span>
+                  </span>
+                  <span>Date: {formatDate(e.expenseDate || e.createdAt)}</span>
+                  {e.event?.title && <span>Event: {e.event.title}</span>}
+                  {e.committee && (
+                    <span>Committee: {committeeDisplayName(e.committee)}</span>
+                  )}
+                  {e.paidAt && <span>Paid at: {formatDate(e.paidAt)}</span>}
+                  {e.createdBy?.name && <span>Recorded by: {e.createdBy.name}</span>}
+                </div>
+                {e.description && (
+                  <RichContent
+                    html={e.description}
+                    className="text-xs text-muted-foreground"
+                  />
+                )}
+                <ExpenseDetailsView items={e.items} attachments={e.attachments} />
+              </div>
+            );
+
+            const renderActions = (
+              e: any,
+              isExpanded?: boolean,
+              onToggle?: () => void,
+            ) => (
               <div className="flex items-center justify-end gap-1">
                 <button
                   onClick={() => startEdit(e)}
@@ -1206,22 +1236,35 @@ function ExpensesList() {
                 >
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </button>
+                {onToggle && (
+                  <button
+                    onClick={onToggle}
+                    className="p-1.5 text-muted-foreground hover:bg-accent rounded"
+                    title={isExpanded ? "Hide details" : "Show details"}
+                  >
+                    {isExpanded ? (
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
             );
 
             return (
               <>
                 {/* Desktop table */}
-                <div className="hidden lg:block border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm table-fixed">
+                <div className="hidden lg:block border rounded-lg overflow-x-auto">
+                  <table className="w-full text-sm table-fixed min-w-[900px]">
                     <colgroup>
-                      <col className="w-[26%]" />
+                      <col className="w-[24%]" />
                       <col className="w-[13%]" />
+                      <col className="w-[10%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[14%]" />
                       <col className="w-[11%]" />
-                      <col className="w-[15%]" />
-                      <col className="w-[15%]" />
-                      <col className="w-[12%]" />
-                      <col className="w-[8%]" />
                     </colgroup>
                     <thead>
                       <tr className="bg-muted border-b">
@@ -1306,18 +1349,31 @@ function ExpensesList() {
                               <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
                                 {formatDate(e.expenseDate || e.createdAt)}
                               </td>
-                              <td className="p-3">{renderActions(e)}</td>
+                              <td className="p-3 text-right">
+                                {renderActions(e, expandedId === e._id, () =>
+                                  setExpandedId(expandedId === e._id ? null : e._id),
+                                )}
+                              </td>
                             </tr>
-                            {expandedId === e._id && (
-                              <tr className="border-t bg-muted/30">
-                                <td colSpan={7} className="p-3">
-                                  <ExpenseDetailsView
-                                    items={e.items}
-                                    attachments={e.attachments}
-                                  />
-                                </td>
-                              </tr>
-                            )}
+                            <tr>
+                              <td colSpan={7} className="p-0">
+                                <AnimatePresence initial={false}>
+                                  {expandedId === e._id && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="px-3 py-2 border-t bg-muted/30">
+                                        {renderExpenseDetails(e)}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </td>
+                            </tr>
                           </Fragment>
                         );
                       })}
@@ -1353,12 +1409,24 @@ function ExpensesList() {
                         )}
                         <span>{formatDate(e.expenseDate || e.createdAt)}</span>
                       </div>
-                      <ExpenseDetailsView
-                        items={e.items}
-                        attachments={e.attachments}
-                        className="mb-2"
-                      />
-                      <div className="pt-2 border-t">{renderActions(e)}</div>
+                      <div className="pt-2 border-t">
+                        {renderActions(e, expandedId === e._id, () =>
+                          setExpandedId(expandedId === e._id ? null : e._id),
+                        )}
+                      </div>
+                      <AnimatePresence initial={false}>
+                        {expandedId === e._id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="pt-2">{renderExpenseDetails(e)}</div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ))}
                 </div>
@@ -1382,11 +1450,12 @@ function ExpensesList() {
   );
 }
 
-function CampaignsList() {
+function CampaignsList({ committeeId }: { committeeId: string }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -1397,9 +1466,9 @@ function CampaignsList() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
-    queryKey: ["donations", "campaigns"],
+    queryKey: ["donations", "campaigns", committeeId],
     queryFn: async () => {
-      const { data } = await api.get("/donations/campaigns");
+      const { data } = await api.get(`/donations/campaigns${committeeId ? `?committee=${committeeId}` : ""}`);
       return data;
     },
   });
@@ -1589,6 +1658,21 @@ function CampaignsList() {
                     >
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </button>
+                    <button
+                      onClick={() =>
+                        setExpandedId(expandedId === c._id ? null : c._id)
+                      }
+                      className="p-1.5 text-muted-foreground hover:bg-accent rounded"
+                      title={
+                        expandedId === c._id ? "Hide details" : "Show details"
+                      }
+                    >
+                      {expandedId === c._id ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                   </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
@@ -1599,6 +1683,45 @@ function CampaignsList() {
                     }}
                   />
                 </div>
+                <AnimatePresence initial={false}>
+                  {expandedId === c._id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 pt-3 border-t space-y-2">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          <span>Started: {formatDate(c.startDate)}</span>
+                          <span>
+                            Ends: {c.endDate ? formatDate(c.endDate) : "Open-ended"}
+                          </span>
+                          <span>
+                            Target: BDT {c.targetAmount?.toLocaleString()}
+                          </span>
+                          <span>
+                            Raised: BDT {c.raisedAmount?.toLocaleString()}
+                          </span>
+                          <span>
+                            Remaining: BDT{" "}
+                            {Math.max(
+                              0,
+                              (c.targetAmount || 0) - (c.raisedAmount || 0),
+                            ).toLocaleString()}
+                          </span>
+                        </div>
+                        {c.description && (
+                          <RichContent
+                            html={c.description}
+                            className="text-xs text-muted-foreground"
+                          />
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </FadeIn>
           ))}
@@ -1609,11 +1732,11 @@ function CampaignsList() {
 }
 
 /** Per-event financial report covering budget, income and expense. */
-function EventFinanceList() {
+function EventFinanceList({ committeeId }: { committeeId: string }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["reports", "finance", "events"],
+    queryKey: ["reports", "finance", "events", committeeId],
     queryFn: async () => {
-      const { data } = await api.get("/reports/finance/events");
+      const { data } = await api.get(`/reports/finance/events${committeeId ? `?committee=${committeeId}` : ""}`);
       return data;
     },
   });
@@ -1636,8 +1759,8 @@ function EventFinanceList() {
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden lg:block border rounded-lg overflow-hidden">
-        <table className="w-full text-sm table-fixed">
+      <div className="hidden lg:block border rounded-lg overflow-x-auto">
+        <table className="w-full text-sm table-fixed min-w-[800px]">
           <colgroup>
             <col className="w-[30%]" />
             <col className="w-[14%]" />

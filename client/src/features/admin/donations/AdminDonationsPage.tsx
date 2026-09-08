@@ -176,8 +176,8 @@ export default function AdminDonationsPage() {
             return (
               <>
                 {/* Desktop table */}
-                <div className="hidden lg:block border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm table-fixed">
+                <div className="hidden lg:block border rounded-lg overflow-x-auto">
+                  <table className="w-full text-sm table-fixed min-w-[1000px]">
                     <colgroup>
                       <col className="w-[18%]" />
                       <col className="w-[11%]" />

@@ -3,6 +3,7 @@ import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
+import { committeeTenure, withinDates, addConditions } from './financeScope';
 
 /** What a donation currently adds to its campaign total, which only completed donations do. */
 export type CampaignContribution = { campaign: string; amount: number } | null;
@@ -50,7 +51,7 @@ function isAdminOrAbove(role?: string): boolean {
 const PRIVILEGED_FIELDS = ['donor', 'paymentStatus'] as const;
 
 export class DonationService {
-  async list(query: { page?: string; limit?: string; type?: string; paymentStatus?: string; donor?: string; event?: string }, requesterRole?: string) {
+  async list(query: { page?: string; limit?: string; type?: string; paymentStatus?: string; donor?: string; event?: string; committee?: string }, requesterRole?: string) {
     const { page, limit } = parsePagination(query);
     const filter: FilterQuery<IDonationDocument> = { isDeleted: false };
 
@@ -58,6 +59,13 @@ export class DonationService {
     if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
     if (query.donor) filter.donor = query.donor;
     if (query.event) filter.event = query.event;
+
+    if (query.committee) {
+      const tenure = await committeeTenure(query.committee);
+      if (!tenure) throw ApiError.badRequest('Committee not found');
+      // Donations carry no committee of their own, so the term they fall in decides — the same rule the finance report uses.
+      addConditions(filter, [withinDates('$donationDate', tenure.start, tenure.end)]);
+    }
 
     const [donations, total] = await Promise.all([
       Donation.find(filter)
@@ -263,8 +271,17 @@ export class DonationService {
   }
 
   // Campaigns
-  async listCampaigns() {
-    return DonationCampaign.find({ isDeleted: false }).sort({ createdAt: -1 });
+  async listCampaigns(committeeId?: string) {
+    const filter: FilterQuery<IDonationCampaignDocument> = { isDeleted: false };
+
+    if (committeeId) {
+      const tenure = await committeeTenure(committeeId);
+      if (!tenure) throw ApiError.badRequest('Committee not found');
+      // A campaign belongs to whichever committee was sitting when it opened.
+      filter.startDate = { $gte: tenure.start, $lt: tenure.end };
+    }
+
+    return DonationCampaign.find(filter).sort({ createdAt: -1 });
   }
 
   async createCampaign(data: any, createdBy: string): Promise<IDonationCampaignDocument> {

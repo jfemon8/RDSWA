@@ -460,8 +460,8 @@ function LoginHistoryTab() {
         <>
           <FadeIn direction="up" delay={0.1}>
             {/* Desktop table */}
-            <div className="hidden lg:block border rounded-lg overflow-hidden">
-              <table className="w-full text-sm table-fixed">
+            <div className="hidden lg:block border rounded-lg overflow-x-auto">
+              <table className="w-full text-sm table-fixed min-w-[800px]">
                 <colgroup>
                   <col className="w-[26%]" />
                   <col className="w-[14%]" />
@@ -698,8 +698,8 @@ function SuspiciousActivityTab() {
               </h3>
             </div>
             {/* Desktop */}
-            <div className="hidden sm:block">
-              <table className="w-full text-sm table-fixed">
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full text-sm table-fixed min-w-[680px]">
                 <colgroup>
                   <col className="w-[40%]" />
                   <col className="w-[20%]" />
@@ -774,8 +774,8 @@ function SuspiciousActivityTab() {
               </h3>
             </div>
             {/* Desktop */}
-            <div className="hidden sm:block">
-              <table className="w-full text-sm table-fixed">
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full text-sm table-fixed min-w-[560px]">
                 <colgroup>
                   <col className="w-[28%]" />
                   <col className="w-[14%]" />
@@ -878,8 +878,8 @@ function SuspiciousActivityTab() {
               </h3>
             </div>
             {/* Desktop */}
-            <div className="hidden sm:block">
-              <table className="w-full text-sm table-fixed">
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full text-sm table-fixed min-w-[480px]">
                 <colgroup>
                   <col className="w-[32%]" />
                   <col className="w-[14%]" />

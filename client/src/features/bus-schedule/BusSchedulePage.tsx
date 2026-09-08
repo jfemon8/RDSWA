@@ -468,7 +468,7 @@ export default function BusSchedulePage() {
                         a narrow viewport, horizontal scroll stays inside the
                         table's box instead of pushing the whole page wide. */}
                     <div className="hidden md:block border rounded-lg overflow-x-auto">
-                      <table className="w-full text-sm table-fixed">
+                      <table className="w-full text-sm table-fixed min-w-[560px]">
                         <colgroup>
                           <col className="w-[20%]" />
                           <col className="w-[30%]" />
