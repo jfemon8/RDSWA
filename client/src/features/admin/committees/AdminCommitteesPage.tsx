@@ -140,6 +140,9 @@ export default function AdminCommitteesPage() {
 
   const committees = data?.data || [];
 
+  const toggleExpand = (id: string) =>
+    setExpandedId((prev) => (prev === id ? null : id));
+
   const startEdit = (c: any) => {
     setEditId(c._id);
     setStagedMembers([]);
@@ -313,7 +316,15 @@ export default function AdminCommitteesPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground">
-                        {c.name}
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(c._id)}
+                          aria-expanded={expandedId === c._id}
+                          title="Manage Members"
+                          className="text-left hover:text-primary transition-colors cursor-pointer"
+                        >
+                          {c.name}
+                        </button>
                       </h3>
                       {c.isCurrent && (
                         <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
@@ -333,9 +344,8 @@ export default function AdminCommitteesPage() {
                   </div>
                   <div className="flex gap-1">
                     <button
-                      onClick={() =>
-                        setExpandedId(expandedId === c._id ? null : c._id)
-                      }
+                      onClick={() => toggleExpand(c._id)}
+                      aria-expanded={expandedId === c._id}
                       className="p-2 hover:bg-accent rounded"
                       title="Manage Members"
                     >
