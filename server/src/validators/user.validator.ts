@@ -59,6 +59,8 @@ export const updateProfileSchema = z.object({
   })).optional(),
   earningSource: optionalString,
   skills: z.array(z.string()).optional(),
+  isMentor: z.boolean().optional(),
+  mentorAreas: z.array(z.string()).optional(),
 
   // Social
   facebook: optionalUrl,

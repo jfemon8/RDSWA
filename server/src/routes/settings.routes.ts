@@ -387,6 +387,30 @@ router.get('/auto-role-config', authenticate(), authorize(UserRole.ADMIN), async
   });
 }));
 
+// Update mentorship programme rules (SuperAdmin only)
+router.patch('/mentorship-config', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_mentorship', 'site_settings'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { areas, maxActiveMentees, staleRequestDays } = req.body;
+
+  const update: any = { updatedBy: req.user._id };
+  if (areas !== undefined) {
+    if (!Array.isArray(areas) || areas.some((a) => typeof a !== 'string')) {
+      throw ApiError.badRequest('areas must be a list of strings');
+    }
+    update['mentorshipConfig.areas'] = areas.map((a: string) => a.trim()).filter(Boolean);
+  }
+  // Zero disables the cap, so only a negative number is rejected.
+  for (const [key, value] of [['maxActiveMentees', maxActiveMentees], ['staleRequestDays', staleRequestDays]] as const) {
+    if (value === undefined) continue;
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) throw ApiError.badRequest(`${key} must be zero or a positive number`);
+    update[`mentorshipConfig.${key}`] = n;
+  }
+
+  const settings = await SiteSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+  ApiResponse.success(res, settings.mentorshipConfig, 'Mentorship config updated');
+}));
+
 // Toggle Google AdSense site-wide for unrestricted SuperAdmins only, keeping ad-policy decisions narrowly scoped.
 const adsenseToggleSchema = z.object({
   adsenseEnabled: z.boolean(),

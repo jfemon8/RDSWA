@@ -5,7 +5,7 @@ import { FadeIn } from '@/components/reactbits';
 import { useTabParam } from '@/hooks/useTabParam';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Save, Loader2, Vote, Users, Shield, Crown, GraduationCap, Tag, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Save, Loader2, Vote, Users, Shield, Crown, GraduationCap, Tag, ArrowRight, AlertTriangle, HeartHandshake, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import {
   UserRole,
@@ -23,8 +23,8 @@ import {
   type MembershipCriteria,
 } from '@/lib/membershipDocs';
 
-type Tab = 'voting' | 'membership' | 'autoRole';
-const TABS: readonly Tab[] = ['voting', 'membership', 'autoRole'];
+type Tab = 'voting' | 'membership' | 'autoRole' | 'mentorship';
+const TABS: readonly Tab[] = ['voting', 'membership', 'autoRole', 'mentorship'];
 
 export default function AdminSystemConfigPage() {
   const { user } = useAuthStore();
@@ -35,6 +35,7 @@ export default function AdminSystemConfigPage() {
     { key: 'voting', label: 'Voting Rules', icon: Vote },
     { key: 'membership', label: 'Membership Criteria', icon: Users },
     { key: 'autoRole', label: 'Auto-Role Rules', icon: Shield, superOnly: true },
+    { key: 'mentorship', label: 'Mentorship', icon: HeartHandshake, superOnly: true },
   ];
 
   const visibleTabs = tabs.filter((t) => !t.superOnly || isSuperAdmin);
@@ -64,6 +65,7 @@ export default function AdminSystemConfigPage() {
         {tab === 'voting' && <VotingRulesConfig />}
         {tab === 'membership' && <MembershipCriteriaConfig />}
         {tab === 'autoRole' && isSuperAdmin && <AutoRoleConfig />}
+        {tab === 'mentorship' && isSuperAdmin && <MentorshipConfig />}
       </div>
     </FadeIn>
   );
@@ -699,4 +701,103 @@ function setEqualsArray(s: Set<string>, arr: string[]): boolean {
   if (s.size !== arr.length) return false;
   for (const v of arr) if (!s.has(v)) return false;
   return true;
+}
+
+/** The mentorship programme's editable rules: the shared area list, the per-mentor cap and the stale-request window. */
+function MentorshipConfig() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [areas, setAreas] = useState<string[]>([]);
+  const [newArea, setNewArea] = useState('');
+  const [maxActiveMentees, setMaxActiveMentees] = useState('5');
+  const [staleRequestDays, setStaleRequestDays] = useState('7');
+
+  const { data } = useQuery({
+    queryKey: ['mentorship-config'],
+    queryFn: async () => (await api.get('/mentorships/config')).data,
+  });
+  const cfg = data?.data;
+
+  useEffect(() => {
+    if (!cfg) return;
+    setAreas(cfg.areas || []);
+    setMaxActiveMentees(String(cfg.maxActiveMentees ?? 5));
+    setStaleRequestDays(String(cfg.staleRequestDays ?? 7));
+  }, [cfg]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.patch('/settings/mentorship-config', {
+      areas,
+      maxActiveMentees: Number(maxActiveMentees) || 0,
+      staleRequestDays: Number(staleRequestDays) || 0,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mentorship-config'] });
+      toast.success('Mentorship rules updated');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
+  });
+
+  const addArea = () => {
+    const value = newArea.trim();
+    if (!value || areas.includes(value)) return;
+    setAreas([...areas, value]);
+    setNewArea('');
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="border rounded-lg p-5 bg-card space-y-3">
+        <h4 className="font-semibold text-foreground text-sm">Mentorship areas</h4>
+        <p className="text-xs text-muted-foreground">
+          Mentors pick from this list and mentees request against it, which is what lets the two sides match.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {areas.length === 0 && <p className="text-xs text-muted-foreground">No areas yet.</p>}
+          {areas.map((a) => (
+            <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs text-foreground">
+              {a}
+              <button type="button" onClick={() => setAreas(areas.filter((x) => x !== a))}
+                className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${a}`}>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={newArea}
+            onChange={(e) => setNewArea(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addArea(); } }}
+            placeholder="Add an area..."
+            className="flex-1 px-3 py-2 border rounded-md bg-background text-foreground text-sm"
+          />
+          <button type="button" onClick={addArea} className="px-3 py-2 border rounded-md text-sm hover:bg-accent text-foreground">Add</button>
+        </div>
+      </div>
+
+      <div className="border rounded-lg p-5 bg-card grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Max active mentees per mentor</label>
+          <input type="number" min="0" value={maxActiveMentees} onChange={(e) => setMaxActiveMentees(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm" />
+          <p className="text-[11px] text-muted-foreground mt-1">Zero removes the limit entirely.</p>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Stale request reminder (days)</label>
+          <input type="number" min="0" value={staleRequestDays} onChange={(e) => setStaleRequestDays(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm" />
+          <p className="text-[11px] text-muted-foreground mt-1">A mentor is reminded once per unanswered request; zero turns reminders off.</p>
+        </div>
+      </div>
+
+      <button
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+        className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+      >
+        {mutation.isPending ? 'Saving...' : 'Save mentorship rules'}
+      </button>
+    </div>
+  );
 }

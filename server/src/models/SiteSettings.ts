@@ -117,6 +117,14 @@ export interface ISiteSettingsDocument extends Document {
     /** Positions that auto-grant the Advisor tag when their committee archives. */
     advisorOnArchivePositions?: string[];
   };
+  mentorshipConfig?: {
+    /** The areas a request and a mentor profile can name, kept as a list so both sides match. */
+    areas?: string[];
+    /** How many active mentees one mentor may hold, where 0 means no limit. */
+    maxActiveMentees?: number;
+    /** Days a request may sit unanswered before the mentor is reminded. */
+    staleRequestDays?: number;
+  };
   /** Global AdSense kill-switch, defaulting to `true` and togglable only by unrestricted SuperAdmins, which makes every `<Promo>` render nothing when `false`. */
   adsenseEnabled: boolean;
   updatedBy?: mongoose.Types.ObjectId;
@@ -324,6 +332,17 @@ const siteSettingsSchema = new Schema<ISiteSettingsDocument>(
       adminPositions: { type: [String], default: ['president', 'general_secretary'] },
       moderatorPositions: { type: [String], default: ['organizing_secretary', 'treasurer'] },
       advisorOnArchivePositions: { type: [String], default: ['president', 'general_secretary'] },
+    },
+    mentorshipConfig: {
+      areas: {
+        type: [String],
+        default: [
+          'Career Guidance', 'Higher Studies', 'Job Preparation', 'Entrepreneurship',
+          'Research', 'Skill Development', 'Academic Support', 'Personal Development',
+        ],
+      },
+      maxActiveMentees: { type: Number, default: 5 },
+      staleRequestDays: { type: Number, default: 7 },
     },
     adsenseEnabled: { type: Boolean, default: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },

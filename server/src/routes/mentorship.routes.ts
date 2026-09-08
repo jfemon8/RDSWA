@@ -7,6 +7,8 @@ import { ApiError } from '../utils/ApiError';
 import { Mentorship, Notification, User, ChatGroup } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
+import { auditLog } from '../middlewares/audit.middleware';
+import { getMentorshipConfig } from '../utils/getMentorshipConfig';
 
 const router = Router();
 
@@ -68,6 +70,47 @@ async function removeFromConsultationGroup(mentorId: string, menteeId: string) {
   }
 }
 
+/** How many mentees a mentor is actively holding, which the capacity rule is measured against. */
+async function activeMenteeCount(mentorId: string): Promise<number> {
+  return Mentorship.countDocuments({ mentor: mentorId, status: 'active' });
+}
+
+/** Rejects a pairing that would push a mentor past the configured cap, which 0 disables. */
+async function assertMentorHasRoom(mentorId: string): Promise<void> {
+  const { maxActiveMentees } = await getMentorshipConfig();
+  if (!maxActiveMentees) return;
+  const current = await activeMenteeCount(mentorId);
+  if (current >= maxActiveMentees) {
+    throw ApiError.badRequest(`This mentor already has ${current} active mentees, which is the current limit`);
+  }
+}
+
+/** The ids of users whose name or email matches, so admin search can reach through the populated fields. */
+async function matchingUserIds(search: string): Promise<any[]> {
+  const users = await User.find({
+    isDeleted: false,
+    $or: [
+      { name: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } },
+    ],
+  }).select('_id').lean();
+  return users.map((u) => u._id);
+}
+
+/** Filter for the admin list, shared by the table, the stats and the export so all three agree. */
+async function buildAdminFilter(query: any): Promise<Record<string, any>> {
+  const filter: Record<string, any> = {};
+  if (query.status) filter.status = query.status;
+  if (query.area) filter.area = query.area;
+  if (query.mentor) filter.mentor = query.mentor;
+  if (query.mentee) filter.mentee = query.mentee;
+  if (query.search) {
+    const ids = await matchingUserIds(query.search as string);
+    filter.$or = [{ mentor: { $in: ids } }, { mentee: { $in: ids } }];
+  }
+  return filter;
+}
+
 // ─── Routes ───
 
 router.post('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
@@ -85,6 +128,9 @@ router.post('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async 
   if (!mentor.isAlumni && !mentor.isAdvisor && !mentor.isSeniorAdvisor) {
     throw ApiError.badRequest('Only Alumni, Advisors, or Senior Advisors can be mentors');
   }
+  if (!mentor.isMentor) throw ApiError.badRequest('This member is not currently accepting mentees');
+
+  await assertMentorHasRoom(mentorId);
 
   const existing = await Mentorship.findOne({
     mentor: mentorId,
@@ -159,6 +205,8 @@ router.patch('/:id/accept', authenticate(), asyncHandler(async (req, res) => {
     throw ApiError.forbidden('Only the mentor can accept');
   }
   if (mentorship.status !== 'pending') throw ApiError.badRequest('Not in pending state');
+
+  await assertMentorHasRoom(mentorship.mentor.toString());
 
   mentorship.status = 'active';
   mentorship.acceptedAt = new Date();
@@ -258,25 +306,254 @@ router.patch('/:id/cancel', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, mentorship, 'Mentorship cancelled');
 }));
 
-// Admin: list all mentorships
-router.get('/admin/all', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+// Admin: list all mentorships — readable by Moderator+, since acting on them stays Admin-only
+router.get('/admin/all', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
-  const filter: any = {};
-  if (req.query.status) filter.status = req.query.status;
+  const filter = await buildAdminFilter(req.query);
+
   const [mentorships, total] = await Promise.all([
     Mentorship.find(filter)
-      .populate('mentor', 'name avatar department')
-      .populate('mentee', 'name avatar department')
+      .populate('mentor', 'name avatar department batch profession')
+      .populate('mentee', 'name avatar department batch')
+      .populate('closedBy', 'name')
       .sort({ createdAt: -1 })
       .skip(getSkip({ page, limit }))
       .limit(limit),
     Mentorship.countDocuments(filter),
   ]);
-  ApiResponse.paginated(res, mentorships, total, page, limit);
+
+  // Each active pairing has a consultation group, which the panel links to rather than hunting for.
+  const mentorIds = mentorships.filter((m) => m.status === 'active').map((m) => m.mentor);
+  const groups = mentorIds.length
+    ? await ChatGroup.find({ type: 'consultation', mentorUser: { $in: mentorIds }, isDeleted: false })
+        .select('_id mentorUser').lean()
+    : [];
+  const groupMap = new Map(groups.map((g: any) => [g.mentorUser.toString(), g._id.toString()]));
+
+  const enriched = mentorships.map((m) => ({
+    ...m.toObject(),
+    consultationGroup: m.status === 'active' ? groupMap.get((m.mentor as any)?._id?.toString()) || null : null,
+  }));
+
+  ApiResponse.paginated(res, enriched, total, page, limit);
+}));
+
+/** Admin: programme health at a glance — counts by status, stalled requests and busiest mentors. */
+router.get('/admin/stats', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
+  const { staleRequestDays, maxActiveMentees } = await getMentorshipConfig();
+  const staleBefore = new Date(Date.now() - staleRequestDays * 24 * 60 * 60 * 1000);
+
+  const [byStatus, stalePending, topMentors, mentorCount] = await Promise.all([
+    Mentorship.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    Mentorship.countDocuments({ status: 'pending', requestedAt: { $lt: staleBefore } }),
+    Mentorship.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: '$mentor', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'mentor' } },
+      { $unwind: '$mentor' },
+      { $project: { _id: 1, count: 1, name: '$mentor.name', avatar: '$mentor.avatar' } },
+    ]),
+    User.countDocuments({ isDeleted: false, isMentor: true }),
+  ]);
+
+  const counts = Object.fromEntries(byStatus.map((r: any) => [r._id, r.count]));
+  ApiResponse.success(res, {
+    pending: counts.pending || 0,
+    active: counts.active || 0,
+    completed: counts.completed || 0,
+    cancelled: counts.cancelled || 0,
+    total: byStatus.reduce((sum: number, r: any) => sum + r.count, 0),
+    stalePending,
+    staleRequestDays,
+    maxActiveMentees,
+    mentorCount,
+    topMentors,
+  });
+}));
+
+/** Admin: mentor roster with the load each one is carrying. */
+router.get('/admin/mentors', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
+  const { page, limit } = parsePagination(req.query as any);
+  const filter: any = { isDeleted: false, membershipStatus: 'approved' };
+  // Anyone eligible is listed here, opted in or not, because deciding who to invite is the point.
+  if (req.query.optedIn === 'true') filter.isMentor = true;
+  else filter.$or = [{ isAlumni: true }, { isAdvisor: true }, { isSeniorAdvisor: true }];
+  if (req.query.search) {
+    filter.name = { $regex: req.query.search as string, $options: 'i' };
+  }
+
+  const [mentors, total] = await Promise.all([
+    User.find(filter)
+      .select('name avatar department batch profession isMentor mentorAreas isAlumni isAdvisor isSeniorAdvisor')
+      .sort({ isMentor: -1, name: 1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  const ids = mentors.map((m) => m._id);
+  const counts = await Mentorship.aggregate([
+    { $match: { mentor: { $in: ids } } },
+    { $group: { _id: { mentor: '$mentor', status: '$status' }, count: { $sum: 1 } } },
+  ]);
+  const loadMap = new Map<string, { active: number; pending: number; completed: number }>();
+  for (const c of counts as any[]) {
+    const key = c._id.mentor.toString();
+    const row = loadMap.get(key) || { active: 0, pending: 0, completed: 0 };
+    if (c._id.status in row) (row as any)[c._id.status] = c.count;
+    loadMap.set(key, row);
+  }
+
+  const { maxActiveMentees } = await getMentorshipConfig();
+  const enriched = mentors.map((m) => {
+    const load = loadMap.get(m._id.toString()) || { active: 0, pending: 0, completed: 0 };
+    return {
+      ...m.toObject(),
+      ...load,
+      maxActiveMentees,
+      atCapacity: !!maxActiveMentees && load.active >= maxActiveMentees,
+    };
+  });
+
+  ApiResponse.paginated(res, enriched, total, page, limit);
+}));
+
+/** Admin: turn a member's mentor listing on or off, for when someone asks to pause or is invited in. */
+router.patch('/admin/mentors/:userId', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.toggle_mentor', 'mentorships'), asyncHandler(async (req, res) => {
+  const user = await User.findOne({ _id: req.params.userId as string, isDeleted: false });
+  if (!user) throw ApiError.notFound('User not found');
+  if (!user.isAlumni && !user.isAdvisor && !user.isSeniorAdvisor) {
+    throw ApiError.badRequest('Only Alumni, Advisors, or Senior Advisors can be mentors');
+  }
+
+  user.isMentor = !!req.body.isMentor;
+  if (Array.isArray(req.body.mentorAreas)) user.mentorAreas = req.body.mentorAreas;
+  await user.save();
+
+  await Notification.create({
+    recipient: user._id,
+    type: 'mentorship_request',
+    title: user.isMentor ? 'Listed as a Mentor' : 'Mentor Listing Paused',
+    message: user.isMentor
+      ? 'You are now listed on the mentor directory and can receive mentorship requests.'
+      : 'Your mentor listing has been paused, so you will not receive new requests.',
+    link: '/dashboard/mentorship',
+  });
+
+  ApiResponse.success(res, user, user.isMentor ? 'Listed as mentor' : 'Mentor listing paused');
+}));
+
+/** Admin: end a pairing on the parties' behalf, running the same cleanup the members' own actions do. */
+router.patch('/admin/:id/status', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.force_status', 'mentorships'), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const status = req.body.status as 'completed' | 'cancelled';
+  if (!['completed', 'cancelled'].includes(status)) {
+    throw ApiError.badRequest('An admin can only complete or cancel a mentorship');
+  }
+
+  const mentorship = await Mentorship.findById(req.params.id as string);
+  if (!mentorship) throw ApiError.notFound('Mentorship not found');
+  if (mentorship.status === status) throw ApiError.badRequest(`This mentorship is already ${status}`);
+
+  const wasActive = mentorship.status === 'active';
+  mentorship.status = status;
+  if (status === 'completed') mentorship.completedAt = new Date();
+  mentorship.closedBy = req.user._id as any;
+  mentorship.closeReason = req.body.reason || undefined;
+  await mentorship.save();
+
+  if (wasActive) {
+    await removeFromConsultationGroup(mentorship.mentor.toString(), mentorship.mentee.toString());
+  }
+
+  const note = req.body.reason ? ` Reason: ${req.body.reason}` : '';
+  await Notification.insertMany([mentorship.mentor, mentorship.mentee].map((recipient) => ({
+    recipient,
+    type: 'mentorship_request',
+    title: `Mentorship ${status}`,
+    message: `An administrator marked this mentorship as ${status}.${note}`,
+    link: '/dashboard/mentorship',
+  })));
+
+  ApiResponse.success(res, mentorship, `Mentorship ${status}`);
+}));
+
+/** Admin: pair a mentor with a mentee directly, for requests that never found their way. */
+router.post('/admin/match', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.match', 'mentorships'), asyncHandler(async (req, res) => {
+  const { mentorId, menteeId, area } = req.body;
+  if (!mentorId || !menteeId) throw ApiError.badRequest('Both a mentor and a mentee are required');
+  if (mentorId === menteeId) throw ApiError.badRequest('A member cannot mentor themselves');
+
+  const [mentor, mentee] = await Promise.all([
+    User.findOne({ _id: mentorId, isDeleted: false }),
+    User.findOne({ _id: menteeId, isDeleted: false }),
+  ]);
+  if (!mentor) throw ApiError.notFound('Mentor not found');
+  if (!mentee) throw ApiError.notFound('Mentee not found');
+  if (!mentor.isAlumni && !mentor.isAdvisor && !mentor.isSeniorAdvisor) {
+    throw ApiError.badRequest('Only Alumni, Advisors, or Senior Advisors can be mentors');
+  }
+
+  const existing = await Mentorship.findOne({
+    mentor: mentorId,
+    mentee: menteeId,
+    status: { $in: ['pending', 'active'] },
+  });
+  if (existing) throw ApiError.badRequest('These two already have a pending or active mentorship');
+
+  await assertMentorHasRoom(mentorId);
+
+  // An admin match starts active, since the pairing has already been agreed off-platform.
+  const mentorship = await Mentorship.create({
+    mentor: mentorId,
+    mentee: menteeId,
+    area,
+    status: 'active',
+    acceptedAt: new Date(),
+  });
+
+  await addToConsultationGroup(mentorId, mentor.name, menteeId);
+
+  await Notification.insertMany([mentor._id, mentee._id].map((recipient) => ({
+    recipient,
+    type: 'mentorship_request',
+    title: 'Mentorship Started',
+    message: `An administrator paired ${mentor.name} with ${mentee.name}${area ? ` for "${area}"` : ''}.`,
+    link: '/dashboard/mentorship',
+  })));
+
+  ApiResponse.success(res, mentorship, 'Mentorship created', 201);
+}));
+
+/** Admin: CSV of whatever the current filters select, matching the table above it. */
+router.get('/admin/export', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+  const filter = await buildAdminFilter(req.query);
+  const rows = await Mentorship.find(filter)
+    .populate('mentor', 'name email department')
+    .populate('mentee', 'name email department')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const clean = (v: unknown) => String(v ?? '').replace(/[,\n\r]/g, ' ');
+  const header = 'Mentor,Mentor Email,Mentee,Mentee Email,Area,Status,Requested,Accepted,Completed,Close Reason\n';
+  const body = rows.map((m: any) => [
+    clean(m.mentor?.name), clean(m.mentor?.email), clean(m.mentee?.name), clean(m.mentee?.email),
+    clean(m.area), clean(m.status),
+    m.requestedAt ? new Date(m.requestedAt).toISOString().slice(0, 10) : '',
+    m.acceptedAt ? new Date(m.acceptedAt).toISOString().slice(0, 10) : '',
+    m.completedAt ? new Date(m.completedAt).toISOString().slice(0, 10) : '',
+    clean(m.closeReason),
+  ].join(',')).join('\n');
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="mentorships.csv"');
+  res.send(header + body);
 }));
 
 // Admin: delete mentorship (also clean up group)
-router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.delete', 'mentorships'), asyncHandler(async (req, res) => {
   const mentorship = await Mentorship.findById(req.params.id as string);
   if (!mentorship) throw ApiError.notFound('Mentorship not found');
 
@@ -297,6 +574,8 @@ router.get('/mentors', authenticate(), asyncHandler(async (req, res) => {
   const filter: any = {
     isDeleted: false,
     membershipStatus: 'approved',
+    // Mentoring shares contact details, so only members who opted in are listed.
+    isMentor: true,
     $or: [
       { isAlumni: true },
       { isAdvisor: true },
@@ -304,13 +583,12 @@ router.get('/mentors', authenticate(), asyncHandler(async (req, res) => {
     ],
   };
 
-  if (req.query.area) {
-    filter.skills = { $regex: req.query.area as string, $options: 'i' };
-  }
+  // Areas come from the shared list a mentor picks from, so a request and a profile can actually match.
+  if (req.query.area) filter.mentorAreas = req.query.area as string;
 
   const [mentors, total] = await Promise.all([
     User.find(filter)
-      .select('name avatar department batch profession skills homeDistrict isAlumni isAdvisor isSeniorAdvisor')
+      .select('name avatar department batch profession skills mentorAreas homeDistrict isAlumni isAdvisor isSeniorAdvisor')
       .sort({ name: 1 })
       .skip(getSkip({ page, limit }))
       .limit(limit),
@@ -325,12 +603,24 @@ router.get('/mentors', authenticate(), asyncHandler(async (req, res) => {
   ]);
   const countMap = new Map(menteeCounts.map((c: any) => [c._id.toString(), c.count]));
 
-  const enriched = mentors.map((m) => ({
-    ...m.toObject(),
-    activeMentees: countMap.get(m._id.toString()) || 0,
-  }));
+  const { maxActiveMentees } = await getMentorshipConfig();
+  const enriched = mentors.map((m) => {
+    const active = countMap.get(m._id.toString()) || 0;
+    return {
+      ...m.toObject(),
+      activeMentees: active,
+      maxActiveMentees,
+      atCapacity: !!maxActiveMentees && active >= maxActiveMentees,
+    };
+  });
 
   ApiResponse.paginated(res, enriched, total, page, limit);
+}));
+
+/** The programme rules a member needs when picking an area, which is public to any signed-in user. */
+router.get('/config', authenticate(), asyncHandler(async (_req, res) => {
+  const cfg = await getMentorshipConfig();
+  ApiResponse.success(res, cfg);
 }));
 
 export default router;

@@ -64,7 +64,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Budgets', href: '/admin/budgets', icon: Wallet, minRole: UserRole.ADMIN },
   { label: 'Bus Schedules', href: '/admin/bus', icon: Bus, minRole: UserRole.ADMIN },
   { label: 'Jobs', href: '/admin/jobs', icon: Briefcase, minRole: UserRole.ADMIN },
-  { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.ADMIN },
+  { label: 'Mentorship', href: '/admin/mentorship', icon: Users, minRole: UserRole.MODERATOR },
 
   // ── Role & User Management (Admin+) ──
   { label: 'Roles', href: '/admin/roles', icon: KeyRound, minRole: UserRole.ADMIN },

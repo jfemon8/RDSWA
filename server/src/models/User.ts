@@ -57,6 +57,9 @@ export interface IUserDocument extends Document {
     isCurrent: boolean;
   }>;
   earningSource?: string;
+  /** Opt-in to being listed as a mentor, since mentoring shares contact details with the mentee. */
+  isMentor: boolean;
+  mentorAreas: string[];
   skills: string[];
   skillEndorsements: Array<{
     skill: string;
@@ -244,6 +247,8 @@ const userSchema = new Schema<IUserDocument>(
       },
     ],
     earningSource: String,
+    isMentor: { type: Boolean, default: false },
+    mentorAreas: [String],
     skills: [String],
     skillEndorsements: [
       {
@@ -398,6 +403,7 @@ userSchema.index({ 'jobHistory.isCurrent': 1 });
 userSchema.index({ isDeleted: 1 });
 userSchema.index({ lastSeenAt: -1 });
 userSchema.index({ isAlumni: 1 });
+userSchema.index({ isMentor: 1 });
 userSchema.index({ isAdvisor: 1 });
 userSchema.index({ isSeniorAdvisor: 1 });
 

@@ -25,6 +25,7 @@ import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
 import { syncRolesOnStart } from './jobs/roleSyncOnStart';
 import { syncCommitteeCurrentFlags } from './jobs/committeeCurrentSync';
+import { startMentorshipReminder } from './jobs/mentorshipReminder';
 import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
@@ -96,6 +97,7 @@ async function start() {
   startNoticePublisher();
   startEmailDigest();
   startChatMediaPurge();
+  startMentorshipReminder();
 
   httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);

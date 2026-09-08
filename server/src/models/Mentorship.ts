@@ -8,6 +8,9 @@ export interface IMentorshipDocument extends Document {
   requestedAt: Date;
   acceptedAt?: Date;
   completedAt?: Date;
+  /** Set when an admin ends a pairing on the parties' behalf, so the record explains itself. */
+  closedBy?: mongoose.Types.ObjectId;
+  closeReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +24,8 @@ const mentorshipSchema = new Schema<IMentorshipDocument>(
     requestedAt: { type: Date, default: Date.now },
     acceptedAt: Date,
     completedAt: Date,
+    closedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    closeReason: String,
   },
   { timestamps: true }
 );

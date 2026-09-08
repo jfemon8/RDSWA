@@ -29,6 +29,9 @@ export interface AuthUser {
   linkedin?: string;
   website?: string;
   skills?: string[];
+  /** Opt-in to the mentor directory, with the areas the member is willing to cover. */
+  isMentor?: boolean;
+  mentorAreas?: string[];
   profession?: string;
   earningSource?: string;
   jobHistory?: any[];

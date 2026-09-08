@@ -45,6 +45,13 @@ export default function MentorshipPage() {
 
   const isMentorEligible = user?.isAlumni || user?.isAdvisor || user?.isSeniorAdvisor;
 
+  const { data: configData } = useQuery({
+    queryKey: ['mentorship-config'],
+    queryFn: async () => (await api.get('/mentorships/config')).data,
+    staleTime: 5 * 60_000,
+  });
+  const areas: string[] = configData?.data?.areas || [];
+
   const { data: mentorsData, isLoading: mentorsLoading } = useQuery({
     queryKey: [...queryKeys.mentorships.mentors, areaSearch],
     queryFn: async () => {
@@ -342,13 +349,15 @@ export default function MentorshipPage() {
         <FadeIn direction="up" duration={0.4}>
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search by skill area (e.g. React, Machine Learning, Career)..."
+            <select
               value={areaSearch}
               onChange={(e) => setAreaSearch(e.target.value)}
+              aria-label="Filter mentors by area"
               className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
+            >
+              <option value="">All mentorship areas</option>
+              {areas.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
           </div>
 
           {mentorsLoading ? (
@@ -427,12 +436,15 @@ export default function MentorshipPage() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="space-y-2"
                               >
-                                <input
-                                  placeholder="Area of mentorship (e.g. React, Career, Research)"
+                                <select
                                   value={requestArea}
                                   onChange={(e) => setRequestArea(e.target.value)}
+                                  aria-label="Area of mentorship"
                                   className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
+                                >
+                                  <option value="">Choose an area...</option>
+                                  {areas.map((a) => <option key={a} value={a}>{a}</option>)}
+                                </select>
                                 <div className="flex gap-2">
                                   <motion.button
                                     whileTap={{ scale: 0.95 }}
@@ -496,6 +508,7 @@ export default function MentorshipPage() {
       {/* ── My Trainees Tab (Mentor view) ── */}
       {tab === 'my-trainees' && isMentorEligible && (
         <FadeIn direction="up" duration={0.4}>
+          <MentorOptIn areas={areas} />
           {myLoading ? (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
@@ -521,6 +534,96 @@ export default function MentorshipPage() {
           )}
         </FadeIn>
       )}
+    </div>
+  );
+}
+
+/** Lets an eligible member choose whether to appear in the mentor directory, and in which areas. */
+function MentorOptIn({ areas }: { areas: string[] }) {
+  const { user, setUser } = useAuthStore();
+  const toast = useToast();
+  const isMentor = !!user?.isMentor;
+  const myAreas: string[] = user?.mentorAreas || [];
+
+  const mutation = useMutation({
+    mutationFn: (patch: { isMentor?: boolean; mentorAreas?: string[] }) =>
+      api.patch(`/users/${user?._id}/profile`, patch),
+    onSuccess: (res, patch) => {
+      // The store drives the toggle, so it has to reflect the saved value immediately.
+      setUser({ ...user!, ...patch });
+      toast.success(
+        patch.isMentor === undefined
+          ? 'Mentoring areas updated'
+          : patch.isMentor
+            ? 'You are now listed as a mentor'
+            : 'Your mentor listing is paused',
+      );
+      return res;
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to update'),
+  });
+
+  const toggleArea = (area: string) => {
+    const next = myAreas.includes(area) ? myAreas.filter((a) => a !== area) : [...myAreas, area];
+    mutation.mutate({ mentorAreas: next });
+  };
+
+  return (
+    <div className="border rounded-xl p-4 bg-card mb-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-foreground text-sm">Mentor listing</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Listing yourself lets members send you mentorship requests, and an accepted request shares your
+            email and phone with that mentee.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={isMentor}
+            disabled={mutation.isPending}
+            onChange={(e) => mutation.mutate({ isMentor: e.target.checked })}
+            className="rounded border-input"
+          />
+          {isMentor ? 'Listed' : 'Not listed'}
+        </label>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {isMentor && areas.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3">
+              <p className="text-xs text-muted-foreground mb-2">Areas you can mentor in</p>
+              <div className="flex flex-wrap gap-1.5">
+                {areas.map((a) => {
+                  const picked = myAreas.includes(a);
+                  return (
+                    <motion.button
+                      key={a}
+                      type="button"
+                      whileTap={{ scale: 0.94 }}
+                      disabled={mutation.isPending}
+                      onClick={() => toggleArea(a)}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-colors disabled:opacity-50 ${
+                        picked ? 'bg-primary text-primary-foreground border-primary' : 'text-foreground hover:bg-accent'
+                      }`}
+                    >
+                      {a}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
