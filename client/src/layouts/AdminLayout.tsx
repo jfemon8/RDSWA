@@ -103,6 +103,7 @@ export default function AdminLayout() {
   const deniedPaths: Record<string, string[]> = {
     '/admin/backup': BACKUP_RESTRICTED_SUPER_ADMINS,
     '/admin/settings': SETTINGS_RESTRICTED_SUPER_ADMINS,
+    '/admin/system-config': SETTINGS_RESTRICTED_SUPER_ADMINS,
     '/admin/clarity': CLARITY_RESTRICTED_SUPER_ADMINS,
   };
   const visibleLinks = adminLinks.filter((link) => {

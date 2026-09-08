@@ -5,12 +5,8 @@ import {
   Shield, Check, X, History, ArrowRight,
   GraduationCap, Award, Star, Zap,
 } from 'lucide-react';
-import {
-  UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES,
-  ADMIN_AUTO_POSITIONS, MODERATOR_AUTO_POSITIONS,
-} from '@rdswa/shared';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES } from '@rdswa/shared';
+import { useAutoRoleConfig, AUTO_ROLE_CONFIG_FALLBACK } from '@/hooks/useAutoRoleConfig';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
@@ -464,15 +460,10 @@ function RoleHistorySection() {
  * these rules in System Config and a reference page that disagrees with them is worse than none.
  */
 function AutoAssignmentRules() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['settings', 'auto-role-config'],
-    queryFn: async () => (await api.get('/settings/auto-role-config')).data,
-  });
+  const { data: cfg, isLoading } = useAutoRoleConfig();
 
-  const cfg = data?.data || {};
-  const adminPositions: string[] = Array.isArray(cfg.adminPositions) ? cfg.adminPositions : [...ADMIN_AUTO_POSITIONS];
-  const moderatorPositions: string[] = Array.isArray(cfg.moderatorPositions) ? cfg.moderatorPositions : [...MODERATOR_AUTO_POSITIONS];
-  const advisorOnArchive: string[] = Array.isArray(cfg.advisorOnArchivePositions) ? cfg.advisorOnArchivePositions : [...ADMIN_AUTO_POSITIONS];
+  const { adminPositions, moderatorPositions, advisorOnArchivePositions: advisorOnArchive } =
+    cfg ?? AUTO_ROLE_CONFIG_FALLBACK;
 
   const rules = [
     { role: 'Admin', positions: adminPositions, committee: 'Current', prefix: '' },

@@ -5,7 +5,7 @@ export default function AdminSeniorAdvisorsPage() {
   return (
     <AdminRoleTagManagerPage
       title="Senior Advisors Management"
-      description="Senior Advisors are appointed manually by administrators. Any user can become a Senior Advisor regardless of membership status."
+      description="Senior Advisors are appointed manually by administrators."
       flagFilter="isSeniorAdvisor"
       endpoint="senior-advisor"
       icon={Star}

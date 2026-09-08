@@ -44,6 +44,8 @@ export const queryKeys = {
     admin: ['settings', 'admin'] as const,
     /** Batches, sessions and faculties, served from their own public endpoint. */
     academic: ['academic-config'] as const,
+    /** Committee positions that grant roles automatically, read by both the roles and config pages. */
+    autoRole: ['settings', 'auto-role-config'] as const,
   },
   contactMessages: {
     all: ['contact-messages'] as const,
