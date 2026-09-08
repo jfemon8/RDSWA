@@ -5,7 +5,12 @@ import {
   Shield, Check, X, History, ArrowRight,
   GraduationCap, Award, Star, Zap,
 } from 'lucide-react';
-import { UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES } from '@rdswa/shared';
+import {
+  UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES,
+  ADMIN_AUTO_POSITIONS, MODERATOR_AUTO_POSITIONS,
+} from '@rdswa/shared';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
@@ -27,8 +32,8 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
   guest: 'Unauthenticated visitors with read-only public access',
   user: 'Registered users who haven\'t been approved as members',
   member: 'Approved RDSWA members with full platform access',
-  moderator: 'Content moderation, user approval, basic reports, form review. Auto-assigned to OS & Treasurer of current committee, and Ex-President & Ex-GS of previous committee.',
-  admin: 'Full management access: finance, votes, bus schedules, user management, all reports. Auto-assigned to President & GS of current committee.',
+  moderator: 'Content moderation, user approval, basic reports and form review, plus the committee positions listed under Auto-Assignment Rules.',
+  admin: 'Full management access: finance, votes, bus schedules, user management and all reports, plus the committee positions listed under Auto-Assignment Rules.',
   super_admin: 'Unrestricted system access: settings, backup, admin management, email broadcast. Hardcoded to specific emails.',
 };
 
@@ -41,7 +46,7 @@ const TAG_DESCRIPTIONS: Record<string, { label: string; description: string; ico
   },
   advisor: {
     label: 'Advisor',
-    description: 'Auto-granted to Ex-Presidents & Ex-GS when committee archives. Can also be manually assigned.',
+    description: 'Auto-granted when a committee archives, to the positions listed under Auto-Assignment Rules, and assignable by hand.',
     icon: Award,
     color: 'text-teal-500',
   },
@@ -53,11 +58,17 @@ const TAG_DESCRIPTIONS: Record<string, { label: string; description: string; ico
   },
 };
 
-const AUTO_ASSIGNMENT_INFO = [
-  { role: 'Admin', positions: 'President, General Secretary', committee: 'Current', color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' },
-  { role: 'Moderator', positions: 'Organizing Secretary, Treasurer', committee: 'Current', color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' },
-  { role: 'Moderator', positions: 'Ex-President, Ex-General Secretary', committee: 'Previous (archived)', color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' },
-];
+const ROLE_CARD_COLORS: Record<string, string> = {
+  Admin: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+  Moderator: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+  Advisor: 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800',
+};
+
+/** Position slugs as a readable list, where `prefix` marks the archived-committee rules as "Ex-". */
+const formatPositions = (positions: string[], prefix = '') =>
+  positions
+    .map((p) => prefix + p.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
+    .join(', ');
 
 const modules = Object.values(Module);
 const actions = Object.values(Action);
@@ -163,42 +174,7 @@ export default function AdminRolesPage() {
       </FadeIn>
 
       {/* Auto-Assignment Logic */}
-      <FadeIn direction="up" delay={0.3}>
-        <div className="border rounded-lg p-4 sm:p-5 bg-card">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-5 w-5 text-amber-500" />
-            <h2 className="font-semibold text-lg text-foreground">Auto-Assignment Rules</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Roles automatically assigned based on committee positions. Admins can also manually assign/remove Moderator roles.
-          </p>
-          <div className="space-y-3">
-            {AUTO_ASSIGNMENT_INFO.map((info, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + i * 0.08 }}
-                className={`border rounded-lg p-4 ${info.color}`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${ROLE_COLORS[info.role.toLowerCase()]}`}>
-                    {info.role}
-                  </span>
-                  <span className="text-xs text-muted-foreground">← auto-assigned</span>
-                </div>
-                <p className="text-sm font-medium text-foreground">{info.positions}</p>
-                <p className="text-xs text-muted-foreground mt-1">Committee: {info.committee}</p>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground space-y-1">
-            <p><strong>Archive transitions:</strong> When a committee is archived:</p>
-            <p>• President & GS → Admin downgrades to Moderator + Advisor tag granted</p>
-            <p>• OS & Treasurer → Moderator removed, falls back to Member</p>
-          </div>
-        </div>
-      </FadeIn>
+      <AutoAssignmentRules />
 
       {/* Permission Matrix — tier roles only */}
       <FadeIn direction="up" delay={0.35}>
@@ -478,6 +454,80 @@ function RoleHistorySection() {
             fetchNextPage={fetchNextPage}
             endLabel={history.length > 0 ? `All ${total} entries loaded` : undefined}
           />
+      </div>
+    </FadeIn>
+  );
+}
+
+/**
+ * Mirrors the live auto-role configuration rather than a fixed list, since a SuperAdmin can edit
+ * these rules in System Config and a reference page that disagrees with them is worse than none.
+ */
+function AutoAssignmentRules() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['settings', 'auto-role-config'],
+    queryFn: async () => (await api.get('/settings/auto-role-config')).data,
+  });
+
+  const cfg = data?.data || {};
+  const adminPositions: string[] = Array.isArray(cfg.adminPositions) ? cfg.adminPositions : [...ADMIN_AUTO_POSITIONS];
+  const moderatorPositions: string[] = Array.isArray(cfg.moderatorPositions) ? cfg.moderatorPositions : [...MODERATOR_AUTO_POSITIONS];
+  const advisorOnArchive: string[] = Array.isArray(cfg.advisorOnArchivePositions) ? cfg.advisorOnArchivePositions : [...ADMIN_AUTO_POSITIONS];
+
+  const rules = [
+    { role: 'Admin', positions: adminPositions, committee: 'Current', prefix: '' },
+    { role: 'Moderator', positions: moderatorPositions, committee: 'Current', prefix: '' },
+    { role: 'Moderator', positions: adminPositions, committee: 'Previous (archived)', prefix: 'Ex-' },
+    { role: 'Advisor', positions: advisorOnArchive, committee: 'Previous (archived)', prefix: 'Ex-' },
+  ].filter((r) => r.positions.length > 0);
+
+  return (
+    <FadeIn direction="up" delay={0.3}>
+      <div className="border rounded-lg p-4 sm:p-5 bg-card">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="h-5 w-5 text-amber-500" />
+          <h2 className="font-semibold text-lg text-foreground">Auto-Assignment Rules</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Roles automatically assigned from committee positions, read live from System Config. Admins can also
+          assign or remove Moderator by hand.
+        </p>
+
+        {isLoading ? (
+          <Spinner size="sm" />
+        ) : rules.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No positions grant a role automatically right now.</p>
+        ) : (
+          <div className="space-y-3">
+            {rules.map((rule, i) => (
+              <motion.div
+                key={`${rule.role}-${rule.committee}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + i * 0.08 }}
+                className={`border rounded-lg p-4 ${ROLE_CARD_COLORS[rule.role] || ''}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${ROLE_COLORS[rule.role.toLowerCase()]}`}>
+                    {rule.role}
+                  </span>
+                  <span className="text-xs text-muted-foreground">← auto-assigned</span>
+                </div>
+                <p className="text-sm font-medium text-foreground break-words">
+                  {formatPositions(rule.positions, rule.prefix)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Committee: {rule.committee}</p>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground space-y-1">
+          <p><strong>Archive transitions:</strong> When a committee is archived:</p>
+          <p>• {formatPositions(adminPositions) || 'No positions'} → Admin steps down to Moderator as an ex-officer</p>
+          <p>• {formatPositions(moderatorPositions) || 'No positions'} → Moderator removed, falls back to their base role</p>
+          <p>• {formatPositions(advisorOnArchive) || 'No positions'} → Advisor tag granted</p>
+        </div>
       </div>
     </FadeIn>
   );

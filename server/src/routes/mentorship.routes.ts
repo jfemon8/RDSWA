@@ -70,7 +70,7 @@ async function removeFromConsultationGroup(mentorId: string, menteeId: string) {
   }
 }
 
-/** How many mentees a mentor is actively holding, which the capacity rule is measured against. */
+/** The figure the capacity rule is measured against. */
 async function activeMenteeCount(mentorId: string): Promise<number> {
   return Mentorship.countDocuments({ mentor: mentorId, status: 'active' });
 }
@@ -338,7 +338,7 @@ router.get('/admin/all', authenticate(), authorize(UserRole.MODERATOR), asyncHan
   ApiResponse.paginated(res, enriched, total, page, limit);
 }));
 
-/** Admin: programme health at a glance — counts by status, stalled requests and busiest mentors. */
+// Admin: programme health at a glance — counts by status, stalled requests and busiest mentors
 router.get('/admin/stats', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
   const { staleRequestDays, maxActiveMentees } = await getMentorshipConfig();
   const staleBefore = new Date(Date.now() - staleRequestDays * 24 * 60 * 60 * 1000);
@@ -373,7 +373,7 @@ router.get('/admin/stats', authenticate(), authorize(UserRole.MODERATOR), asyncH
   });
 }));
 
-/** Admin: mentor roster with the load each one is carrying. */
+// Admin: mentor roster with the load each one is carrying
 router.get('/admin/mentors', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = { isDeleted: false, membershipStatus: 'approved' };
@@ -420,7 +420,7 @@ router.get('/admin/mentors', authenticate(), authorize(UserRole.MODERATOR), asyn
   ApiResponse.paginated(res, enriched, total, page, limit);
 }));
 
-/** Admin: turn a member's mentor listing on or off, for when someone asks to pause or is invited in. */
+// Admin: turn a member's mentor listing on or off, for when someone asks to pause or is invited in
 router.patch('/admin/mentors/:userId', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.toggle_mentor', 'mentorships'), asyncHandler(async (req, res) => {
   const user = await User.findOne({ _id: req.params.userId as string, isDeleted: false });
   if (!user) throw ApiError.notFound('User not found');
@@ -445,7 +445,7 @@ router.patch('/admin/mentors/:userId', authenticate(), authorize(UserRole.ADMIN)
   ApiResponse.success(res, user, user.isMentor ? 'Listed as mentor' : 'Mentor listing paused');
 }));
 
-/** Admin: end a pairing on the parties' behalf, running the same cleanup the members' own actions do. */
+// Admin: end a pairing on the parties' behalf, running the same cleanup the members' own actions do
 router.patch('/admin/:id/status', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.force_status', 'mentorships'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const status = req.body.status as 'completed' | 'cancelled';
@@ -480,7 +480,7 @@ router.patch('/admin/:id/status', authenticate(), authorize(UserRole.ADMIN), aud
   ApiResponse.success(res, mentorship, `Mentorship ${status}`);
 }));
 
-/** Admin: pair a mentor with a mentee directly, for requests that never found their way. */
+// Admin: pair a mentor with a mentee directly, for requests that never found their way
 router.post('/admin/match', authenticate(), authorize(UserRole.ADMIN), auditLog('mentorship.match', 'mentorships'), asyncHandler(async (req, res) => {
   const { mentorId, menteeId, area } = req.body;
   if (!mentorId || !menteeId) throw ApiError.badRequest('Both a mentor and a mentee are required');
@@ -527,7 +527,7 @@ router.post('/admin/match', authenticate(), authorize(UserRole.ADMIN), auditLog(
   ApiResponse.success(res, mentorship, 'Mentorship created', 201);
 }));
 
-/** Admin: CSV of whatever the current filters select, matching the table above it. */
+// Admin: CSV of whatever the current filters select, matching the table above it
 router.get('/admin/export', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
   const filter = await buildAdminFilter(req.query);
   const rows = await Mentorship.find(filter)
@@ -617,7 +617,7 @@ router.get('/mentors', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.paginated(res, enriched, total, page, limit);
 }));
 
-/** The programme rules a member needs when picking an area, which is public to any signed-in user. */
+// Programme rules a member needs when picking an area, readable by any signed-in user
 router.get('/config', authenticate(), asyncHandler(async (_req, res) => {
   const cfg = await getMentorshipConfig();
   ApiResponse.success(res, cfg);
