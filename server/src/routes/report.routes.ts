@@ -173,6 +173,8 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
         count: 1,
         eventTitle: '$eventInfo.title',
         eventDate: '$eventInfo.startDate',
+        eventEndDate: '$eventInfo.endDate',
+        eventStatus: '$eventInfo.status',
       }},
       { $sort: { eventDate: -1 } },
     ]),
@@ -188,8 +190,11 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
       { $project: {
         _id: 1,
         totalBudget: 1,
-        status: 1,
+        budgetStatus: '$status',
         eventTitle: '$eventInfo.title',
+        eventDate: '$eventInfo.startDate',
+        eventEndDate: '$eventInfo.endDate',
+        eventStatus: '$eventInfo.status',
       }},
     ]),
     Donation.aggregate([
@@ -205,6 +210,8 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
         totalIncome: 1,
         eventTitle: '$eventInfo.title',
         eventDate: '$eventInfo.startDate',
+        eventEndDate: '$eventInfo.endDate',
+        eventStatus: '$eventInfo.status',
       }},
     ]),
   ]);
@@ -223,14 +230,20 @@ router.get('/finance/events', authenticate(), authorize(UserRole.ADMIN), asyncHa
   for (const b of eventBudgets) {
     const row = rowFor(b._id, {});
     row.totalBudget = b.totalBudget;
-    row.status = b.status;
+    // The budget's own approval state, which is separate from how the event itself is going.
+    row.budgetStatus = b.budgetStatus;
     row.eventTitle = row.eventTitle || b.eventTitle;
+    row.eventDate = row.eventDate || b.eventDate;
+    row.eventEndDate = row.eventEndDate ?? b.eventEndDate;
+    row.eventStatus = row.eventStatus || b.eventStatus;
   }
   for (const i of eventIncome) {
     const row = rowFor(i._id, {});
     row.totalIncome = i.totalIncome;
     row.eventTitle = row.eventTitle || i.eventTitle;
     row.eventDate = row.eventDate || i.eventDate;
+    row.eventEndDate = row.eventEndDate ?? i.eventEndDate;
+    row.eventStatus = row.eventStatus || i.eventStatus;
   }
 
   ApiResponse.success(res, Array.from(eventMap.values()));

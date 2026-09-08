@@ -39,6 +39,7 @@ import { formatDate, toDateInput } from "@/lib/date";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import Spinner from "@/components/ui/Spinner";
 import { committeeDisplayName } from "@/lib/committee";
+import { deriveEventStatus } from "@rdswa/shared";
 import {
   BarChart,
   Bar,
@@ -1731,6 +1732,15 @@ function CampaignsList({ committeeId }: { committeeId: string }) {
   );
 }
 
+/** The status shown on the events list, derived from the dates so both pages agree. */
+function eventStatusOf(row: any): string {
+  return deriveEventStatus({
+    startDate: row.eventDate,
+    endDate: row.eventEndDate,
+    status: row.eventStatus,
+  });
+}
+
 /** Per-event financial report covering budget, income and expense. */
 function EventFinanceList({ committeeId }: { committeeId: string }) {
   const { data, isLoading } = useQuery({
@@ -1822,6 +1832,11 @@ function EventFinanceList({ committeeId }: { committeeId: string }) {
                   </td>
                   <td className="p-3 text-right text-foreground whitespace-nowrap">
                     BDT {budget.toLocaleString()}
+                    {e.budgetStatus && (
+                      <span className="block text-[11px] capitalize text-muted-foreground">
+                        {e.budgetStatus}
+                      </span>
+                    )}
                   </td>
                   <td className="p-3 text-right text-green-600 font-medium whitespace-nowrap">
                     BDT {income.toLocaleString()}
@@ -1835,13 +1850,9 @@ function EventFinanceList({ committeeId }: { committeeId: string }) {
                     {inDeficit ? "−" : "+"} BDT {Math.abs(net).toLocaleString()}
                   </td>
                   <td className="p-3 text-xs">
-                    {e.status ? (
-                      <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground whitespace-nowrap">
-                        {e.status}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground whitespace-nowrap">
+                      {eventStatusOf(e)}
+                    </span>
                   </td>
                 </motion.tr>
               );
@@ -1877,11 +1888,9 @@ function EventFinanceList({ committeeId }: { committeeId: string }) {
                     </p>
                   )}
                 </div>
-                {e.status && (
-                  <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground text-xs whitespace-nowrap shrink-0">
-                    {e.status}
-                  </span>
-                )}
+                <span className="px-2 py-0.5 rounded-full bg-muted capitalize text-muted-foreground text-xs whitespace-nowrap shrink-0">
+                  {eventStatusOf(e)}
+                </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div>
@@ -1889,6 +1898,11 @@ function EventFinanceList({ committeeId }: { committeeId: string }) {
                   <p className="font-medium text-foreground">
                     BDT {budget.toLocaleString()}
                   </p>
+                  {e.budgetStatus && (
+                    <p className="text-[11px] capitalize text-muted-foreground">
+                      {e.budgetStatus}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-muted-foreground">Income</p>
