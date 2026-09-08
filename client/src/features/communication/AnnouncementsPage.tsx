@@ -6,25 +6,51 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { ROLE_HIERARCHY, UserRole } from '@rdswa/shared';
 import {
-  Megaphone, Plus, Loader2, User as UserIcon, Clock,
+  Megaphone, Plus, Loader2, User as UserIcon, Clock, Pencil, Trash2, X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
+import { omitFieldError } from '@/lib/formErrors';
+import { stripHtml } from '@/lib/stripHtml';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
+import RichTextEditor from '@/components/ui/RichTextEditor';
+import RichContent from '@/components/ui/RichContent';
+import { useConfirm } from '@/components/ui/ConfirmModal';
+
+/** Announcements are stored as one message body, with the title in front of the content. */
+function parseAnnouncement(raw: string | undefined): { title: string; body: string } {
+  const match = raw?.match(/^\*\*(.+?)\*\*\n\n([\s\S]*)$/);
+  return { title: match ? match[1] : 'Announcement', body: match ? match[2] : raw || '' };
+}
 
 const PROMO_EVERY = 6;
 
 export default function AnnouncementsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [showCreate, setShowCreate] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const isMod = user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+  // An Admin can manage every announcement, while everyone else only manages their own.
+  const isAdmin = !!user && ROLE_HIERARCHY.indexOf(user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+  // Mirrors the server: Moderator+ only, and then an Admin for any of them or the author for their own.
+  const canManage = (ann: any) => !!isMod && (isAdmin || ann.sender?._id === user?._id);
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['announcements'] });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/communication/announcements/${id}`),
+    onSuccess: () => { refresh(); toast.success('Announcement deleted'); },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to delete'),
+  });
 
   const {
     items: announcements,
@@ -64,11 +90,8 @@ export default function AnnouncementsPage() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <CreateAnnouncementForm
-              onCreated={() => {
-                setShowCreate(false);
-                queryClient.invalidateQueries({ queryKey: ['announcements'] });
-              }}
+            <AnnouncementForm
+              onSaved={() => { setShowCreate(false); refresh(); }}
               onCancel={() => setShowCreate(false)}
             />
           </motion.div>
@@ -88,10 +111,18 @@ export default function AnnouncementsPage() {
       ) : (
         <div className="space-y-3">
           {announcements.map((ann: any, i: number) => {
-            // Parse title/content from the "**title**\n\ncontent" format
-            const match = ann.content?.match(/^\*\*(.+?)\*\*\n\n([\s\S]*)$/);
-            const title = match ? match[1] : 'Announcement';
-            const body = match ? match[2] : ann.content;
+            const { title, body } = parseAnnouncement(ann.content);
+
+            if (editingId === ann._id) {
+              return (
+                <AnnouncementForm
+                  key={ann._id}
+                  announcement={{ _id: ann._id, title, content: body }}
+                  onSaved={() => { setEditingId(null); refresh(); }}
+                  onCancel={() => setEditingId(null)}
+                />
+              );
+            }
 
             return (
               <Fragment key={ann._id}>
@@ -105,8 +136,36 @@ export default function AnnouncementsPage() {
                       <Megaphone className="h-5 w-5 text-amber-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm mb-1 break-words">{title}</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere]">{body}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-sm mb-1 break-words">{title}</h3>
+                        {canManage(ann) && (
+                          <div className="flex shrink-0 -mt-1">
+                            <button
+                              onClick={() => { setEditingId(ann._id); setShowCreate(false); }}
+                              title="Edit announcement"
+                              className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: 'Delete Announcement',
+                                  message: `Delete "${title}"? Members keep the notification they already received.`,
+                                  confirmLabel: 'Delete',
+                                  variant: 'danger',
+                                });
+                                if (ok) deleteMutation.mutate(ann._id);
+                              }}
+                              title="Delete announcement"
+                              className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-accent"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <RichContent html={body} className="text-sm text-muted-foreground" />
                       <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground pt-2 border-t flex-wrap">
                         <Link to={`/members/${ann.sender?._id}`} className="flex items-center gap-1 hover:text-primary transition-colors min-w-0">
                           <UserIcon className="h-3 w-3 shrink-0" />
@@ -116,6 +175,7 @@ export default function AnnouncementsPage() {
                           <Clock className="h-3 w-3 shrink-0" />
                           {formatDate(ann.createdAt)}
                         </span>
+                        {ann.isEdited && <span className="italic">edited</span>}
                       </div>
                     </div>
                   </div>
@@ -140,60 +200,76 @@ export default function AnnouncementsPage() {
   );
 }
 
-function CreateAnnouncementForm({
-  onCreated,
+function AnnouncementForm({
+  announcement,
+  onSaved,
   onCancel,
 }: {
-  onCreated: () => void;
+  announcement?: { _id: string; title: string; content: string };
+  onSaved: () => void;
   onCancel: () => void;
 }) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState(announcement?.title || '');
+  const [content, setContent] = useState(announcement?.content || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const toast = useToast();
+  const isEdit = !!announcement;
 
-  const createMutation = useMutation({
-    mutationFn: () => api.post('/communication/announcements', { title, content }),
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      isEdit
+        ? api.patch(`/communication/announcements/${announcement._id}`, { title, content })
+        : api.post('/communication/announcements', { title, content }),
     onSuccess: () => {
-      toast.success('Announcement posted!');
-      onCreated();
+      toast.success(isEdit ? 'Announcement updated' : 'Announcement posted!');
+      onSaved();
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to post announcement');
+      toast.error(err?.response?.data?.message || 'Failed to save announcement');
     },
   });
 
   const handleSubmit = () => {
-    setErrors({});
     const newErrors: Record<string, string> = {};
     if (!title.trim()) newErrors.title = 'Title is required';
-    if (!content.trim()) newErrors.content = 'Content is required';
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
-    createMutation.mutate();
+    // The editor emits an empty paragraph rather than an empty string when nothing is written.
+    if (!stripHtml(content).trim()) newErrors.content = 'Content is required';
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    saveMutation.mutate();
   };
 
   return (
     <div className="bg-card border rounded-lg p-5 mb-4">
-      <h3 className="font-semibold mb-3">Post Announcement</h3>
-      <p className="text-xs text-muted-foreground mb-3">This will be broadcast to all members via notifications.</p>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold">{isEdit ? 'Edit Announcement' : 'Post Announcement'}</h3>
+        {isEdit && (
+          <button type="button" onClick={onCancel} className="p-1 rounded hover:bg-accent text-muted-foreground" aria-label="Close">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {!isEdit && (
+        <p className="text-xs text-muted-foreground mb-3">This will be broadcast to all members via notifications.</p>
+      )}
       <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} noValidate className="space-y-3">
         <div>
           <input
             type="text"
             placeholder="Announcement title"
             value={title}
-            onChange={(e) => { setTitle(e.target.value); setErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
+            onChange={(e) => { setTitle(e.target.value); setErrors((prev) => omitFieldError(prev, 'title')); }}
             className={`w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.title ? 'border-red-500' : ''}`}
           />
           <FieldError message={errors.title} />
         </div>
         <div>
-          <textarea
-            placeholder="Announcement content..."
+          <RichTextEditor
             value={content}
-            onChange={(e) => { setContent(e.target.value); setErrors((prev) => { const { content, ...rest } = prev; return rest; }); }}
-            rows={4}
-            className={`w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.content ? 'border-red-500' : ''}`}
+            onChange={(v) => { setContent(v); setErrors((prev) => omitFieldError(prev, 'content')); }}
+            placeholder="Announcement content..."
+            minHeight="120px"
+            error={!!errors.content}
           />
           <FieldError message={errors.content} />
         </div>
@@ -203,10 +279,10 @@ function CreateAnnouncementForm({
           </button>
           <button
             type="submit"
-            disabled={createMutation.isPending}
+            disabled={saveMutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
           >
-            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Post'}
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : isEdit ? 'Save' : 'Post'}
           </button>
         </div>
       </form>

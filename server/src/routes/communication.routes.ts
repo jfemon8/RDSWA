@@ -1409,6 +1409,39 @@ router.delete('/forum/:id', authenticate(), authorize(UserRole.MODERATOR), async
 
 // ── Announcement Channel ──
 
+/** The stored shape of an announcement, where the title rides in front of the body. */
+const composeAnnouncement = (title: string, content: string) => `**${title}**\n\n${content}`;
+
+/** Notification text for an announcement, with the rich-text markup taken back out. */
+function announcementPreview(content: string): string {
+  return content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+}
+
+/** The announcement plus the right to change it, which its author and any Admin hold. */
+async function findEditableAnnouncement(messageId: string, user: any) {
+  const centralGroup = await ChatGroup.findOne({ type: 'central', isDeleted: false });
+  if (!centralGroup) throw ApiError.notFound('Announcement not found');
+
+  const message = await Message.findOne({
+    _id: messageId,
+    group: centralGroup._id,
+    isDeleted: false,
+    isAnnouncement: true,
+  });
+  if (!message) throw ApiError.notFound('Announcement not found');
+
+  // Posting is Moderator+, so managing one is too — a demoted author loses the right with the rank.
+  if (ROLE_HIERARCHY.indexOf(user.role as UserRole) < ROLE_HIERARCHY.indexOf(UserRole.MODERATOR)) {
+    throw ApiError.forbidden('Only moderators and above can manage announcements');
+  }
+
+  const isAuthor = message.sender.toString() === user._id.toString();
+  if (!isAuthor && !isAdminOrAbove(user.role)) {
+    throw ApiError.forbidden('Only the author or an admin can change this announcement');
+  }
+  return message;
+}
+
 router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { title, content, link } = req.body;
@@ -1430,7 +1463,10 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
   const message = await Message.create({
     group: centralGroup._id,
     sender: req.user._id,
-    content: `**${title}**\n\n${content}`,
+    content: composeAnnouncement(title, content),
+    // The announcement channel and the group's own chat share this collection, so only the
+    // messages published here are announcements — a chat message in the group is not one.
+    isAnnouncement: true,
   });
   await message.populate('sender', 'name avatar');
 
@@ -1447,7 +1483,7 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
       recipientIds,
       type: 'announcement',
       title,
-      message: content.substring(0, 200),
+      message: announcementPreview(content),
       link: link || `/dashboard/groups/${centralGroup._id}`,
     });
   }
@@ -1463,16 +1499,43 @@ router.get('/announcements', authenticate(), asyncHandler(async (req, res) => {
     return ApiResponse.paginated(res, [], 0, page, limit);
   }
 
+  const filter = { group: centralGroup._id, isDeleted: false, isAnnouncement: true };
   const [messages, total] = await Promise.all([
-    Message.find({ group: centralGroup._id, isDeleted: false })
+    Message.find(filter)
       .populate('sender', 'name avatar')
       .sort({ createdAt: -1 })
       .skip(getSkip({ page, limit }))
       .limit(limit),
-    Message.countDocuments({ group: centralGroup._id, isDeleted: false }),
+    Message.countDocuments(filter),
   ]);
 
   ApiResponse.paginated(res, messages, total, page, limit);
+}));
+
+// Edit an announcement — its author, or any Admin
+router.patch('/announcements/:id', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const { title, content } = req.body;
+  if (!title?.trim() || !content?.trim()) throw ApiError.badRequest('Title and content are required');
+
+  const message = await findEditableAnnouncement(req.params.id as string, req.user);
+  message.content = composeAnnouncement(title.trim(), content);
+  message.isEdited = true;
+  await message.save();
+  await message.populate('sender', 'name avatar');
+
+  ApiResponse.success(res, message, 'Announcement updated');
+}));
+
+// Delete an announcement — its author, or any Admin
+router.delete('/announcements/:id', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const message = await findEditableAnnouncement(req.params.id as string, req.user);
+
+  message.isDeleted = true;
+  await message.save();
+
+  ApiResponse.success(res, null, 'Announcement deleted');
 }));
 
 export default router;

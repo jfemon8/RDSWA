@@ -81,6 +81,8 @@ export interface IMessageDocument extends Document {
   deletedFor: mongoose.Types.ObjectId[];
   /** Whether message content was edited after the original send */
   isEdited: boolean;
+  /** Set only on messages published through the announcement channel, which ordinary chat in the same group is not. */
+  isAnnouncement: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,6 +159,7 @@ const messageSchema = new Schema<IMessageDocument>(
     isDeleted: { type: Boolean, default: false },
     deletedFor: { type: [{ type: Schema.Types.ObjectId, ref: 'User' }], default: [] },
     isEdited: { type: Boolean, default: false },
+    isAnnouncement: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -164,6 +167,7 @@ const messageSchema = new Schema<IMessageDocument>(
 messageSchema.index({ group: 1, createdAt: -1 });
 messageSchema.index({ sender: 1, recipient: 1, createdAt: -1 });
 messageSchema.index({ group: 1, pinnedAt: -1 });
+messageSchema.index({ isAnnouncement: 1, createdAt: -1 });
 messageSchema.index({ starredBy: 1, createdAt: -1 });
 // Text index for search across content
 messageSchema.index({ content: 'text' });

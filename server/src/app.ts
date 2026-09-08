@@ -26,6 +26,7 @@ import { initializeGroups } from './jobs/groupInitializer';
 import { syncRolesOnStart } from './jobs/roleSyncOnStart';
 import { syncCommitteeCurrentFlags } from './jobs/committeeCurrentSync';
 import { startMentorshipReminder } from './jobs/mentorshipReminder';
+import { backfillAnnouncementFlags } from './jobs/announcementBackfill';
 import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
@@ -87,6 +88,9 @@ async function start() {
 
   // One-time role sync — ensures DB matches new auto-assignment rules
   syncRolesOnStart();
+
+  // Announcements predating their own flag are recognised and marked, once.
+  backfillAnnouncementFlags();
 
   // Start scheduled jobs
   startAlumniTagger();
