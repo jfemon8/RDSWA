@@ -67,7 +67,7 @@ export function useGroupActivitySocket() {
     const handler = (data: any) => {
       if (!data?.groupId) return;
       // Chat-list / preview queries — ChatHubPage, GroupsPage, ForwardModal.
-      queryClient.invalidateQueries({ queryKey: ['communication', 'groups'] });
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
       queryClient.invalidateQueries({ queryKey: ['group', data.groupId] });
       // Global unread badge shown in the navbar's MessageBell.
       queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });

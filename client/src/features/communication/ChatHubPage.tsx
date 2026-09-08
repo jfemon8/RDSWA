@@ -1,23 +1,22 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { usePresence } from '@/hooks/useSocket';
+import { usePresence, useDMSocket, useGroupActivitySocket } from '@/hooks/useSocket';
 import {
-  Search, MessagesSquare, Star, Globe, Building2, Hash,
-  Plus, ChevronRight, ArrowRight, User as UserIcon, MessageSquare,
+  Search, MessagesSquare, MailOpen, Globe, Building2, Hash,
+  Plus, ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import PresenceBadge from '@/components/chat/PresenceBadge';
-import { formatDateCustom, formatDate, formatTime } from '@/lib/date';
-import { useToast } from '@/components/ui/Toast';
+import { useAuthStore } from '@/stores/authStore';
+import { formatDateCustom } from '@/lib/date';
 import Spinner from '@/components/ui/Spinner';
-import { stripHtml } from '@/lib/stripHtml';
 
-/** Unified chat hub listing DMs, groups, and starred items, holding no chat state and only routing to the dedicated pages. */
+/** Unified chat hub listing DMs and groups, holding no chat state and only routing to the dedicated pages. */
 
-type Tab = 'all' | 'chats' | 'groups' | 'starred';
+type Tab = 'all' | 'chats' | 'groups' | 'unread';
 
 interface UnifiedItem {
   kind: 'dm' | 'group';
@@ -30,16 +29,6 @@ interface UnifiedItem {
   groupType?: string;
   to: string;
   raw: any;
-}
-
-interface StarredMessage {
-  _id: string;
-  content: string;
-  sender?: { _id: string; name?: string; avatar?: string };
-  group?: { _id: string; name: string; type: string };
-  recipient?: string;
-  createdAt: string;
-  attachments?: Array<{ kind?: string; name?: string }>;
 }
 
 const GROUP_TYPE_ICONS: Record<string, typeof Globe> = {
@@ -62,6 +51,14 @@ function formatTimeAgo(dateStr?: string): string {
   return formatDateCustom(dateStr, { month: 'short', day: 'numeric' });
 }
 
+/** A group row names who wrote last, since several people can be talking in one thread. */
+function groupMessagePreview(msg: any, viewerId?: string): string {
+  const body = lastMessagePreview(msg);
+  const sender = msg?.sender;
+  if (!sender?.name) return body;
+  return `${sender._id === viewerId ? 'You' : sender.name.split(' ')[0]}: ${body}`;
+}
+
 function lastMessagePreview(msg: any): string {
   if (!msg) return 'No messages yet';
   if (msg.content) return msg.content;
@@ -73,7 +70,7 @@ function lastMessagePreview(msg: any): string {
 }
 
 const TAB_STORAGE_KEY = 'chat-hub-tab';
-const VALID_TABS: Tab[] = ['all', 'chats', 'groups', 'starred'];
+const VALID_TABS: Tab[] = ['all', 'chats', 'groups', 'unread'];
 
 function readInitialTab(urlTab: string | null): Tab {
   if (urlTab && (VALID_TABS as string[]).includes(urlTab)) return urlTab as Tab;
@@ -85,8 +82,7 @@ function readInitialTab(urlTab: string | null): Tab {
 }
 
 export default function ChatHubPage() {
-  const queryClient = useQueryClient();
-  const toast = useToast();
+  const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   // Preserve the selected tab across conversation entry/exit. Priority:
   //   1. ?tab= in URL (shareable / deep-linkable)
@@ -126,25 +122,6 @@ export default function ChatHubPage() {
     },
   });
 
-  // Starred messages — fetched only when the Starred tab is active
-  const { data: starredData, isLoading: loadingStarred } = useQuery({
-    queryKey: ['messages', 'starred'],
-    queryFn: async () => {
-      const { data } = await api.get('/communication/messages/starred');
-      return data.data as StarredMessage[];
-    },
-    enabled: tab === 'starred',
-  });
-
-  const unstarMutation = useMutation({
-    mutationFn: (messageId: string) => api.post(`/communication/messages/${messageId}/star`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', 'starred'] });
-      toast.success('Unstarred');
-    },
-    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to unstar'),
-  });
-
   // Member search for the "New chat" popover.
   const { data: memberResults } = useQuery({
     queryKey: ['hub-member-search', search],
@@ -161,6 +138,10 @@ export default function ChatHubPage() {
     [dms]
   );
   const { online } = usePresence(partnerIds);
+
+  // Keep the ordering live: any DM or group message refreshes the two lists this page sorts.
+  useDMSocket(undefined);
+  useGroupActivitySocket();
 
   // Normalise DMs and groups into one typed list sorted by most recent activity, keeping the render loop simple.
   const unified: UnifiedItem[] = useMemo(() => {
@@ -187,8 +168,10 @@ export default function ChatHubPage() {
         id: g._id,
         name: g.name,
         avatar: g.avatar,
-        subtitle: stripHtml(g.description) || `${g.members?.length || 0} members`,
-        timestamp: g.updatedAt,
+        subtitle: g.lastMessage
+          ? groupMessagePreview(g.lastMessage, user?._id)
+          : `${g.members?.length || 0} members`,
+        timestamp: g.lastActivityAt || g.updatedAt,
         // Server reports per-group unread count via aggregation on the
         // /communication/groups endpoint — see its handler for the query.
         unreadCount: g.unreadCount || 0,
@@ -212,6 +195,7 @@ export default function ChatHubPage() {
     let list = unified;
     if (tab === 'chats') list = list.filter((i) => i.kind === 'dm');
     if (tab === 'groups') list = list.filter((i) => i.kind === 'group');
+    if (tab === 'unread') list = list.filter((i) => (i.unreadCount || 0) > 0);
     if (search.trim() && !showNewChat) {
       const q = search.toLowerCase();
       list = list.filter((i) => i.name.toLowerCase().includes(q) || i.subtitle.toLowerCase().includes(q));
@@ -219,27 +203,7 @@ export default function ChatHubPage() {
     return list;
   }, [unified, tab, search, showNewChat]);
 
-  const isLoading = tab === 'starred' ? loadingStarred : (loadingDms || loadingGroups);
-
-  // Starred list filtered by the same search input
-  const starredMessages: StarredMessage[] = starredData || [];
-  const filteredStarred = useMemo(() => {
-    if (tab !== 'starred') return [];
-    const q = search.trim().toLowerCase();
-    if (!q || showNewChat) return starredMessages;
-    return starredMessages.filter((m) =>
-      (m.content || '').toLowerCase().includes(q) ||
-      (m.sender?.name || '').toLowerCase().includes(q) ||
-      (m.group?.name || '').toLowerCase().includes(q)
-    );
-  }, [starredMessages, tab, search, showNewChat]);
-
-  const getStarredLink = (m: StarredMessage): string => {
-    if (m.group?._id) return `/dashboard/groups/${m.group._id}#msg-${m._id}`;
-    const partnerId = m.recipient || m.sender?._id;
-    if (partnerId) return `/dashboard/messages?with=${partnerId}#msg-${m._id}`;
-    return '/dashboard/messages';
-  };
+  const isLoading = loadingDms || loadingGroups;
 
   return (
     <div className="w-full">
@@ -330,7 +294,7 @@ export default function ChatHubPage() {
 
       {/* Tabs — WhatsApp style pill tabs */}
       <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1 w-fit">
-        {(['all', 'chats', 'groups', 'starred'] as const).map((t) => (
+        {(['all', 'chats', 'groups', 'unread'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -346,7 +310,7 @@ export default function ChatHubPage() {
               />
             )}
             <span className="relative z-10 flex items-center gap-1">
-              {t === 'starred' && <Star className="h-3 w-3" />}
+              {t === 'unread' && <MailOpen className="h-3 w-3" />}
               {t}
             </span>
           </button>
@@ -356,29 +320,6 @@ export default function ChatHubPage() {
       {/* Unified list */}
       {isLoading ? (
         <Spinner size="md" />
-      ) : tab === 'starred' ? (
-        filteredStarred.length === 0 ? (
-          <FadeIn direction="up">
-            <div className="text-center py-16 text-sm text-muted-foreground">
-              <Star className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>{search.trim() ? 'No starred messages match your search.' : 'No starred messages yet.'}</p>
-              <p className="text-xs mt-1">Long-press or right-click any message and tap "Star" to save it here.</p>
-            </div>
-          </FadeIn>
-        ) : (
-          <div className="space-y-1">
-            {filteredStarred.map((m, i) => (
-              <FadeIn key={m._id} delay={i * 0.03} direction="up" distance={10}>
-                <StarredTile
-                  msg={m}
-                  to={getStarredLink(m)}
-                  onUnstar={() => unstarMutation.mutate(m._id)}
-                  unstarPending={unstarMutation.isPending}
-                />
-              </FadeIn>
-            ))}
-          </div>
-        )
       ) : filtered.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-16 text-sm text-muted-foreground">
@@ -388,7 +329,9 @@ export default function ChatHubPage() {
                 ? 'No direct messages yet.'
                 : tab === 'groups'
                   ? 'You are not in any groups yet.'
-                  : 'No conversations yet.'}
+                  : tab === 'unread'
+                    ? 'Nothing unread — you are all caught up.'
+                    : 'No conversations yet.'}
             </p>
             <p className="text-xs mt-1">
               Tap "New Chat" to start a conversation or{' '}
@@ -409,76 +352,6 @@ export default function ChatHubPage() {
   );
 }
 
-function StarredTile({
-  msg,
-  to,
-  onUnstar,
-  unstarPending,
-}: {
-  msg: StarredMessage;
-  to: string;
-  onUnstar: () => void;
-  unstarPending: boolean;
-}) {
-  return (
-    <div className="w-full flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/40 transition-colors">
-      {/* Avatar */}
-      <div className="shrink-0">
-        {msg.sender?.avatar ? (
-          <img src={msg.sender.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
-        ) : (
-          <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <UserIcon className="h-5 w-5" />
-          </div>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <span className="text-sm font-medium truncate">{msg.sender?.name || 'Unknown sender'}</span>
-            {msg.group?.name && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground shrink-0">
-                <MessageSquare className="h-2.5 w-2.5" /> {msg.group.name}
-              </span>
-            )}
-          </div>
-          <span className="text-[11px] text-muted-foreground shrink-0">
-            {formatDate(msg.createdAt)} {formatTime(msg.createdAt)}
-          </span>
-        </div>
-        {msg.content && (
-          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap [overflow-wrap:anywhere] line-clamp-2">
-            {msg.content}
-          </p>
-        )}
-        {msg.attachments && msg.attachments.length > 0 && (
-          <p className="text-[11px] text-muted-foreground italic mt-1">
-            📎 {msg.attachments.length} attachment{msg.attachments.length > 1 ? 's' : ''}
-          </p>
-        )}
-        <div className="flex items-center gap-3 mt-2">
-          <Link
-            to={to}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            Jump to conversation <ArrowRight className="h-3 w-3" />
-          </Link>
-          <button
-            type="button"
-            onClick={onUnstar}
-            disabled={unstarPending}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-amber-600 disabled:opacity-50"
-            title="Remove from starred"
-          >
-            <Star className="h-3 w-3 fill-current" /> Unstar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean }) {
   const TypeIcon = item.kind === 'group' ? (GROUP_TYPE_ICONS[item.groupType || 'custom'] || Hash) : null;

@@ -155,7 +155,7 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
     filter.members = userId;
   }
   const groups = await ChatGroup.find(filter)
-    .populate('members', 'name avatar').sort({ updatedAt: -1 }).lean();
+    .populate('members', 'name avatar').lean();
 
   if (groups.length === 0) {
     return ApiResponse.success(res, []);
@@ -179,10 +179,54 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
     unreadAgg.map((u: any) => [u._id.toString(), u.count])
   );
 
-  const result = groups.map((g: any) => ({
-    ...g,
-    unreadCount: unreadMap.get(g._id.toString()) || 0,
-  }));
+  // The newest message per group, which is what orders a chat list — the group document's own
+  // `updatedAt` only moves when the group itself is edited, so it says nothing about conversation.
+  const lastAgg = await Message.aggregate([
+    {
+      $match: {
+        group: { $in: groupIds },
+        isDeleted: false,
+        deletedFor: { $ne: userId },
+      },
+    },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: '$group',
+        content: { $first: '$content' },
+        attachments: { $first: '$attachments' },
+        sender: { $first: '$sender' },
+        createdAt: { $first: '$createdAt' },
+      },
+    },
+    { $lookup: { from: 'users', localField: 'sender', foreignField: '_id', as: 'senderUser' } },
+    { $unwind: { path: '$senderUser', preserveNullAndEmptyArrays: true } },
+  ]);
+  const lastMap = new Map<string, any>(lastAgg.map((m: any) => [m._id.toString(), m]));
+
+  const result = groups.map((g: any) => {
+    const last = lastMap.get(g._id.toString());
+    return {
+      ...g,
+      unreadCount: unreadMap.get(g._id.toString()) || 0,
+      lastMessage: last
+        ? {
+            content: last.content,
+            attachments: last.attachments,
+            createdAt: last.createdAt,
+            sender: last.senderUser
+              ? { _id: last.senderUser._id, name: last.senderUser.name }
+              : null,
+          }
+        : null,
+      // A group nobody has written in yet falls back to when it was created or last edited.
+      lastActivityAt: last?.createdAt || g.updatedAt,
+    };
+  });
+
+  result.sort(
+    (a: any, b: any) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()
+  );
 
   ApiResponse.success(res, result);
 }));
