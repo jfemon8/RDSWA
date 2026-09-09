@@ -3,6 +3,7 @@ import { ApiError } from '../utils/ApiError';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 
+import { escapeRegex } from '../utils/escapeRegex';
 interface ListNoticesQuery {
   page?: string;
   limit?: string;
@@ -17,17 +18,15 @@ export class NoticeService {
     const { page, limit } = parsePagination(query);
     const filter: FilterQuery<INoticeDocument> = { isDeleted: false };
 
-    if (!isAdmin) {
-      // Public users: show published or archived (when toggled)
-      if (query.archived === 'true') {
-        filter.status = 'archived';
-      } else {
-        filter.status = 'published';
-        filter.$or = [
-          { scheduledPublishAt: { $exists: false } },
-          { scheduledPublishAt: { $lte: new Date() } },
-        ];
-      }
+    // The archive toggle is the same request for every reader, so it is honoured before any role check.
+    if (query.archived === 'true') {
+      filter.status = 'archived';
+    } else if (!isAdmin) {
+      filter.status = 'published';
+      filter.$or = [
+        { scheduledPublishAt: { $exists: false } },
+        { scheduledPublishAt: { $lte: new Date() } },
+      ];
     } else if (query.status) {
       filter.status = query.status;
     }
@@ -36,9 +35,10 @@ export class NoticeService {
 
     // Search filter — build $or separately and merge with $and if needed
     if (query.search) {
+      const term = escapeRegex(query.search);
       const searchCondition = [
-        { title: { $regex: query.search, $options: 'i' } },
-        { content: { $regex: query.search, $options: 'i' } },
+        { title: { $regex: term, $options: 'i' } },
+        { content: { $regex: term, $options: 'i' } },
       ];
       if (filter.$or) {
         // Combine existing $or (scheduled publish) with search $or using $and

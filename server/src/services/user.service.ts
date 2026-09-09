@@ -9,6 +9,7 @@ import { notificationService } from './notification.service';
 import { ensureDepartmentGroup, ensureCentralGroup } from '../jobs/groupInitializer';
 import { validateAcademicFields } from '../utils/validateAcademicFields';
 
+import { escapeRegex } from '../utils/escapeRegex';
 /** Fields that can be marked private by users */
 const PRIVATE_FIELDS = [
   'phone', 'email', 'dateOfBirth', 'nid',
@@ -204,7 +205,7 @@ export class UserService {
     if (query.session) filter.session = query.session;
     if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
-    if (query.profession) filter.profession = { $regex: query.profession, $options: 'i' };
+    if (query.profession) filter.profession = { $regex: escapeRegex(query.profession), $options: 'i' };
 
     // Flag-based filters (alumni/advisor/senior_advisor are tags, not role tiers)
     if (query.isAlumni === 'true') filter.isAlumni = true;
@@ -225,12 +226,13 @@ export class UserService {
     }
     if (query.membershipStatus) filter.membershipStatus = query.membershipStatus;
     if (query.search) {
+      const term = escapeRegex(query.search);
       const searchCondition = {
         $or: [
-          { name: { $regex: query.search, $options: 'i' } },
-          { email: { $regex: query.search, $options: 'i' } },
-          { studentId: { $regex: query.search, $options: 'i' } },
-          { profession: { $regex: query.search, $options: 'i' } },
+          { name: { $regex: term, $options: 'i' } },
+          { email: { $regex: term, $options: 'i' } },
+          { studentId: { $regex: term, $options: 'i' } },
+          { profession: { $regex: term, $options: 'i' } },
         ],
       };
       filter.$and = [...(filter.$and || []), searchCondition];
@@ -349,10 +351,11 @@ export class UserService {
     if (filters?.role) query.role = filters.role;
     if (filters?.membershipStatus) query.membershipStatus = filters.membershipStatus;
     if (filters?.search) {
+      const term = escapeRegex(filters.search);
       query.$or = [
-        { name: { $regex: filters.search, $options: 'i' } },
-        { email: { $regex: filters.search, $options: 'i' } },
-        { studentId: { $regex: filters.search, $options: 'i' } },
+        { name: { $regex: term, $options: 'i' } },
+        { email: { $regex: term, $options: 'i' } },
+        { studentId: { $regex: term, $options: 'i' } },
       ];
     }
     // If no filters at all, default to approved members

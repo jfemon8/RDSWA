@@ -3,14 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import { ArrowLeft, Loader2, Paperclip, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Paperclip, FileText, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { useBackNavigation } from '@/hooks/useBackNavigation';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
-import Spinner from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { stripHtml } from '@/lib/stripHtml';
 import Promo from '@/components/promo/Promo';
 import { buildArticleSchema, buildBreadcrumbSchema } from '@/components/seo/schemas';
 
@@ -32,14 +33,21 @@ export default function NoticeDetailPage() {
   });
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return (
+      <div className="container mx-auto py-8 space-y-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
   }
 
   const notice = data?.data;
   if (!notice) return <p className="text-center py-12 text-muted-foreground">Notice not found</p>;
 
   const noticeUrl = `/notices/${notice._id || notice.id || id}`;
-  const cleanText = (notice.content || '').replace(/<[^>]*>/g, '').trim();
+  const cleanText = stripHtml(notice.content).trim();
   const noticeJsonLd = buildArticleSchema({
     id: String(notice._id || notice.id || id),
     title: notice.title,
@@ -136,12 +144,7 @@ export default function NoticeDetailPage() {
   );
 }
 
-/**
- * Renders a single notice attachment.
- *  - Image → inline `<img>` with click-to-open
- *  - PDF   → embedded react-pdf viewer with page navigation, zoom, fullscreen
- *  - Other → fallback download link
- */
+/** Renders one attachment as an inline image, an embedded PDF viewer, or a download card. */
 function NoticeAttachment({ attachment }: { attachment: any }) {
   if (!attachment?.url) return null;
 
@@ -175,18 +178,13 @@ function NoticeAttachment({ attachment }: { attachment: any }) {
   if (isPdf) {
     return (
       <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-[480px] border rounded-xl bg-card">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        }
+        fallback={<Skeleton className="h-[480px] w-full rounded-xl" />}
       >
         <PdfViewer url={url} fileName={name} height={720} />
       </Suspense>
     );
   }
 
-  // Generic fallback — clickable card that downloads the file.
   return (
     <a
       href={url}

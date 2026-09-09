@@ -10,6 +10,7 @@ import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import { IJobPostDocument } from '../models/JobPost';
 
+import { escapeRegex } from '../utils/escapeRegex';
 const router = Router();
 
 // List active job posts (Public — anyone can view)
@@ -19,10 +20,11 @@ router.get('/', asyncHandler(async (req, res) => {
 
   if (req.query.type) filter.type = req.query.type as string;
   if (req.query.search) {
+    const term = escapeRegex(String(req.query.search));
     filter.$or = [
-      { title: { $regex: req.query.search as string, $options: 'i' } },
-      { company: { $regex: req.query.search as string, $options: 'i' } },
-      { location: { $regex: req.query.search as string, $options: 'i' } },
+      { title: { $regex: term, $options: 'i' } },
+      { company: { $regex: term, $options: 'i' } },
+      { location: { $regex: term, $options: 'i' } },
     ];
   }
 

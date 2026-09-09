@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import { sanitizeMongoInput } from './middlewares/sanitizeQuery.middleware';
 import mongoose from 'mongoose';
 import { env } from './config/env';
 import { initSentry } from './config/sentry';
@@ -51,6 +52,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(sanitizeMongoInput);
 if (env.NODE_ENV !== 'test') {
   app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
   app.use('/api', apiLimiter);

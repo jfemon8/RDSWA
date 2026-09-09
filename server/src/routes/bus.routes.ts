@@ -139,8 +139,8 @@ router.delete('/operators/:id/reviews/:reviewId', authenticate(),
 router.get('/routes', cacheResponse(300), asyncHandler(async (req, res) => {
   const filter: any = { isDeleted: false };
   if (req.query.routeType) filter.routeType = req.query.routeType;
-  if (req.query.origin) filter.origin = { $regex: req.query.origin, $options: 'i' };
-  if (req.query.destination) filter.destination = { $regex: req.query.destination, $options: 'i' };
+  if (req.query.origin) filter.origin = { $regex: escapeRegex(String(req.query.origin)), $options: 'i' };
+  if (req.query.destination) filter.destination = { $regex: escapeRegex(String(req.query.destination)), $options: 'i' };
   const routes = await BusRoute.find(filter).sort({ origin: 1 });
   ApiResponse.success(res, routes);
 }));

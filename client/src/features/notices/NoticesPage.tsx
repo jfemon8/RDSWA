@@ -1,11 +1,13 @@
-import { useState, Fragment } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, Fragment } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { keepPreviousData } from '@tanstack/react-query';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
 import { FileText, AlertTriangle, Search, Archive, Mail, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
+import { stripHtml } from '@/lib/stripHtml';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import SEO from '@/components/SEO';
@@ -17,11 +19,29 @@ import Promo from '@/components/promo/Promo';
 const PROMO_EVERY = 6;
 
 export default function NoticesPage() {
-  const [category, setCategory] = useState('');
-  const [search, setSearch] = useState('');
+  const [params, setParams] = useSearchParams();
+  const category = params.get('category') || '';
+  const showArchived = params.get('archived') === '1';
+  const [search, setSearch] = useState(() => params.get('q') || '');
   // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
-  const [showArchived, setShowArchived] = useState(false);
+
+  const setParam = (next: Record<string, string | null>, replace = false) =>
+    setParams(
+      (prev) => {
+        const merged = new URLSearchParams(prev);
+        Object.entries(next).forEach(([k, v]) => (v ? merged.set(k, v) : merged.delete(k)));
+        return merged;
+      },
+      { replace },
+    );
+
+  // Settled search text is mirrored into the URL by replacement, so typing leaves no history trail.
+  useEffect(() => {
+    const term = debouncedSearch.trim();
+    if ((params.get('q') || '') !== term) setParam({ q: term || null }, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   const filters: Record<string, string> = {};
   if (category) filters.category = category;
@@ -40,6 +60,8 @@ export default function NoticesPage() {
     path: '/notices',
     filters,
     limit: 12,
+    // Changing a filter keeps the current list visible instead of dropping back to skeletons.
+    queryOptions: { placeholderData: keepPreviousData },
   });
   const categories = ['', 'general', 'academic', 'event', 'urgent', 'financial', 'other'];
 
@@ -58,7 +80,6 @@ export default function NoticesPage() {
         direction="bottom"
       />
 
-      {/* Search Bar */}
       <FadeIn delay={0.15}>
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -72,11 +93,13 @@ export default function NoticesPage() {
         </div>
       </FadeIn>
 
-      {/* Category Filter + Archive Toggle */}
       <FadeIn delay={0.2}>
         <div className="flex items-center gap-2 mb-8 flex-wrap">
           {categories.map((c) => (
-            <button key={c} onClick={() => { setCategory(c); }}
+            <button
+              key={c}
+              // Picking a category means browsing the live board, so it leaves the archive behind.
+              onClick={() => setParam({ category: c || null, archived: null })}
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors capitalize ${
                 category === c ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'hover:bg-accent'
               }`}
@@ -86,7 +109,7 @@ export default function NoticesPage() {
           ))}
           <div className="ml-auto">
             <button
-              onClick={() => { setShowArchived(!showArchived); }}
+              onClick={() => setParam({ archived: showArchived ? null : '1' })}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 showArchived ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' : 'hover:bg-accent'
               }`}
@@ -112,9 +135,9 @@ export default function NoticesPage() {
               ? 'There are no archived notices. Older notices are archived here once they become inactive.'
               : 'No notices have been posted yet. Check back soon or contact an admin for the latest updates.'}
           primary={search
-            ? { label: 'Clear Search', icon: X, onClick: () => { setSearch(''); } }
+            ? { label: 'Clear Search', icon: X, onClick: () => setSearch('') }
             : { label: 'Contact Admin', icon: Mail, to: '/contact' }}
-          secondary={!search && !showArchived ? { label: 'View Archived', icon: Archive, onClick: () => { setShowArchived(true); } } : undefined}
+          secondary={!search && !showArchived ? { label: 'View Archived', icon: Archive, onClick: () => setParam({ archived: '1' }) } : undefined}
           hint="Important announcements, academic updates and urgent notices from RDSWA appear here."
         />
       ) : (
@@ -151,7 +174,7 @@ export default function NoticesPage() {
                               : <FileText className="h-4 w-4 text-primary shrink-0" />}
                             <h3 className="font-semibold truncate">{n.title}</h3>
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{n.content?.replace(/<[^>]*>/g, '')}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(n.content)}</p>
                           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                             <span className="capitalize">{n.category}</span>
                             <span>{formatDate(n.publishedAt || n.createdAt)}</span>

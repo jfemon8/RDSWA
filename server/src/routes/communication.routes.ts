@@ -406,7 +406,7 @@ router.get('/groups/:id/search', authenticate(), asyncHandler(async (req, res) =
     group: id,
     isDeleted: false,
     deletedFor: { $ne: req.user._id },
-    content: { $regex: q, $options: 'i' },
+    content: { $regex: escapeRegex(q), $options: 'i' },
   })
     .populate('sender', 'name avatar')
     .sort({ createdAt: -1 })
@@ -1186,7 +1186,7 @@ router.get('/dm/:userId/search', authenticate(), asyncHandler(async (req, res) =
     group: null,
     isDeleted: false,
     deletedFor: { $ne: myId },
-    content: { $regex: q, $options: 'i' },
+    content: { $regex: escapeRegex(q), $options: 'i' },
     $or: [
       { sender: myId, recipient: userId },
       { sender: userId, recipient: myId },

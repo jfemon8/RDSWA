@@ -13,6 +13,7 @@ import { sendEmail } from '../config/mail';
 import { renderEmailLayout, escapeHtml } from '../utils/emailTemplate';
 import mongoose from 'mongoose';
 
+import { escapeRegex } from '../utils/escapeRegex';
 const router = Router();
 
 // Dashboard stats
@@ -220,8 +221,8 @@ const RESOURCE_NAME_FIELDS: Record<string, { collection: string; field: string }
 router.get('/logs', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: any = {};
-  if (req.query.action) filter.action = { $regex: req.query.action, $options: 'i' };
-  if (req.query.resource) filter.resource = { $regex: req.query.resource, $options: 'i' };
+  if (req.query.action) filter.action = { $regex: escapeRegex(String(req.query.action)), $options: 'i' };
+  if (req.query.resource) filter.resource = { $regex: escapeRegex(String(req.query.resource)), $options: 'i' };
 
   const [logs, total] = await Promise.all([
     AuditLog.find(filter).populate('actor', 'name email avatar')

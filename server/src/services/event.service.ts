@@ -4,6 +4,7 @@ import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import mongoose from 'mongoose';
 import QRCode from 'qrcode';
+import { escapeRegex } from '../utils/escapeRegex';
 import {
   deriveEventStatus,
   dhakaStartOfDay,
@@ -210,9 +211,10 @@ export class EventService {
       filter.committee = new mongoose.Types.ObjectId(query.committee);
     }
     if (query.search) {
+      const term = escapeRegex(query.search);
       filter.$or = [
-        { title: { $regex: query.search, $options: 'i' } },
-        { description: { $regex: query.search, $options: 'i' } },
+        { title: { $regex: term, $options: 'i' } },
+        { description: { $regex: term, $options: 'i' } },
       ];
     }
 

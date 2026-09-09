@@ -16,6 +16,7 @@ import { renderEmailLayout } from '../utils/emailTemplate';
 import { env } from '../config/env';
 import { syncDepartmentGroups } from '../jobs/groupInitializer';
 
+import { escapeRegex } from '../utils/escapeRegex';
 const router = Router();
 
 // Get site settings (public subset for guests, full for admins)
@@ -549,7 +550,7 @@ router.get(
     const filter: Record<string, unknown> = { isDeleted: false };
     if (status) filter.status = status;
     if (search) {
-      const regex = { $regex: search, $options: 'i' };
+      const regex = { $regex: escapeRegex(String(search)), $options: 'i' };
       filter.$or = [{ name: regex }, { email: regex }, { subject: regex }, { message: regex }];
     }
 

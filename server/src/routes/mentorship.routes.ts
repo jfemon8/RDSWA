@@ -11,6 +11,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 import { getMentorshipConfig } from '../utils/getMentorshipConfig';
 import { classifyMentorAreas, effectiveMentorAreas } from '../utils/classifyMentorAreas';
 
+import { escapeRegex } from '../utils/escapeRegex';
 const router = Router();
 
 const MENTORSHIP_STATUSES = ['pending', 'active', 'completed', 'cancelled'];
@@ -92,8 +93,8 @@ async function matchingUserIds(search: string): Promise<any[]> {
   const users = await User.find({
     isDeleted: false,
     $or: [
-      { name: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } },
+      { name: { $regex: escapeRegex(search), $options: 'i' } },
+      { email: { $regex: escapeRegex(search), $options: 'i' } },
     ],
   }).select('_id').lean();
   return users.map((u) => u._id);
@@ -404,7 +405,7 @@ router.get('/admin/mentors', authenticate(), authorize(UserRole.MODERATOR), asyn
   if (req.query.optedIn === 'true') filter.isMentor = true;
   else filter.$or = [{ isAlumni: true }, { isAdvisor: true }, { isSeniorAdvisor: true }];
   if (req.query.search) {
-    filter.name = { $regex: req.query.search as string, $options: 'i' };
+    filter.name = { $regex: escapeRegex(String(req.query.search)), $options: 'i' };
   }
 
   const [mentors, total] = await Promise.all([
