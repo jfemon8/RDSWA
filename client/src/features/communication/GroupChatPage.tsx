@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatSocket, useTypingState, usePresence } from "@/hooks/useSocket";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { ROLE_HIERARCHY, UserRole } from "@rdswa/shared";
 import {
   ArrowLeft,
@@ -47,6 +48,8 @@ const TYPE_ICONS: Record<string, typeof Globe> = {
 export default function GroupChatPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  // Back returns to whatever opened this group — mentorship, a profile, the hub — rather than always the hub.
+  const goBack = useBackNavigation("/dashboard/chat");
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -471,7 +474,7 @@ export default function GroupChatPage() {
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-3 px-3 py-2 border-b bg-card shrink-0">
         <button
-          onClick={() => navigate("/dashboard/chat", { replace: true })}
+          onClick={goBack}
           className="tap-target flex items-center justify-center rounded-md hover:bg-accent shrink-0"
           aria-label="Back"
         >

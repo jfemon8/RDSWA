@@ -15,7 +15,6 @@ import {
   CornerUpLeft,
   Eye,
   EyeOff,
-  Hash,
   Paperclip,
   Pencil,
   RefreshCw,

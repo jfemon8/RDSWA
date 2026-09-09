@@ -58,6 +58,7 @@ export interface IUserDocument extends Document {
   }>;
   earningSource?: string;
   /** Opt-in to being listed as a mentor, since mentoring shares contact details with the mentee. */
+  /** Listed on the mentor directory, which every Alumni/Advisor/Senior Advisor is until they pause it. */
   isMentor: boolean;
   mentorAreas: string[];
   skills: string[];
@@ -247,7 +248,7 @@ const userSchema = new Schema<IUserDocument>(
       },
     ],
     earningSource: String,
-    isMentor: { type: Boolean, default: false },
+    isMentor: { type: Boolean, default: true },
     mentorAreas: [String],
     skills: [String],
     skillEndorsements: [

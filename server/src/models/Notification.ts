@@ -22,6 +22,7 @@ const notificationSchema = new Schema<INotificationDocument>(
         'vote_opened', 'vote_closed', 'donation_received', 'form_status',
         'notice_published', 'announcement', 'system', 'message',
         'skill_endorsed', 'mentorship_request', 'mentorship_accepted',
+        'mentorship_completed', 'mentorship_cancelled',
       ],
       required: true,
     },

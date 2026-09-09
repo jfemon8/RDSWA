@@ -27,6 +27,7 @@ import { syncRolesOnStart } from './jobs/roleSyncOnStart';
 import { syncCommitteeCurrentFlags } from './jobs/committeeCurrentSync';
 import { startMentorshipReminder } from './jobs/mentorshipReminder';
 import { backfillAnnouncementFlags } from './jobs/announcementBackfill';
+import { backfillMentorListing } from './jobs/mentorListingBackfill';
 import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
@@ -91,6 +92,9 @@ async function start() {
 
   // Announcements predating their own flag are recognised and marked, once.
   backfillAnnouncementFlags();
+
+  // Members who were eligible to mentor before listing defaulted on are listed, once.
+  backfillMentorListing();
 
   // Start scheduled jobs
   startAlumniTagger();

@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useDMSocket, useTypingState, usePresence } from '@/hooks/useSocket';
+import { useBackNavigation } from '@/hooks/useBackNavigation';
 import {
   Loader2, Search, ArrowLeft,
   User as UserIcon, X, MoreVertical, Star, Trash2, UserCircle,
@@ -27,7 +28,6 @@ interface Partner {
 }
 
 export default function MessagesPage() {
-  const navigate = useNavigate();
   const location = useLocation();
   // The hub passes the partner along, which lets the thread render on the first paint.
   const passedPartner = (location.state as { partner?: Partner } | null)?.partner;
@@ -55,10 +55,11 @@ export default function MessagesPage() {
     return () => { cancelled = true; };
   }, [withUserId, selectedUser?._id]);
 
-  // Back always returns to the unified Chat Hub, replacing the entry so Back from there does not re-enter the thread.
+  // Going back pops this thread off the stack, so it returns to whatever opened it and cannot be re-entered.
+  const goBack = useBackNavigation('/dashboard/chat');
   const handleBack = () => {
     setSelectedUser(null);
-    navigate('/dashboard/chat', { replace: true });
+    goBack();
   };
 
   // This route only ever opens one thread; the hub is the list, so a bare visit belongs there.
