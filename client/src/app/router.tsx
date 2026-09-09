@@ -100,6 +100,7 @@ const AdminPaymentConfig = lazy(() => import('@/features/admin/payment/AdminPaym
 const AdminSettings = lazy(() => import('@/features/admin/settings/AdminSettingsPage'));
 const AdminSystemConfig = lazy(() => import('@/features/admin/settings/AdminSystemConfigPage'));
 const AdminLogs = lazy(() => import('@/features/admin/logs/AdminLogsPage'));
+const AdminConversations = lazy(() => import('@/features/admin/conversations/AdminConversationsPage'));
 const AdminAlumniMonitor = lazy(() => import('@/features/admin/alumni/AdminAlumniMonitorPage'));
 const AdminAdvisors = lazy(() => import('@/features/admin/advisors/AdminAdvisorsPage'));
 const AdminSeniorAdvisors = lazy(() => import('@/features/admin/advisors/AdminSeniorAdvisorsPage'));
@@ -236,6 +237,7 @@ export default function AppRouter() {
               <Route path="/admin/settings" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={SETTINGS_RESTRICTED_SUPER_ADMINS}><AdminSettings /></AdminRoleGuard>} />
               <Route path="/admin/system-config" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN} denyEmails={SETTINGS_RESTRICTED_SUPER_ADMINS}><AdminSystemConfig /></AdminRoleGuard>} />
               <Route path="/admin/admins" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminAdmins /></AdminRoleGuard>} />
+              <Route path="/admin/conversations" element={<AdminRoleGuard minRole={UserRole.SUPER_ADMIN}><AdminConversations /></AdminRoleGuard>} />
             </Route>
           </Route>
         </Route>

@@ -1,10 +1,12 @@
-import { Router } from 'express';
+import { Router, Request } from 'express';
+import { Types } from 'mongoose';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { ChatGroup, Message, ForumTopic, ForumReply, User, Notification, AnnouncementComment } from '../models';
+import { ChatGroup, Message, ForumTopic, ForumReply, User, Notification, AnnouncementComment, AuditLog } from '../models';
+import { getClientIp } from '../middlewares/audit.middleware';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
@@ -26,6 +28,40 @@ import {
 /** Check if role is Admin or above */
 function isAdminOrAbove(role: string): boolean {
   return ROLE_HIERARCHY.indexOf(role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+}
+
+/** Check if role is SuperAdmin, the only tier allowed to monitor conversations it is not part of. */
+function isSuperAdmin(role: string): boolean {
+  return role === UserRole.SUPER_ADMIN;
+}
+
+/** Record an edit or delete on someone else's message, which is a moderation action rather than an ordinary one. */
+async function recordMessageModeration(
+  req: Request,
+  action: string,
+  message: { _id: any; sender: any; group?: any; content?: string },
+  after?: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await AuditLog.create({
+      actor: req.user?._id,
+      action,
+      resource: 'messages',
+      resourceId: message._id,
+      changes: {
+        before: {
+          content: message.content,
+          sender: message.sender?.toString(),
+          group: message.group?.toString() || null,
+        },
+        after,
+      },
+      ip: getClientIp(req),
+      userAgent: req.headers['user-agent'],
+    });
+  } catch (err) {
+    console.error('Moderation audit log error:', err);
+  }
 }
 
 /** Permission to add/remove members on a group: admin+, OR creator of a custom group. */
@@ -694,6 +730,7 @@ router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(asy
     throw ApiError.badRequest('Message content cannot be empty');
   }
   if (newContent !== message.content) {
+    if (!isSender) await recordMessageModeration(req, 'message.moderate_edit', message, { content: newContent });
     message.content = newContent;
     message.isEdited = true;
     await message.save();
@@ -721,6 +758,7 @@ router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(as
     throw ApiError.badRequest('Delete window expired. Messages can only be deleted for everyone within 12 hours of sending.');
   }
 
+  if (!isSender) await recordMessageModeration(req, 'message.moderate_delete', message);
   await purgeMessageAttachments(message);
   message.isDeleted = true;
   await message.save();
@@ -1169,10 +1207,12 @@ router.patch('/dm/messages/:messageId', authenticate(), asyncHandler(async (req,
   if (!message) throw ApiError.notFound('Message not found');
 
   const isSender = message.sender.toString() === req.user._id.toString();
-  if (!isSender) {
+  const isMonitor = isSuperAdmin(req.user.role);
+  if (!isSender && !isMonitor) {
     throw ApiError.forbidden('Cannot edit this message');
   }
-  if (!isWithin(EDIT_WINDOW_MS, message.createdAt)) {
+  // The window stops authors rewriting old history; moderation is not bound by it.
+  if (!isMonitor && !isWithin(EDIT_WINDOW_MS, message.createdAt)) {
     throw ApiError.badRequest('Edit window expired. Messages can only be edited within 6 hours of sending.');
   }
 
@@ -1181,6 +1221,7 @@ router.patch('/dm/messages/:messageId', authenticate(), asyncHandler(async (req,
     throw ApiError.badRequest('Message content cannot be empty');
   }
   if (newContent !== message.content) {
+    if (!isSender) await recordMessageModeration(req, 'message.moderate_edit', message, { content: newContent });
     message.content = newContent;
     message.isEdited = true;
     await message.save();
@@ -1200,13 +1241,15 @@ router.delete('/dm/messages/:messageId', authenticate(), asyncHandler(async (req
   if (!message) throw ApiError.notFound('Message not found');
 
   const isSender = message.sender.toString() === req.user._id.toString();
-  if (!isSender) {
+  const isMonitor = isSuperAdmin(req.user.role);
+  if (!isSender && !isMonitor) {
     throw ApiError.forbidden('Cannot delete this message');
   }
-  if (!isWithin(DELETE_EVERYONE_WINDOW_MS, message.createdAt)) {
+  if (!isMonitor && !isWithin(DELETE_EVERYONE_WINDOW_MS, message.createdAt)) {
     throw ApiError.badRequest('Delete window expired. Messages can only be deleted for everyone within 12 hours of sending.');
   }
 
+  if (!isSender) await recordMessageModeration(req, 'message.moderate_delete', message);
   await purgeMessageAttachments(message);
   message.isDeleted = true;
   await message.save();
@@ -1405,6 +1448,207 @@ router.delete('/forum/:id', authenticate(), authorize(UserRole.MODERATOR), async
   const id = req.params.id as string;
   await ForumTopic.findByIdAndUpdate(id, { isDeleted: true });
   ApiResponse.noContent(res);
+}));
+
+// ── Conversation monitoring (SuperAdmin) ──
+
+/** Read the filters both monitor thread endpoints accept: a content search and whether removed messages are included. */
+function monitorThreadOptions(req: Request): { search: string; includeDeleted: boolean } {
+  return {
+    search: typeof req.query.search === 'string' ? req.query.search.trim() : '',
+    includeDeleted: req.query.includeDeleted === 'true',
+  };
+}
+
+/** Attach each group's newest message, since a group document's own `updatedAt` says nothing about conversation. */
+async function decorateGroupsWithActivity(groups: any[]): Promise<any[]> {
+  if (groups.length === 0) return [];
+  const lastAgg = await Message.aggregate([
+    { $match: { group: { $in: groups.map((g) => g._id) }, isDeleted: false } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: '$group',
+        content: { $first: '$content' },
+        attachments: { $first: '$attachments' },
+        sender: { $first: '$sender' },
+        createdAt: { $first: '$createdAt' },
+      },
+    },
+    { $lookup: { from: 'users', localField: 'sender', foreignField: '_id', as: 'senderUser' } },
+    { $unwind: { path: '$senderUser', preserveNullAndEmptyArrays: true } },
+  ]);
+  const lastMap = new Map<string, any>(lastAgg.map((m: any) => [m._id.toString(), m]));
+
+  return groups
+    .map((g: any) => {
+      const last = lastMap.get(g._id.toString());
+      return {
+        _id: g._id,
+        name: g.name,
+        type: g.type,
+        avatar: g.avatar,
+        memberCount: g.members?.length || 0,
+        lastMessage: last
+          ? {
+              content: last.content,
+              attachments: last.attachments,
+              createdAt: last.createdAt,
+              sender: last.senderUser ? { _id: last.senderUser._id, name: last.senderUser.name } : null,
+            }
+          : null,
+        lastActivityAt: last?.createdAt || g.updatedAt,
+      };
+    })
+    .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
+}
+
+// Everything one member talks in: their DM partners and the groups they belong to.
+router.get('/monitor/users/:userId', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
+  const id = req.params.userId as string;
+  if (!Types.ObjectId.isValid(id)) throw ApiError.badRequest('Invalid user id');
+  const userId = new Types.ObjectId(id);
+
+  const subject = await User.findOne({ _id: userId, isDeleted: false })
+    .select('name avatar email role batch department')
+    .lean();
+  if (!subject) throw ApiError.notFound('User not found');
+
+  const [threads, groups] = await Promise.all([
+    Message.aggregate([
+      { $match: { $or: [{ sender: userId }, { recipient: userId }], group: null, isDeleted: false } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: { $cond: [{ $eq: ['$sender', userId] }, '$recipient', '$sender'] },
+          lastMessage: { $first: '$$ROOT' },
+          messageCount: { $sum: 1 },
+        },
+      },
+      { $sort: { 'lastMessage.createdAt': -1 } },
+    ]),
+    ChatGroup.find({ members: userId, isDeleted: false })
+      .select('name type avatar members updatedAt')
+      .lean(),
+  ]);
+
+  const partnerIds = threads.map((t: any) => t._id).filter(Boolean);
+  const [partners, stats] = await Promise.all([
+    User.find({ _id: { $in: partnerIds } }).select('name avatar').lean(),
+    Message.aggregate([
+      { $match: { sender: userId, isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          sent: { $sum: 1 },
+          groupMessages: { $sum: { $cond: [{ $ifNull: ['$group', false] }, 1, 0] } },
+          firstAt: { $min: '$createdAt' },
+          lastAt: { $max: '$createdAt' },
+        },
+      },
+    ]),
+  ]);
+  const partnerMap = new Map(partners.map((u: any) => [u._id.toString(), u]));
+
+  ApiResponse.success(res, {
+    user: subject,
+    conversations: threads
+      .filter((t: any) => t._id && partnerMap.has(t._id.toString()))
+      .map((t: any) => ({
+        partner: partnerMap.get(t._id.toString()),
+        lastMessage: t.lastMessage,
+        messageCount: t.messageCount,
+      })),
+    groups: await decorateGroupsWithActivity(groups),
+    stats: {
+      sent: stats[0]?.sent || 0,
+      groupMessages: stats[0]?.groupMessages || 0,
+      directMessages: (stats[0]?.sent || 0) - (stats[0]?.groupMessages || 0),
+      firstAt: stats[0]?.firstAt || null,
+      lastAt: stats[0]?.lastAt || null,
+    },
+  });
+}));
+
+// The private thread between two members, read without joining it.
+router.get('/monitor/dm/:userAId/:userBId', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
+  const { userAId, userBId } = req.params as { userAId: string; userBId: string };
+  if (!Types.ObjectId.isValid(userAId) || !Types.ObjectId.isValid(userBId)) {
+    throw ApiError.badRequest('Invalid user id');
+  }
+  const { page, limit } = parsePagination(req.query as any);
+  const { search, includeDeleted } = monitorThreadOptions(req);
+  const a = new Types.ObjectId(userAId);
+  const b = new Types.ObjectId(userBId);
+
+  const filter: any = {
+    group: null,
+    $or: [
+      { sender: a, recipient: b },
+      { sender: b, recipient: a },
+    ],
+  };
+  if (!includeDeleted) filter.isDeleted = false;
+  if (search) filter.content = { $regex: escapeRegex(search), $options: 'i' };
+
+  const [messages, total, participants] = await Promise.all([
+    Message.find(filter)
+      .populate('sender', 'name avatar')
+      .populate('reactions.user', 'name avatar')
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    Message.countDocuments(filter),
+    User.find({ _id: { $in: [a, b] } }).select('name avatar role').lean(),
+  ]);
+
+  // Oldest first, the way a conversation reads.
+  ApiResponse.success(res, { participants, messages: messages.reverse(), total, page, limit });
+}));
+
+// Any group's messages, read without being a member.
+router.get('/monitor/groups/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
+  const id = req.params.id as string;
+  if (!Types.ObjectId.isValid(id)) throw ApiError.badRequest('Invalid group id');
+  const { page, limit } = parsePagination(req.query as any);
+  const { search, includeDeleted } = monitorThreadOptions(req);
+
+  const group = await ChatGroup.findOne({ _id: id, isDeleted: false })
+    .populate('members', 'name avatar')
+    .populate('createdBy', 'name avatar')
+    .lean();
+  if (!group) throw ApiError.notFound('Group not found');
+
+  const filter: any = { group: id };
+  if (!includeDeleted) filter.isDeleted = false;
+  if (search) filter.content = { $regex: escapeRegex(search), $options: 'i' };
+
+  const [messages, total] = await Promise.all([
+    Message.find(filter)
+      .populate('sender', 'name avatar')
+      .populate('reactions.user', 'name avatar')
+      .sort({ createdAt: -1 })
+      .skip(getSkip({ page, limit }))
+      .limit(limit),
+    Message.countDocuments(filter),
+  ]);
+
+  ApiResponse.success(res, { group, messages: messages.reverse(), total, page, limit });
+}));
+
+// Every group on the platform, so monitoring can start from a group rather than a member.
+router.get('/monitor/groups', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
+  const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+  const filter: any = { isDeleted: false };
+  if (search) filter.name = { $regex: escapeRegex(search), $options: 'i' };
+
+  const groups = await ChatGroup.find(filter)
+    .select('name type avatar members updatedAt')
+    .sort({ updatedAt: -1 })
+    .limit(100)
+    .lean();
+
+  ApiResponse.success(res, await decorateGroupsWithActivity(groups));
 }));
 
 // ── Announcement Channel ──

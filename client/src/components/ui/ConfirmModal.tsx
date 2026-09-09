@@ -1,14 +1,19 @@
 import { useCallback, createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertTriangle, AlertCircle, Info, X, Trash2, Shield } from 'lucide-react';
+import { AlertTriangle, Info, X, Trash2, Shield, Pencil, type LucideIcon } from 'lucide-react';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+
+/** `primary` follows the site's brand tokens; the rest carry their own semantic colour. */
+type ModalVariant = 'danger' | 'warning' | 'info' | 'primary';
 
 interface ConfirmOptions {
   title?: string;
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'warning' | 'info';
+  variant?: ModalVariant;
+  /** Overrides the variant's default glyph. */
+  icon?: LucideIcon;
   /** Optional text the user must type to enable confirmation, for bulk or irreversible actions. */
   requireTypeToConfirm?: string;
 }
@@ -25,7 +30,9 @@ export interface PromptOptions {
   multiline?: boolean;
   /** Blocks confirmation until something is typed. */
   required?: boolean;
-  variant?: 'danger' | 'warning' | 'info';
+  variant?: ModalVariant;
+  /** Overrides the variant's default glyph. */
+  icon?: LucideIcon;
 }
 
 interface ConfirmContextValue {
@@ -76,13 +83,16 @@ const variantStyles = {
     ring: 'ring-sky-500/20',
     Icon: Info,
   },
+  primary: {
+    iconBg: 'bg-primary text-primary-foreground',
+    iconRing: 'ring-primary/20 dark:ring-primary/30',
+    iconGlow: 'shadow-lg shadow-primary/40',
+    button: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25',
+    accent: 'from-primary/10 via-primary/5 to-transparent',
+    ring: 'ring-primary/20',
+    Icon: Pencil,
+  },
 };
-
-const variantIconFallback = {
-  danger: AlertCircle,
-  warning: AlertTriangle,
-  info: Info,
-} as const;
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<
@@ -117,7 +127,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   useBodyScrollLock(!!state);
 
-  // Keyboard handling — Escape to cancel, Enter to confirm (when unlocked)
   const promptOptions = state?.kind === 'prompt' ? state.options : null;
   const typeToConfirm = state?.kind === 'confirm' ? state.options.requireTypeToConfirm : undefined;
   const typeMatches = !typeToConfirm || typedText.trim() === typeToConfirm.trim();
@@ -130,9 +139,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         e.preventDefault();
         handleClose(false);
       } else if (e.key === 'Enter' && !e.shiftKey) {
-        // Don't auto-submit while the user is typing the confirmation text
+        // Enter submits a single-line prompt the way the native dialog did, but never a text area mid-typing.
         const target = e.target as HTMLElement | null;
-        // Enter submits a single-line prompt, which is how the native dialog behaved.
         const inSingleLinePrompt = !!promptOptions && !promptOptions.multiline && target?.tagName === 'INPUT';
         if (!inSingleLinePrompt && target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
         if (canSubmit) {
@@ -146,9 +154,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, canSubmit]);
 
-  const variant = state?.options.variant || (promptOptions ? 'info' : 'danger');
+  // A prompt asks for input rather than warning about anything, so it wears the site's own colours.
+  const variant = state?.options.variant || (promptOptions ? 'primary' : 'danger');
   const styles = variantStyles[variant];
-  const Icon = styles.Icon || variantIconFallback[variant];
+  const Icon = state?.options.icon || styles.Icon;
   const isDestructive = variant === 'danger';
 
   return (
@@ -157,7 +166,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       <AnimatePresence>
         {state && (
           <>
-            {/* Backdrop with animated blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -185,10 +193,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: '100%', opacity: 0, scale: 0.94 }}
                 transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-                className={`relative bg-card/95 backdrop-blur-xl border border-border/60 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto ring-1 ${styles.ring}`}
+                className={`relative bg-card/95 backdrop-blur-xl border border-border/60 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-y-auto pointer-events-auto ring-1 ${styles.ring} ${
+                  promptOptions?.multiline ? 'sm:max-w-2xl' : 'sm:max-w-md'
+                }`}
                 style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
               >
-                {/* Gradient accent glow */}
                 <div className={`pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b ${styles.accent} rounded-t-3xl`} aria-hidden="true" />
 
                 {/* Drag handle (mobile only) */}
@@ -196,7 +205,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
                 </div>
 
-                {/* Close button */}
                 <button
                   onClick={() => handleClose(false)}
                   className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -205,7 +213,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   <X className="h-4 w-4" />
                 </button>
 
-                {/* Icon — large, centered, with glow + ring pulse */}
                 <div className="relative flex justify-center pt-6 sm:pt-8 pb-4">
                   <motion.div
                     initial={{ scale: 0, rotate: -12 }}
@@ -213,7 +220,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                     transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
                     className="relative"
                   >
-                    {/* Pulsing ring (danger only) */}
                     {isDestructive && (
                       <motion.div
                         className="absolute inset-0 rounded-2xl bg-red-500/30"
@@ -228,7 +234,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   </motion.div>
                 </div>
 
-                {/* Title & message */}
                 <div className="relative px-5 sm:px-7 pb-5 text-center">
                   <motion.h3
                     id="confirm-modal-title"
@@ -268,9 +273,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                           value={inputValue}
                           onChange={(e) => setInputValue(e.target.value)}
                           placeholder={promptOptions.placeholder}
-                          rows={3}
+                          rows={7}
                           autoFocus
-                          className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          className="w-full px-3 py-2.5 border border-border rounded-lg bg-background text-sm leading-relaxed resize-y min-h-[9rem] max-h-[50vh] focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       ) : (
                         <input
@@ -314,7 +319,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   )}
                 </div>
 
-                {/* Footer actions */}
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}

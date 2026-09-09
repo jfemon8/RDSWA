@@ -1,13 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, Smile } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import ChatAttachmentMenu, { type ChatAttachment } from './ChatAttachmentMenu';
-import ReplyPreview, { type ReplyData } from './ReplyPreview';
-import { REACTIONS } from './ReactionPicker';
+import { useState, useRef, useEffect } from "react";
+import { Send, Loader2, X, Smile } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import ChatAttachmentMenu, { type ChatAttachment } from "./ChatAttachmentMenu";
+import ReplyPreview, { type ReplyData } from "./ReplyPreview";
+import { REACTIONS } from "./ReactionPicker";
 
 interface Props {
   /** Called on send, with the composer clearing once the promise resolves. */
-  onSend: (content: string, attachments: ChatAttachment[], replyToId?: string) => Promise<void> | void;
+  onSend: (
+    content: string,
+    attachments: ChatAttachment[],
+    replyToId?: string,
+  ) => Promise<void> | void;
   /** Reply being composed — shown as a chip above the input */
   replyTo?: ReplyData | null;
   onCancelReply?: () => void;
@@ -20,9 +24,14 @@ interface Props {
 
 /** Shared chat composer for text, attachments, replies, and emoji, with debounced typing indicators and paste or drop hand-offs. */
 export default function ChatComposer({
-  onSend, replyTo, onCancelReply, onTyping, disabled, placeholder = 'Type a message…',
+  onSend,
+  replyTo,
+  onCancelReply,
+  onTyping,
+  disabled,
+  placeholder = "Type a message…",
 }: Props) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [sending, setSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -30,13 +39,14 @@ export default function ChatComposer({
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
 
-  const canSend = (text.trim().length > 0 || attachments.length > 0) && !sending && !disabled;
+  const canSend =
+    (text.trim().length > 0 || attachments.length > 0) && !sending && !disabled;
 
   // Auto-resize textarea as the user types.
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [text]);
 
@@ -61,10 +71,13 @@ export default function ChatComposer({
     }, 2500);
   };
 
-  useEffect(() => () => {
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    if (isTypingRef.current && onTyping) onTyping(false);
-  }, [onTyping]);
+  useEffect(
+    () => () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (isTypingRef.current && onTyping) onTyping(false);
+    },
+    [onTyping],
+  );
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -72,7 +85,7 @@ export default function ChatComposer({
     setSending(true);
     try {
       await onSend(text.trim(), attachments, replyTo?.messageId);
-      setText('');
+      setText("");
       setAttachments([]);
       onCancelReply?.();
       if (isTypingRef.current && onTyping) {
@@ -85,7 +98,7 @@ export default function ChatComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -94,7 +107,7 @@ export default function ChatComposer({
   // Paste image support — intercept clipboard images, drop them into the upload flow.
   const handlePaste = (e: React.ClipboardEvent) => {
     const files = Array.from(e.clipboardData?.files || []);
-    const images = files.filter((f) => f.type.startsWith('image/'));
+    const images = files.filter((f) => f.type.startsWith("image/"));
     if (images.length === 0) return;
     e.preventDefault();
     // Delegate to the ChatAttachmentMenu's picker, since the upload pipeline isn't reachable from here.
@@ -104,7 +117,7 @@ export default function ChatComposer({
     <form
       onSubmit={handleSubmit}
       className="pt-2 pb-2 border-t bg-card"
-      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       onPaste={handlePaste}
     >
       {/* Reply chip */}
@@ -112,7 +125,7 @@ export default function ChatComposer({
         {replyTo && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-2 px-2"
           >
@@ -130,11 +143,15 @@ export default function ChatComposer({
               className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg text-xs max-w-[220px]"
             >
               <span className="truncate">
-                {att.kind === 'contact' ? `Contact: ${att.contact?.name}` : (att.name || att.kind)}
+                {att.kind === "contact"
+                  ? `Contact: ${att.contact?.name}`
+                  : att.name || att.kind}
               </span>
               <button
                 type="button"
-                onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                onClick={() =>
+                  setAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                }
                 className="p-0.5 rounded hover:bg-accent shrink-0"
                 aria-label="Remove attachment"
               >
@@ -145,7 +162,7 @@ export default function ChatComposer({
         </div>
       )}
 
-      <div className="flex items-end gap-2 px-2">
+      <div className="flex items-center gap-2 px-2">
         <ChatAttachmentMenu
           onSelect={(att) => setAttachments((prev) => [...prev, att])}
           disabled={sending || disabled}
@@ -154,19 +171,22 @@ export default function ChatComposer({
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => { setText(e.target.value); fireTyping(e.target.value); }}
+            onChange={(e) => {
+              setText(e.target.value);
+              fireTyping(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
             className="no-scrollbar w-full pl-4 pr-10 py-2.5 border rounded-3xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 overflow-y-auto"
-            style={{ maxHeight: '120px' }}
+            style={{ maxHeight: "120px" }}
           />
           <button
             type="button"
             onClick={() => setShowEmoji((v) => !v)}
             disabled={disabled}
-            className="absolute right-2 bottom-2 p-1 rounded-full hover:bg-accent text-muted-foreground"
+            className="absolute right-2 bottom-3.5 p-1 rounded-full hover:bg-accent text-muted-foreground"
             aria-label="Insert emoji"
           >
             <Smile className="h-4 w-4" />
@@ -183,7 +203,11 @@ export default function ChatComposer({
                   <button
                     key={emoji}
                     type="button"
-                    onClick={() => { setText((t) => t + emoji); setShowEmoji(false); textareaRef.current?.focus(); }}
+                    onClick={() => {
+                      setText((t) => t + emoji);
+                      setShowEmoji(false);
+                      textareaRef.current?.focus();
+                    }}
                     className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-accent text-lg"
                   >
                     {emoji}
@@ -196,10 +220,14 @@ export default function ChatComposer({
         <button
           type="submit"
           disabled={!canSend}
-          className="h-11 w-11 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 hover:bg-primary/90 transition-colors"
+          className="h-10 w-10 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 hover:bg-primary/90 transition-colors"
           aria-label="Send message"
         >
-          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          {sending ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
         </button>
       </div>
     </form>

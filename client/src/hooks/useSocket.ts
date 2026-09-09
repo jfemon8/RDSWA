@@ -128,6 +128,34 @@ export function useChatSocket(
   }, [groupId, queryClient]);
 }
 
+/** Watch a group's live traffic without being one of its members, for the SuperAdmin conversation monitor. */
+export function useGroupMonitorSocket(groupId: string | undefined, onChange: () => void) {
+  const callbackRef = useRef(onChange);
+  callbackRef.current = onChange;
+
+  useEffect(() => {
+    if (!groupId) return;
+    const s = getSocket();
+
+    // Rooms live on the server socket, so a reconnect drops them and the view goes quiet until remount.
+    const join = () => s.emit('chat:join', groupId);
+    join();
+    s.on('connect', join);
+
+    const handler = (data: any) => {
+      if (data?.groupId === groupId) callbackRef.current();
+    };
+    const events = ['chat:message', 'chat:message:edit', 'chat:message:delete', 'chat:message:reaction'];
+    events.forEach((e) => s.on(e, handler));
+
+    return () => {
+      s.emit('chat:leave', groupId);
+      s.off('connect', join);
+      events.forEach((e) => s.off(e, handler));
+    };
+  }, [groupId]);
+}
+
 /** Map of userId → typing state, with auto-expire after 4s of no keepalive. */
 export function useTypingState(
   scope: { groupId?: string; partnerId?: string },

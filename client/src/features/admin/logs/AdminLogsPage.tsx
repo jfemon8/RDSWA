@@ -118,6 +118,7 @@ function AuditLogsTab() {
             <option value="forms">Forms</option>
             <option value="documents">Documents</option>
             <option value="albums">Albums</option>
+            <option value="messages">Messages</option>
             <option value="site_settings">Settings</option>
           </select>
         </div>
