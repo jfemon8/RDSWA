@@ -46,6 +46,29 @@ export function memberDisplayPosition(member?: MemberLike | null): string {
   return formatPosition(member.position);
 }
 
+/** Seniority order for display, taken from the order the positions are declared in. */
+const POSITION_ORDER: string[] = Object.values(CommitteePosition);
+
+/** Sitting members in seniority order, so every committee lists its leadership the same way. */
+export function sortedActiveMembers<T extends MemberLike>(members: T[] = []): T[] {
+  const rank = (position?: string) => {
+    const index = POSITION_ORDER.indexOf(position || '');
+    return index < 0 ? POSITION_ORDER.length : index;
+  };
+  return members.filter((m) => !m.leftAt).sort((a, b) => rank(a.position) - rank(b.position));
+}
+
+/** The running committee leads and the rest follow by newest tenure, whatever order the API returned. */
+export function sortedCommittees<T extends CommitteeLike>(committees: T[] = []): T[] {
+  return [...committees].sort((a, b) => {
+    const byCurrent = Number(isCurrentCommittee(b)) - Number(isCurrentCommittee(a));
+    if (byCurrent !== 0) return byCurrent;
+    return (
+      new Date(b.tenure?.startDate || 0).getTime() - new Date(a.tenure?.startDate || 0).getTime()
+    );
+  });
+}
+
 /** Positions already filled by a sitting member, which cannot take a second person until that seat is vacated. */
 export function takenUniquePositions(members: MemberLike[]): string[] {
   return members
