@@ -8,6 +8,9 @@ import {
   ArrowLeft, Briefcase, MapPin, Clock, ExternalLink, Banknote,
   Loader2, FileText, CheckCircle, User, Users, CalendarX,
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { UserRole } from '@rdswa/shared';
+import { hasMinRole } from '@/lib/roles';
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/date';
 import Promo from '@/components/promo/Promo';
@@ -17,6 +20,8 @@ import { buildJobPostingSchema, buildBreadcrumbSchema } from '@/components/seo/s
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isAdmin = !!user && hasMinRole(user.role, UserRole.ADMIN);
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.jobs.detail(id || ''),
@@ -50,6 +55,22 @@ export default function JobDetailPage() {
 
   const job = data;
   const expired = !!(job.deadline && new Date(job.deadline).getTime() < Date.now());
+
+  // The board hides expired listings behind a dead card, so a pasted or bookmarked link cannot walk around that.
+  if (expired && !isAdmin) {
+    return (
+      <FadeIn delay={0.1} direction="up">
+        <div className="text-center py-20">
+          <CalendarX className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold mb-2">This Job Has Closed</h2>
+          <p className="text-muted-foreground mb-4">
+            Its application deadline passed on {formatDate(job.deadline)}, so the listing is no longer open.
+          </p>
+          <Link to="/dashboard/jobs" className="text-primary hover:underline">Browse open jobs</Link>
+        </div>
+      </FadeIn>
+    );
+  }
 
   const jobUrl = `/dashboard/jobs/${job._id || job.id || id}`;
   const cleanJobDesc = (job.description || '').replace(/<[^>]*>/g, '').trim();

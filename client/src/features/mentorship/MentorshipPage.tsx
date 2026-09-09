@@ -245,227 +245,227 @@ export default function MentorshipPage() {
         transition={{ duration: 0.25, delay: index * 0.04 }}
         className="rounded-xl border bg-card overflow-hidden"
       >
-          <div className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <Link to={`/members/${other?._id}`} className="shrink-0">
-                  {other?.avatar ? (
-                    <img
-                      src={other.avatar}
-                      alt=""
-                      className="w-11 h-11 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
-                      {other?.name?.charAt(0) || "?"}
-                    </div>
-                  )}
-                </Link>
-                <div className="min-w-0">
-                  <Link
-                    to={`/members/${other?._id}`}
-                    className="font-medium hover:text-primary transition-colors truncate block"
-                  >
-                    {other?.name}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {other?.profession || other?.department || ""}
-                    {other?.batch ? ` • Batch ${other.batch}` : ""}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <span
-                  className={`px-2.5 py-0.5 text-[11px] rounded-full font-medium ${sc.bg} ${sc.color}`}
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <Link to={`/members/${other?._id}`} className="shrink-0">
+                {other?.avatar ? (
+                  <img
+                    src={other.avatar}
+                    alt=""
+                    className="w-11 h-11 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+                    {other?.name?.charAt(0) || "?"}
+                  </div>
+                )}
+              </Link>
+              <div className="min-w-0">
+                <Link
+                  to={`/members/${other?._id}`}
+                  className="font-medium hover:text-primary transition-colors truncate block"
                 >
-                  {sc.label}
-                </span>
-                {stale && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full font-medium bg-orange-100 dark:bg-orange-900/25 text-orange-700 dark:text-orange-400">
-                    <AlertTriangle className="h-3 w-3" />
-                    {isMentor ? "Needs a reply" : "Still waiting"}
-                  </span>
-                )}
-                {m.area && (
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                    {m.area}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> Requested{" "}
-                {timeAgo(m.requestedAt || m.createdAt)}
-              </span>
-              {m.acceptedAt && (
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-500" /> Accepted{" "}
-                  {formatDate(m.acceptedAt)}
-                </span>
-              )}
-              {m.completedAt && (
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-blue-500" /> Completed{" "}
-                  {formatDate(m.completedAt)}
-                </span>
-              )}
-            </div>
-
-            {m.closeReason && (
-              <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-px" />
-                <span>
-                  Closed by {m.closedBy?.name || "an administrator"}:{" "}
-                  {m.closeReason}
-                </span>
-              </p>
-            )}
-
-            {m.status === "active" && (other?.email || other?.phone) && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-3 p-3 rounded-lg bg-muted/50 space-y-1.5"
-              >
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Contact Info
+                  {other?.name}
+                </Link>
+                <p className="text-xs text-muted-foreground">
+                  {other?.profession || other?.department || ""}
+                  {other?.batch ? ` • Batch ${other.batch}` : ""}
                 </p>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  {other.email && (
-                    <a
-                      href={`mailto:${other.email}`}
-                      className="flex items-center gap-1.5 text-primary hover:underline"
-                    >
-                      <Mail className="h-3.5 w-3.5" /> {other.email}
-                    </a>
-                  )}
-                  {other.phone && (
-                    <a
-                      href={`tel:${other.phone}`}
-                      className="flex items-center gap-1.5 text-primary hover:underline"
-                    >
-                      <Phone className="h-3.5 w-3.5" /> {other.phone}
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {m.status === "active" && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Link
-                  to={`/dashboard/messages?with=${other?._id}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md hover:bg-accent transition-colors"
-                >
-                  <MessagesSquare className="h-3.5 w-3.5" /> Message
-                </Link>
-                <Link
-                  to={
-                    m.consultationGroupId
-                      ? `/dashboard/groups/${m.consultationGroupId}`
-                      : "/dashboard/chat"
-                  }
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md hover:bg-accent transition-colors"
-                >
-                  <Users className="h-3.5 w-3.5" /> Consultation Group
-                </Link>
               </div>
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <span
+                className={`px-2.5 py-0.5 text-[11px] rounded-full font-medium ${sc.bg} ${sc.color}`}
+              >
+                {sc.label}
+              </span>
+              {stale && (
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full font-medium bg-orange-100 dark:bg-orange-900/25 text-orange-700 dark:text-orange-400">
+                  <AlertTriangle className="h-3 w-3" />
+                  {isMentor ? "Needs a reply" : "Still waiting"}
+                </span>
+              )}
+              {m.area && (
+                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                  {m.area}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" /> Requested{" "}
+              {timeAgo(m.requestedAt || m.createdAt)}
+            </span>
+            {m.acceptedAt && (
+              <span className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3 text-green-500" /> Accepted{" "}
+                {formatDate(m.acceptedAt)}
+              </span>
+            )}
+            {m.completedAt && (
+              <span className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3 text-blue-500" /> Completed{" "}
+                {formatDate(m.completedAt)}
+              </span>
             )}
           </div>
 
-          {!["completed", "cancelled"].includes(m.status) && (
-            <div className="flex flex-wrap gap-2 px-5 py-3 border-t bg-muted/20">
-              {m.status === "pending" && isMentor && (
-                <>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() =>
-                      actionMutation.mutate({ id: m._id, action: "accept" })
-                    }
-                    disabled={actionMutation.isPending}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+          {m.closeReason && (
+            <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+              <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-px" />
+              <span>
+                Closed by {m.closedBy?.name || "an administrator"}:{" "}
+                {m.closeReason}
+              </span>
+            </p>
+          )}
+
+          {m.status === "active" && (other?.email || other?.phone) && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 p-3 rounded-lg bg-muted/50 space-y-1.5"
+            >
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Contact Info
+              </p>
+              <div className="flex flex-wrap gap-4 text-sm">
+                {other.email && (
+                  <a
+                    href={`mailto:${other.email}`}
+                    className="flex items-center gap-1.5 text-primary hover:underline"
                   >
-                    <CheckCircle className="h-3.5 w-3.5" /> Accept
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={async () => {
-                      const ok = await confirm({
-                        title: "Decline Request",
-                        message:
-                          "Decline this mentorship request? The mentee will be notified.",
-                        confirmLabel: "Decline",
-                        variant: "danger",
-                      });
-                      if (ok)
-                        actionMutation.mutate({ id: m._id, action: "cancel" });
-                    }}
-                    disabled={actionMutation.isPending}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                    <Mail className="h-3.5 w-3.5" /> {other.email}
+                  </a>
+                )}
+                {other.phone && (
+                  <a
+                    href={`tel:${other.phone}`}
+                    className="flex items-center gap-1.5 text-primary hover:underline"
                   >
-                    <XCircle className="h-3.5 w-3.5" /> Decline
-                  </motion.button>
-                </>
-              )}
-              {m.status === "pending" && !isMentor && (
-                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5 animate-pulse" />
-                  Waiting for mentor's response
-                  {stale && " — a reminder has been sent"}
-                </span>
-              )}
-              {m.status === "active" && (
+                    <Phone className="h-3.5 w-3.5" /> {other.phone}
+                  </a>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {m.status === "active" && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Link
+                to={`/dashboard/messages?with=${other?._id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md hover:bg-accent transition-colors"
+              >
+                <MessagesSquare className="h-3.5 w-3.5" /> Message
+              </Link>
+              <Link
+                to={
+                  m.consultationGroupId
+                    ? `/dashboard/groups/${m.consultationGroupId}`
+                    : "/dashboard/chat"
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md hover:bg-accent transition-colors"
+              >
+                <Users className="h-3.5 w-3.5" /> Consultation Group
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {!["completed", "cancelled"].includes(m.status) && (
+          <div className="flex flex-wrap gap-2 px-5 py-3 border-t bg-muted/20">
+            {m.status === "pending" && isMentor && (
+              <>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={async () => {
-                    const ok = await confirm({
-                      title: "Complete Mentorship",
-                      message:
-                        "Mark this mentorship as complete? This will close the consultation group.",
-                      confirmLabel: "Complete",
-                      variant: "info",
-                    });
-                    if (ok)
-                      actionMutation.mutate({ id: m._id, action: "complete" });
-                  }}
+                  onClick={() =>
+                    actionMutation.mutate({ id: m._id, action: "accept" })
+                  }
                   disabled={actionMutation.isPending}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                 >
-                  <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
+                  <CheckCircle className="h-3.5 w-3.5" /> Accept
                 </motion.button>
-              )}
-              {(m.status === "active" ||
-                (m.status === "pending" && !isMentor)) && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={async () => {
                     const ok = await confirm({
-                      title:
-                        m.status === "active"
-                          ? "Cancel Mentorship"
-                          : "Withdraw Request",
+                      title: "Decline Request",
                       message:
-                        m.status === "active"
-                          ? "Cancel this active mentorship? The consultation group will be closed."
-                          : "Withdraw this mentorship request?",
-                      confirmLabel:
-                        m.status === "active" ? "Yes, cancel" : "Withdraw",
-                      cancelLabel: "Keep",
+                        "Decline this mentorship request? The mentee will be notified.",
+                      confirmLabel: "Decline",
                       variant: "danger",
                     });
                     if (ok)
                       actionMutation.mutate({ id: m._id, action: "cancel" });
                   }}
                   disabled={actionMutation.isPending}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm border text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
                 >
-                  {m.status === "active" ? "Cancel" : "Withdraw"}
+                  <XCircle className="h-3.5 w-3.5" /> Decline
                 </motion.button>
-              )}
-            </div>
-          )}
+              </>
+            )}
+            {m.status === "pending" && !isMentor && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Clock className="h-3.5 w-3.5 animate-pulse" />
+                Waiting for mentor's response
+                {stale && " — a reminder has been sent"}
+              </span>
+            )}
+            {m.status === "active" && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: "Complete Mentorship",
+                    message:
+                      "Mark this mentorship as complete? This will close the consultation group.",
+                    confirmLabel: "Complete",
+                    variant: "info",
+                  });
+                  if (ok)
+                    actionMutation.mutate({ id: m._id, action: "complete" });
+                }}
+                disabled={actionMutation.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
+              </motion.button>
+            )}
+            {(m.status === "active" ||
+              (m.status === "pending" && !isMentor)) && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title:
+                      m.status === "active"
+                        ? "Cancel Mentorship"
+                        : "Withdraw Request",
+                    message:
+                      m.status === "active"
+                        ? "Cancel this active mentorship? The consultation group will be closed."
+                        : "Withdraw this mentorship request?",
+                    confirmLabel:
+                      m.status === "active" ? "Yes, cancel" : "Withdraw",
+                    cancelLabel: "Keep",
+                    variant: "danger",
+                  });
+                  if (ok)
+                    actionMutation.mutate({ id: m._id, action: "cancel" });
+                }}
+                disabled={actionMutation.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-md text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                {m.status === "active" ? "Cancel" : "Withdraw"}
+              </motion.button>
+            )}
+          </div>
+        )}
       </motion.div>
     );
   }
@@ -562,179 +562,176 @@ export default function MentorshipPage() {
                     transition={{ duration: 0.25, delay: i * 0.04 }}
                     className="rounded-xl border bg-card p-5 h-full flex flex-col"
                   >
-                      <div className="flex items-start gap-4 flex-1">
-                        <Link
-                          to={`/members/${mentor._id}`}
-                          className="shrink-0"
-                        >
-                          {mentor.avatar ? (
-                            <img
-                              src={mentor.avatar}
-                              alt=""
-                              className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/10"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg ring-2 ring-primary/10">
-                              {mentor.name?.charAt(0)}
-                            </div>
-                          )}
-                        </Link>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                              to={`/members/${mentor._id}`}
-                              className="font-semibold hover:text-primary transition-colors"
-                            >
-                              {mentor.name}
-                            </Link>
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${tag.bgColor} ${tag.color}`}
-                            >
-                              <TagIcon className="h-3 w-3" /> {tag.label}
+                    <div className="flex items-start gap-4 flex-1">
+                      <Link to={`/members/${mentor._id}`} className="shrink-0">
+                        {mentor.avatar ? (
+                          <img
+                            src={mentor.avatar}
+                            alt=""
+                            className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/10"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg ring-2 ring-primary/10">
+                            {mentor.name?.charAt(0)}
+                          </div>
+                        )}
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link
+                            to={`/members/${mentor._id}`}
+                            className="font-semibold hover:text-primary transition-colors"
+                          >
+                            {mentor.name}
+                          </Link>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${tag.bgColor} ${tag.color}`}
+                          >
+                            <TagIcon className="h-3 w-3" /> {tag.label}
+                          </span>
+                          {mentor.atCapacity && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-100 dark:bg-orange-900/25 text-orange-700 dark:text-orange-400">
+                              <AlertTriangle className="h-3 w-3" /> Full
                             </span>
-                            {mentor.atCapacity && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-100 dark:bg-orange-900/25 text-orange-700 dark:text-orange-400">
-                                <AlertTriangle className="h-3 w-3" /> Full
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {mentor.profession || mentor.department || ""}{" "}
+                          {mentor.batch ? `• Batch ${mentor.batch}` : ""}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
+                          <Users className="h-3 w-3" />
+                          {mentor.maxActiveMentees
+                            ? `${mentor.activeMentees || 0} of ${mentor.maxActiveMentees} mentee slots filled`
+                            : `Mentoring ${mentor.activeMentees || 0} ${mentor.activeMentees === 1 ? "trainee" : "trainees"}`}
+                        </p>
+                        {mentor.areas?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {mentor.areas.map((a: string) => {
+                              const auto =
+                                mentor.derived?.includes(a) &&
+                                !mentor.mentorAreas?.includes(a);
+                              return (
+                                <span
+                                  key={a}
+                                  title={
+                                    auto
+                                      ? "Matched from their profession and skills"
+                                      : "Chosen by this mentor"
+                                  }
+                                  className={`px-2 py-0.5 text-[11px] rounded-md border ${
+                                    auto
+                                      ? "border-dashed border-muted-foreground/40 text-muted-foreground"
+                                      : "border-primary/30 text-primary"
+                                  }`}
+                                >
+                                  {a}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {mentor.skills?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {mentor.skills
+                              .slice(0, 5)
+                              .map((s: string, j: number) => (
+                                <span
+                                  key={j}
+                                  className="px-2 py-0.5 text-[11px] bg-primary/10 text-primary rounded-md"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                            {mentor.skills.length > 5 && (
+                              <span className="text-[11px] text-muted-foreground">
+                                +{mentor.skills.length - 5}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-0.5">
-                            {mentor.profession || mentor.department || ""}{" "}
-                            {mentor.batch ? `• Batch ${mentor.batch}` : ""}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
-                            <Users className="h-3 w-3" />
-                            {mentor.maxActiveMentees
-                              ? `${mentor.activeMentees || 0} of ${mentor.maxActiveMentees} mentee slots filled`
-                              : `Mentoring ${mentor.activeMentees || 0} ${mentor.activeMentees === 1 ? "trainee" : "trainees"}`}
-                          </p>
-                          {mentor.areas?.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {mentor.areas.map((a: string) => {
-                                const auto =
-                                  mentor.derived?.includes(a) &&
-                                  !mentor.mentorAreas?.includes(a);
-                                return (
-                                  <span
-                                    key={a}
-                                    title={
-                                      auto
-                                        ? "Matched from their profession and skills"
-                                        : "Chosen by this mentor"
-                                    }
-                                    className={`px-2 py-0.5 text-[11px] rounded-md border ${
-                                      auto
-                                        ? "border-dashed border-muted-foreground/40 text-muted-foreground"
-                                        : "border-primary/30 text-primary"
-                                    }`}
-                                  >
-                                    {a}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {mentor.skills?.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {mentor.skills
-                                .slice(0, 5)
-                                .map((s: string, j: number) => (
-                                  <span
-                                    key={j}
-                                    className="px-2 py-0.5 text-[11px] bg-primary/10 text-primary rounded-md"
-                                  >
-                                    {s}
-                                  </span>
-                                ))}
-                              {mentor.skills.length > 5 && (
-                                <span className="text-[11px] text-muted-foreground">
-                                  +{mentor.skills.length - 5}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
+                    </div>
 
-                      {user && user._id !== mentor._id && (
-                        <div className="mt-4 pt-3 border-t">
-                          {mentor.atCapacity ? (
-                            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Info className="h-3.5 w-3.5" /> Not taking new
-                              mentees right now
-                            </p>
-                          ) : (
-                            <AnimatePresence mode="wait">
-                              {requestingId === mentor._id ? (
-                                <motion.div
-                                  key="form"
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  className="space-y-2"
+                    {user && user._id !== mentor._id && (
+                      <div className="mt-4 pt-3 border-t">
+                        {mentor.atCapacity ? (
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Info className="h-3.5 w-3.5" /> Not taking new
+                            mentees right now
+                          </p>
+                        ) : (
+                          <AnimatePresence mode="wait">
+                            {requestingId === mentor._id ? (
+                              <motion.div
+                                key="form"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-2"
+                              >
+                                <select
+                                  value={requestArea}
+                                  onChange={(e) =>
+                                    setRequestArea(e.target.value)
+                                  }
+                                  aria-label="Area of mentorship"
+                                  className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                                 >
-                                  <select
-                                    value={requestArea}
-                                    onChange={(e) =>
-                                      setRequestArea(e.target.value)
+                                  <option value="">Choose an area...</option>
+                                  {/* A mentor with areas of their own is only asked about those. */}
+                                  {(mentor.areas?.length
+                                    ? mentor.areas
+                                    : areas
+                                  ).map((a: string) => (
+                                    <option key={a} value={a}>
+                                      {a}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="flex gap-2">
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    disabled={requestMutation.isPending}
+                                    onClick={() =>
+                                      requestMutation.mutate({
+                                        mentorId: mentor._id,
+                                        area: requestArea,
+                                      })
                                     }
-                                    aria-label="Area of mentorship"
-                                    className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    className="px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-md disabled:opacity-50 flex items-center gap-1.5"
                                   >
-                                    <option value="">Choose an area...</option>
-                                    {/* A mentor with areas of their own is only asked about those. */}
-                                    {(mentor.areas?.length
-                                      ? mentor.areas
-                                      : areas
-                                    ).map((a: string) => (
-                                      <option key={a} value={a}>
-                                        {a}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <div className="flex gap-2">
-                                    <motion.button
-                                      whileTap={{ scale: 0.95 }}
-                                      disabled={requestMutation.isPending}
-                                      onClick={() =>
-                                        requestMutation.mutate({
-                                          mentorId: mentor._id,
-                                          area: requestArea,
-                                        })
-                                      }
-                                      className="px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-md disabled:opacity-50 flex items-center gap-1.5"
-                                    >
-                                      {requestMutation.isPending && (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      )}
-                                      Send Request
-                                    </motion.button>
-                                    <button
-                                      onClick={() => {
-                                        setRequestingId(null);
-                                        setRequestArea("");
-                                      }}
-                                      className="px-4 py-1.5 text-sm border rounded-md hover:bg-muted"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              ) : (
-                                <motion.button
-                                  key="btn"
-                                  onClick={() => setRequestingId(mentor._id)}
-                                  className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
-                                  whileHover={{ x: 4 }}
-                                >
-                                  <UserPlus className="h-4 w-4" /> Request
-                                  Mentorship <ArrowRight className="h-3 w-3" />
-                                </motion.button>
-                              )}
-                            </AnimatePresence>
-                          )}
-                        </div>
-                      )}
+                                    {requestMutation.isPending && (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    )}
+                                    Send Request
+                                  </motion.button>
+                                  <button
+                                    onClick={() => {
+                                      setRequestingId(null);
+                                      setRequestArea("");
+                                    }}
+                                    className="px-4 py-1.5 text-sm border rounded-md hover:bg-muted"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <motion.button
+                                key="btn"
+                                onClick={() => setRequestingId(mentor._id)}
+                                className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+                                whileHover={{ x: 4 }}
+                              >
+                                <UserPlus className="h-4 w-4" /> Request
+                                Mentorship <ArrowRight className="h-3 w-3" />
+                              </motion.button>
+                            )}
+                          </AnimatePresence>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -916,19 +913,6 @@ function MentorOptIn({
             className="overflow-hidden"
           >
             <div className="pt-3">
-              {derivedAreas.length > 0 && (
-                <p className="text-xs text-muted-foreground mb-2 flex items-start gap-1.5">
-                  <Info className="h-3.5 w-3.5 shrink-0 mt-px" />
-                  <span>
-                    Your profession and skills already list you under{" "}
-                    <span className="text-foreground">
-                      {derivedAreas.join(", ")}
-                    </span>
-                    . Pick more below to widen that, or update your profile to
-                    change it.
-                  </span>
-                </p>
-              )}
               <p className="text-xs text-muted-foreground mb-2">
                 Areas you can mentor in
               </p>

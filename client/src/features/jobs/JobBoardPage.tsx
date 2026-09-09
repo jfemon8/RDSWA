@@ -98,6 +98,9 @@ export default function JobBoardPage() {
     return ["admin", "super_admin"].includes(user.role);
   };
 
+  // A closed listing is only worth opening for the admins who still have to act on it.
+  const isAdmin = !!user && hasMinRole(user.role, UserRole.ADMIN);
+
   const debouncedSearch = useDebouncedValue(search);
   const mine = view === "mine";
 
@@ -465,13 +468,11 @@ export default function JobBoardPage() {
         <div className="space-y-4">
           {jobs.map((job: any, i: number) => {
             const expired = isJobExpired(job);
-            return (
-              <Fragment key={job._id}>
-                <FadeIn delay={i * 0.05} direction="up">
-                  <Link to={`/dashboard/jobs/${job._id}`} className="block">
-                    <motion.div
-                      whileHover={{ y: expired ? 0 : -2 }}
-                      className={`relative rounded-xl border bg-card p-4 sm:p-6 transition-colors overflow-hidden ${expired ? "opacity-75" : "hover:border-primary/30"}`}
+            const openable = !expired || isAdmin;
+            const card = (
+              <motion.div
+                      whileHover={{ y: openable ? -2 : 0 }}
+                      className={`relative rounded-xl border bg-card p-4 sm:p-6 transition-colors overflow-hidden ${expired ? "opacity-75" : ""} ${openable ? "hover:border-primary/30" : ""}`}
                     >
                       {expired && (
                         <div className="absolute top-0 right-0 pointer-events-none z-10">
@@ -627,8 +628,21 @@ export default function JobBoardPage() {
                           </div>
                         </div>
                       )}
-                    </motion.div>
-                  </Link>
+              </motion.div>
+            );
+            return (
+              <Fragment key={job._id}>
+                <FadeIn delay={i * 0.05} direction="up">
+                  {openable ? (
+                    <Link
+                      to={`/dashboard/jobs/${job._id}`}
+                      className="block"
+                    >
+                      {card}
+                    </Link>
+                  ) : (
+                    <div className="cursor-default">{card}</div>
+                  )}
                 </FadeIn>
                 {(i + 1) % PROMO_EVERY === 0 && i < jobs.length - 1 && (
                   <Promo kind="infeed" minHeight={180} />
