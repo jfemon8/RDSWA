@@ -38,8 +38,7 @@ import { useConfirm } from "@/components/ui/ConfirmModal";
 import EmptyState from "@/components/ui/EmptyState";
 import Promo from "@/components/promo/Promo";
 
-// Career-intent traffic — slightly tighter cadence than community pages
-// because contextual career ads on this surface have the highest CPM.
+// Career-intent traffic carries the highest CPM, so the cadence is tighter than on community pages.
 const PROMO_EVERY = 5;
 
 function isJobExpired(job: any): boolean {
@@ -189,7 +188,6 @@ export default function JobBoardPage() {
         : "",
     });
     setShowForm(true);
-    // Scroll the form into view
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
@@ -210,7 +208,6 @@ export default function JobBoardPage() {
         </p>
       </FadeIn>
 
-      {/* View tabs — All jobs / My posts */}
       {canPost && (
         <div className="flex gap-2 mb-4 border-b">
           {(["all", "mine"] as const).map((v) => (
@@ -281,7 +278,6 @@ export default function JobBoardPage() {
         </div>
       </FadeIn>
 
-      {/* Create Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -434,7 +430,6 @@ export default function JobBoardPage() {
         )}
       </AnimatePresence>
 
-      {/* Job List */}
       {isLoading ? (
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -482,7 +477,6 @@ export default function JobBoardPage() {
                         </div>
                       )}
 
-                      {/* Content — full width */}
                       <div className="min-w-0">
                         <div
                           className={`flex items-center gap-2 mb-2 flex-wrap ${expired ? "pr-16" : ""}`}
@@ -549,7 +543,6 @@ export default function JobBoardPage() {
                         )}
                       </div>
 
-                      {/* Footer — Posted by + Action buttons */}
                       {(job.postedBy ||
                         job.applicationLink ||
                         canManage(job)) && (

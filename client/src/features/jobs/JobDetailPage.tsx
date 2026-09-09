@@ -100,7 +100,6 @@ export default function JobDetailPage() {
         jsonLd={[jobJsonLd, jobBreadcrumbJsonLd]}
         noindex={expired}
       />
-      {/* Back */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 sm:mb-6 min-h-[44px]"
@@ -108,7 +107,6 @@ export default function JobDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to Job Board
       </button>
 
-      {/* Header */}
       <FadeIn delay={0.05} direction="up">
         <div className={`relative border rounded-xl p-4 sm:p-6 bg-card mb-4 sm:mb-6 overflow-hidden ${expired ? 'opacity-90' : ''}`}>
           {expired && (
@@ -185,7 +183,6 @@ export default function JobDetailPage() {
         </div>
       </FadeIn>
 
-      {/* Description */}
       <FadeIn delay={0.1} direction="up">
         <div className="border rounded-xl p-4 sm:p-6 bg-card mb-4 sm:mb-6">
           <h3 className="font-semibold mb-3 flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Job Description</h3>
@@ -200,7 +197,6 @@ export default function JobDetailPage() {
         <Promo kind="inArticle" minHeight={250} />
       </div>
 
-      {/* Requirements */}
       {job.requirements?.length > 0 && (
         <FadeIn delay={0.15} direction="up">
           <div className="border rounded-xl p-4 sm:p-6 bg-card mb-4 sm:mb-6">
@@ -223,7 +219,6 @@ export default function JobDetailPage() {
         </FadeIn>
       )}
 
-      {/* Posted By */}
       {job.postedBy && (
         <FadeIn delay={0.2} direction="up">
           <div className="border rounded-xl p-4 sm:p-5 bg-card">
@@ -250,7 +245,6 @@ export default function JobDetailPage() {
         </FadeIn>
       )}
 
-      {/* Bottom Apply Button */}
       {job.applicationLink && (
         <FadeIn delay={0.25} direction="up">
           <div className="mt-6 flex sm:justify-center">

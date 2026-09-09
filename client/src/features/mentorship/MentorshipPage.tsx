@@ -919,6 +919,8 @@ function MentorOptIn({
               <div className="flex flex-wrap gap-1.5">
                 {areas.map((a) => {
                   const picked = myAreas.includes(a);
+                  // Your profession and skills already put you here, so the listing shows it whether or not you pick it.
+                  const auto = derivedAreas.includes(a);
                   return (
                     <motion.button
                       key={a}
@@ -926,13 +928,21 @@ function MentorOptIn({
                       whileTap={{ scale: 0.94 }}
                       disabled={mutation.isPending}
                       onClick={() => toggleArea(a)}
+                      title={
+                        auto
+                          ? "Matched from your profession and skills"
+                          : undefined
+                      }
                       className={`px-2.5 py-1 text-xs rounded-full border transition-colors disabled:opacity-50 ${
                         picked
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "text-foreground hover:bg-accent"
+                          : auto
+                            ? "text-foreground border-dashed border-primary/50 hover:bg-accent"
+                            : "text-foreground hover:bg-accent"
                       }`}
                     >
                       {a}
+                      {auto && !picked && <span className="ml-1 opacity-60">•</span>}
                     </motion.button>
                   );
                 })}

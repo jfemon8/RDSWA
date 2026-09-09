@@ -46,6 +46,15 @@ const serviceIconMap: Record<string, LucideIcon> = {
   "Photo Gallery": Image,
   Donations: Heart,
 };
+/** Trim letterbox bars baked into an uploaded hero, which `object-cover` would otherwise scale up into blank edges. */
+function heroSrc(url?: string): string | undefined {
+  const marker = "/upload/";
+  if (!url) return url;
+  const at = url.indexOf(marker);
+  if (!url.includes("res.cloudinary.com") || at === -1) return url;
+  return `${url.slice(0, at + marker.length)}e_trim/q_auto,f_auto/${url.slice(at + marker.length)}`;
+}
+
 const featureColorMap: Record<string, string> = {
   Community: "rgba(59, 130, 246, 0.15)",
   Events: "rgba(139, 92, 246, 0.15)",
@@ -123,13 +132,12 @@ export default function HomePage() {
         RDSWA — Rangpur Divisional Student Welfare Association, University of
         Barishal · রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়
       </h1>
-      {/* Hero Section */}
-      <section className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center py-16 sm:py-20 md:py-32">
+      <section className="relative min-h-[50vh] flex items-center justify-center py-16 sm:py-20">
         <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
           {hp?.heroImage && (
             <>
               <img
-                src={hp.heroImage}
+                src={heroSrc(hp.heroImage)}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover"
@@ -222,7 +230,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
       <section className="py-16 border-y bg-muted/30">
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -267,7 +274,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Latest Notices Section */}
       {notices.length > 0 && (
         <section className="py-20">
           <div className="container mx-auto">
@@ -334,7 +340,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Upcoming Events Section */}
       {events.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto">
@@ -395,7 +400,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Features Section */}
       {features.length > 0 && (
         <section className="py-20">
           <div className="container mx-auto">
@@ -442,7 +446,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Services Grid */}
       {services.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto">
@@ -486,7 +489,6 @@ export default function HomePage() {
         <Promo kind="multiplex" minHeight={300} />
       </section>
 
-      {/* CTA Section */}
       <section className="py-24 relative overflow-x-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />

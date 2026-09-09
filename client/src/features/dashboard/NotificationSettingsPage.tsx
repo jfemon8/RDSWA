@@ -1,30 +1,45 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import api from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import api from "@/lib/api";
 import {
-  Loader2, Bell, Mail, Smartphone, BellOff, Clock, AlertCircle, Trash2,
-  ShieldAlert, Lock, KeyRound, Palette, Sun, Moon, Monitor,
-  Eye, EyeOff, Check,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, BlurText } from '@/components/reactbits';
-import { useState, useEffect } from 'react';
-import { useWebPush } from '@/hooks/useWebPush';
-import { useToast } from '@/components/ui/Toast';
-import { useAuthStore } from '@/stores/authStore';
-import { useThemeStore } from '@/stores/themeStore';
-import { UserRole } from '@rdswa/shared';
-import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
-import { FieldError } from '@/components/ui/FieldError';
-import { extractFieldErrors } from '@/lib/formErrors';
+  Loader2,
+  Bell,
+  Mail,
+  Smartphone,
+  BellOff,
+  Clock,
+  AlertCircle,
+  Trash2,
+  ShieldAlert,
+  Lock,
+  KeyRound,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Eye,
+  EyeOff,
+  Check,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { FadeIn, BlurText } from "@/components/reactbits";
+import { useState, useEffect } from "react";
+import { useWebPush } from "@/hooks/useWebPush";
+import { useToast } from "@/components/ui/Toast";
+import { useAuthStore } from "@/stores/authStore";
+import { useThemeStore } from "@/stores/themeStore";
+import { UserRole } from "@rdswa/shared";
+import { useConfirm } from "@/components/ui/ConfirmModal";
+import Spinner from "@/components/ui/Spinner";
+import { FieldError } from "@/components/ui/FieldError";
+import { extractFieldErrors } from "@/lib/formErrors";
 
 interface NotifPrefs {
   email: boolean;
   sms: boolean;
   push: boolean;
   inApp: boolean;
-  digestFrequency: 'none' | 'daily' | 'weekly';
+  digestFrequency: "none" | "daily" | "weekly";
   dnd: boolean;
 }
 
@@ -33,7 +48,7 @@ const defaultPrefs: NotifPrefs = {
   sms: false,
   push: true,
   inApp: true,
-  digestFrequency: 'daily',
+  digestFrequency: "daily",
   dnd: false,
 };
 
@@ -45,9 +60,9 @@ export default function NotificationSettingsPage() {
   const pushSupported = webPush.supported;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['notification-preferences'],
+    queryKey: ["notification-preferences"],
     queryFn: async () => {
-      const { data } = await api.get('/notifications/preferences');
+      const { data } = await api.get("/notifications/preferences");
       return data.data as NotifPrefs;
     },
   });
@@ -57,9 +72,10 @@ export default function NotificationSettingsPage() {
   }, [data]);
 
   const updateMutation = useMutation({
-    mutationFn: (updates: Partial<NotifPrefs>) => api.patch('/notifications/preferences', updates),
+    mutationFn: (updates: Partial<NotifPrefs>) =>
+      api.patch("/notifications/preferences", updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
+      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
     },
   });
 
@@ -75,19 +91,19 @@ export default function NotificationSettingsPage() {
     if (turningOn) {
       const ok = await webPush.subscribe();
       if (!ok) {
-        toast.error(webPush.error || 'Could not enable push notifications');
+        toast.error(webPush.error || "Could not enable push notifications");
         return;
       }
-      toast.success('Push notifications enabled');
+      toast.success("Push notifications enabled");
     } else {
       await webPush.unsubscribe();
-      toast.success('Push notifications disabled');
+      toast.success("Push notifications disabled");
     }
     setPrefs((p) => ({ ...p, push: turningOn }));
     updateMutation.mutate({ push: turningOn });
   };
 
-  const setDigest = (freq: NotifPrefs['digestFrequency']) => {
+  const setDigest = (freq: NotifPrefs["digestFrequency"]) => {
     setPrefs((p) => ({ ...p, digestFrequency: freq }));
     updateMutation.mutate({ digestFrequency: freq });
   };
@@ -99,7 +115,11 @@ export default function NotificationSettingsPage() {
   return (
     <div className="container mx-auto">
       <div className="mb-6">
-        <BlurText text="Settings" className="text-2xl sm:text-3xl font-bold" delay={50} />
+        <BlurText
+          text="Settings"
+          className="text-2xl sm:text-3xl font-bold"
+          delay={50}
+        />
       </div>
 
       <div className="space-y-4">
@@ -132,14 +152,14 @@ export default function NotificationSettingsPage() {
                 label="In-App Notifications"
                 description="Show notifications inside the app"
                 checked={prefs.inApp}
-                onChange={() => toggleField('inApp')}
+                onChange={() => toggleField("inApp")}
               />
               <ToggleRow
                 icon={<Mail className="h-4 w-4" />}
                 label="Email Notifications"
                 description="Receive notification emails"
                 checked={prefs.email}
-                onChange={() => toggleField('email')}
+                onChange={() => toggleField("email")}
               />
               {pushSupported ? (
                 <>
@@ -148,10 +168,10 @@ export default function NotificationSettingsPage() {
                     label="Push Notifications"
                     description={
                       webPush.subscribed
-                        ? 'This device is subscribed to web push'
-                        : webPush.permission === 'denied'
-                          ? 'Blocked by browser — re-enable in site settings'
-                          : 'Receive push notifications in this browser'
+                        ? "This device is subscribed to web push"
+                        : webPush.permission === "denied"
+                          ? "Blocked by browser"
+                          : "Receive push notifications in this browser"
                     }
                     checked={prefs.push && webPush.subscribed}
                     onChange={togglePush}
@@ -183,14 +203,14 @@ export default function NotificationSettingsPage() {
               Receive a summary of notifications instead of individual emails
             </p>
             <div className="flex gap-2">
-              {(['none', 'daily', 'weekly'] as const).map((freq) => (
+              {(["none", "daily", "weekly"] as const).map((freq) => (
                 <button
                   key={freq}
                   onClick={() => setDigest(freq)}
                   className={`px-4 py-2 rounded-md text-sm capitalize transition-colors ${
                     prefs.digestFrequency === freq
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent"
                   }`}
                 >
                   {freq}
@@ -211,13 +231,13 @@ export default function NotificationSettingsPage() {
               label="Enable DND"
               description="Pause all notifications except critical system alerts"
               checked={prefs.dnd}
-              onChange={() => toggleField('dnd')}
+              onChange={() => toggleField("dnd")}
             />
             <AnimatePresence>
               {prefs.dnd && (
                 <motion.p
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                  animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="text-xs text-amber-600 dark:text-amber-400 mt-2"
                 >
@@ -255,17 +275,18 @@ function DeleteAccountSection() {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const [showConfirm, setShowConfirm] = useState(false);
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.delete('/users/me', { data: { password } }),
+    mutationFn: () => api.delete("/users/me", { data: { password } }),
     onSuccess: () => {
-      toast.success('Account deleted successfully');
+      toast.success("Account deleted successfully");
       logout();
-      navigate('/');
+      navigate("/");
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete account'),
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Failed to delete account"),
   });
 
   if (isSuperAdmin) return null;
@@ -277,7 +298,8 @@ function DeleteAccountSection() {
           <ShieldAlert className="h-4 w-4" /> Danger Zone
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Permanently delete your account and all associated data. This action cannot be undone.
+          Permanently delete your account and all associated data. This action
+          cannot be undone.
         </p>
 
         <AnimatePresence mode="wait">
@@ -297,12 +319,13 @@ function DeleteAccountSection() {
             <motion.div
               key="confirm"
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="space-y-3"
             >
               <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-700 dark:text-red-400">
-                This will permanently delete your account, profile, messages, and all data. Enter your password to confirm.
+                This will permanently delete your account, profile, messages,
+                and all data. Enter your password to confirm.
               </div>
               <input
                 type="password"
@@ -317,23 +340,31 @@ function DeleteAccountSection() {
                   whileTap={{ scale: 0.95 }}
                   onClick={async () => {
                     const ok = await confirm({
-                      title: 'Delete your account?',
-                      message: 'This will permanently erase your profile, messages, and all personal data. This action is irreversible.',
-                      confirmLabel: 'Yes, delete forever',
-                      cancelLabel: 'Keep my account',
-                      variant: 'danger',
-                      requireTypeToConfirm: 'DELETE MY ACCOUNT',
+                      title: "Delete your account?",
+                      message:
+                        "This will permanently erase your profile, messages, and all personal data. This action is irreversible.",
+                      confirmLabel: "Yes, delete forever",
+                      cancelLabel: "Keep my account",
+                      variant: "danger",
+                      requireTypeToConfirm: "DELETE MY ACCOUNT",
                     });
                     if (ok) deleteMutation.mutate();
                   }}
                   disabled={!password || deleteMutation.isPending}
                   className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {deleteMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                   Permanently Delete
                 </motion.button>
                 <button
-                  onClick={() => { setShowConfirm(false); setPassword(''); }}
+                  onClick={() => {
+                    setShowConfirm(false);
+                    setPassword("");
+                  }}
                   className="px-4 py-2 text-sm border rounded-md hover:bg-accent"
                 >
                   Cancel
@@ -350,10 +381,14 @@ function DeleteAccountSection() {
 function AppearanceSection() {
   const { theme, setTheme } = useThemeStore();
 
-  const themes: { value: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }[] = [
-    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" /> },
-    { value: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" /> },
-    { value: 'system', label: 'System', icon: <Monitor className="h-4 w-4" /> },
+  const themes: {
+    value: "light" | "dark" | "system";
+    label: string;
+    icon: React.ReactNode;
+  }[] = [
+    { value: "light", label: "Light", icon: <Sun className="h-4 w-4" /> },
+    { value: "dark", label: "Dark", icon: <Moon className="h-4 w-4" /> },
+    { value: "system", label: "System", icon: <Monitor className="h-4 w-4" /> },
   ];
 
   return (
@@ -371,8 +406,8 @@ function AppearanceSection() {
               onClick={() => setTheme(t.value)}
               className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-md border text-xs transition-colors ${
                 theme === t.value
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:bg-accent text-muted-foreground'
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border hover:bg-accent text-muted-foreground"
               }`}
               aria-pressed={theme === t.value}
             >
@@ -388,36 +423,38 @@ function AppearanceSection() {
 
 function SecuritySection() {
   const toast = useToast();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const mutation = useMutation({
     mutationFn: () =>
-      api.post('/auth/change-password', { currentPassword, newPassword }),
+      api.post("/auth/change-password", { currentPassword, newPassword }),
     onSuccess: () => {
-      toast.success('Password changed successfully');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      toast.success("Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
       setErrors({});
     },
     onError: (err: any) => {
       const fe = extractFieldErrors(err);
       if (fe) setErrors(fe);
-      else toast.error(err.response?.data?.message || 'Failed to change password');
+      else
+        toast.error(err.response?.data?.message || "Failed to change password");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!currentPassword) errs.currentPassword = 'Current password is required';
-    if (newPassword.length < 6) errs.newPassword = 'At least 6 characters';
-    if (newPassword !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    if (!currentPassword) errs.currentPassword = "Current password is required";
+    if (newPassword.length < 6) errs.newPassword = "At least 6 characters";
+    if (newPassword !== confirmPassword)
+      errs.confirmPassword = "Passwords do not match";
     setErrors(errs);
     if (Object.keys(errs).length === 0) mutation.mutate();
   };
@@ -433,60 +470,83 @@ function SecuritySection() {
 
       <form onSubmit={handleSubmit} noValidate className="space-y-3">
         <div>
-          <label className="text-xs font-medium text-muted-foreground">Current password</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Current password
+          </label>
           <div className="relative mt-1">
             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              type={showCurrent ? 'text' : 'password'}
+              type={showCurrent ? "text" : "password"}
               value={currentPassword}
-              onChange={(e) => { setCurrentPassword(e.target.value); setErrors((p) => ({ ...p, currentPassword: '' })); }}
-              className={`w-full pl-9 pr-9 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.currentPassword ? 'border-red-500' : ''}`}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                setErrors((p) => ({ ...p, currentPassword: "" }));
+              }}
+              className={`w-full pl-9 pr-9 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.currentPassword ? "border-red-500" : ""}`}
               autoComplete="current-password"
             />
             <button
               type="button"
               onClick={() => setShowCurrent((v) => !v)}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-              aria-label={showCurrent ? 'Hide password' : 'Show password'}
+              aria-label={showCurrent ? "Hide password" : "Show password"}
             >
-              {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showCurrent ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </button>
           </div>
           <FieldError message={errors.currentPassword} />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground">New password</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            New password
+          </label>
           <div className="relative mt-1">
             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              type={showNew ? 'text' : 'password'}
+              type={showNew ? "text" : "password"}
               value={newPassword}
-              onChange={(e) => { setNewPassword(e.target.value); setErrors((p) => ({ ...p, newPassword: '' })); }}
-              className={`w-full pl-9 pr-9 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.newPassword ? 'border-red-500' : ''}`}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setErrors((p) => ({ ...p, newPassword: "" }));
+              }}
+              className={`w-full pl-9 pr-9 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.newPassword ? "border-red-500" : ""}`}
               autoComplete="new-password"
             />
             <button
               type="button"
               onClick={() => setShowNew((v) => !v)}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-              aria-label={showNew ? 'Hide password' : 'Show password'}
+              aria-label={showNew ? "Hide password" : "Show password"}
             >
-              {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showNew ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </button>
           </div>
           <FieldError message={errors.newPassword} />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground">Confirm new password</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Confirm new password
+          </label>
           <div className="relative mt-1">
             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              type={showNew ? 'text' : 'password'}
+              type={showNew ? "text" : "password"}
               value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => ({ ...p, confirmPassword: '' })); }}
-              className={`w-full pl-9 pr-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setErrors((p) => ({ ...p, confirmPassword: "" }));
+              }}
+              className={`w-full pl-9 pr-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.confirmPassword ? "border-red-500" : ""}`}
               autoComplete="new-password"
             />
           </div>
@@ -498,7 +558,11 @@ function SecuritySection() {
           disabled={mutation.isPending}
           className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
         >
-          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {mutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Check className="h-4 w-4" />
+          )}
           Update Password
         </button>
       </form>
@@ -534,14 +598,14 @@ function ToggleRow({
         onClick={onChange}
         disabled={disabled}
         className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
-          checked ? 'bg-primary' : 'bg-muted-foreground/30'
+          checked ? "bg-primary" : "bg-muted-foreground/30"
         }`}
       >
         <motion.div
           layout
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
           className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow ${
-            checked ? 'left-[22px]' : 'left-0.5'
+            checked ? "left-[22px]" : "left-0.5"
           }`}
         />
       </button>
