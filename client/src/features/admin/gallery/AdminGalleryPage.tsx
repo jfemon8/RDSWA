@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -11,7 +12,6 @@ import { FadeIn } from '@/components/reactbits';
 import ImageUpload from '@/components/ui/ImageUpload';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 
 export default function AdminGalleryPage() {
   const queryClient = useQueryClient();
@@ -131,7 +131,7 @@ export default function AdminGalleryPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : albums.length === 0 ? (
         <div className="text-center py-12">
           <Image className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -290,7 +290,7 @@ function AlbumPhotos({ albumId, onBack, onSetCover }: { albumId: string; onBack:
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : photos.length === 0 ? (
         <div className="text-center py-12">
           <Image className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />

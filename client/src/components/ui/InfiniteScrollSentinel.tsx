@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface Props {
   hasNextPage: boolean;
@@ -39,7 +39,7 @@ export default function InfiniteScrollSentinel({
   return (
     <div ref={ref} className={`flex justify-center py-4 ${className}`}>
       {isFetchingNextPage ? (
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Skeleton className="h-9 w-40 rounded-lg" />
       ) : hasNextPage ? (
         <button
           type="button"

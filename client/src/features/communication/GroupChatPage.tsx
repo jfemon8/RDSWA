@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { ChatSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -8,7 +9,6 @@ import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { ROLE_HIERARCHY, UserRole } from "@rdswa/shared";
 import {
   ArrowLeft,
-  Loader2,
   Users,
   User as UserIcon,
   Globe,
@@ -37,7 +37,6 @@ import ForwardModal from "@/components/chat/ForwardModal";
 import type { ChatMessage } from "@/components/chat/MessageBubble";
 import type { ChatAttachment } from "@/components/chat/ChatAttachmentMenu";
 import type { ReplyData } from "@/components/chat/ReplyPreview";
-import Spinner from "@/components/ui/Spinner";
 
 const TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
@@ -454,7 +453,7 @@ export default function GroupChatPage() {
   // No body scroll lock here, since its cleanup lagged AnimatePresence exits and left the next page mounting while still locked.
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <ChatSkeleton />;
   }
 
   if (!group) {
@@ -649,9 +648,7 @@ export default function GroupChatPage() {
               {searchQuery.length >= 2 && (
                 <div className="max-h-64 overflow-y-auto mt-2">
                   {searchLoading ? (
-                    <div className="flex justify-center py-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
+                    <InlineListSkeleton count={2} />
                   ) : (searchMessages || []).length === 0 ? (
                     <p className="text-center text-xs text-muted-foreground py-3">
                       No matches

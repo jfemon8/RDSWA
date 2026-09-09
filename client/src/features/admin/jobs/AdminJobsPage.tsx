@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,13 +7,13 @@ import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors, omitFieldError } from '@/lib/formErrors';
 import { Search, Trash2, ExternalLink, Briefcase, Pencil, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, toDateInput } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
@@ -43,6 +44,7 @@ export default function AdminJobsPage() {
   const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<JobForm>({ ...EMPTY_JOB });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -160,7 +162,7 @@ export default function AdminJobsPage() {
         <Trash2 className="h-4 w-4" />
       </button>
       <button
-        onClick={() => setExpandedId(expandedId === j._id ? null : j._id)}
+        onClick={() => toggleExpand(j._id)}
         title={expandedId === j._id ? 'Hide details' : 'View details'}
         aria-expanded={expandedId === j._id}
         className="p-1.5 text-muted-foreground hover:bg-accent rounded"
@@ -317,7 +319,7 @@ export default function AdminJobsPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : jobs.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No jobs found.</p></FadeIn>
       ) : (
@@ -346,11 +348,11 @@ export default function AdminJobsPage() {
               <tbody>
                 {jobs.map((j: any) => (
                   <Fragment key={j._id}>
-                    <tr className="border-t hover:bg-accent/30">
+                    <tr data-accordion-item={j._id} className="border-t hover:bg-accent/30">
                       <td className="p-3 truncate">
                         <button
                           type="button"
-                          onClick={() => setExpandedId(expandedId === j._id ? null : j._id)}
+                          onClick={() => toggleExpand(j._id)}
                           title="View details"
                           className="font-medium hover:text-primary transition-colors inline-flex items-center gap-1.5 max-w-full text-left"
                         >
@@ -396,11 +398,11 @@ export default function AdminJobsPage() {
           {/* Mobile card list */}
           <div className="lg:hidden space-y-3">
             {jobs.map((j: any) => (
-              <div key={j._id} className="border rounded-lg p-4 bg-card">
+              <div key={j._id} data-accordion-item={j._id} className="border rounded-lg p-4 bg-card">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <button
                     type="button"
-                    onClick={() => setExpandedId(expandedId === j._id ? null : j._id)}
+                    onClick={() => toggleExpand(j._id)}
                     className="font-medium hover:text-primary transition-colors flex items-start gap-1.5 min-w-0 flex-1 text-left"
                   >
                     <Briefcase className="h-4 w-4 text-primary shrink-0 mt-0.5" />

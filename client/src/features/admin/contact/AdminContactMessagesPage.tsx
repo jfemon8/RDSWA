@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Mail, MailOpen, MailCheck, Archive, Trash2, Send, X, Inbox, Clock,
@@ -15,7 +16,6 @@ import { UserRole } from '@rdswa/shared';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import SEO from '@/components/SEO';
 import { formatDateTime } from '@/lib/date';
@@ -202,7 +202,7 @@ export default function AdminContactMessagesPage() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : messages.length === 0 ? (
         <FadeIn direction="up" delay={0.25}>
           <div className="text-center py-12 border rounded-xl bg-card">
@@ -362,7 +362,7 @@ function MessageDetailDrawer({
 
         {isLoading || !data ? (
           <div className="flex-1 flex items-center justify-center">
-            <Spinner size="md" />
+            <CardListSkeleton />
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { motion } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import {
@@ -9,7 +10,6 @@ import { UserRole, TIER_HIERARCHY, PERMISSIONS, Module, Action, TAG_ROLES } from
 import { useAutoRoleConfig, AUTO_ROLE_CONFIG_FALLBACK } from '@/hooks/useAutoRoleConfig';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 const ROLE_COLORS: Record<string, string> = {
@@ -313,7 +313,7 @@ function RoleHistorySection() {
         </div>
 
         {isLoading ? (
-          <Spinner size="sm" />
+          <InlineListSkeleton />
         ) : history.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">No role changes recorded</div>
         ) : (
@@ -455,10 +455,7 @@ function RoleHistorySection() {
   );
 }
 
-/**
- * Mirrors the live auto-role configuration rather than a fixed list, since a SuperAdmin can edit
- * these rules in System Config and a reference page that disagrees with them is worse than none.
- */
+/** Mirrors the live auto-role configuration, since a SuperAdmin can edit these rules in System Config. */
 function AutoAssignmentRules() {
   const { data: cfg, isLoading } = useAutoRoleConfig();
 
@@ -485,7 +482,7 @@ function AutoAssignmentRules() {
         </p>
 
         {isLoading ? (
-          <Spinner size="sm" />
+          <InlineListSkeleton />
         ) : rules.length === 0 ? (
           <p className="text-sm text-muted-foreground">No positions grant a role automatically right now.</p>
         ) : (

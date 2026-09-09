@@ -12,6 +12,7 @@ import RichContent from '@/components/ui/RichContent';
 import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
 import { formatDate } from '@/lib/date';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import {
   committeeDisplayName,
   isCurrentCommittee,
@@ -32,6 +33,7 @@ export default function CommitteePage() {
   const committees = useMemo<any[]>(() => sortedCommittees<any>(data?.data || []), [data]);
 
   const [openId, setOpenId] = useState<string | null>(null);
+  const toggleCommittee = useAccordionToggle(openId, setOpenId);
   const opened = useRef(false);
 
   // The list arrives after the first render, so the running committee is opened once it does.
@@ -104,7 +106,7 @@ export default function CommitteePage() {
                   index={idx}
                   isOpen={openId === c._id}
                   // Only one body is open, and pressing the open card closes it again.
-                  onToggle={() => setOpenId((current) => (current === c._id ? null : c._id))}
+                  onToggle={() => toggleCommittee(c._id)}
                 />
               ))}
             </div>
@@ -139,6 +141,7 @@ function CommitteeCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.3) }}
+      data-accordion-item={c._id}
       className={`border rounded-xl bg-card overflow-hidden ${isOpen ? 'border-primary/30' : ''}`}
     >
       <button

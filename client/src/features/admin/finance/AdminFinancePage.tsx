@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import { CardListSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import api from "@/lib/api";
@@ -12,6 +13,7 @@ import ExpenseDetailsFields, {
 import ExpenseDetailsView from "@/components/ui/ExpenseDetailsView";
 import RichContent from "@/components/ui/RichContent";
 import { useToast } from "@/components/ui/Toast";
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
@@ -19,7 +21,6 @@ import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
   Banknote,
-  Loader2,
   CheckCircle,
   XCircle,
   TrendingUp,
@@ -37,7 +38,6 @@ import {
 import { FadeIn } from "@/components/reactbits";
 import { formatDate, toDateInput } from "@/lib/date";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import Spinner from "@/components/ui/Spinner";
 import { committeeDisplayName } from "@/lib/committee";
 import { deriveEventStatus } from "@rdswa/shared";
 import {
@@ -374,6 +374,7 @@ function DonationsList({ committeeId }: { committeeId: string }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [revisionNote, setRevisionNote] = useState("");
   const [actionTarget, setActionTarget] = useState<{
     id: string;
@@ -429,9 +430,7 @@ function DonationsList({ committeeId }: { committeeId: string }) {
 
   if (isLoading)
     return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
+      <CardListSkeleton />
     );
 
   return (
@@ -525,7 +524,7 @@ function DonationsList({ committeeId }: { committeeId: string }) {
               </>
             )}
             <button
-              onClick={() => setExpandedId(isExpanded ? null : d._id)}
+              onClick={() => toggleExpand(d._id)}
               className="p-1.5 text-muted-foreground hover:bg-accent rounded"
             >
               {isExpanded ? (
@@ -652,6 +651,7 @@ function DonationsList({ committeeId }: { committeeId: string }) {
                       <Fragment key={d._id}>
                       <motion.tr
                         layout
+                        data-accordion-item={d._id}
                         className="border-t hover:bg-accent/30 align-top"
                       >
                         <td className="p-3">
@@ -752,6 +752,7 @@ function DonationsList({ committeeId }: { committeeId: string }) {
                   <motion.div
                     key={d._id}
                     layout
+                    data-accordion-item={d._id}
                     className="border rounded-lg p-4 bg-card"
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -857,6 +858,7 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
     committee: "",
   });
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [items, setItems] = useState<ExpenseItem[]>([]);
   const [attachments, setAttachments] = useState<ExpenseAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1179,9 +1181,7 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
+        <CardListSkeleton />
       ) : (
         <>
           {(() => {
@@ -1298,15 +1298,13 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
                           (e.items?.length || 0) + (e.attachments?.length || 0);
                         return (
                           <Fragment key={e._id}>
-                            <tr className="border-t hover:bg-accent/30">
+                            <tr data-accordion-item={e._id} className="border-t hover:bg-accent/30">
                               <td className="p-3 text-foreground truncate">
                                 {detailCount > 0 ? (
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      setExpandedId(
-                                        expandedId === e._id ? null : e._id,
-                                      )
+                                      toggleExpand(e._id)
                                     }
                                     title={
                                       expandedId === e._id
@@ -1352,7 +1350,7 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
                               </td>
                               <td className="p-3 text-right">
                                 {renderActions(e, expandedId === e._id, () =>
-                                  setExpandedId(expandedId === e._id ? null : e._id),
+                                  toggleExpand(e._id),
                                 )}
                               </td>
                             </tr>
@@ -1385,7 +1383,7 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
                 {/* Mobile card list */}
                 <div className="lg:hidden space-y-3">
                   {expenses.map((e: any) => (
-                    <div key={e._id} className="border rounded-lg p-4 bg-card">
+                    <div key={e._id} data-accordion-item={e._id} className="border rounded-lg p-4 bg-card">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <p className="text-foreground font-medium break-words flex-1 min-w-0">
                           {e.title}
@@ -1412,7 +1410,7 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
                       </div>
                       <div className="pt-2 border-t">
                         {renderActions(e, expandedId === e._id, () =>
-                          setExpandedId(expandedId === e._id ? null : e._id),
+                          toggleExpand(e._id),
                         )}
                       </div>
                       <AnimatePresence initial={false}>
@@ -1457,6 +1455,7 @@ function CampaignsList({ committeeId }: { committeeId: string }) {
   const confirm = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -1623,14 +1622,12 @@ function CampaignsList({ committeeId }: { committeeId: string }) {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
+        <CardListSkeleton />
       ) : (
         <div className="space-y-3">
           {campaigns.map((c: any, i: number) => (
             <FadeIn key={c._id} direction="up" delay={i * 0.06}>
-              <div className="border rounded-lg p-4 sm:p-6 bg-card">
+              <div data-accordion-item={c._id} className="border rounded-lg p-4 sm:p-6 bg-card">
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground">{c.title}</h3>
@@ -1661,7 +1658,7 @@ function CampaignsList({ committeeId }: { committeeId: string }) {
                     </button>
                     <button
                       onClick={() =>
-                        setExpandedId(expandedId === c._id ? null : c._id)
+                        toggleExpand(c._id)
                       }
                       className="p-1.5 text-muted-foreground hover:bg-accent rounded"
                       title={
@@ -1754,7 +1751,7 @@ function EventFinanceList({ committeeId }: { committeeId: string }) {
   const events: any[] = data?.data || [];
 
   if (isLoading) {
-    return <Spinner size="sm" />;
+    return <InlineListSkeleton />;
   }
 
   if (events.length === 0) {

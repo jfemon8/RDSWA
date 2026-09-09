@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import Spinner from '@/components/ui/Spinner';
 
 import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward, Mail, Users } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
@@ -27,7 +27,7 @@ export default function VotingPage() {
   const closed = votes.filter((v: any) => v.status === 'closed' || v.status === 'published');
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <CardListSkeleton />;
   }
 
   return (

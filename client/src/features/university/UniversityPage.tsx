@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import api from "@/lib/api";
 import { queryKeys } from "@/lib/queryKeys";
 import { GraduationCap, BookOpen, Users, Phone, Mail, MapPin, ExternalLink } from "lucide-react";
@@ -6,7 +7,6 @@ import { FadeIn, BlurText } from "@/components/reactbits";
 import { motion } from "motion/react";
 import SEO from "@/components/SEO";
 import RichContent from "@/components/ui/RichContent";
-import Spinner from '@/components/ui/Spinner';
 
 export default function UniversityPage() {
   const { data, isLoading } = useQuery({
@@ -25,7 +25,7 @@ export default function UniversityPage() {
 
   if (isLoading) {
     return (
-      <Spinner size="md" />
+      <CardListSkeleton />
     );
   }
 

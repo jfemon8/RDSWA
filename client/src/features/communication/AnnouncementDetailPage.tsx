@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Megaphone, MessageCircle, User as UserIcon } from 'lucide-react';
 import api from '@/lib/api';
 import { useBackNavigation } from '@/hooks/useBackNavigation';
 import { formatDate } from '@/lib/date';
 import { FadeIn } from '@/components/reactbits';
-import Spinner from '@/components/ui/Spinner';
 import RichContent from '@/components/ui/RichContent';
 import ReactionButton from '@/components/social/ReactionButton';
 import CommentSection from '@/components/social/CommentSection';
@@ -36,7 +36,7 @@ export default function AnnouncementDetailPage() {
     enabled: !!id,
   });
 
-  if (isLoading) return <Spinner size="md" fullPage />;
+  if (isLoading) return <PageSkeleton />;
 
   if (error || !data) {
     return (

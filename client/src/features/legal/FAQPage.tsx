@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
@@ -8,17 +8,20 @@ import { ChevronDown, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import RichContent from '@/components/ui/RichContent';
 import SEO from '@/components/SEO';
+import { scrollAccordionIntoView } from '@/hooks/useAccordionScroll';
 
 function FAQItem({ faq, index }: { faq: { question: string; answer: string }; index: number }) {
   const [open, setOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   return (
     <FadeIn delay={index * 0.05} direction="up">
-      <div
-        className="rounded-xl border bg-card overflow-hidden"
-      >
+      <div ref={cardRef} className="rounded-xl border bg-card overflow-hidden">
         <button
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            setOpen(!open);
+            if (!open) scrollAccordionIntoView(cardRef.current);
+          }}
           className="w-full flex items-center justify-between p-5 text-left"
         >
           <span className="font-medium pr-4 text-foreground flex items-center gap-2">

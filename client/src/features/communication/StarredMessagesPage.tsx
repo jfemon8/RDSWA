@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { Star, ArrowRight, MessageSquare, User as UserIcon } from 'lucide-react';
@@ -6,7 +7,6 @@ import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
-import Spinner from '@/components/ui/Spinner';
 
 interface StarredMessage {
   _id: string;
@@ -64,7 +64,7 @@ export default function StarredMessagesPage() {
       </div>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : messages.length === 0 ? (
         <FadeIn delay={0.1} direction="up">
           <div className="text-center py-16 text-sm text-muted-foreground">

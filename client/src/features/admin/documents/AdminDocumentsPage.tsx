@@ -1,8 +1,10 @@
 import { Fragment, useState } from 'react';
+import { RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import RichTextEditor from '@/components/ui/RichTextEditor';
@@ -12,7 +14,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { proxyFileUrl } from '@/lib/fileProxy';
 import { formatDateTime } from '@/lib/date';
@@ -162,7 +163,7 @@ export default function AdminDocumentsPage() {
 
 
 
-  const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
 
   const renderDetails = (doc: any) => {
     const filename = doc.fileUrl ? doc.fileUrl.split('/').pop() : '';
@@ -388,7 +389,7 @@ export default function AdminDocumentsPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : docs.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -427,6 +428,7 @@ export default function AdminDocumentsPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.03 }}
+                      data-accordion-item={doc._id}
                       className={`border-t hover:bg-accent/30 cursor-pointer ${isExpanded ? 'bg-accent/20' : ''}`}
                       onClick={() => toggleExpand(doc._id)}
                     >
@@ -510,6 +512,7 @@ export default function AdminDocumentsPage() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
+                  data-accordion-item={doc._id}
                   className="border rounded-lg p-4 bg-card"
                 >
                   <button

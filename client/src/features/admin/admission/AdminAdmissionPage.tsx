@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -12,11 +13,11 @@ import { useTabParam } from '@/hooks/useTabParam';
 import { formatDate } from '@/lib/date';
 import { proxyFileUrl } from '@/lib/fileProxy';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
 import RichTextEditor from '@/components/ui/RichTextEditor';
-import Spinner from '@/components/ui/Spinner';
 import PdfPreviewModal, { type PdfPreviewTarget } from '@/components/ui/PdfPreviewModal';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useAcademicConfig } from '@/hooks/useAcademicConfig';
@@ -120,6 +121,7 @@ function CircularsSection() {
   // Per-card expand state lets moderators review the rendered content +
   // attachments without leaving the admin page.
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [preview, setPreview] = useState<PdfPreviewTarget | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -350,7 +352,7 @@ function CircularsSection() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : items.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">No circulars yet — click "New Circular" above.</p>
       ) : (
@@ -359,11 +361,11 @@ function CircularsSection() {
             const open = expandedId === c._id;
             return (
               <FadeIn key={c._id} delay={i * 0.04} direction="up">
-                <div className="border rounded-lg bg-card overflow-hidden">
+                <div data-accordion-item={c._id} className="border rounded-lg bg-card overflow-hidden">
                   <div className="flex items-start justify-between gap-3 p-3">
                     <button
                       type="button"
-                      onClick={() => setExpandedId(open ? null : c._id)}
+                      onClick={() => toggleExpand(c._id)}
                       aria-expanded={open}
                       className="flex items-start gap-2 flex-1 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-primary/40 rounded-md -m-1 p-1"
                     >
@@ -804,7 +806,7 @@ function SeatsSection() {
       </div>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : bySession.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">
           No seat data yet — click "New Session" above to add the first session.
@@ -1759,7 +1761,7 @@ function CutoffsSection() {
       </div>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : bySession.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">
           No cut-off data yet — click "New Session" above to add the first session.

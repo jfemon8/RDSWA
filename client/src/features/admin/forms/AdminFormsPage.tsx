@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore } from '@/stores/authStore';
@@ -7,11 +8,11 @@ import { FadeIn } from '@/components/reactbits';
 import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { CheckCircle, XCircle, FileText, MessageSquare, ChevronDown, ChevronUp, Trash2, Eye, Download, Clock, Paperclip } from 'lucide-react';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import { Link } from 'react-router-dom';
 import DocumentPreviewModal, { type DocumentPreviewTarget } from '@/components/ui/DocumentPreviewModal';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
@@ -28,6 +29,7 @@ export default function AdminFormsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [preview, setPreview] = useState<DocumentPreviewTarget | null>(null);
   const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 
@@ -104,7 +106,7 @@ export default function AdminFormsPage() {
         </div>
 
         {isLoading ? (
-          <Spinner size="md" />
+          <CardListSkeleton />
         ) : forms.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -119,12 +121,12 @@ export default function AdminFormsPage() {
               const attachments: Array<{ name: string; url: string }> = Array.isArray(f.attachments) ? f.attachments : [];
               return (
                 <FadeIn key={f._id} direction="up" delay={index * 0.05} duration={0.4}>
-                  <div className="border rounded-lg bg-card">
+                  <div data-accordion-item={f._id} className="border rounded-lg bg-card">
                     <div className="p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-2 gap-2">
                         <div className="flex-1 min-w-0">
                           <p
-                            onClick={() => setExpandedId(expandedId === f._id ? null : f._id)}
+                            onClick={() => toggleExpand(f._id)}
                             title="Details"
                             className="font-medium text-foreground capitalize flex items-center gap-1.5 cursor-pointer"
                           >
@@ -157,7 +159,7 @@ export default function AdminFormsPage() {
                               : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                           }`}>{f.status?.replace('_', ' ')}</span>
                           <button
-                            onClick={() => setExpandedId(expandedId === f._id ? null : f._id)}
+                            onClick={() => toggleExpand(f._id)}
                             className="p-1 hover:bg-accent rounded"
                             aria-label={expandedId === f._id ? 'Collapse' : 'Expand'}
                           >

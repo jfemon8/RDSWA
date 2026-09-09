@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { CardListSkeleton, RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,6 +7,7 @@ import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { useConfirm, usePrompt } from '@/components/ui/ConfirmModal';
 import { useTabParam } from '@/hooks/useTabParam';
 import { useAuthStore } from '@/stores/authStore';
@@ -17,7 +19,6 @@ import {
 } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -121,6 +122,7 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
   // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [showMatch, setShowMatch] = useState(false);
 
   const { data: configData } = useQuery({
@@ -220,7 +222,7 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
         </button>
       )}
       <button
-        onClick={() => setExpandedId(expandedId === m._id ? null : m._id)}
+        onClick={() => toggleExpand(m._id)}
         title={expandedId === m._id ? 'Hide details' : 'View details'}
         aria-expanded={expandedId === m._id}
         className="p-1.5 text-muted-foreground hover:bg-accent rounded"
@@ -298,7 +300,7 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : mentorships.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No mentorships found.</p></FadeIn>
       ) : (
@@ -327,7 +329,7 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
               <tbody>
                 {mentorships.map((m: any) => (
                   <Fragment key={m._id}>
-                    <tr className="border-t hover:bg-accent/30">
+                    <tr data-accordion-item={m._id} className="border-t hover:bg-accent/30">
                       <td className="p-3 truncate">
                         <Link to={`/members/${m.mentor?._id}`} className="font-medium hover:text-primary transition-colors truncate block" title={m.mentor?.name}>{m.mentor?.name || '-'}</Link>
                       </td>
@@ -367,7 +369,7 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
           {/* Mobile card list */}
           <div className="lg:hidden space-y-3">
             {mentorships.map((m: any) => (
-              <div key={m._id} className="border rounded-lg p-4 bg-card">
+              <div key={m._id} data-accordion-item={m._id} className="border rounded-lg p-4 bg-card">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0 flex-1">
                     <div className="text-xs text-muted-foreground mb-0.5">Mentor</div>
@@ -574,7 +576,7 @@ function MentorRosterTab({ canManage }: { canManage: boolean }) {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : mentors.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No eligible members found.</p></FadeIn>
       ) : (

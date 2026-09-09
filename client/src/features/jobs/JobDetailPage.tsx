@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
@@ -6,7 +7,7 @@ import { BlurText, FadeIn } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import {
   ArrowLeft, Briefcase, MapPin, Clock, ExternalLink, Banknote,
-  Loader2, FileText, CheckCircle, User, Users, CalendarX,
+  FileText, CheckCircle, User, Users, CalendarX,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
@@ -34,9 +35,7 @@ export default function JobDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageSkeleton />
     );
   }
 

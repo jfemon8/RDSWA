@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,7 +8,6 @@ import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { UserPlus, UserMinus, Search, Shield } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 
 export default function AdminModeratorsPage() {
   const queryClient = useQueryClient();
@@ -144,7 +144,7 @@ export default function AdminModeratorsPage() {
 
       {/* Moderators List */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : moderators.length === 0 ? (
         <div className="text-center py-12">
           <Shield className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />

@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
@@ -12,7 +13,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import { GradientText } from '@/components/reactbits';
 import NotificationBell from '@/components/shared/NotificationBell';
 import MessageBell from '@/components/shared/MessageBell';
-import Spinner from '@/components/ui/Spinner';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useThemeStore } from '@/stores/themeStore';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -178,7 +178,7 @@ export default function DashboardLayout() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             >
-              <Suspense fallback={<Spinner size="md" fullPage />}>
+              <Suspense fallback={<PageSkeleton />}>
                 <Outlet />
               </Suspense>
             </motion.div>

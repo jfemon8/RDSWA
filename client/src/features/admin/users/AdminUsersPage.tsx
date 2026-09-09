@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -14,7 +15,6 @@ import { downloadTablePdf } from '@/lib/downloadPdf';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { FieldError } from '@/components/ui/FieldError';
 import { omitFieldError } from '@/lib/formErrors';
@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
       )}
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : (
         <>
           <FadeIn direction="up" delay={0.1}>

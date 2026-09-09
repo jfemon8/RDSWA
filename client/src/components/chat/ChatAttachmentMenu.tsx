@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 import { Paperclip, Image as ImageIcon, Video, Music, FileText, File as FileIcon, UserRound, X, Loader2, Search, Smartphone, PencilLine, Users as UsersIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -222,14 +223,7 @@ function MenuItem({
 
 type ContactMode = 'member' | 'phone' | 'manual';
 
-/**
- * Modal contact picker with three modes:
- *  - member: search the RDSWA member directory (existing flow)
- *  - phone:  use the Web Contacts API to pick from the user's phone (Android Chrome only)
- *  - manual: type in name + phone/email manually
- *
- * Returns a normalized ChatAttachment.contact payload to the caller via onSelect.
- */
+/** Modal picker that returns a normalised contact payload from the member directory, the phone's contacts, or manual entry. */
 function ContactPicker({
   onClose,
   onSelect,
@@ -338,7 +332,7 @@ function MemberSearchMode({ onSelect }: { onSelect: (contact: NonNullable<ChatAt
         {search.length < 2 ? (
           <p className="text-center text-xs text-muted-foreground py-6">Type at least 2 characters to search.</p>
         ) : isLoading ? (
-          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          <InlineListSkeleton />
         ) : results.length === 0 ? (
           <p className="text-center text-xs text-muted-foreground py-6">No members found.</p>
         ) : (

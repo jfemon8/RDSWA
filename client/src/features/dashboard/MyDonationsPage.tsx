@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 import api from '@/lib/api';
 import { Receipt, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
@@ -6,7 +7,6 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { downloadHtmlPdf } from '@/lib/downloadPdf';
 import { useState } from 'react';
-import Spinner from '@/components/ui/Spinner';
 
 const statusConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'Pending' },
@@ -76,7 +76,7 @@ export default function MyDonationsPage() {
 
       {/* Donations list */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : filtered.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-12 text-muted-foreground">

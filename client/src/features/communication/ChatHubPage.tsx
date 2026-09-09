@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -16,7 +17,6 @@ import { hasMinRole } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import CreateGroupForm from '@/components/chat/CreateGroupForm';
 import { formatDateCustom } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 
 /** Unified chat hub listing DMs and groups, holding no chat state and only routing to the dedicated pages. */
 
@@ -92,10 +92,7 @@ export default function ChatHubPage() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const isMod = !!user?.role && hasMinRole(user.role, UserRole.MODERATOR);
   const [searchParams, setSearchParams] = useSearchParams();
-  // Preserve the selected tab across conversation entry/exit. Priority:
-  //   1. ?tab= in URL (shareable / deep-linkable)
-  //   2. sessionStorage (survives internal navigation even without URL state)
-  //   3. Default to 'all'
+  // The tab survives leaving and re-entering a conversation, read from ?tab= first, then sessionStorage, then 'all'.
   const [tab, setTab] = useState<Tab>(() => readInitialTab(searchParams.get('tab')));
   const [search, setSearch] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
@@ -374,7 +371,7 @@ export default function ChatHubPage() {
 
       {/* Unified list */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : filtered.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-16 text-sm text-muted-foreground">

@@ -1,4 +1,5 @@
 import { useState, useRef, lazy, Suspense } from "react";
+import { CardListSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
@@ -27,7 +28,6 @@ import { formatDate } from "@/lib/date";
 import RichContent from "@/components/ui/RichContent";
 import { Link } from "react-router-dom";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import Spinner from "@/components/ui/Spinner";
 
 interface NoticeAttachment {
   name: string;
@@ -491,7 +491,7 @@ export default function AdminNoticesPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : (
         <div className="space-y-2">
           {notices.map((n: any, i: number) => {
@@ -672,9 +672,7 @@ function NoticeInlinePdf({ url, name }: { url: string; name?: string }) {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-[300px] border rounded-xl bg-card">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <Skeleton className="h-[300px] w-full rounded-xl" />
       }
     >
       <PdfViewer url={url} fileName={name} height={500} />

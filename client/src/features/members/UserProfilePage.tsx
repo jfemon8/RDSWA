@@ -1,4 +1,5 @@
 import { useParams, Link, useSearchParams } from "react-router-dom";
+import { ProfileSkeleton } from '@/components/ui/Skeleton';
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -36,7 +37,6 @@ import { FadeIn, BlurText } from "@/components/reactbits";
 import ProfileBadges from "@/components/ui/ProfileBadges";
 import { UserRole } from "@rdswa/shared";
 import { useToast } from "@/components/ui/Toast";
-import Spinner from "@/components/ui/Spinner";
 import { formatDate as formatDateBST } from "@/lib/date";
 
 function getOrdinal(n: number): string {
@@ -130,7 +130,11 @@ export default function UserProfilePage() {
   };
 
   if (isLoading) {
-    return <Spinner size="md" fullPage />;
+    return (
+      <div className="container mx-auto py-8">
+        <ProfileSkeleton />
+      </div>
+    );
   }
 
   if (error || !data) {

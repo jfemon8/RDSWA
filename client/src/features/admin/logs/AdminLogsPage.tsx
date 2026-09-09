@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardListSkeleton, RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -14,7 +15,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/date";
-import Spinner from "@/components/ui/Spinner";
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 
 type Tab = "audit" | "login" | "suspicious";
@@ -76,6 +77,7 @@ function AuditLogsTab() {
   const [action, setAction] = useState("");
   const [resource, setResource] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
 
   const {
     items: logs,
@@ -125,7 +127,7 @@ function AuditLogsTab() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : logs.length === 0 ? (
         <div className="text-center py-12">
           <Shield className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -144,11 +146,12 @@ function AuditLogsTab() {
                 return (
                   <div
                     key={log._id}
+                    data-accordion-item={log._id}
                     className="border rounded-lg bg-card overflow-hidden"
                   >
                     <div
                       className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 cursor-pointer hover:bg-accent/30 transition-colors"
-                      onClick={() => setExpandedId(isExpanded ? null : log._id)}
+                      onClick={() => toggleExpand(log._id)}
                     >
                       {/* Primary info — stacks above metadata on mobile so the
                           action/actor/resource can use the full row width. */}
@@ -451,7 +454,7 @@ function LoginHistoryTab() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : history.length === 0 ? (
         <div className="text-center py-12">
           <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -662,7 +665,7 @@ function SuspiciousActivityTab() {
     },
   });
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) return <CardListSkeleton />;
 
   const {
     failedByIp = [],

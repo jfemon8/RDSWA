@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck } from 'lucide-react';
@@ -9,7 +10,6 @@ import { useNotificationSocket } from '@/hooks/useSocket';
 import { formatDate } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { normalizeNotificationLink } from '@/lib/notificationLink';
-import Spinner from '@/components/ui/Spinner';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -132,7 +132,7 @@ export default function NotificationBell() {
             {/* Body */}
             <div className="max-h-80 overflow-y-auto">
               {isLoading ? (
-                <Spinner size="sm" />
+                <InlineListSkeleton />
               ) : notifications.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   No notifications

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Loader2, ZoomIn, ZoomOut, RotateCw, Shrink, Maximize, Minimize, Download, ExternalLink, FileText } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, Shrink, Maximize, Minimize, Download, ExternalLink, FileText } from 'lucide-react';
 import ZoomableImage from './ZoomableImage';
 import { proxyFileUrl } from '@/lib/fileProxy';
 
@@ -90,9 +91,7 @@ export default function DocumentPreviewModal({
             {isPdf ? (
               <Suspense
                 fallback={
-                  <div className="flex items-center justify-center gap-2 py-24 border rounded-xl bg-card text-sm text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" /> Loading PDF viewer…
-                  </div>
+                  <Skeleton className="h-[720px] w-full rounded-xl" />
                 }
               >
                 <PdfViewer url={url} fileName={name} height={720} />

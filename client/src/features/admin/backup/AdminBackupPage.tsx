@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
@@ -8,7 +9,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 
 interface CollectionInfo {
   name: string;
@@ -191,7 +191,7 @@ export default function AdminBackupPage() {
 
       {/* Collection list */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : filteredCollections.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">
           No collections match your search.

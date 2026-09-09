@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
@@ -337,9 +338,7 @@ export default function CommentSection({
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <div className="flex justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
+        <InlineListSkeleton />
       ) : (
         <>
           {comments.length > 3 && !showAll && (

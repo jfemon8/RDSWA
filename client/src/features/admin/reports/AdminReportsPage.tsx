@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { InlineListSkeleton, StatsSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn, CountUp } from '@/components/reactbits';
 import { departmentShortName } from '@/lib/departmentCodes';
@@ -16,7 +17,6 @@ import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import { FieldError } from '@/components/ui/FieldError';
 import { omitFieldError } from '@/lib/formErrors';
-import Spinner from '@/components/ui/Spinner';
 import { committeeDisplayName } from '@/lib/committee';
 
 const ROW_HEIGHT = 28;
@@ -90,7 +90,7 @@ function MembersReport() {
     },
   });
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) return <StatsSkeleton />;
 
   const { byRole = [], byBatch = [], byDepartment = [], byDistrict = [] } = data?.data || {};
   // Both category charts share one height so the two cards line up side by side.
@@ -210,7 +210,7 @@ function FinanceReport() {
     },
   });
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) return <StatsSkeleton />;
 
   const d = data?.data || {};
 
@@ -336,7 +336,7 @@ function EventsReport() {
     },
   });
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) return <StatsSkeleton />;
 
   const stats = data?.data || [];
 
@@ -395,7 +395,7 @@ function DonationsReport() {
     },
   });
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) return <StatsSkeleton />;
 
   const trends = (data?.data || []).map((t: any) => ({
     name: `${t._id.month}/${t._id.year}`,
@@ -450,7 +450,7 @@ function VotingReport() {
     },
   });
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) return <StatsSkeleton />;
 
   const { byStatus = [], byEligibility = [] } = data?.data || {};
 
@@ -1037,7 +1037,7 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="sm" />
+        <InlineListSkeleton />
       ) : reports.length === 0 ? (
         <div className="text-center py-12 text-sm text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />

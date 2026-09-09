@@ -1,11 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { Suspense } from 'react';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import BottomNav from '@/components/shared/BottomNav';
 import BaseJsonLd from '@/components/seo/BaseJsonLd';
 import { motion, AnimatePresence } from 'motion/react';
-import Spinner from '@/components/ui/Spinner';
 import { useIsAndroidApp } from '@/hooks/usePlatform';
 
 export default function PublicLayout() {
@@ -35,7 +35,7 @@ export default function PublicLayout() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            <Suspense fallback={<Spinner size="md" fullPage />}>
+            <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>
           </motion.div>

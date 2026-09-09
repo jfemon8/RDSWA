@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
 import { useTabParam } from "@/hooks/useTabParam";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 import RichTextEditor from "@/components/ui/RichTextEditor";
@@ -24,7 +26,6 @@ import {
 } from "lucide-react";
 import { downloadTablePdf } from "@/lib/downloadPdf";
 import { toDateInput, formatTimeString } from "@/lib/date";
-import Spinner from "@/components/ui/Spinner";
 
 const DAYS = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"] as const;
 const DAY_LABELS: Record<string, string> = {
@@ -152,6 +153,7 @@ function OperatorsList() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
 
   const { data, isLoading } = useQuery({
     queryKey: ["bus", "operators"],
@@ -355,7 +357,7 @@ function OperatorsList() {
         )}
       </AnimatePresence>
       {isLoading ? (
-        <Spinner />
+        <CardListSkeleton />
       ) : (
         <div className="space-y-2">
           {operators.map((o: any, index: number) => (
@@ -365,12 +367,10 @@ function OperatorsList() {
               delay={index * 0.05}
               duration={0.4}
             >
-              <div className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
+              <div data-accordion-item={o._id} className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
                 <div
                   className="flex items-center justify-between gap-3 p-3 cursor-pointer"
-                  onClick={() =>
-                    setExpandedId(expandedId === o._id ? null : o._id)
-                  }
+                  onClick={() => toggleExpand(o._id)}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <motion.span
@@ -504,6 +504,7 @@ function RoutesList() {
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
 
   const { data, isLoading } = useQuery({
     queryKey: ["bus", "routes"],
@@ -757,7 +758,7 @@ function RoutesList() {
         )}
       </AnimatePresence>
       {isLoading ? (
-        <Spinner />
+        <CardListSkeleton />
       ) : (
         <div className="space-y-2">
           {routes.map((r: any, index: number) => (
@@ -767,12 +768,10 @@ function RoutesList() {
               delay={index * 0.05}
               duration={0.4}
             >
-              <div className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
+              <div data-accordion-item={r._id} className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
                 <div
                   className="flex items-center justify-between gap-3 p-3 cursor-pointer"
-                  onClick={() =>
-                    setExpandedId(expandedId === r._id ? null : r._id)
-                  }
+                  onClick={() => toggleExpand(r._id)}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <motion.span
@@ -925,7 +924,7 @@ function SchedulesList() {
         </p>
       </div>
       {routesLoading ? (
-        <Spinner />
+        <CardListSkeleton />
       ) : routes.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">
           No routes found. Add routes first.
@@ -1505,7 +1504,7 @@ function RouteSchedules({ route, onBack }: { route: any; onBack: () => void }) {
         )}
       </AnimatePresence>
       {isLoading ? (
-        <Spinner />
+        <CardListSkeleton />
       ) : schedules.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">
           No schedules for this route yet.
@@ -1696,7 +1695,7 @@ function CountersList() {
         </p>
       </div>
       {operatorsLoading ? (
-        <Spinner />
+        <CardListSkeleton />
       ) : operators.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">
           No operators found. Add operators first.
@@ -1750,6 +1749,7 @@ function OperatorCounters({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
 
   const { data, isLoading } = useQuery({
     queryKey: ["bus", "counters", "operator", operator._id],
@@ -1943,7 +1943,7 @@ function OperatorCounters({
         )}
       </AnimatePresence>
       {isLoading ? (
-        <Spinner />
+        <CardListSkeleton />
       ) : counters.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">
           No counters for this operator yet.
@@ -1957,12 +1957,10 @@ function OperatorCounters({
               delay={index * 0.05}
               duration={0.4}
             >
-              <div className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
+              <div data-accordion-item={c._id} className="border rounded-lg bg-card hover:bg-accent/30 transition-colors">
                 <div
                   className="flex items-center justify-between gap-3 p-3 cursor-pointer"
-                  onClick={() =>
-                    setExpandedId(expandedId === c._id ? null : c._id)
-                  }
+                  onClick={() => toggleExpand(c._id)}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <motion.span

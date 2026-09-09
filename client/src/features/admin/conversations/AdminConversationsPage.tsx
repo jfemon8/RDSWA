@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -14,7 +15,6 @@ import api from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { FadeIn } from "@/components/reactbits";
-import Spinner from "@/components/ui/Spinner";
 import EmptyState from "@/components/ui/EmptyState";
 import MonitorThreadPanel from "./MonitorThreadPanel";
 import {
@@ -175,7 +175,7 @@ function MemberSearch({ onPick }: { onPick: (id: string) => void }) {
       <div className="max-h-[calc(100dvh-22rem)] min-h-[14rem] lg:max-h-[32rem] overflow-y-auto divide-y">
         {isFetching && users.length === 0 ? (
           <div className="py-8">
-            <Spinner size="sm" />
+            <InlineListSkeleton />
           </div>
         ) : users.length === 0 ? (
           <p className="px-4 py-8 text-sm text-center text-muted-foreground">
@@ -252,7 +252,7 @@ function SubjectConversations({
 
       {isLoading ? (
         <div className="py-10">
-          <Spinner size="sm" />
+          <InlineListSkeleton />
         </div>
       ) : (
         <>
@@ -365,7 +365,7 @@ function GroupBrowser({
       <div className="max-h-[calc(100dvh-22rem)] min-h-[14rem] lg:max-h-[32rem] overflow-y-auto divide-y">
         {isLoading ? (
           <div className="py-8">
-            <Spinner size="sm" />
+            <InlineListSkeleton />
           </div>
         ) : groups.length === 0 ? (
           <p className="px-4 py-8 text-sm text-center text-muted-foreground">

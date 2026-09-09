@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 import {
@@ -41,7 +43,6 @@ import { FadeIn } from "@/components/reactbits";
 import ImageUpload from "@/components/ui/ImageUpload";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import Spinner from "@/components/ui/Spinner";
 import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
 import { deriveEventStatus, getAttendanceWindow } from "@rdswa/shared";
 import { useAuth } from "@/hooks/useAuth";
@@ -97,6 +98,7 @@ export default function AdminEventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -618,7 +620,7 @@ export default function AdminEventsPage() {
 
       {/* Events List */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : events.length === 0 ? (
         <p className="text-center py-12 text-muted-foreground">
           No events found
@@ -627,12 +629,12 @@ export default function AdminEventsPage() {
         <div className="space-y-2">
           {events.map((e: any, i: number) => (
             <FadeIn key={e._id} direction="up" delay={i * 0.06}>
-              <div className="border rounded-lg bg-card">
+              <div data-accordion-item={e._id} className="border rounded-lg bg-card">
                 <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <h3
                       onClick={() =>
-                        setExpandedId(expandedId === e._id ? null : e._id)
+                        toggleExpand(e._id)
                       }
                       title="Details"
                       className="font-medium text-foreground flex items-center gap-1.5 cursor-pointer"
@@ -678,7 +680,7 @@ export default function AdminEventsPage() {
                     </Link>
                     <button
                       onClick={() =>
-                        setExpandedId(expandedId === e._id ? null : e._id)
+                        toggleExpand(e._id)
                       }
                       className="p-2 hover:bg-accent rounded"
                       title="Details"

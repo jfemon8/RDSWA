@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -10,7 +11,6 @@ import { formatDate, formatTime } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
 import { normalizeNotificationLink } from '@/lib/notificationLink';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import RichContent from '@/components/ui/RichContent';
 
 export default function NotificationsPage() {
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <CardListSkeleton />;
   }
 
   return (

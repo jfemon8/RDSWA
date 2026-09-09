@@ -1,17 +1,18 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Calendar, Download, ExternalLink, FileText, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, Download, ExternalLink, FileText, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, BlurText } from '@/components/reactbits';
+import { BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import { proxyFileUrl } from '@/lib/fileProxy';
 import SEO from '@/components/SEO';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import ImageLightbox from '@/components/chat/ImageLightbox';
 import Promo from '@/components/promo/Promo';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 
 // Lazy-load PdfViewer so `react-pdf` and its worker stay out of the bundle for years with no PDF attachments.
 const PdfViewer = lazy(() => import('@/components/ui/PdfViewer'));
@@ -70,9 +71,16 @@ export default function VacationPage() {
     return [...list].sort((a, b) => b.academicYear.localeCompare(a.academicYear));
   }, [data]);
 
-  const latest = vacations[0];
-  const older = vacations.slice(1);
   const [openYearId, setOpenYearId] = useState<string | null>(null);
+  const toggleYear = useAccordionToggle(openYearId, setOpenYearId);
+  const opened = useRef(false);
+
+  // The list arrives after the first render, so the newest year is opened once it does.
+  useEffect(() => {
+    if (opened.current || vacations.length === 0) return;
+    opened.current = true;
+    setOpenYearId(vacations[0]._id);
+  }, [vacations]);
 
   return (
     <div className="container mx-auto py-8">
@@ -100,7 +108,11 @@ export default function VacationPage() {
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
           {isLoading ? (
-            <Spinner size="md" />
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className={i === 0 ? 'h-64 rounded-lg' : 'h-20 rounded-lg'} />
+              ))}
+            </div>
           ) : vacations.length === 0 ? (
             <EmptyState
               icon={Calendar}
@@ -108,80 +120,23 @@ export default function VacationPage() {
               description="The vacation calendar has not been published yet. Check back soon."
             />
           ) : (
-            <div className="space-y-8">
-              {/* Latest year — table + attachments shown directly. */}
-              <FadeIn direction="up">
-                <YearCard vacation={latest} highlight />
-              </FadeIn>
+            <div className="space-y-3">
+              {vacations.map((v, i) => (
+                <Fragment key={v._id}>
+                  <YearPanel
+                    vacation={v}
+                    index={i}
+                    isLatest={i === 0}
+                    isOpen={openYearId === v._id}
+                    // Only one year stays open, and pressing the open one closes it.
+                    onToggle={() => toggleYear(v._id)}
+                  />
+                  {i === 0 && vacations.length > 1 && (
+                    <Promo kind="displayResponsive" minHeight={250} />
+                  )}
+                </Fragment>
+              ))}
 
-              {/* In-flow display ad between the latest year and the archive, collapsing cleanly when AdSense env vars are unset. */}
-              {older.length > 0 && (
-                <Promo kind="displayResponsive" minHeight={250} />
-              )}
-
-              {/* Older years — collapsible buttons. */}
-              {older.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                    Previous Academic Years
-                  </p>
-                  <div className="space-y-2">
-                    {older.map((v, i) => {
-                      const isOpen = openYearId === v._id;
-                      return (
-                        <FadeIn key={v._id} direction="up" delay={i * 0.04}>
-                          <div className="border rounded-lg overflow-hidden bg-card">
-                            <button
-                              type="button"
-                              onClick={() => setOpenYearId(isOpen ? null : v._id)}
-                              aria-expanded={isOpen}
-                              className="w-full flex items-center justify-between p-4 text-left hover:bg-accent/40 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <Calendar className="h-4 w-4 text-primary shrink-0" />
-                                <div className="min-w-0">
-                                  <p className="font-medium text-foreground">
-                                    Academic Year {v.academicYear}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {v.entries.length} {v.entries.length === 1 ? 'entry' : 'entries'}
-                                    {v.attachments.length > 0 && ` · ${v.attachments.length} attachment${v.attachments.length === 1 ? '' : 's'}`}
-                                  </p>
-                                </div>
-                              </div>
-                              <motion.span
-                                animate={{ rotate: isOpen ? 180 : 0 }}
-                                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                                className="shrink-0 text-muted-foreground"
-                              >
-                                <ChevronDown className="h-5 w-5" />
-                              </motion.span>
-                            </button>
-                            <AnimatePresence initial={false}>
-                              {isOpen && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.25 }}
-                                  className="overflow-hidden border-t"
-                                >
-                                  <div className="p-4">
-                                    <YearCard vacation={v} />
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </FadeIn>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Bottom display ad — second impression for visitors who
-                  scroll through all years. */}
               <Promo kind="displayResponsive" minHeight={250} />
             </div>
           )}
@@ -196,7 +151,85 @@ export default function VacationPage() {
   );
 }
 
-function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlight?: boolean }) {
+function YearPanel({
+  vacation: v,
+  index,
+  isLatest,
+  isOpen,
+  onToggle,
+}: {
+  vacation: Vacation;
+  index: number;
+  isLatest: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const bodyId = `vacation-body-${v._id}`;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.3) }}
+      data-accordion-item={v._id}
+      className={`border rounded-lg overflow-hidden bg-card ${isOpen ? 'border-primary/30' : ''}`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={bodyId}
+        className="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-accent/40 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <Calendar className="h-4 w-4 text-primary shrink-0" />
+          <div className="min-w-0">
+            <p className="font-medium text-foreground flex items-center gap-2 flex-wrap">
+              Academic Year {v.academicYear}
+              {isLatest && (
+                <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+                  Latest
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {v.entries.length} {v.entries.length === 1 ? 'entry' : 'entries'}
+              {v.attachments.length > 0 && ` · ${v.attachments.length} attachment${v.attachments.length === 1 ? '' : 's'}`}
+            </p>
+          </div>
+        </div>
+        <motion.span
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          className="shrink-0 text-muted-foreground"
+        >
+          <ChevronDown className="h-5 w-5" />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            key="body"
+            id={bodyId}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden border-t"
+          >
+            <div className="p-4">
+              <YearCard vacation={v} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function YearCard({ vacation }: { vacation: Vacation }) {
   // Sort entries chronologically by start with end as the tie-breaker, whatever order the admin entered them.
   const sortedEntries = useMemo(() => {
     return [...vacation.entries].sort((a, b) => {
@@ -222,19 +255,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   return (
-    <div className={highlight ? 'border-2 border-primary/30 rounded-lg bg-card p-4 sm:p-6' : ''}>
-      {highlight && (
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Academic Year {vacation.academicYear}
-          </h2>
-          <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
-            Latest
-          </span>
-        </div>
-      )}
-
+    <div>
       {vacation.notes && (
         <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap [overflow-wrap:anywhere]">
           {vacation.notes}
@@ -351,11 +372,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
           {classified.filter((a) => a.isPdf).map((pdf, i) => (
             <Suspense
               key={`pdf-${i}`}
-              fallback={
-                <div className="flex items-center justify-center gap-2 py-12 border rounded-lg bg-muted/30 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading PDF viewer…
-                </div>
-              }
+              fallback={<Skeleton className="h-[720px] w-full rounded-lg" />}
             >
               <PdfViewer url={pdf.url} fileName={pdf.name} height={720} allowFullscreen />
             </Suspense>
@@ -368,8 +385,7 @@ function YearCard({ vacation, highlight = false }: { vacation: Vacation; highlig
         </div>
       )}
 
-      {/* Lightbox renders in a portal-like fixed overlay; controlled here so
-          arrow-key navigation cycles only through this year's images. */}
+      {/* Controlled here so arrow-key navigation cycles only through this year's images. */}
       {lightboxIndex >= 0 && (
         <ImageLightbox
           images={images.map((i) => ({ url: i.url, name: i.name }))}

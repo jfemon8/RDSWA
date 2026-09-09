@@ -11,8 +11,9 @@ import { formatDate, formatDateTime } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
 import { useToast } from '@/components/ui/Toast';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import { ListItemSkeleton } from '@/components/ui/Skeleton';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import PdfPreviewModal from '@/components/ui/PdfPreviewModal';
 import Promo from '@/components/promo/Promo';
 import { proxyFileUrl } from '@/lib/fileProxy';
@@ -26,7 +27,7 @@ export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  const toggleExpand = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
 
   /** Bump the counter then open the proxy with `inline=false`, since only its Content-Disposition header triggers a cross-origin save dialog. */
   const handleDownload = async (docId: string, fileUrl: string, title?: string) => {
@@ -113,7 +114,9 @@ export default function DocumentsPage() {
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {isLoading ? (
-        <Spinner size="md" />
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => <ListItemSkeleton key={i} />)}
+        </div>
       ) : documents.length === 0 ? (
         <EmptyState
           icon={FileText}
@@ -138,7 +141,7 @@ export default function DocumentsPage() {
             const canPreview = !!doc.fileUrl && isPdf;
             return (
             <FadeIn key={doc._id} delay={0.05 * index} direction="up">
-              <div className="border rounded-lg bg-card overflow-hidden">
+              <div data-accordion-item={doc._id} className="border rounded-lg bg-card overflow-hidden">
                 <div
                   role="button"
                   tabIndex={0}

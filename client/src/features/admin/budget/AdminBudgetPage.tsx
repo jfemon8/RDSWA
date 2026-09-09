@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 import { queryKeys } from "@/lib/queryKeys";
@@ -30,7 +32,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
-import Spinner from "@/components/ui/Spinner";
 
 interface BudgetItem {
   category: string;
@@ -79,6 +80,7 @@ export default function AdminBudgetPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [form, setForm] = useState<BudgetForm>(emptyForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -498,7 +500,7 @@ export default function AdminBudgetPage() {
 
       {/* List */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : budgets.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
@@ -512,7 +514,7 @@ export default function AdminBudgetPage() {
                 budget={b}
                 expanded={expandedId === b._id}
                 onToggle={() =>
-                  setExpandedId(expandedId === b._id ? null : b._id)
+                  toggleExpand(b._id)
                 }
                 onEdit={() => startEdit(b)}
                 onApprove={() =>
@@ -591,7 +593,7 @@ function BudgetRow({
   );
 
   return (
-    <div className="border rounded-lg bg-card">
+    <div data-accordion-item={budget._id} className="border rounded-lg bg-card">
       <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

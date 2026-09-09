@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { CardListSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
@@ -20,7 +21,6 @@ import {
   X,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import Spinner from "@/components/ui/Spinner";
 import { useAutoRoleConfig, AUTO_ROLE_CONFIG_FALLBACK, type AutoRoleConfigShape } from "@/hooks/useAutoRoleConfig";
 import { queryKeys } from "@/lib/queryKeys";
 import {
@@ -138,9 +138,7 @@ function VotingRulesConfig() {
 
   if (isLoading)
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
+      <CardListSkeleton />
     );
 
   return (
@@ -331,9 +329,7 @@ function MembershipCriteriaConfig() {
 
   if (isLoading)
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
+      <CardListSkeleton />
     );
 
   const toggleAccepted = (
@@ -849,7 +845,7 @@ function AutoRoleConfig() {
 
         {isLoading ? (
           <div className="border-2 border-primary/30 rounded-lg p-5 bg-primary/5">
-            <Spinner size="sm" />
+            <InlineListSkeleton />
           </div>
         ) : isError || !liveConfig ? (
           <div className="border-2 border-destructive/40 rounded-lg p-5 bg-destructive/5 text-sm text-foreground">

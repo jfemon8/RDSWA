@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -15,7 +16,6 @@ import { omitFieldError } from '@/lib/formErrors';
 import { stripHtml } from '@/lib/stripHtml';
 import { formatDate } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 import RichTextEditor from '@/components/ui/RichTextEditor';
@@ -97,7 +97,7 @@ export default function AnnouncementsPage() {
 
       {/* Announcements list */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : announcements.length === 0 ? (
         <FadeIn direction="up">
           <div className="text-center py-12">

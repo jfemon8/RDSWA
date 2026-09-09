@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -9,7 +10,6 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import { Search, Trash2, Pin, Lock } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 export default function AdminForumPage() {
@@ -78,7 +78,7 @@ export default function AdminForumPage() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : filtered.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No topics found.</p></FadeIn>
       ) : (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -31,7 +32,6 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useGroupMonitorSocket } from "@/hooks/useSocket";
 import { useConfirm, usePrompt } from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
-import Spinner from "@/components/ui/Spinner";
 import { MonitorAvatar, type MonitorUser } from "./monitorShared";
 
 interface Props {
@@ -460,7 +460,7 @@ export default function MonitorThreadPanel({
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Spinner size="sm" />
+          <InlineListSkeleton />
         </div>
       ) : error ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">

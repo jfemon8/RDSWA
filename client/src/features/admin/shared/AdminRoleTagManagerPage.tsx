@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CardListSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -8,8 +9,7 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
-import { Loader2, UserMinus, Search, Plus, X, Briefcase, Building2 } from 'lucide-react';
-import Spinner from '@/components/ui/Spinner';
+import { UserMinus, Search, Plus, X, Briefcase, Building2 } from 'lucide-react';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 /** Which boolean flag this page manages */
@@ -45,15 +45,7 @@ export interface AdminRoleTagManagerPageProps {
   allowAnyUser?: boolean;
 }
 
-/**
- * Reusable admin page for managing a boolean role-tag (isAlumni / isAdvisor / isSeniorAdvisor).
- *
- * Layout:
- *  - Title + intro
- *  - "Add" button → expandable search panel for approved members NOT currently holding the tag
- *  - List of users currently holding the tag with a revoke button on each card
- *  - Pagination
- */
+/** Reusable admin page for granting and revoking one boolean role tag (isAlumni / isAdvisor / isSeniorAdvisor). */
 export default function AdminRoleTagManagerPage({
   title,
   description,
@@ -184,7 +176,7 @@ export default function AdminRoleTagManagerPage({
                   />
                 </div>
                 {candidatesLoading ? (
-                  <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                  <InlineListSkeleton />
                 ) : candidates.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
                     {addSearch
@@ -231,7 +223,7 @@ export default function AdminRoleTagManagerPage({
 
         {/* Main list */}
         {isLoading ? (
-          <Spinner size="md" />
+          <CardListSkeleton />
         ) : users.length === 0 ? (
           <div className="text-center py-12">
             <Icon className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />

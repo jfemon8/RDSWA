@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FadeIn } from '@/components/reactbits';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -14,7 +15,6 @@ import { formatDate, formatTime } from '@/lib/date';
 import { stripHtml } from '@/lib/stripHtml';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 
 type Tab = 'send' | 'history';
@@ -242,7 +242,7 @@ function HistoryPanel() {
       </div>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : notifications.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">
           <Bell className="h-10 w-10 mx-auto mb-3 opacity-30" />

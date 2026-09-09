@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
@@ -25,7 +26,6 @@ import { useIsAndroidApp } from '@/hooks/usePlatform';
 import BottomNav from '@/components/shared/BottomNav';
 import NotificationBell from '@/components/shared/NotificationBell';
 import MessageBell from '@/components/shared/MessageBell';
-import Spinner from '@/components/ui/Spinner';
 
 interface AdminLink {
   label: string;
@@ -232,7 +232,7 @@ export default function AdminLayout() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             >
-              <Suspense fallback={<Spinner size="md" fullPage />}>
+              <Suspense fallback={<PageSkeleton />}>
                 <Outlet />
               </Suspense>
             </motion.div>

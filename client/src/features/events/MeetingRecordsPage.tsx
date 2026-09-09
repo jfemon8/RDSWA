@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { formatDate, formatTime } from '@/lib/date';
@@ -6,7 +7,6 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Calendar, MapPin, Users, FileText, X, Mail } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { deriveEventStatus } from '@rdswa/shared';
@@ -65,7 +65,7 @@ export default function MeetingRecordsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : meetings.length === 0 ? (
         <EmptyState
           icon={FileText}

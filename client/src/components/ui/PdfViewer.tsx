@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Document, Page, pdfjs } from 'react-pdf';
 import {
-  ZoomIn, ZoomOut, Download, Loader2, ChevronUp, ChevronDown,
+  ZoomIn, ZoomOut, Download, ChevronUp, ChevronDown,
   Maximize2, Minimize2, FileX, RotateCw, FileText,
 } from 'lucide-react';
 import { proxyFileUrl } from '@/lib/fileProxy';
@@ -162,12 +163,10 @@ export default function PdfViewer({ url, fileName, height = 600, allowFullscreen
     if (showPageInput) pageInputRef.current?.focus();
   }, [showPageInput]);
 
-  // ── Computed dimensions ──
-  // Desktop uses container width minus padding, letting zoomed pages overflow and scroll horizontally.
+  // Desktop uses the container width minus padding, letting zoomed pages overflow and scroll horizontally.
   const pageWidth = Math.min(containerWidth - 48, 1200) * scale;
 
-  // Height: desktop caps at 70vh so the viewer doesn't push the page content
-  // out of view; mobile uses 60dvh; fullscreen uses all available.
+  // Desktop caps at 70vh so the viewer never pushes the page out of view, mobile uses 60dvh, and fullscreen takes everything.
   const containerHeight = fullscreen
     ? 'calc(100dvh - 48px)'
     : typeof window !== 'undefined' && window.innerWidth < 640
@@ -305,10 +304,7 @@ export default function PdfViewer({ url, fileName, height = 600, allowFullscreen
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             loading={
-              <div className="flex flex-col items-center justify-center h-full gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading PDF...</p>
-              </div>
+              <Skeleton className="h-full w-full min-h-[24rem] rounded-lg" />
             }
             error={
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-6">

@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -10,7 +11,6 @@ import { useDynamicSiteMeta } from '@/hooks/useDynamicSiteMeta';
 import { useBrandColors } from '@/hooks/useBrandColors';
 import { useGroupActivitySocket } from '@/hooks/useSocket';
 import ScrollToTop from '@/components/ScrollToTop';
-import Spinner from '@/components/ui/Spinner';
 import { persistOptions } from '@/lib/queryPersister';
 import { useSessionCacheReset } from '@/hooks/useSessionCacheReset';
 
@@ -36,9 +36,7 @@ function AuthInitializer({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner size="md" />
-      </div>
+      <PageSkeleton />
     );
   }
 
@@ -57,9 +55,7 @@ function BrandColorsApplier() {
   return null;
 }
 
-/** Null-rendering listener for group chat activity across the whole app so
- *  the MessageBell badge + any mounted chat-list view stay in sync even when
- *  the user isn't currently on the group's chat page. */
+/** Keeps the MessageBell badge and any mounted chat list in sync while the user is away from the group's page. */
 function GroupActivityListener() {
   useGroupActivitySocket();
   return null;

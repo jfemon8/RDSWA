@@ -9,8 +9,9 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { scrollAccordionIntoView } from '@/hooks/useAccordionScroll';
 import Promo from '@/components/promo/Promo';
 import PdfPreviewModal, { type PdfPreviewTarget } from '@/components/ui/PdfPreviewModal';
 import { proxyFileUrl } from '@/lib/fileProxy';
@@ -156,7 +157,15 @@ function CircularsTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PdfPreviewTarget | null>(null);
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
   if (items.length === 0) {
     return (
       <EmptyState
@@ -178,10 +187,15 @@ function CircularsTab() {
         const open = isOpen(c._id, i);
         return (
           <FadeIn key={c._id} delay={i * 0.05} direction="up">
-            <div className="border rounded-xl bg-card overflow-hidden">
+            <div data-accordion-item={c._id} className="border rounded-xl bg-card overflow-hidden">
               <button
                 type="button"
-                onClick={() => setExpandedId(open ? null : c._id)}
+                // The default-open first card leaves expandedId null, so the next id is derived from `open`.
+                onClick={() => {
+                  const next = open ? null : c._id;
+                  setExpandedId(next);
+                  scrollAccordionIntoView(next);
+                }}
                 aria-expanded={open}
                 className="w-full flex items-start gap-3 p-4 sm:p-5 text-left hover:bg-accent/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
@@ -368,7 +382,15 @@ function SeatsTab() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [rows]);
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -550,7 +572,15 @@ function CutoffsTab() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [rows]);
 
-  if (isLoading) return <Spinner size="md" />;
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
   if (rows.length === 0) {
     return (
       <EmptyState

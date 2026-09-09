@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import api from '@/lib/api';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -6,7 +7,6 @@ import { FileText, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 import { FadeIn } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 
 const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-600', label: 'Pending' },
@@ -27,7 +27,7 @@ export default function MyFormsPage() {
   const forms = data?.data || [];
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <CardListSkeleton />;
   }
 
   return (

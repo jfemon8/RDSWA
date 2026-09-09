@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Loader2 } from 'lucide-react';
+import { X } from 'lucide-react';
 
 // Lazy-load PdfViewer so its ~600 KB of react-pdf and worker code arrives only when a preview is opened.
 const PdfViewer = lazy(() => import('./PdfViewer'));
@@ -54,9 +55,7 @@ export default function PdfPreviewModal({
             </button>
             <Suspense
               fallback={
-                <div className="flex items-center justify-center gap-2 py-24 border rounded-xl bg-card text-sm text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" /> Loading PDF viewer…
-                </div>
+                <Skeleton className="h-[720px] w-full rounded-xl" />
               }
             >
               <PdfViewer url={target.fileUrl} fileName={target.title} height={720} />

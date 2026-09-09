@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -8,7 +9,6 @@ import {
   ArrowLeft, Pin, Lock, Send, Loader2, Trash2, Pencil,
   User as UserIcon, Clock, MessageSquare,
 } from 'lucide-react';
-import Spinner from '@/components/ui/Spinner';
 
 import { FadeIn } from '@/components/reactbits';
 import { FieldError } from '@/components/ui/FieldError';
@@ -115,7 +115,7 @@ export default function TopicDetailPage() {
   const replies = data?.replies || [];
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <PageSkeleton />;
   }
 
   if (!topic) {

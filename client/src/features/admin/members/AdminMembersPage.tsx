@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Search, Ban, ExternalLink, Users, Clock, ShieldOff, Mail, Award, Star, UserCog, Download, FileSpreadsheet, FileText } from 'lucide-react';
@@ -13,7 +14,6 @@ import { UserRole } from '@rdswa/shared';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import SEO from '@/components/SEO';
 import { downloadTablePdf } from '@/lib/downloadPdf';
@@ -305,7 +305,7 @@ export default function AdminMembersPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : members.length === 0 ? (
         <FadeIn direction="up" delay={0.2}>
           <div className="text-center py-12 border rounded-xl bg-card">

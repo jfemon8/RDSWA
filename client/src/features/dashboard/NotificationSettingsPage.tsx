@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import {
@@ -30,7 +31,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useThemeStore } from "@/stores/themeStore";
 import { UserRole } from "@rdswa/shared";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import Spinner from "@/components/ui/Spinner";
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 
@@ -109,7 +109,7 @@ export default function NotificationSettingsPage() {
   };
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <CardListSkeleton />;
   }
 
   return (

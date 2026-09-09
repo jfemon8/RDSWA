@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors } from "@/lib/formErrors";
 import { queryKeys } from "@/lib/queryKeys";
@@ -25,7 +27,6 @@ import { CommitteePosition, UserRole } from "@rdswa/shared";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { hasMinRole } from "@/lib/roles";
-import Spinner from "@/components/ui/Spinner";
 import {
   UNIQUE_POSITIONS,
   formatPosition,
@@ -56,6 +57,7 @@ export default function AdminCommitteesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -140,9 +142,6 @@ export default function AdminCommitteesPage() {
   });
 
   const committees = data?.data || [];
-
-  const toggleExpand = (id: string) =>
-    setExpandedId((prev) => (prev === id ? null : id));
 
   const startEdit = (c: any) => {
     setEditId(c._id);
@@ -307,12 +306,12 @@ export default function AdminCommitteesPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : (
         <div className="space-y-3">
           {committees.map((c: any, i: number) => (
             <FadeIn key={c._id} direction="up" delay={i * 0.06}>
-              <div className="border rounded-lg bg-card">
+              <div data-accordion-item={c._id} className="border rounded-lg bg-card">
                 <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">

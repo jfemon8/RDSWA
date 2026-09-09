@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
@@ -18,7 +19,6 @@ import {
 } from "lucide-react";
 import ImageUpload from "@/components/ui/ImageUpload";
 import RichTextEditor from "@/components/ui/RichTextEditor";
-import Spinner from "@/components/ui/Spinner";
 import { useAuthStore } from "@/stores/authStore";
 import { hasMinRole } from "@/lib/roles";
 import { UserRole, ADSENSE_RESTRICTED_SUPER_ADMINS } from "@rdswa/shared";
@@ -72,7 +72,7 @@ export default function AdminSettingsPage() {
   });
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <CardListSkeleton />;
   }
 
   const settings = data?.data || {};
@@ -1481,9 +1481,7 @@ function AcademicConfigSection() {
 
   if (isLoading)
     return (
-      <div className="flex justify-center py-6">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
+      <CardListSkeleton count={2} />
     );
 
   return (

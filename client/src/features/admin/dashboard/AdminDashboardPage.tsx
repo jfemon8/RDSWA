@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { StatsSkeleton } from '@/components/ui/Skeleton';
 import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import {
@@ -29,7 +30,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { formatDateCustom } from "@/lib/date";
 import { buildFinanceTrend } from "@/lib/financeTrend";
-import Spinner from "@/components/ui/Spinner";
 
 const COLORS = [
   "#3b82f6",
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
   });
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <StatsSkeleton />;
   }
 
   const stats = data?.data;

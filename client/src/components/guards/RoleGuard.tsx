@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
-import Spinner from '@/components/ui/Spinner';
 
 interface RoleGuardProps {
   requiredRole: UserRole;
@@ -12,9 +12,7 @@ export default function RoleGuard({ requiredRole }: RoleGuardProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner size="md" />
-      </div>
+      <PageSkeleton />
     );
   }
 

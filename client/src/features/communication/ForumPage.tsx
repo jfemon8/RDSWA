@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
@@ -14,7 +15,6 @@ import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import { formatDate as formatDateUtil } from '@/lib/date';
 import { useToast } from '@/components/ui/Toast';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
@@ -116,7 +116,7 @@ export default function ForumPage() {
 
       {/* Topic List */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : filteredTopics.length === 0 ? (
         <EmptyState
           icon={MessageSquare}

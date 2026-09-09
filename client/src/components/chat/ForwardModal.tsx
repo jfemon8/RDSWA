@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { X, Search, Send, Loader2, Users, User as UserIcon, Hash, Globe, Building2 } from 'lucide-react';
@@ -128,7 +129,7 @@ export default function ForwardModal({ messageId, onClose }: Props) {
         <div className="flex-1 overflow-y-auto px-4 pb-3">
           {tab === 'groups' && (
             loadingGroups ? (
-              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              <InlineListSkeleton />
             ) : filteredGroups.length === 0 ? (
               <p className="text-center text-xs text-muted-foreground py-6">No groups</p>
             ) : (
@@ -176,7 +177,7 @@ export default function ForwardModal({ messageId, onClose }: Props) {
             search.length < 2 ? (
               <p className="text-center text-xs text-muted-foreground py-6">Type at least 2 characters to search.</p>
             ) : loadingMembers ? (
-              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              <InlineListSkeleton />
             ) : (members || []).length === 0 ? (
               <p className="text-center text-xs text-muted-foreground py-6">No members found</p>
             ) : (

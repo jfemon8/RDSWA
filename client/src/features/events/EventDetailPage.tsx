@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { useParams, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { formatDate, formatTime } from "@/lib/date";
@@ -28,7 +29,6 @@ import RichContent from "@/components/ui/RichContent";
 import UserEventQr from "@/components/ui/UserEventQr";
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors, omitFieldError } from "@/lib/formErrors";
-import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { deriveEventStatus, getAttendanceWindow } from "@rdswa/shared";
@@ -156,7 +156,7 @@ export default function EventDetailPage() {
   };
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return <PageSkeleton />;
   }
 
   const event = data?.data;

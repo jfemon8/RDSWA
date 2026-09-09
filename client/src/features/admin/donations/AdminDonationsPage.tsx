@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RecordsSkeleton } from '@/components/ui/Skeleton';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,13 +7,13 @@ import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { useAuthStore } from '@/stores/authStore';
 import { UserRole } from '@rdswa/shared';
 import { Search, CheckCircle, XCircle, Trash2, Eye, EyeOff, ChevronDown, Plus, Pencil } from 'lucide-react';
 import { FadeIn } from '@/components/reactbits';
 import { formatDate, formatTime } from '@/lib/date';
-import Spinner from '@/components/ui/Spinner';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import DonationFormModal from './DonationFormModal';
 
@@ -27,6 +28,7 @@ export default function AdminDonationsPage() {
   const debouncedSearch = useDebouncedValue(search);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   // null closes the form; a donation opens it for editing, `{}` for a new record.
   const [formTarget, setFormTarget] = useState<any | null>(null);
 
@@ -85,7 +87,7 @@ export default function AdminDonationsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <RecordsSkeleton />
       ) : donations.length === 0 ? (
         <FadeIn><p className="text-center text-muted-foreground py-12">No donations found.</p></FadeIn>
       ) : (
@@ -202,7 +204,7 @@ export default function AdminDonationsPage() {
                     </thead>
                     {donations.map((d: any) => (
                       <motion.tbody key={d._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <tr className="border-t hover:bg-accent/30 cursor-pointer" onClick={() => setExpandedId(expandedId === d._id ? null : d._id)}>
+                        <tr data-accordion-item={d._id} className="border-t hover:bg-accent/30 cursor-pointer" onClick={() => toggleExpand(d._id)}>
                           <td className="p-3">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <motion.span animate={{ rotate: expandedId === d._id ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
@@ -248,8 +250,8 @@ export default function AdminDonationsPage() {
                 {/* Mobile card list */}
                 <div className="lg:hidden space-y-3">
                   {donations.map((d: any) => (
-                    <div key={d._id} className="border rounded-lg bg-card overflow-hidden">
-                      <div className="p-4 cursor-pointer" onClick={() => setExpandedId(expandedId === d._id ? null : d._id)}>
+                    <div key={d._id} data-accordion-item={d._id} className="border rounded-lg bg-card overflow-hidden">
+                      <div className="p-4 cursor-pointer" onClick={() => toggleExpand(d._id)}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="min-w-0 flex-1">
                             {d.donor?._id ? (

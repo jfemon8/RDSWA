@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { ChatSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -6,7 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useDMSocket, useTypingState, usePresence } from '@/hooks/useSocket';
 import { useBackNavigation } from '@/hooks/useBackNavigation';
 import {
-  Loader2, Search, ArrowLeft,
+  Search, ArrowLeft,
   User as UserIcon, X, MoreVertical, Star, Trash2, UserCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,7 +20,6 @@ import PresenceBadge, { formatLastSeen } from '@/components/chat/PresenceBadge';
 import type { ChatMessage } from '@/components/chat/MessageBubble';
 import type { ChatAttachment } from '@/components/chat/ChatAttachmentMenu';
 import type { ReplyData } from '@/components/chat/ReplyPreview';
-import Spinner from '@/components/ui/Spinner';
 
 interface Partner {
   _id: string;
@@ -67,7 +67,7 @@ export default function MessagesPage() {
 
   // Nothing is rendered while the partner resolves, since showing another screen first would
   // flash a page the reader never asked for.
-  if (!selectedUser) return <Spinner size="md" />;
+  if (!selectedUser) return <ChatSkeleton />;
 
   return <ChatView partner={selectedUser} onBack={handleBack} />;
 }
@@ -436,9 +436,7 @@ function ChatView({
               {searchQuery.length >= 2 && (
                 <div className="max-h-64 overflow-y-auto mt-2">
                   {searchLoading ? (
-                    <div className="flex justify-center py-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
+                    <InlineListSkeleton count={2} />
                   ) : (searchMessages || []).length === 0 ? (
                     <p className="text-center text-xs text-muted-foreground py-3">No matches</p>
                   ) : (

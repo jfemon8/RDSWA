@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { ChatSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import MessageBubble, { type ChatMessage } from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ImageLightbox from './ImageLightbox';
@@ -57,17 +58,7 @@ function formatDateLabel(d: Date): string {
   return formatDateCustom(d.toISOString(), { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/**
- * The main scrollable message area. Handles:
- *  - Empty / loading states
- *  - Date separators ("Today", "Yesterday", "Mon, 12 Mar")
- *  - Consecutive sender grouping (skip avatar/name for rapid follow-ups)
- *  - Auto-scroll to bottom on new messages (unless user scrolled up)
- *  - Scroll-to-bottom button when the user is scrolled up
- *  - Older-messages loader when scrolled to top
- *  - Read-receipt reporter (IntersectionObserver)
- *  - Global image lightbox
- */
+/** The scrollable message area, owning date separators, sender grouping, auto-scroll, older-message paging and read receipts. */
 export default function MessageList(props: Props) {
   const {
     messages, isLoading, typingNames = [], onLoadOlder, hasMore, isLoadingOlder,
@@ -226,14 +217,12 @@ export default function MessageList(props: Props) {
       >
         {isLoadingOlder && (
           <div className="flex justify-center py-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Skeleton className="h-10 w-1/2 rounded-2xl" />
           </div>
         )}
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <ChatSkeleton />
         ) : messages.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">
             No messages yet. Start the conversation!

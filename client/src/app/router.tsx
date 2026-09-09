@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/Skeleton';
 import { lazy, Suspense } from 'react';
 import PublicLayout from '@/layouts/PublicLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -7,7 +8,6 @@ import RouteGuard from '@/components/guards/RouteGuard';
 import GuestGuard from '@/components/guards/GuestGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import AdminRoleGuard from '@/components/guards/AdminRoleGuard';
-import Spinner from '@/components/ui/Spinner';
 import {
   UserRole,
   BACKUP_RESTRICTED_SUPER_ADMINS,
@@ -113,15 +113,8 @@ const AdminBackup = lazy(() => import('@/features/admin/backup/AdminBackupPage')
 const AdminClarity = lazy(() => import('@/features/admin/clarity/AdminClarityPage'));
 
 function LoadingFallback() {
-  // Matches the `<Spinner />` component used by every page's loading state,
-  // so the outer (chunk-loading) spinner and inner (data-loading) spinner
-  // are visually identical — avoiding the "two different spinners in a row"
-  // flash the user saw on navigation.
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Spinner size="md" />
-    </div>
-  );
+  // Matches what a page renders while its own data loads, so a chunk load and a data load look identical.
+  return <PageSkeleton />;
 }
 
 export default function AppRouter() {

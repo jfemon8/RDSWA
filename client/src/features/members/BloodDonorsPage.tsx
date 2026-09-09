@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { MAX_GC_TIME } from '@/lib/queryPersister';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient, useIsRestoring } from '@tanstack/react-query';
@@ -9,7 +10,6 @@ import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
 import DistrictPicker from '@/components/ui/DistrictPicker';
 import SEO from '@/components/SEO';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Promo from '@/components/promo/Promo';
 
@@ -138,7 +138,7 @@ export default function BloodDonorsPage() {
       </FadeIn>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : donors.length === 0 ? (
         <EmptyState
           icon={Droplets}

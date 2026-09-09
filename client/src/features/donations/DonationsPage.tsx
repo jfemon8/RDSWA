@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { InlineListSkeleton } from '@/components/ui/Skeleton';
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
@@ -24,7 +25,6 @@ import SEO from "@/components/SEO";
 import { formatDate, toDateInput } from "@/lib/date";
 import { useToast } from "@/components/ui/Toast";
 import RichContent from "@/components/ui/RichContent";
-import Spinner from "@/components/ui/Spinner";
 import EmptyState from "@/components/ui/EmptyState";
 
 interface Campaign {
@@ -846,7 +846,7 @@ function RecentDonations() {
         <TrendingUp className="h-5 w-5" /> Recent Donations
       </h2>
       {isLoading ? (
-        <Spinner size="sm" />
+        <InlineListSkeleton />
       ) : donations.length === 0 ? (
         <EmptyState
           icon={Heart}

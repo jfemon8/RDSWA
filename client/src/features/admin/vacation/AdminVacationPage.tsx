@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { CardListSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import { FieldError } from '@/components/ui/FieldError';
 import { extractFieldErrors } from '@/lib/formErrors';
 import {
@@ -12,7 +14,6 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import { formatDate, toDateInput } from '@/lib/date';
 import { proxyFileUrl } from '@/lib/fileProxy';
 import { useAuthStore } from '@/stores/authStore';
@@ -66,6 +67,7 @@ export default function AdminVacationPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
   const [form, setForm] = useState(blankForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -410,7 +412,7 @@ export default function AdminVacationPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : vacations.length === 0 ? (
         <div className="text-center py-12">
           <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -427,6 +429,7 @@ export default function AdminVacationPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
+                data-accordion-item={v._id}
                 className="border rounded-lg bg-card overflow-hidden"
               >
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -444,7 +447,7 @@ export default function AdminVacationPage() {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button
-                      onClick={() => setExpandedId(isExpanded ? null : v._id)}
+                      onClick={() => toggleExpand(v._id)}
                       className="p-2 hover:bg-accent rounded text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
                       title={isExpanded ? 'Hide details' : 'View details'}
                       aria-expanded={isExpanded}
@@ -543,10 +546,7 @@ function AttachmentUpload({ onAdd }: { onAdd: (a: Attachment) => void }) {
   const commit = () => {
     if (!pending) return;
     let finalName = uploadName.trim() || pending.name;
-    // If the user edited the display name and dropped the extension,
-    // re-attach it from the original or from the URL — the proxy uses this
-    // as the Content-Disposition filename, and an extension-less file is a
-    // bad download experience.
+    // A renamed file gets its extension back, since the proxy sends this name as the download filename.
     if (!/\.[a-z0-9]{1,8}$/i.test(finalName)) {
       const origExt = (pending.name.match(/\.[a-z0-9]{1,8}$/i) || [])[0];
       const urlExt = (pending.url.match(/\.([a-z0-9]{1,8})(?:\?|$)/i) || [])[0];
@@ -701,7 +701,7 @@ function VacationPageContentSection() {
           >
             <div className="p-4 space-y-3">
               {isLoading ? (
-                <Spinner size="sm" />
+                <InlineListSkeleton />
               ) : (
                 <>
                   <div>

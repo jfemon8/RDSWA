@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardListSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuthStore } from "@/stores/authStore";
@@ -13,7 +14,6 @@ import { queryKeys } from "@/lib/queryKeys";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import {
   Plus,
-  Loader2,
   Trash2,
   Eye,
   BarChart3,
@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/date";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import Spinner from "@/components/ui/Spinner";
 import { useAcademicConfig } from "@/hooks/useAcademicConfig";
 
 const emptyForm = {
@@ -522,7 +521,7 @@ export default function AdminVotingPage() {
         </AnimatePresence>
 
         {isLoading ? (
-          <Spinner size="md" />
+          <CardListSkeleton />
         ) : (
           <div className="space-y-3">
             {votes.map((v: any, index: number) => (
@@ -668,9 +667,7 @@ function VoteStatsPanel({ voteId }: { voteId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-6 border-t">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      </div>
+      <InlineListSkeleton />
     );
   }
 

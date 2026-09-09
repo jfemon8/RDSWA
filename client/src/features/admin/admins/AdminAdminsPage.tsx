@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -7,7 +8,6 @@ import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { UserPlus, ArrowDown, Search, Crown } from "lucide-react";
 import { useConfirm } from "@/components/ui/ConfirmModal";
-import Spinner from "@/components/ui/Spinner";
 
 export default function AdminAdminsPage() {
   const queryClient = useQueryClient();
@@ -160,7 +160,7 @@ export default function AdminAdminsPage() {
 
       {/* Admins List */}
       {isLoading ? (
-        <Spinner size="md" />
+        <CardListSkeleton />
       ) : admins.length === 0 ? (
         <div className="text-center py-12">
           <Crown className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
