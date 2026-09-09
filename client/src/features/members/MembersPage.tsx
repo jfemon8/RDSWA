@@ -1,18 +1,19 @@
-import { useMemo, useState, Fragment } from 'react';
+import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, GraduationCap, UserPlus, Briefcase, MapPin, Award, Star, User, X } from 'lucide-react';
+import { Search, Users, GraduationCap, UserPlus, Briefcase, Award, Star, User, X } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import SEO from '@/components/SEO';
-import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import EmptyState from '@/components/ui/EmptyState';
+import DistrictPicker from '@/components/ui/DistrictPicker';
+import { memberMeta } from '@/lib/member';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
 import { useAcademicConfig } from '@/hooks/useAcademicConfig';
@@ -38,7 +39,7 @@ export default function MembersPage() {
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
   const [session, setSession] = useState('');
-  const [homeDistrict, setHomeDistrict] = useState('');
+  const [district, setDistrict] = useState('');
   const [profession, setProfession] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryKey>('');
 
@@ -47,7 +48,7 @@ export default function MembersPage() {
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
   if (session) filters.session = session;
-  if (homeDistrict) filters.homeDistrict = homeDistrict;
+  if (district) filters.district = district;
   if (profession) filters.profession = profession;
   // Use persisted flag filters for alumni/advisor/senior advisor tabs
   if (categoryFilter === 'alumni') filters.isAlumni = 'true';
@@ -67,11 +68,6 @@ export default function MembersPage() {
     filters,
     limit: 20,
   });
-
-  const allDistricts = useMemo(() => {
-    const all = Object.values(districts).flat();
-    return [...new Set(all)].sort((a, b) => a.localeCompare(b));
-  }, []);
 
   const showBecomeMember = isAuthenticated && user?.membershipStatus === 'none';
   const activeCategory = MEMBER_CATEGORIES.find((c) => c.key === categoryFilter) || MEMBER_CATEGORIES[0];
@@ -98,7 +94,6 @@ export default function MembersPage() {
         )}
       </div>
 
-      {/* Category Tabs */}
       <FadeIn delay={0.1} direction="up">
         <div className="flex flex-wrap gap-2 mb-6">
           {MEMBER_CATEGORIES.map((cat) => (
@@ -120,7 +115,6 @@ export default function MembersPage() {
         </div>
       </FadeIn>
 
-      {/* Filters */}
       <FadeIn delay={0.15} direction="up">
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6">
           <div className="relative flex-1 min-w-[200px]">
@@ -165,16 +159,7 @@ export default function MembersPage() {
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
-          <select
-            value={homeDistrict}
-            onChange={(e) => { setHomeDistrict(e.target.value); }}
-            className="w-full sm:w-40 px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All Districts</option>
-            {allDistricts.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
+          <DistrictPicker value={district} onChange={setDistrict} className="w-full sm:w-44" />
           <input
             value={profession}
             onChange={(e) => { setProfession(e.target.value); }}
@@ -196,18 +181,18 @@ export default function MembersPage() {
           icon={activeCategory.icon}
           title={`No ${activeCategory.label} Found`}
           description={
-            search || batch || department || session || homeDistrict || profession
+            search || batch || department || session || district || profession
               ? 'No members match your current filters. Try clearing some filters to broaden your search.'
               : `No ${activeCategory.label.toLowerCase()} are listed yet. The directory updates as members join and admins approve applications.`
           }
           primary={
-            search || batch || department || session || homeDistrict || profession
+            search || batch || department || session || district || profession
               ? {
                   label: 'Clear Filters',
                   icon: X,
                   onClick: () => {
                     setSearch(''); setBatch(''); setDepartment(''); setSession('');
-                    setHomeDistrict(''); setProfession('');
+                    setDistrict(''); setProfession('');
                   },
                 }
               : undefined
@@ -283,11 +268,7 @@ export default function MembersPage() {
                             </motion.span>
                           )}
                         </div>
-                        {m.department && <p className="text-sm text-muted-foreground">{m.department}</p>}
-                        <div className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                          {m.batch && <span>Batch {m.batch}</span>}
-                          {m.session && <span>{m.session}</span>}
-                        </div>
+                        <p className="text-xs text-muted-foreground">{memberMeta(m)}</p>
                       </div>
                     </div>
 
@@ -295,11 +276,6 @@ export default function MembersPage() {
                       {m.profession && (
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Briefcase className="h-3 w-3" /> {m.profession}
-                        </p>
-                      )}
-                      {m.homeDistrict && (
-                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" /> {m.homeDistrict}
                         </p>
                       )}
                     </div>

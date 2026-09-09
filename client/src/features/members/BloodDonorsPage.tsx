@@ -7,7 +7,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Droplets, Phone, MapPin, User, X, UserPlus, Filter } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { formatDate } from '@/lib/date';
-import { divisions, districts } from '@/data/bdGeo';
+import DistrictPicker from '@/components/ui/DistrictPicker';
 import SEO from '@/components/SEO';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
@@ -44,17 +44,10 @@ export default function BloodDonorsPage() {
     ...DONORS_OFFLINE_OPTS,
   });
 
-  // Suppress the spinner while PersistQueryClientProvider is restoring from
-  // IndexedDB — otherwise we flash loading UI on cold offline launches even
-  // though persisted donor data is about to land in the cache.
+  // True while the persister restores from IndexedDB, so no skeleton flashes over data about to arrive.
   const isLoading = queryLoading && !isRestoring && !data;
 
-  // Eager prefetch — on first visit, warm the caches for:
-  //   • the unfiltered donor list (fallback for offline filter resets)
-  //   • each blood-group filter (so tapping "A+" offline still works)
-  //   • the academic-config endpoint (drives the district dropdown)
-  // District-level prefetch is skipped (64 districts × 8 blood groups = 512
-  // combos — too heavy); those caches populate as the user actually filters.
+  // The unfiltered list and each blood group are warmed on the first visit, while the 512 district combinations are left to fill in as they are used.
   useEffect(() => {
     const warm = (key: readonly unknown[], url: string) =>
       prefetchClient.prefetchQuery({
@@ -101,7 +94,6 @@ export default function BloodDonorsPage() {
         </div>
       </div>
 
-      {/* Filter card */}
       <FadeIn delay={0.2} direction="up">
         <div className="mb-6 rounded-xl border bg-card p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
@@ -139,24 +131,7 @@ export default function BloodDonorsPage() {
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Present District</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary pointer-events-none" />
-                <select
-                  value={presentDistrict}
-                  onChange={(e) => setPresentDistrict(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2.5 border rounded-lg bg-background text-sm text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all hover:border-primary/50 cursor-pointer"
-                >
-                  <option value="">All Districts</option>
-                  {divisions.map((div) => (
-                    <optgroup key={div} label={`${div} Division`}>
-                      {(districts[div] || []).map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <ChevronIcon />
-              </div>
+              <DistrictPicker value={presentDistrict} onChange={setPresentDistrict} />
             </div>
           </div>
         </div>

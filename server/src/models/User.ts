@@ -28,7 +28,6 @@ export interface IUserDocument extends Document {
   nid?: string;
   presentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
   permanentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
-  homeDistrict?: string;
 
   // Profile — Academic
   studentId?: string;
@@ -215,7 +214,6 @@ const userSchema = new Schema<IUserDocument>(
     nid: String,
     presentAddress: addressSchema,
     permanentAddress: addressSchema,
-    homeDistrict: String,
 
     // Profile — Academic
     studentId: String,
@@ -325,8 +323,8 @@ const userSchema = new Schema<IUserDocument>(
       email: { type: Boolean, default: false },
       dateOfBirth: { type: Boolean, default: true },
       nid: { type: Boolean, default: false },
-      presentAddress: { type: Boolean, default: false },
-      permanentAddress: { type: Boolean, default: false },
+      presentAddress: { type: Boolean, default: true },
+      permanentAddress: { type: Boolean, default: true },
       bloodGroup: { type: Boolean, default: true },
       studentId: { type: Boolean, default: true },
       registrationNumber: { type: Boolean, default: false },
@@ -397,7 +395,7 @@ userSchema.index({ role: 1 });
 userSchema.index({ batch: 1 });
 userSchema.index({ department: 1 });
 userSchema.index({ membershipStatus: 1 });
-userSchema.index({ homeDistrict: 1 });
+userSchema.index({ 'permanentAddress.district': 1 });
 userSchema.index({ bloodGroup: 1, isBloodDonor: 1 });
 userSchema.index({ profession: 1 });
 userSchema.index({ 'jobHistory.isCurrent': 1 });

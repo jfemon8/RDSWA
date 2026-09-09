@@ -611,7 +611,7 @@ router.get('/mentors', authenticate(), asyncHandler(async (req, res) => {
 
   // Areas are derived per profile rather than stored, so filtering happens here and always agrees with the chips.
   const eligible = await User.find(filter)
-    .select('name avatar department batch profession earningSource skills mentorAreas homeDistrict isAlumni isAdvisor isSeniorAdvisor')
+    .select('name avatar department batch profession earningSource skills mentorAreas isAlumni isAdvisor isSeniorAdvisor')
     .sort({ name: 1 })
     .lean();
 

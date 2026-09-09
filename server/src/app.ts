@@ -29,6 +29,7 @@ import { syncCommitteeCurrentFlags } from './jobs/committeeCurrentSync';
 import { startMentorshipReminder } from './jobs/mentorshipReminder';
 import { backfillAnnouncementFlags } from './jobs/announcementBackfill';
 import { backfillMentorListing } from './jobs/mentorListingBackfill';
+import { backfillAddressVisibility } from './jobs/addressVisibilityBackfill';
 import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
@@ -97,6 +98,9 @@ async function start() {
 
   // Members who were eligible to mentor before listing defaulted on are listed, once.
   backfillMentorListing();
+
+  // Addresses were private with no way to opt back in, so that stored choice is lifted once.
+  backfillAddressVisibility();
 
   // Start scheduled jobs
   startAlumniTagger();

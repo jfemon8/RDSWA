@@ -29,7 +29,6 @@ export const updateProfileSchema = z.object({
     upazila: optionalString,
     details: optionalString,
   }).optional(),
-  homeDistrict: optionalString,
 
   // Academic
   studentId: optionalString,
@@ -115,7 +114,7 @@ export const listUsersQuerySchema = z.object({
   batch: z.string().optional(),
   department: z.string().optional(),
   session: z.string().optional(),
-  homeDistrict: z.string().optional(),
+  district: z.string().optional(),
   bloodGroup: z.string().optional(),
   role: z.string().optional(),
   profession: z.string().optional(),

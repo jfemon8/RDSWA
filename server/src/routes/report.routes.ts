@@ -407,10 +407,14 @@ router.post('/custom', authenticate(), authorize(UserRole.ADMIN), asyncHandler(a
     .limit(rowLimit)
     .lean();
 
+  // A projected field can be a nested path such as `permanentAddress.district`, which no flat lookup reaches.
+  const readPath = (doc: any, path: string): any =>
+    path.split('.').reduce((value, key) => (value == null ? undefined : value[key]), doc);
+
   const headers = fields;
   const rows = data.map((doc: any) =>
     fields.map((f: string) => {
-      const val = doc[f];
+      const val = readPath(doc, f);
       if (val === null || val === undefined) return '';
       if (val instanceof Date) return val.toISOString().slice(0, 10);
       if (Array.isArray(val)) return val.join('; ');

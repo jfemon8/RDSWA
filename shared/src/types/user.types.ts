@@ -63,7 +63,6 @@ export interface IUser {
   nid?: string;
   presentAddress?: Address;
   permanentAddress?: Address;
-  homeDistrict?: string;
 
   // Academic
   studentId?: string;
@@ -112,6 +111,6 @@ export interface IUser {
 /** Public-facing user profile (for non-admin views) */
 export type PublicUser = Pick<IUser,
   '_id' | 'name' | 'nameBn' | 'nickName' | 'avatar' | 'department' | 'batch' |
-  'session' | 'bloodGroup' | 'isBloodDonor' | 'homeDistrict' | 'role' |
+  'session' | 'bloodGroup' | 'isBloodDonor' | 'permanentAddress' | 'role' |
   'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor'
 >;

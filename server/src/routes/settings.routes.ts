@@ -73,7 +73,10 @@ router.get('/public-stats', asyncHandler(async (_req, res) => {
   const [totalMembers, totalEvents, districts] = await Promise.all([
     User.countDocuments({ membershipStatus: 'approved', isDeleted: false }),
     Event.countDocuments({ isDeleted: false }),
-    User.distinct('homeDistrict', { homeDistrict: { $exists: true, $ne: '' }, isDeleted: false }),
+    User.distinct('permanentAddress.district', {
+      'permanentAddress.district': { $exists: true, $ne: '' },
+      isDeleted: false,
+    }),
   ]);
 
   ApiResponse.success(res, {

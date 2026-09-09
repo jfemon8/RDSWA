@@ -136,10 +136,9 @@ export default function ProfileViewPage() {
 
         {/* Address */}
         <FadeIn delay={0.25} direction="up">
-          <Section title="Address" icon={<MapPin className="h-4 w-4" />} isEmpty={!formatAddress(u.presentAddress) && !formatAddress(u.permanentAddress) && !u.homeDistrict}>
+          <Section title="Address" icon={<MapPin className="h-4 w-4" />} isEmpty={!formatAddress(u.presentAddress) && !formatAddress(u.permanentAddress)}>
             <InfoRow icon={<MapPin className="h-4 w-4" />} label="Present Address" value={formatAddress(u.presentAddress)} />
             <InfoRow icon={<MapPin className="h-4 w-4" />} label="Permanent Address" value={formatAddress(u.permanentAddress)} />
-            {u.homeDistrict && <InfoRow icon={<MapPin className="h-4 w-4" />} label="Home District" value={u.homeDistrict} />}
           </Section>
         </FadeIn>
 

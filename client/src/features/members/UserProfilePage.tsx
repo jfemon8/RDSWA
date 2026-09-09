@@ -122,7 +122,6 @@ export default function UserProfilePage() {
       department: user.department || "",
       profession: user.profession || "",
       earningSource: user.earningSource || "",
-      homeDistrict: user.homeDistrict || "",
       facebook: user.facebook || "",
       linkedin: user.linkedin || "",
       website: user.website || "",
@@ -486,13 +485,6 @@ export default function UserProfilePage() {
               label="Permanent Address"
               value={formatAddress(u.permanentAddress)}
             />
-            {u.homeDistrict && (
-              <InfoRow
-                icon={<MapPin className="h-4 w-4" />}
-                label="Home District"
-                value={u.homeDistrict}
-              />
-            )}
           </Section>
         </FadeIn>
 

@@ -16,7 +16,6 @@ export interface AuthUser {
   bloodGroup?: string;
   isBloodDonor?: boolean;
   lastDonationDate?: string;
-  homeDistrict?: string;
   presentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
   permanentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
   studentId?: string;

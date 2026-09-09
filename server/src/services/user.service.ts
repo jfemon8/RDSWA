@@ -56,7 +56,7 @@ interface ListUsersQuery {
   batch?: string;
   department?: string;
   session?: string;
-  homeDistrict?: string;
+  district?: string;
   bloodGroup?: string;
   profession?: string;
   role?: string;
@@ -203,7 +203,7 @@ export class UserService {
     if (query.batch) filter.batch = parseInt(query.batch, 10);
     if (query.department) filter.department = query.department;
     if (query.session) filter.session = query.session;
-    if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
+    if (query.district) filter['permanentAddress.district'] = query.district;
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
     if (query.profession) filter.profession = { $regex: escapeRegex(query.profession), $options: 'i' };
 
@@ -258,7 +258,7 @@ export class UserService {
     bloodGroup?: string;
     presentDistrict?: string;
     presentDivision?: string;
-    homeDistrict?: string;
+    district?: string;
     page?: string;
     limit?: string;
   }) {
@@ -272,11 +272,11 @@ export class UserService {
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;
     if (query.presentDistrict) filter['presentAddress.district'] = query.presentDistrict;
     if (query.presentDivision) filter['presentAddress.division'] = query.presentDivision;
-    if (query.homeDistrict) filter.homeDistrict = query.homeDistrict;
+    if (query.district) filter['permanentAddress.district'] = query.district;
 
     const [users, total] = await Promise.all([
       User.find(filter)
-        .select('name avatar bloodGroup homeDistrict presentAddress phone lastDonationDate')
+        .select('name avatar bloodGroup permanentAddress presentAddress phone lastDonationDate')
         .skip(getSkip({ page, limit }))
         .limit(limit),
       User.countDocuments(filter),
@@ -363,7 +363,7 @@ export class UserService {
       query.membershipStatus = 'approved';
     }
     const users = await User.find(query)
-      .select('name nameBn email phone studentId registrationNumber faculty department batch session homeDistrict gender bloodGroup isBloodDonor profession earningSource skills role membershipStatus profileVisibility createdAt')
+      .select('name nameBn email phone studentId registrationNumber faculty department batch session permanentAddress gender bloodGroup isBloodDonor profession earningSource skills role membershipStatus profileVisibility createdAt')
       .sort({ name: 1 })
       .lean();
 
@@ -382,7 +382,7 @@ export class UserService {
         safeVal(u, 'email'), safeVal(u, 'phone'),
         safeVal(u, 'studentId'), safeVal(u, 'registrationNumber'),
         u.faculty || '', u.department || '', u.batch || '', u.session || '',
-        u.homeDistrict || '', u.gender || '',
+        u.permanentAddress?.district || '', u.gender || '',
         safeVal(u, 'bloodGroup'), u.isBloodDonor ? 'Yes' : 'No',
         u.profession || '', u.earningSource || '',
         (u.skills || []).join('; '), u.role,

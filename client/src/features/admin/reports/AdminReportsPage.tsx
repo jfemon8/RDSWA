@@ -528,7 +528,7 @@ const SOURCE_FIELDS: Record<string, { label: string; fields: { key: string; labe
       { key: 'name', label: 'Name' }, { key: 'nameBn', label: 'Name (Bn)' }, { key: 'email', label: 'Email' },
       { key: 'phone', label: 'Phone' }, { key: 'studentId', label: 'Student ID' }, { key: 'registrationNumber', label: 'Reg No.' },
       { key: 'faculty', label: 'Faculty' }, { key: 'department', label: 'Department' }, { key: 'batch', label: 'Batch' },
-      { key: 'session', label: 'Session' }, { key: 'homeDistrict', label: 'District' }, { key: 'gender', label: 'Gender' },
+      { key: 'session', label: 'Session' }, { key: 'permanentAddress.district', label: 'District' }, { key: 'gender', label: 'Gender' },
       { key: 'bloodGroup', label: 'Blood Group' }, { key: 'profession', label: 'Profession' },
       { key: 'role', label: 'Role' }, { key: 'membershipStatus', label: 'Membership Status' }, { key: 'createdAt', label: 'Joined' },
     ],

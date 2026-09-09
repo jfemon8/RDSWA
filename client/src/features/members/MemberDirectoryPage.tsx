@@ -1,15 +1,16 @@
-import { useMemo, useState, Fragment } from 'react';
+import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { queryKeys } from '@/lib/queryKeys';
-import { Search, Users, GraduationCap, Briefcase, MapPin, User, Award, Star } from 'lucide-react';
+import { Search, Users, GraduationCap, Briefcase, User, Award, Star } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion } from 'motion/react';
 import { ListItemSkeleton } from '@/components/ui/Skeleton';
+import DistrictPicker from '@/components/ui/DistrictPicker';
+import { memberMeta } from '@/lib/member';
 import SEO from '@/components/SEO';
-import { districts } from '@/data/bdGeo';
 import { getRoleConfig } from '@/lib/roles';
 import { UserRole } from '@rdswa/shared';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
@@ -42,7 +43,7 @@ export default function MemberDirectoryPage({
   const { config: academicConfig, departments } = useAcademicConfig();
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');
-  const [homeDistrict, setHomeDistrict] = useState('');
+  const [district, setDistrict] = useState('');
   const [profession, setProfession] = useState('');
 
   const filters: Record<string, string> = {
@@ -51,7 +52,7 @@ export default function MemberDirectoryPage({
   if (debouncedSearch) filters.search = debouncedSearch;
   if (batch) filters.batch = batch;
   if (department) filters.department = department;
-  if (homeDistrict) filters.homeDistrict = homeDistrict;
+  if (district) filters.district = district;
   if (profession) filters.profession = profession;
 
   const {
@@ -68,11 +69,6 @@ export default function MemberDirectoryPage({
     limit: 20,
   });
 
-  const allDistricts = useMemo(() => {
-    const all = Object.values(districts).flat();
-    return [...new Set(all)].sort((a, b) => a.localeCompare(b));
-  }, []);
-
   return (
     <div className="container mx-auto py-8 px-4">
       <SEO title={title} description={description} />
@@ -84,7 +80,6 @@ export default function MemberDirectoryPage({
         direction="bottom"
       />
 
-      {/* Filters */}
       <FadeIn delay={0.1} direction="up">
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6">
           <div className="relative flex-1 min-w-[200px]">
@@ -118,16 +113,12 @@ export default function MemberDirectoryPage({
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
-          <select
-            value={homeDistrict}
-            onChange={(e) => { setHomeDistrict(e.target.value); }}
-            className="w-full sm:w-40 px-3 py-2.5 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All Districts</option>
-            {allDistricts.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
+          <DistrictPicker
+            value={district}
+            onChange={setDistrict}
+            className="w-full sm:w-44"
+            triggerClassName="px-3 py-3"
+          />
           <input
             value={profession}
             onChange={(e) => { setProfession(e.target.value); }}
@@ -207,11 +198,7 @@ export default function MemberDirectoryPage({
                           );
                         })()}
                       </div>
-                      {m.department && <p className="text-sm text-muted-foreground">{m.department}</p>}
-                      <div className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                        {m.batch && <span>Batch {m.batch}</span>}
-                        {m.session && <span>{m.session}</span>}
-                      </div>
+                      <p className="text-xs text-muted-foreground">{memberMeta(m)}</p>
                     </div>
                   </div>
 
@@ -219,11 +206,6 @@ export default function MemberDirectoryPage({
                     {m.profession && (
                       <p className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Briefcase className="h-3 w-3 shrink-0" /> {m.profession}
-                      </p>
-                    )}
-                    {m.homeDistrict && (
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3 shrink-0" /> {m.homeDistrict}
                       </p>
                     )}
                   </div>
