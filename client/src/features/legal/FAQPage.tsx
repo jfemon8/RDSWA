@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
@@ -8,21 +8,35 @@ import { ChevronDown, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import RichContent from '@/components/ui/RichContent';
 import SEO from '@/components/SEO';
-import { scrollAccordionIntoView } from '@/hooks/useAccordionScroll';
+import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 
-function FAQItem({ faq, index }: { faq: { question: string; answer: string }; index: number }) {
-  const [open, setOpen] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+function FAQItem({
+  faq,
+  index,
+  id,
+  open,
+  onToggle,
+}: {
+  faq: { question: string; answer: string };
+  index: number;
+  id: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const answerId = `${id}-answer`;
 
   return (
     <FadeIn delay={index * 0.05} direction="up">
-      <div ref={cardRef} className="rounded-xl border bg-card overflow-hidden">
+      <div
+        data-accordion-item={id}
+        className={`rounded-xl border bg-card overflow-hidden ${open ? 'border-primary/30' : ''}`}
+      >
         <button
-          onClick={() => {
-            setOpen(!open);
-            if (!open) scrollAccordionIntoView(cardRef.current);
-          }}
-          className="w-full flex items-center justify-between p-5 text-left"
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={answerId}
+          className="w-full flex items-center justify-between p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <span className="font-medium pr-4 text-foreground flex items-center gap-2">
             <HelpCircle className="h-4 w-4 text-primary shrink-0" /> {faq.question}
@@ -34,13 +48,16 @@ function FAQItem({ faq, index }: { faq: { question: string; answer: string }; in
             <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
           </motion.div>
         </button>
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {open && (
             <motion.div
+              key="answer"
+              id={answerId}
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden"
             >
               <div className="px-5 pb-5">
                 <RichContent html={faq.answer} className="text-sm text-muted-foreground leading-relaxed" />
@@ -54,6 +71,9 @@ function FAQItem({ faq, index }: { faq: { question: string; answer: string }; in
 }
 
 export default function FAQPage() {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const toggleFaq = useAccordionToggle(openId, setOpenId);
+
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.settings.all,
     queryFn: async () => {
@@ -94,9 +114,20 @@ export default function FAQPage() {
         </FadeIn>
       ) : (
         <div className="space-y-4">
-          {faqs.map((faq, i) => (
-            <FAQItem key={i} faq={faq} index={i} />
-          ))}
+          {faqs.map((faq, i) => {
+            const id = `faq-${i}`;
+            return (
+              <FAQItem
+                key={id}
+                id={id}
+                faq={faq}
+                index={i}
+                open={openId === id}
+                // Only one answer stays open, and pressing the open question closes it.
+                onToggle={() => toggleFaq(id)}
+              />
+            );
+          })}
         </div>
       )}
     </div>
