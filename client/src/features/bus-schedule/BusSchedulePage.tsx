@@ -1,23 +1,27 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { MAX_GC_TIME } from '@/lib/queryPersister';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { useInfiniteList, infiniteListOptions } from '@/hooks/useInfiniteList';
 import { useTabParam } from '@/hooks/useTabParam';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import api from '@/lib/api';
 
 /** Offline-persistence options that keep every Bus Schedule query in IndexedDB and let Workbox answer it while the device is offline. */
 const BUS_OFFLINE_OPTS = {
   meta: { persist: true } as const,
-  gcTime: 30 * 24 * 60 * 60 * 1000,
+  gcTime: MAX_GC_TIME,
   staleTime: 60 * 60 * 1000,
   refetchOnReconnect: true as const,
   networkMode: 'offlineFirst' as const,
 };
 import {
-  Bus, Search, Loader2, Clock, MapPin, Phone, Filter, ExternalLink,
+  Bus, Search, Clock, MapPin, Phone, Filter, ExternalLink,
   AlertTriangle, ArrowLeft, Info, Star, Building2,
   MessageSquare, Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import SEO from '@/components/SEO';
 import RichContent from '@/components/ui/RichContent';
@@ -26,7 +30,6 @@ import { formatDate, formatTimeString } from '@/lib/date';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmModal';
-import Spinner from '@/components/ui/Spinner';
 import SharedEmptyState from '@/components/ui/EmptyState';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import Promo from '@/components/promo/Promo';
@@ -44,19 +47,29 @@ interface ScheduleBus {
 }
 
 export default function BusSchedulePage() {
-  const [tab, setTab] = useTabParam<Tab>(TABS, 'university');
-  const [view, setView] = useState<View>('routes');
+  const [tab] = useTabParam<Tab>(TABS, 'university');
+  const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [departureAfter, setDepartureAfter] = useState('');
   const [departureBefore, setDepartureBefore] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedRoute, setSelectedRoute] = useState<any>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
-  const [selectedOperatorId, setSelectedOperatorId] = useState<string | null>(null);
+
+  // Which drill-down is open is URL state, so the browser's Back button and a refresh both do the right thing.
+  const routeId = params.get('route') || '';
+  const scheduleId = params.get('schedule') || '';
+  const selectedOperatorId = params.get('operator') || null;
+
+  const setParam = (next: Record<string, string | null>) =>
+    setParams((prev) => {
+      const merged = new URLSearchParams(prev);
+      Object.entries(next).forEach(([k, v]) => (v ? merged.set(k, v) : merged.delete(k)));
+      return merged;
+    });
 
   const prefetchClient = useQueryClient();
-  // True while cached queries are still coming out of IndexedDB, used below to suppress the spinner flash on cold launches.
+  // True while cached queries are still coming out of IndexedDB, so the skeleton does not flash over persisted data.
   const isRestoring = useIsRestoring();
   useBusSocket();
 
@@ -75,7 +88,6 @@ export default function BusSchedulePage() {
     fire(['bus', 'counters'], '/bus/counters');
   }, [prefetchClient]);
 
-  // Routes (for university/intercity tabs)
   const { data: routesData, isLoading: routesLoading } = useQuery({
     queryKey: ['bus', 'routes', tab],
     queryFn: async () => {
@@ -86,7 +98,6 @@ export default function BusSchedulePage() {
     ...BUS_OFFLINE_OPTS,
   });
 
-  // All operators (for "All Buses" tab)
   const { data: operatorsData, isLoading: operatorsLoading } = useQuery({
     queryKey: ['bus', 'operators'],
     queryFn: async () => {
@@ -96,14 +107,18 @@ export default function BusSchedulePage() {
     ...BUS_OFFLINE_OPTS,
   });
 
-  // Schedules for the selected route, sorted ascending by departureTime.
+  const debouncedSearch = useDebouncedValue(search);
+
+  // Category, time and text all filter on the server, so paging never hides a match on a later page.
   const scheduleFilters = useMemo(
     () => ({
-      route: selectedRoute?._id,
+      route: routeId || undefined,
+      busCategory: filterCategory || undefined,
+      search: debouncedSearch.trim() || undefined,
       departureAfter: departureAfter || undefined,
       departureBefore: departureBefore || undefined,
     }),
-    [selectedRoute, departureAfter, departureBefore]
+    [routeId, filterCategory, debouncedSearch, departureAfter, departureBefore]
   );
 
   const scheduleKey = ['bus', 'schedules', scheduleFilters];
@@ -120,11 +135,10 @@ export default function BusSchedulePage() {
     path: '/bus/schedules',
     filters: scheduleFilters,
     limit: PAGE_LIMIT,
-    enabled: view === 'schedules' && !!selectedRoute,
+    enabled: !!routeId,
     queryOptions: BUS_OFFLINE_OPTS,
   });
 
-  // Counters (used for operator-detail view)
   const { data: countersData } = useQuery({
     queryKey: ['bus', 'counters'],
     queryFn: async () => {
@@ -136,6 +150,10 @@ export default function BusSchedulePage() {
 
   const routes = routesData?.data || [];
   const operators = operatorsData?.data || [];
+  const selectedRoute = useMemo(
+    () => (routeId ? routes.find((r: any) => r._id === routeId) || null : null),
+    [routes, routeId]
+  );
 
   // Once the lists resolve, warm each item's detail, reviews, and schedules in parallel, once per operator or route.
   useEffect(() => {
@@ -174,13 +192,15 @@ export default function BusSchedulePage() {
     return [...schedules].sort((a: any, b: any) => (a.departureTime || '').localeCompare(b.departureTime || ''));
   }, [schedules]);
 
+  // Held across filtering so choosing a category never empties the dropdown that produced it.
+  const categoryPool = useRef<Set<string>>(new Set());
   const categories = useMemo(() => {
-    const cats = new Set<string>();
-    sortedSchedules.forEach((s: any) => (s.buses || []).forEach((b: ScheduleBus) => b.busCategory && cats.add(b.busCategory)));
-    return [...cats];
+    sortedSchedules.forEach((s: any) =>
+      (s.buses || []).forEach((b: ScheduleBus) => b.busCategory && categoryPool.current.add(b.busCategory))
+    );
+    return [...categoryPool.current].sort();
   }, [sortedSchedules]);
 
-  // Filter routes by search
   const filteredRoutes = useMemo(() => {
     if (!search) return routes;
     const q = search.toLowerCase();
@@ -191,7 +211,6 @@ export default function BusSchedulePage() {
     );
   }, [routes, search]);
 
-  // Filter operators by search (for "All Buses" tab)
   const filteredOperators = useMemo(() => {
     if (!search) return operators;
     const q = search.toLowerCase();
@@ -202,67 +221,78 @@ export default function BusSchedulePage() {
     );
   }, [operators, search]);
 
-  // Filter schedules by category
-  const filteredSchedules = useMemo(() => {
-    if (!filterCategory) return sortedSchedules;
-    return sortedSchedules.filter((s: any) =>
-      (s.buses || []).some((b: ScheduleBus) => b.busCategory === filterCategory)
-    );
-  }, [sortedSchedules, filterCategory]);
+  const filteredSchedules = sortedSchedules;
 
   const hasActiveFilters = filterCategory || departureAfter || departureBefore;
 
-  const handleTabChange = (newTab: Tab) => {
-    setTab(newTab);
-    setSearch('');
-    setSelectedRoute(null);
-    setSelectedSchedule(null);
-    setSelectedOperatorId(null);
+  const clearFilters = () => {
     setFilterCategory('');
     setDepartureAfter('');
     setDepartureBefore('');
-    if (newTab === 'all') {
-      setView('operators');
-    } else {
-      setView('routes');
-    }
+  };
+
+  // The view is whatever the URL points at, resolved in drill-down order.
+  const view: View = selectedOperatorId
+    ? 'operator-detail'
+    : scheduleId && selectedSchedule
+      ? 'schedule-detail'
+      : routeId
+        ? 'schedules'
+        : tab === 'all'
+          ? 'operators'
+          : 'routes';
+
+  const handleTabChange = (newTab: Tab) => {
+    setSearch('');
+    setSelectedSchedule(null);
+    clearFilters();
+    setShowFilters(false);
+    // A tab is a fresh start, so the whole query string is rewritten rather than merged into.
+    setParams(new URLSearchParams({ tab: newTab }));
   };
 
   const handleRouteClick = (route: any) => {
-    setSelectedRoute(route);
-    setView('schedules');
+    // A different route has its own categories and times, so the previous filters would silently empty the list.
+    setSearch('');
+    clearFilters();
+    setParam({ route: route._id, schedule: null, operator: null });
   };
 
   const handleScheduleClick = (schedule: any) => {
     setSelectedSchedule(schedule);
-    setView('schedule-detail');
+    setParam({ schedule: schedule._id, operator: null });
   };
 
-  const handleOperatorClick = (operatorId: string) => {
-    setSelectedOperatorId(operatorId);
-    setView('operator-detail');
-  };
+  const handleOperatorClick = (operatorId: string) => setParam({ operator: operatorId });
 
   const goBack = () => {
-    if (view === 'operator-detail') {
-      setSelectedOperatorId(null);
-      // Return to wherever we came from: all-buses list OR previous view
-      if (tab === 'all') setView('operators');
-      else if (selectedSchedule) setView('schedule-detail');
-      else if (selectedRoute) setView('schedules');
-      else setView('routes');
-    } else if (view === 'schedule-detail') {
-      setSelectedSchedule(null);
-      setView('schedules');
-    } else if (view === 'schedules') {
-      setSelectedRoute(null);
-      setView('routes');
-    }
+    if (view === 'operator-detail') setParam({ operator: null });
+    else if (view === 'schedule-detail') { setSelectedSchedule(null); setParam({ schedule: null }); }
+    else if (view === 'schedules') { setSearch(''); clearFilters(); setParam({ route: null }); }
   };
 
-  // Show the spinner only with no data and no pending IndexedDB hydration, so persisted data isn't hidden behind a flash.
-  const hasAnyBaseData = (routes.length > 0) || (operators.length > 0);
-  const isLoading = !isRestoring && !hasAnyBaseData && (
+  // A deep link carries only the id, and the row it belongs to lives in a page that may not be loaded.
+  useEffect(() => {
+    if (!scheduleId || selectedSchedule?._id === scheduleId) return;
+    const found = schedules.find((s: any) => s._id === scheduleId);
+    if (found) setSelectedSchedule(found);
+    else if (!schedulesLoading && schedules.length > 0) setParam({ schedule: null });
+  }, [scheduleId, schedules, schedulesLoading, selectedSchedule]);
+
+  // Each drill-down starts at the top rather than halfway down the list that was left behind.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [routeId, scheduleId, selectedOperatorId, tab]);
+
+  // Categories belong to one route, so the pool is emptied before the next route fills it.
+  useEffect(() => {
+    categoryPool.current = new Set();
+  }, [routeId]);
+
+  // Skeletons show only with no data at all, so persisted content is never hidden behind them.
+  const hasListData =
+    view === 'schedules' ? schedules.length > 0 : routes.length > 0 || operators.length > 0;
+  const isLoading = !isRestoring && !hasListData && (
     (view === 'routes' && routesLoading) ||
     (view === 'schedules' && schedulesLoading) ||
     (view === 'operators' && operatorsLoading)
@@ -279,7 +309,6 @@ export default function BusSchedulePage() {
       />
       <BlurText text="Bus Schedules" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />
 
-      {/* Tab buttons */}
       <FadeIn delay={0.1} direction="up">
         <div className="flex gap-2 mb-6 flex-wrap">
           {[
@@ -304,7 +333,6 @@ export default function BusSchedulePage() {
         </div>
       </FadeIn>
 
-      {/* Search bar (hidden in detail views) */}
       {(view === 'routes' || view === 'schedules' || view === 'operators') && (
         <FadeIn delay={0.15} direction="up">
           <div className="flex gap-2 mb-4">
@@ -316,7 +344,7 @@ export default function BusSchedulePage() {
                 placeholder={
                   view === 'operators' ? 'Search operator by name...' :
                   view === 'routes' ? 'Search by route, destination, stops...' :
-                  'Filter schedules...'
+                  'Search bus name, operator or category...'
                 }
                 className="w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
               />
@@ -333,7 +361,6 @@ export default function BusSchedulePage() {
         </FadeIn>
       )}
 
-      {/* Filters (only in schedules view) */}
       <AnimatePresence>
         {showFilters && view === 'schedules' && (
           <motion.div
@@ -368,7 +395,7 @@ export default function BusSchedulePage() {
               </div>
               {hasActiveFilters && (
                 <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  onClick={() => { setFilterCategory(''); setDepartureAfter(''); setDepartureBefore(''); }}
+                  onClick={clearFilters}
                   className="self-end px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border rounded-md hover:bg-accent">
                   Clear filters
                 </motion.button>
@@ -378,13 +405,12 @@ export default function BusSchedulePage() {
         )}
       </AnimatePresence>
 
-      {/* Back button (for detail views) */}
       {showBackButton && (
         <motion.button
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={goBack}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
+          className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </motion.button>
@@ -394,12 +420,23 @@ export default function BusSchedulePage() {
       <div className="lg:flex lg:gap-6">
         <div className="flex-1 min-w-0">
       {isLoading ? (
-        <Spinner size="md" />
+        <motion.div
+          key="page-skeleton"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-lg" />
+          ))}
+        </motion.div>
       ) : (
         <AnimatePresence mode="wait">
           {/* ═══ ROUTES VIEW (university/intercity) ═══ */}
           {view === 'routes' && (
-            <motion.div key="routes" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+            <motion.div key="routes" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
               {filteredRoutes.length === 0 ? (
                 <EmptyState text={search ? 'No routes found.' : 'No bus routes available.'} />
               ) : (
@@ -420,7 +457,7 @@ export default function BusSchedulePage() {
                         {r.distanceKm && <p className="text-sm text-muted-foreground">Distance: {r.distanceKm} km</p>}
                         {r.stops?.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
-                            {r.stops.sort((a: any, b: any) => a.order - b.order).map((s: any, si: number) => (
+                            {[...r.stops].sort((a: any, b: any) => a.order - b.order).map((s: any, si: number) => (
                               <span key={si} className="inline-flex items-center text-[11px] text-muted-foreground">
                                 {si > 0 && <span className="mx-1 text-muted-foreground/50">&rarr;</span>}
                                 <span className="px-1.5 py-0.5 bg-muted rounded">{s.name}</span>
@@ -438,9 +475,9 @@ export default function BusSchedulePage() {
           )}
 
           {/* ═══ SCHEDULES VIEW (for selected route) ═══ */}
-          {view === 'schedules' && selectedRoute && (
-            <motion.div key="schedules" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              {/* Route header/info */}
+          {view === 'schedules' && (
+            <motion.div key="schedules" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
+              {selectedRoute && (
               <FadeIn direction="up">
                 <div className="p-4 border rounded-lg bg-primary/5 mb-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -452,21 +489,34 @@ export default function BusSchedulePage() {
                     {selectedRoute.estimatedDuration && <span>Duration: {selectedRoute.estimatedDuration}</span>}
                     {selectedRoute.distanceKm && <span>Distance: {selectedRoute.distanceKm} km</span>}
                     {selectedRoute.stops?.length > 0 && (
-                      <span>Stops: {selectedRoute.stops.sort((a: any, b: any) => a.order - b.order).map((s: any) => s.name).join(' → ')}</span>
+                      <span>Stops: {[...selectedRoute.stops].sort((a: any, b: any) => a.order - b.order).map((s: any) => s.name).join(' → ')}</span>
                     )}
                   </div>
                 </div>
               </FadeIn>
+              )}
 
-              {filteredSchedules.length === 0 ? (
-                <EmptyState text="No schedules found for this route." />
+              {schedulesLoading && filteredSchedules.length === 0 ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+                  <div className="hidden md:block"><TableSkeleton rows={6} /></div>
+                  <div className="md:hidden space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-28 rounded-lg" />
+                    ))}
+                  </div>
+                </motion.div>
+              ) : filteredSchedules.length === 0 ? (
+                <EmptyState
+                  text={
+                    search || hasActiveFilters
+                      ? 'No schedules match your search or filters.'
+                      : 'No schedules found for this route.'
+                  }
+                />
               ) : (
                 <>
                   <FadeIn direction="up" duration={0.4}>
-                    {/* Desktop table — wrapped in overflow-x-auto as a safety
-                        net: if a future layout bug ever surfaces the table on
-                        a narrow viewport, horizontal scroll stays inside the
-                        table's box instead of pushing the whole page wide. */}
+                    {/* overflow-x-auto keeps any future narrow-viewport scroll inside the table rather than widening the page. */}
                     <div className="hidden md:block border rounded-lg overflow-x-auto">
                       <table className="w-full text-sm table-fixed min-w-[560px]">
                         <colgroup>
@@ -533,7 +583,6 @@ export default function BusSchedulePage() {
                       </table>
                     </div>
 
-                    {/* Mobile cards */}
                     <div className="md:hidden space-y-3">
                       {filteredSchedules.map((s: any) => {
                         const buses: ScheduleBus[] = s.buses || [];
@@ -609,6 +658,7 @@ export default function BusSchedulePage() {
           {/* ═══ SCHEDULE DETAIL VIEW ═══ */}
           {view === 'schedule-detail' && selectedSchedule && (
             <ScheduleDetailView
+              key="schedule-detail"
               schedule={selectedSchedule}
               onOperatorClick={handleOperatorClick}
             />
@@ -616,7 +666,7 @@ export default function BusSchedulePage() {
 
           {/* ═══ OPERATORS LIST VIEW ("All Buses" tab) ═══ */}
           {view === 'operators' && (
-            <motion.div key="operators" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+            <motion.div key="operators" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
               {filteredOperators.length === 0 ? (
                 <EmptyState text={search ? 'No operators found.' : 'No operators available.'} />
               ) : (
@@ -665,6 +715,7 @@ export default function BusSchedulePage() {
           {/* ═══ OPERATOR DETAIL VIEW (info + all counters) ═══ */}
           {view === 'operator-detail' && selectedOperatorId && (
             <OperatorDetailView
+              key="operator-detail"
               operatorId={selectedOperatorId}
               counters={counters}
             />
@@ -690,7 +741,6 @@ function ScheduleDetailView({ schedule: s, onOperatorClick }: { schedule: any; o
 
   return (
     <motion.div key="schedule-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      {/* Schedule Info */}
       <FadeIn delay={0.05} direction="up">
         <div className="border rounded-xl p-6 bg-card mb-4">
           <div className="flex items-start gap-3 mb-4">
@@ -735,7 +785,6 @@ function ScheduleDetailView({ schedule: s, onOperatorClick }: { schedule: any; o
         </div>
       </FadeIn>
 
-      {/* Buses on this schedule */}
       <FadeIn delay={0.1} direction="up">
         <div className="border rounded-xl p-5 bg-card mb-4">
           <h3 className="font-semibold text-sm mb-3">Buses</h3>
@@ -775,13 +824,12 @@ function ScheduleDetailView({ schedule: s, onOperatorClick }: { schedule: any; o
         </div>
       </FadeIn>
 
-      {/* Route Stops */}
       {s.route?.stops?.length > 0 && (
         <FadeIn delay={0.15} direction="up">
           <div className="border rounded-xl p-5 bg-card">
             <h3 className="font-semibold text-sm mb-3">Route Stops</h3>
             <div className="flex flex-wrap gap-1.5">
-              {s.route.stops.sort((a: any, b: any) => a.order - b.order).map((st: any, si: number) => (
+              {[...s.route.stops].sort((a: any, b: any) => a.order - b.order).map((st: any, si: number) => (
                 <span key={si} className="inline-flex items-center text-xs text-muted-foreground">
                   {si > 0 && <span className="mx-1.5">&rarr;</span>}
                   <span className="px-2 py-1 bg-muted rounded-md">{st.name}</span>
@@ -808,7 +856,12 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
   const opCounters = counters.filter((c: any) => c.operator?._id === operatorId);
 
   if (isLoading) {
-    return <Spinner size="md" />;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+    );
   }
   if (!op) {
     return <EmptyState text="Operator not found." />;
@@ -816,7 +869,6 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
 
   return (
     <motion.div key="operator-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      {/* Operator Info */}
       <FadeIn delay={0.05} direction="up">
         <div className="border rounded-xl p-6 bg-card mb-4">
           <div className="flex items-start gap-4 mb-4">
@@ -869,7 +921,6 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
         </div>
       </FadeIn>
 
-      {/* Counters */}
       <FadeIn delay={0.1} direction="up">
         <div className="border rounded-xl p-5 bg-card">
           <h3 className="font-semibold text-sm mb-3">Booking Counters ({opCounters.length})</h3>
@@ -916,7 +967,6 @@ function OperatorDetailView({ operatorId, counters }: { operatorId: string; coun
         </div>
       </FadeIn>
 
-      {/* Reviews & Rating */}
       <FadeIn delay={0.15} direction="up">
         <div className="border rounded-xl p-5 bg-card mt-4">
           <OperatorReviews operatorId={operatorId} />
@@ -1074,7 +1124,11 @@ function OperatorReviews({ operatorId }: { operatorId: string }) {
       </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-lg" />
+          ))}
+        </div>
       ) : reviews.length === 0 ? (
         <p className="text-sm text-muted-foreground">No reviews yet. Be the first to review.</p>
       ) : (

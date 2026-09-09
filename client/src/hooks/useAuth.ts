@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { MAX_GC_TIME } from '@/lib/queryPersister';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
@@ -20,7 +21,7 @@ export function useAuth() {
     // Match the bus/donors offline strategy so /users/me survives cold
     // offline launches: gcTime > maxAge of the persister, meta.persist true,
     // and offlineFirst so Workbox can answer from its NetworkFirst cache.
-    gcTime: 30 * 24 * 60 * 60 * 1000,
+    gcTime: MAX_GC_TIME,
     meta: { persist: true },
     networkMode: 'offlineFirst',
   });

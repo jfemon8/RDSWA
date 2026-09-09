@@ -15,6 +15,9 @@ const DATABASE_NAME = 'rdswa-offline';
 const STORE_NAME = 'tanstack-query';
 const THIRTY_DAYS_MS = 1000 * 60 * 60 * 24 * 30;
 
+/** The longest gcTime a browser can honour, because setTimeout overflows past 2^31-1 ms and fires immediately instead. */
+export const MAX_GC_TIME = 2 ** 31 - 1;
+
 // Dedicated IDB object store so we don't collide with any other idb-keyval usage.
 const store = createStore(DATABASE_NAME, STORE_NAME);
 

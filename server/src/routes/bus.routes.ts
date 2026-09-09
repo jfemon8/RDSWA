@@ -10,7 +10,8 @@ import mongoose from 'mongoose';
 import { BusOperator, BusRoute, BusSchedule, BusCounter, BusReview } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
-import { cacheResponse } from '../middlewares/cache.middleware';
+import { cacheResponse, invalidateCachePrefix } from '../middlewares/cache.middleware';
+import { escapeRegex } from '../utils/escapeRegex';
 import { getIO } from '../socket';
 import {
   createOperatorSchema, updateOperatorSchema,
@@ -22,12 +23,10 @@ import {
 
 const router = Router();
 
-/** Broadcast bus schedule change to all connected clients */
+/** Tell every client a bus record changed and drop the cached responses that would otherwise serve the old one. */
 function broadcastBusUpdate(action: string, data?: any): void {
-  const io = getIO();
-  if (io) {
-    io.emit('bus:updated', { action, data });
-  }
+  getIO()?.emit('bus:updated', { action, data });
+  invalidateCachePrefix('/api/bus').catch(() => { /* the cache is best-effort */ });
 }
 
 /** Recompute operator rating from non-deleted reviews */
@@ -65,6 +64,7 @@ router.post('/operators', authenticate(), authorize(UserRole.ADMIN),
   asyncHandler(async (req, res) => {
     if (!req.user) throw ApiError.unauthorized();
     const op = await BusOperator.create({ ...req.body, createdBy: req.user._id });
+    broadcastBusUpdate('created', op);
     ApiResponse.created(res, op, 'Operator created');
   }),
 );
@@ -77,6 +77,7 @@ router.patch('/operators/:id', authenticate(), authorize(UserRole.ADMIN),
       { _id: req.params.id, isDeleted: false }, { $set: req.body }, { new: true },
     );
     if (!op) throw ApiError.notFound('Operator not found');
+    broadcastBusUpdate('updated', op);
     ApiResponse.success(res, op, 'Operator updated');
   }),
 );
@@ -85,6 +86,7 @@ router.delete('/operators/:id', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.operator_delete', 'bus_operators'),
   asyncHandler(async (req, res) => {
     await BusOperator.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true });
+    broadcastBusUpdate('deleted', { _id: req.params.id });
     ApiResponse.success(res, null, 'Operator deleted');
   }),
 );
@@ -148,6 +150,7 @@ router.post('/routes', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.route_create', 'bus_routes'),
   asyncHandler(async (req, res) => {
     const route = await BusRoute.create(req.body);
+    broadcastBusUpdate('created', route);
     ApiResponse.created(res, route, 'Route created');
   }),
 );
@@ -160,6 +163,7 @@ router.patch('/routes/:id', authenticate(), authorize(UserRole.ADMIN),
       { _id: req.params.id, isDeleted: false }, { $set: req.body }, { new: true },
     );
     if (!route) throw ApiError.notFound('Route not found');
+    broadcastBusUpdate('updated', route);
     ApiResponse.success(res, route, 'Route updated');
   }),
 );
@@ -168,6 +172,7 @@ router.delete('/routes/:id', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.route_delete', 'bus_routes'),
   asyncHandler(async (req, res) => {
     await BusRoute.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true });
+    broadcastBusUpdate('deleted', { _id: req.params.id });
     ApiResponse.success(res, null, 'Route deleted');
   }),
 );
@@ -183,6 +188,19 @@ router.get('/schedules', cacheResponse(300), asyncHandler(async (req, res) => {
   if (req.query.routeType) {
     const matchingRoutes = await BusRoute.find({ routeType: req.query.routeType, isDeleted: false }).select('_id');
     filter.route = { ...(filter.route || {}), $in: matchingRoutes.map((r) => r._id) };
+  }
+
+  // Free-text search over what a rider can actually read on a schedule row.
+  let searchRx: RegExp | null = null;
+  if (typeof req.query.search === 'string' && req.query.search.trim()) {
+    searchRx = new RegExp(escapeRegex(req.query.search.trim()), 'i');
+    const namedOperators = await BusOperator.find({ name: searchRx, isDeleted: false }).select('_id');
+    filter.$or = [
+      { 'buses.busName': searchRx },
+      { 'buses.busCategory': searchRx },
+      { 'buses.operator': { $in: namedOperators.map((o) => o._id) } },
+      { additionalInfo: searchRx },
+    ];
   }
 
   // Time-based search: departureAfter / departureBefore (HH:MM 24h format)
@@ -202,7 +220,21 @@ router.get('/schedules', cacheResponse(300), asyncHandler(async (req, res) => {
       .limit(limit),
     BusSchedule.countDocuments(filter),
   ]);
-  ApiResponse.paginated(res, schedules, total, page, limit);
+  // A schedule matches when any one of its buses does, so the rest are dropped rather than shown as hits.
+  const results = searchRx
+    ? schedules.map((doc) => {
+        const s: any = doc.toObject();
+        const hits = (s.buses || []).filter((b: any) =>
+          searchRx!.test(b.busName || '') ||
+          searchRx!.test(b.busCategory || '') ||
+          searchRx!.test(b.operator?.name || ''),
+        );
+        // Matching on the schedule's own notes says nothing about individual buses, so all of them stay.
+        return hits.length > 0 ? { ...s, buses: hits } : s;
+      })
+    : schedules;
+
+  ApiResponse.paginated(res, results, total, page, limit);
 }));
 
 router.post('/schedules', authenticate(), authorize(UserRole.ADMIN),
@@ -251,6 +283,7 @@ router.post('/counters', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.counter_create', 'bus_counters'),
   asyncHandler(async (req, res) => {
     const counter = await BusCounter.create(req.body);
+    broadcastBusUpdate('created', counter);
     ApiResponse.created(res, counter, 'Counter created');
   }),
 );
@@ -263,6 +296,7 @@ router.patch('/counters/:id', authenticate(), authorize(UserRole.ADMIN),
       { _id: req.params.id, isDeleted: false }, { $set: req.body }, { new: true },
     );
     if (!counter) throw ApiError.notFound('Counter not found');
+    broadcastBusUpdate('updated', counter);
     ApiResponse.success(res, counter, 'Counter updated');
   }),
 );
@@ -271,6 +305,7 @@ router.delete('/counters/:id', authenticate(), authorize(UserRole.ADMIN),
   auditLog('bus.counter_delete', 'bus_counters'),
   asyncHandler(async (req, res) => {
     await BusCounter.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true });
+    broadcastBusUpdate('deleted', { _id: req.params.id });
     ApiResponse.success(res, null, 'Counter deleted');
   }),
 );

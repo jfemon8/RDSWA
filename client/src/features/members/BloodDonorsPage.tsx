@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MAX_GC_TIME } from '@/lib/queryPersister';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -17,7 +18,7 @@ const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 /** Offline-persistence options mirroring BusSchedulePage, where `networkMode: 'offlineFirst'` lets Workbox answer on cold offline launches. */
 const DONORS_OFFLINE_OPTS = {
   meta: { persist: true } as const,
-  gcTime: 30 * 24 * 60 * 60 * 1000,
+  gcTime: MAX_GC_TIME,
   staleTime: 60 * 60 * 1000,
   refetchOnReconnect: true as const,
   networkMode: 'offlineFirst' as const,
