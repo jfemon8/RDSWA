@@ -851,6 +851,50 @@ function EventDetailPanel({ event }: { event: any }) {
     },
   });
 
+  const canManageFeedback = (fb: any) => {
+    if (!user) return false;
+    const authorId = typeof fb.user === "string" ? fb.user : fb.user?._id;
+    return authorId === user._id || user.role === "super_admin";
+  };
+
+  const [editingFeedback, setEditingFeedback] = useState<string | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState("");
+
+  const closeFeedbackEditor = () => {
+    setEditingFeedback(null);
+    setFeedbackRating(0);
+    setFeedbackComment("");
+  };
+
+  const editFeedbackMutation = useMutation({
+    mutationFn: (feedbackId: string) =>
+      api.patch(`/events/${event._id}/feedback/${feedbackId}`, {
+        rating: feedbackRating,
+        comment: feedbackComment,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      toast.success("Feedback updated");
+      closeFeedbackEditor();
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to update feedback");
+    },
+  });
+
+  const removeFeedbackMutation = useMutation({
+    mutationFn: (feedbackId: string) =>
+      api.delete(`/events/${event._id}/feedback/${feedbackId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      toast.success("Feedback removed");
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to remove feedback");
+    },
+  });
+
   const removeAttendanceMutation = useMutation({
     mutationFn: (userId: string) =>
       api.delete(`/events/${event._id}/attendance/${userId}`),
@@ -1428,16 +1472,14 @@ function EventDetailPanel({ event }: { event: any }) {
         )}
       </div>
 
-      {/* Feedback Review */}
       {fullEvent.feedbackEnabled && (
         <div>
           <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2 text-foreground">
             <MessageCircle className="h-4 w-4 text-primary" /> Feedback (
-            {(fullEvent.feedback || []).length})
+            {(fullEvent.feedbacks || []).length})
           </h4>
 
-          {/* Stats Summary */}
-          {(fullEvent.feedback || []).length > 0 && (
+          {(fullEvent.feedbacks || []).length > 0 && (
             <div className="flex flex-col sm:flex-row gap-4 mb-3">
               <div className="border rounded-lg px-3 py-2 bg-muted/30">
                 <span className="text-xs text-muted-foreground">
@@ -1447,10 +1489,10 @@ function EventDetailPanel({ event }: { event: any }) {
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   <span className="font-bold text-foreground">
                     {(
-                      (fullEvent.feedback || []).reduce(
+                      (fullEvent.feedbacks || []).reduce(
                         (sum: number, f: any) => sum + (f.rating || 0),
                         0,
-                      ) / (fullEvent.feedback || []).length
+                      ) / (fullEvent.feedbacks || []).length
                     ).toFixed(1)}
                   </span>
                   <span className="text-xs text-muted-foreground">/ 5</span>
@@ -1459,7 +1501,7 @@ function EventDetailPanel({ event }: { event: any }) {
               <div className="border rounded-lg px-3 py-2 bg-muted/30">
                 <span className="text-xs text-muted-foreground">Responses</span>
                 <p className="font-bold text-foreground">
-                  {(fullEvent.feedback || []).length}
+                  {(fullEvent.feedbacks || []).length}
                 </p>
               </div>
               {/* Rating distribution */}
@@ -1469,10 +1511,10 @@ function EventDetailPanel({ event }: { event: any }) {
                 </span>
                 <div className="flex items-end gap-1 h-6">
                   {[5, 4, 3, 2, 1].map((star) => {
-                    const count = (fullEvent.feedback || []).filter(
+                    const count = (fullEvent.feedbacks || []).filter(
                       (f: any) => f.rating === star,
                     ).length;
-                    const total = (fullEvent.feedback || []).length;
+                    const total = (fullEvent.feedbacks || []).length;
                     const pct = total > 0 ? (count / total) * 100 : 0;
                     return (
                       <div
@@ -1494,12 +1536,11 @@ function EventDetailPanel({ event }: { event: any }) {
             </div>
           )}
 
-          {/* Feedback List */}
-          {(fullEvent.feedback || []).length > 0 ? (
+          {(fullEvent.feedbacks || []).length > 0 ? (
             <div className="max-h-64 overflow-y-auto space-y-2">
-              {(fullEvent.feedback || []).map((fb: any, i: number) => (
+              {(fullEvent.feedbacks || []).map((fb: any, i: number) => (
                 <motion.div
-                  key={i}
+                  key={fb._id || i}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
@@ -1508,25 +1549,95 @@ function EventDetailPanel({ event }: { event: any }) {
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">
-                        {fb.user?.name || "Anonymous"}
+                        {fb.user?.name || "Former member"}
                       </span>
                       <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-3 w-3 ${s <= (fb.rating || 0) ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground/30"}`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((s) =>
+                          editingFeedback === fb._id ? (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setFeedbackRating(s)}
+                              className="p-0.5"
+                            >
+                              <Star
+                                className={`h-4 w-4 ${s <= feedbackRating ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground/40"}`}
+                              />
+                            </button>
+                          ) : (
+                            <Star
+                              key={s}
+                              className={`h-3 w-3 ${s <= (fb.rating || 0) ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground/30"}`}
+                            />
+                          ),
+                        )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      {fb.createdAt ? formatDate(fb.createdAt) : ""}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] text-muted-foreground">
+                        {fb.submittedAt ? formatDate(fb.submittedAt) : ""}
+                      </span>
+                      {canManageFeedback(fb) && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingFeedback(fb._id);
+                              setFeedbackRating(fb.rating || 0);
+                              setFeedbackComment(fb.comment || "");
+                            }}
+                            title="Edit feedback"
+                            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const ok = await confirm({
+                                title: "Remove feedback",
+                                message: `Remove the review from ${fb.user?.name || "this member"}? It disappears from the event for everyone.`,
+                                confirmLabel: "Remove",
+                                variant: "danger",
+                              });
+                              if (ok) removeFeedbackMutation.mutate(fb._id);
+                            }}
+                            title="Remove feedback"
+                            className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
                     </span>
                   </div>
-                  {fb.comment && (
-                    <p className="text-sm text-muted-foreground">
-                      {fb.comment}
-                    </p>
+                  {editingFeedback === fb._id && canManageFeedback(fb) ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={feedbackComment}
+                        onChange={(e) => setFeedbackComment(e.target.value)}
+                        rows={2}
+                        placeholder="Comment"
+                        className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => editFeedbackMutation.mutate(fb._id)}
+                          disabled={!feedbackRating || editFeedbackMutation.isPending}
+                          className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs disabled:opacity-50"
+                        >
+                          {editFeedbackMutation.isPending ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          onClick={closeFeedbackEditor}
+                          className="px-3 py-1.5 rounded-md border text-xs hover:bg-accent"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    fb.comment && (
+                      <p className="text-sm text-muted-foreground">{fb.comment}</p>
+                    )
                   )}
                 </motion.div>
               ))}

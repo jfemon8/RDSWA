@@ -9,6 +9,7 @@ import {
   createEventSchema,
   updateEventSchema,
   feedbackSchema,
+  updateFeedbackSchema,
   checkinSchema,
   manualAttendanceSchema,
   bulkAttendanceSchema,
@@ -47,6 +48,9 @@ router.post('/:id/attendance/self', authenticate(), validate({ body: selfCheckin
 router.patch('/:id/attendance/:userId/approve', authenticate(), authorize(UserRole.MODERATOR), eventController.approveAttendance);
 router.patch('/:id/attendance/:userId/reject', authenticate(), authorize(UserRole.MODERATOR), eventController.rejectAttendance);
 router.post('/:id/feedback', authenticate(), authorize(UserRole.MEMBER), validate({ body: feedbackSchema }), eventController.submitFeedback);
+router.get('/:id/feedback', authenticate(true), eventController.getFeedback);
+router.patch('/:id/feedback/:feedbackId', authenticate(), validate({ body: updateFeedbackSchema }), eventController.updateFeedback);
+router.delete('/:id/feedback/:feedbackId', authenticate(), eventController.deleteFeedback);
 router.get('/:id/attendance', authenticate(), authorize(UserRole.MODERATOR), eventController.getAttendance);
 
 // Remove attendance record

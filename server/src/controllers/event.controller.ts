@@ -167,6 +167,39 @@ export const submitAttendance = asyncHandler(async (req: Request, res: Response)
   ApiResponse.success(res, result, message);
 });
 
+/** Only a SuperAdmin moderates a review they did not write, which the service checks against the author. */
+function canModerateFeedback(role?: string): boolean {
+  return role === UserRole.SUPER_ADMIN;
+}
+
+export const getFeedback = asyncHandler(async (req: Request, res: Response) => {
+  const result = await eventService.getFeedback(req.params.id as string);
+  ApiResponse.success(res, result);
+});
+
+export const updateFeedback = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const result = await eventService.updateFeedback(
+    req.params.id as string,
+    req.params.feedbackId as string,
+    (req.user._id as any).toString(),
+    canModerateFeedback(req.user.role),
+    { rating: req.body.rating, comment: req.body.comment },
+  );
+  ApiResponse.success(res, result, 'Feedback updated');
+});
+
+export const deleteFeedback = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const result = await eventService.deleteFeedback(
+    req.params.id as string,
+    req.params.feedbackId as string,
+    (req.user._id as any).toString(),
+    canModerateFeedback(req.user.role),
+  );
+  ApiResponse.success(res, result, 'Feedback removed');
+});
+
 export const submitFeedback = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   await eventService.submitFeedback(

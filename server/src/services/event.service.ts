@@ -75,6 +75,14 @@ function mergeFilters(a: FilterQuery<IEventDocument>, b: FilterQuery<IEventDocum
   return merged;
 }
 
+/** Average rating and response count, rounded to one decimal for display. */
+function summariseFeedback(feedbacks: Array<{ rating?: number }> = []): { average: number; count: number } {
+  const rated = feedbacks.filter((f) => typeof f.rating === 'number');
+  if (rated.length === 0) return { average: 0, count: 0 };
+  const total = rated.reduce((sum, f) => sum + (f.rating || 0), 0);
+  return { average: Math.round((total / rated.length) * 10) / 10, count: rated.length };
+}
+
 function attachDerivedStatus<T extends { status?: string; startDate?: Date | string; endDate?: Date | string | null; toObject?: () => any }>(event: T, now: Date): any {
   const plain = typeof (event as any).toObject === 'function' ? (event as any).toObject({ virtuals: true }) : { ...event };
   plain.status = deriveEventStatus({
@@ -84,6 +92,7 @@ function attachDerivedStatus<T extends { status?: string; startDate?: Date | str
     now,
   });
   plain.registrationCounts = registrationCounts(plain.registrations || []);
+  plain.feedbackSummary = summariseFeedback(plain.feedbacks || []);
   delete plain.registrations;
   return plain;
 }
@@ -236,7 +245,11 @@ export class EventService {
     ]);
 
     return {
-      events: events.map((e) => attachDerivedStatus(e as any, now)),
+      events: events.map((e) => {
+        const plain = attachDerivedStatus(e as any, now);
+        delete plain.feedbacks;
+        return plain;
+      }),
       total,
       page,
       limit,
@@ -250,6 +263,7 @@ export class EventService {
       .populate('committee', 'name isCurrent')
       .populate('attendance.user', 'name avatar department batch studentId')
       .populate('attendance.verifiedBy', 'name')
+      .populate('feedbacks.user', 'name avatar')
       .populate('photos.taggedUsers', 'name avatar');
     if (!event) throw ApiError.notFound('Event not found');
 
@@ -564,6 +578,48 @@ export class EventService {
       submittedAt: new Date(),
     } as any);
     await event.save();
+  }
+
+  /** The feedback list with authors resolved, which both the event page and the admin panel read. */
+  async getFeedback(eventId: string) {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false })
+      .populate('feedbacks.user', 'name avatar')
+      .select('feedbacks');
+    if (!event) throw ApiError.notFound('Event not found');
+    return { feedbacks: event.feedbacks, summary: summariseFeedback(event.feedbacks as any) };
+  }
+
+  /** A review belongs to its author, and only a SuperAdmin may correct or remove one on their behalf. */
+  private async findFeedback(eventId: string, feedbackId: string, userId: string, canModerate: boolean) {
+    const event = await Event.findOne({ _id: eventId, isDeleted: false });
+    if (!event) throw ApiError.notFound('Event not found');
+    const entry = (event.feedbacks as any).id(feedbackId);
+    if (!entry) throw ApiError.notFound('Feedback not found');
+    if (entry.user.toString() !== userId && !canModerate) {
+      throw ApiError.forbidden('Only the author or a SuperAdmin can change this feedback');
+    }
+    return { event, entry };
+  }
+
+  async updateFeedback(
+    eventId: string,
+    feedbackId: string,
+    userId: string,
+    canModerate: boolean,
+    data: { rating?: number; comment?: string },
+  ) {
+    const { event, entry } = await this.findFeedback(eventId, feedbackId, userId, canModerate);
+    if (typeof data.rating === 'number') entry.rating = data.rating;
+    if (data.comment !== undefined) entry.comment = data.comment;
+    await event.save();
+    return this.getFeedback(eventId);
+  }
+
+  async deleteFeedback(eventId: string, feedbackId: string, userId: string, canModerate: boolean) {
+    const { event, entry } = await this.findFeedback(eventId, feedbackId, userId, canModerate);
+    entry.deleteOne();
+    await event.save();
+    return this.getFeedback(eventId);
   }
 
   async getAttendance(eventId: string) {

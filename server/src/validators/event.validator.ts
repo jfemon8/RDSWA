@@ -84,6 +84,12 @@ export const feedbackSchema = z.object({
   comment: z.string().optional(),
 });
 
+/** An edit may carry either half on its own, so both fields are optional here. */
+export const updateFeedbackSchema = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  comment: z.string().optional(),
+});
+
 /** Optional backdate; range rules live in `resolveCheckedInAt` so client and server agree. */
 const checkedInAtField = z
   .string()

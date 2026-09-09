@@ -7,7 +7,7 @@ import { useInfiniteList } from '@/hooks/useInfiniteList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatDate, formatDateCustom, getDhakaDateParts } from '@/lib/date';
 import { queryKeys } from '@/lib/queryKeys';
-import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2, Mail, X } from 'lucide-react';
+import { Calendar, MapPin, Search, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, Building2, Mail, X, Star } from 'lucide-react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageCardSkeleton } from '@/components/ui/Skeleton';
@@ -244,6 +244,16 @@ export default function EventsPage() {
                             <div className="flex items-center gap-2 mb-2">
                               <StatusBadge status={deriveEventStatus(e)} />
                               {e.type && <span className="text-xs text-muted-foreground capitalize">{e.type}</span>}
+                              {e.feedbackSummary?.count > 0 && (
+                                <span
+                                  title={`${e.feedbackSummary.count} ${e.feedbackSummary.count === 1 ? 'review' : 'reviews'}`}
+                                  className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-yellow-600 dark:text-yellow-400 shrink-0"
+                                >
+                                  <Star className="h-3.5 w-3.5 fill-current" />
+                                  {e.feedbackSummary.average}
+                                  <span className="text-muted-foreground font-normal">({e.feedbackSummary.count})</span>
+                                </span>
+                              )}
                             </div>
                             <h3 className="font-semibold mb-2 line-clamp-2 flex items-center gap-1.5">
                               <Calendar className="h-4 w-4 text-primary shrink-0" /> {e.title}

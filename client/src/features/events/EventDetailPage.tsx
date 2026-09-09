@@ -17,6 +17,8 @@ import {
   Clock,
   Bell,
   Building2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -27,6 +29,8 @@ import UserEventQr from "@/components/ui/UserEventQr";
 import { FieldError } from "@/components/ui/FieldError";
 import { extractFieldErrors, omitFieldError } from "@/lib/formErrors";
 import Spinner from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { deriveEventStatus, getAttendanceWindow } from "@rdswa/shared";
 import AttendanceDateField from "@/components/ui/AttendanceDateField";
 import EventFinanceSummary from "@/components/ui/EventFinanceSummary";
@@ -43,6 +47,10 @@ export default function EventDetailPage() {
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
+  const [editingAuthor, setEditingAuthor] = useState<string | null>(null);
+  const toast = useToast();
+  const confirm = useConfirm();
   const [showPhotos, setShowPhotos] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [attendanceDate, setAttendanceDate] = useState("");
@@ -99,13 +107,53 @@ export default function EventDetailPage() {
   });
 
   const feedbackMutation = useMutation({
-    mutationFn: () => api.post(`/events/${id}/feedback`, { rating, comment }),
+    mutationFn: () =>
+      editingFeedbackId
+        ? api.patch(`/events/${id}/feedback/${editingFeedbackId}`, { rating, comment })
+        : api.post(`/events/${id}/feedback`, { rating, comment }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      toast.success(editingFeedbackId ? "Feedback updated" : "Feedback submitted");
+      setEditingFeedbackId(null);
+      setEditingAuthor(null);
       setRating(0);
       setComment("");
     },
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || "Could not save feedback"),
   });
+
+  const deleteFeedbackMutation = useMutation({
+    mutationFn: (feedbackId: string) => api.delete(`/events/${id}/feedback/${feedbackId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      toast.success("Feedback removed");
+      setEditingFeedbackId(null);
+      setEditingAuthor(null);
+      setRating(0);
+      setComment("");
+    },
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || "Could not remove feedback"),
+  });
+
+  const startEditFeedback = (fb: any) => {
+    setEditingFeedbackId(fb._id);
+    setEditingAuthor(isFeedbackAuthor(fb) ? null : fb.user?.name || "this member");
+    setRating(fb.rating || 0);
+    setComment(fb.comment || "");
+    document.getElementById("event-feedback-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const removeFeedback = async (fb: any) => {
+    const ok = await confirm({
+      title: "Remove feedback",
+      message: "This review disappears from the event for everyone.",
+      confirmLabel: "Remove",
+      variant: "danger",
+    });
+    if (ok) deleteFeedbackMutation.mutate(fb._id);
+  };
 
   if (isLoading) {
     return <Spinner size="md" />;
@@ -158,10 +206,13 @@ export default function EventDetailPage() {
   );
   const isCheckedIn = myAttendance?.status === "approved";
   const isPendingCheckin = myAttendance?.status === "pending";
-  const hasSubmittedFeedback = event.feedbacks?.some?.(
-    (f: any) =>
-      (typeof f.user === "string" ? f.user : f.user?._id) === user?._id,
-  );
+  const isFeedbackAuthor = (fb: any) =>
+    !!user && (typeof fb.user === "string" ? fb.user : fb.user?._id) === user._id;
+  // Only a SuperAdmin may touch a review they did not write, which is the rule the server enforces.
+  const isFeedbackStaff = user?.role === "super_admin";
+  const canManageFeedback = (fb: any) => isFeedbackAuthor(fb) || isFeedbackStaff;
+  const myFeedback = event.feedbacks?.find?.(isFeedbackAuthor);
+  const hasSubmittedFeedback = !!myFeedback;
   const photos = event.photos || [];
 
   const eventJsonLd = buildEventSchema({
@@ -632,15 +683,19 @@ export default function EventDetailPage() {
         </FadeIn>
       )}
 
-      {/* Feedback form */}
       {event.feedbackEnabled &&
         derivedStatus === "completed" &&
         isAuthenticated &&
-        !hasSubmittedFeedback && (
+        (!hasSubmittedFeedback || editingFeedbackId) && (
           <FadeIn delay={0.45} direction="up">
-            <div className="border rounded-lg p-6 bg-card mb-8">
+            <div id="event-feedback-form" className="border rounded-lg p-6 bg-card mb-8">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Star className="h-4 w-4 text-primary" /> Submit Feedback
+                <Star className="h-4 w-4 text-primary" />
+                {!editingFeedbackId
+                  ? "Submit Feedback"
+                  : editingAuthor
+                    ? `Edit Feedback — ${editingAuthor}`
+                    : "Edit Your Feedback"}
               </h3>
               <div className="flex gap-1 mb-4">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -658,41 +713,73 @@ export default function EventDetailPage() {
                 placeholder="Share your thoughts..."
                 className="w-full px-3 py-2 border rounded-md bg-background mb-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
-              <button
-                onClick={() => feedbackMutation.mutate()}
-                disabled={!rating || feedbackMutation.isPending}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
-              >
-                {feedbackMutation.isPending
-                  ? "Submitting..."
-                  : "Submit Feedback"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => feedbackMutation.mutate()}
+                  disabled={!rating || feedbackMutation.isPending}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {feedbackMutation.isPending
+                    ? "Saving..."
+                    : editingFeedbackId
+                      ? "Save Changes"
+                      : "Submit Feedback"}
+                </button>
+                {editingFeedbackId && (
+                  <button
+                    onClick={() => {
+                      setEditingFeedbackId(null);
+                      setEditingAuthor(null);
+                      setRating(0);
+                      setComment("");
+                    }}
+                    className="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           </FadeIn>
         )}
 
-      {/* Already submitted feedback */}
-      {hasSubmittedFeedback && (
+      {hasSubmittedFeedback && !editingFeedbackId && myFeedback && (
         <FadeIn delay={0.45} direction="up">
-          <div className="mb-8 p-3 bg-muted rounded-md text-sm text-muted-foreground flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            You have already submitted feedback for this event
+          <div className="mb-8 p-3 bg-muted rounded-md text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span className="flex-1 min-w-0">You rated this event {myFeedback.rating}/5</span>
+            <button
+              onClick={() => startEditFeedback(myFeedback)}
+              className="px-2.5 py-1 rounded-md border text-xs hover:bg-accent hover:text-foreground"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => removeFeedback(myFeedback)}
+              className="px-2.5 py-1 rounded-md border text-xs text-red-600 hover:bg-red-500/10"
+            >
+              Remove
+            </button>
           </div>
         </FadeIn>
       )}
 
-      {/* Feedbacks list */}
       {event.feedbacks && event.feedbacks.length > 0 && (
         <FadeIn delay={0.5} direction="up">
           <div className="border rounded-lg p-6 bg-card">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" /> Feedback (
-              {event.feedbacks.length})
+            <h3 className="font-semibold mb-4 flex flex-wrap items-center gap-2">
+              <Star className="h-4 w-4 text-primary" /> Feedback ({event.feedbacks.length})
+              {event.feedbackSummary?.count > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium">
+                  <Star className="h-3 w-3 fill-current" />
+                  {event.feedbackSummary.average} / 5
+                </span>
+              )}
             </h3>
             <div className="space-y-3">
-              {event.feedbacks.slice(0, 5).map((fb: any, i: number) => (
+              {event.feedbacks.map((fb: any, i: number) => (
                 <motion.div
-                  key={i}
+                  key={fb._id || i}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
@@ -707,15 +794,37 @@ export default function EventDetailPage() {
                         />
                       ))}
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      <Link
-                        to={`/members/${fb.user?._id}`}
-                        className="hover:text-primary transition-colors"
-                      >
-                        {fb.user?.name || "Anonymous"}
-                      </Link>{" "}
+                    <span className="text-xs text-muted-foreground flex-1 min-w-0">
+                      {fb.user?._id ? (
+                        <Link
+                          to={`/members/${fb.user._id}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          {fb.user.name}
+                        </Link>
+                      ) : (
+                        "Former member"
+                      )}{" "}
                       • {formatDate(fb.submittedAt)}
                     </span>
+                    {canManageFeedback(fb) && (
+                      <span className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => startEditFeedback(fb)}
+                          title={isFeedbackAuthor(fb) ? "Edit your feedback" : "Edit this feedback"}
+                          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => removeFeedback(fb)}
+                          title="Remove feedback"
+                          className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    )}
                   </div>
                   {fb.comment && <p className="text-sm">{fb.comment}</p>}
                 </motion.div>
