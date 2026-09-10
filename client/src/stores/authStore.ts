@@ -88,9 +88,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'rdswa-auth',
       storage: createJSONStorage(() => localStorage),
-      // Persist only the identity — NEVER persist `isLoading` (would freeze
-      // the app in a loading state on the next cold start if the previous
-      // session crashed mid-auth).
+      // Only the identity is persisted, since a stored `isLoading` would freeze the next cold start after a crash mid-auth.
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

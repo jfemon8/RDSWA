@@ -6,10 +6,7 @@ function readSkill(message: string): string | null {
   return match ? match[1].trim() : null;
 }
 
-/**
- * Endorsement notifications used to read "Someone endorsed your skill", losing who did it, so the
- * endorser is recovered from the recipient's own endorsement list by matching skill and timestamp.
- */
+/** Recovers the endorser that "Someone endorsed your skill" lost, by matching skill and time against the recipient's endorsements. */
 export async function backfillEndorsementNotifications(): Promise<void> {
   try {
     const stale = await Notification.find({

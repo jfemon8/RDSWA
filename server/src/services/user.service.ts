@@ -164,9 +164,7 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Admin+ can update any user's profile fields.
-   */
+  /** Admin+ can update any user's profile fields. */
   async adminUpdateUser(targetUserId: string, data: Record<string, any>, adminUser: IUserDocument): Promise<IUserDocument> {
     if (!isAdminOrAbove(adminUser.role)) {
       throw ApiError.forbidden('Only Admin or SuperAdmin can edit other users');
@@ -612,9 +610,7 @@ export class UserService {
     return target;
   }
 
-  /**
-   * Approve an alumni form submission — delegates to setAlumni with 'form' source.
-   */
+  /** Approve an alumni form submission, delegating to setAlumni with the 'form' source. */
   async approveAlumniForm(
     targetUserId: string,
     approvedBy: IUserDocument,

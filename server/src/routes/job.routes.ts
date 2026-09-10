@@ -11,6 +11,8 @@ import { FilterQuery } from 'mongoose';
 import { IJobPostDocument } from '../models/JobPost';
 
 import { escapeRegex } from '../utils/escapeRegex';
+import { DEFAULT_JOB_VALIDITY_MS } from '../jobs/jobPostPurge';
+
 const router = Router();
 
 // List active job posts (Public — anyone can view)
@@ -81,8 +83,8 @@ router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async 
     }
   }
 
-  // Validate deadline if provided
-  let parsedDeadline: Date | undefined;
+  // A listing without a deadline closes a month after it was posted, so nothing stays open forever.
+  let parsedDeadline = new Date(Date.now() + DEFAULT_JOB_VALIDITY_MS);
   if (deadline) {
     parsedDeadline = new Date(deadline);
     if (isNaN(parsedDeadline.getTime())) {

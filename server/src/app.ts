@@ -21,6 +21,7 @@ import { startPaymentReminder } from './jobs/paymentReminder';
 import { startNoticePublisher } from './jobs/noticePublisher';
 import { startEmailDigest } from './jobs/emailDigest';
 import { startChatMediaPurge } from './jobs/chatMediaPurge';
+import { startJobPostPurge } from './jobs/jobPostPurge';
 import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
 import { initializeGroups } from './jobs/groupInitializer';
@@ -80,9 +81,7 @@ async function start() {
   initSocket(httpServer);
   initWebPush();
 
-  // Verify SMTP credentials so revoked App Passwords / blocked ports
-  // surface in logs at boot instead of silently failing forgot-password
-  // and other email-dependent flows.
+  // Credentials are checked at boot so a revoked App Password or blocked port shows in the logs instead of breaking email silently.
   verifyMailTransport();
 
   // Initialize central + department groups
@@ -115,6 +114,7 @@ async function start() {
   startNoticePublisher();
   startEmailDigest();
   startChatMediaPurge();
+  startJobPostPurge();
   startMentorshipReminder();
 
   httpServer.listen(env.PORT, () => {

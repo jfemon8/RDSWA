@@ -217,10 +217,7 @@ interface BreadcrumbCrumb {
   url: string;
 }
 
-/**
- * BreadcrumbList — produces the breadcrumb trail shown above the page
- * title in Google SERPs (replaces the raw URL with named hops).
- */
+/** BreadcrumbList, which replaces the raw URL above a Google result with named hops. */
 export function buildBreadcrumbSchema(crumbs: BreadcrumbCrumb[]) {
   return {
     '@context': 'https://schema.org',
