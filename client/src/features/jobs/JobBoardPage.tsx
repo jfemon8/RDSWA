@@ -92,13 +92,18 @@ export default function JobBoardPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newJob, setNewJob] = useState({ ...EMPTY_JOB });
-  const canPost = user && hasMinRole(user.role, UserRole.ALUMNI);
 
-  const canManage = (job: any): boolean => {
-    if (!user) return false;
-    if (user._id === job.postedBy?._id) return true;
-    return ["admin", "super_admin"].includes(user.role);
-  };
+  // Mirrors the server: Moderator+, or anyone carrying an Alumni / Advisor / Senior Advisor tag.
+  const canPost =
+    !!user &&
+    (hasMinRole(user.role, UserRole.MODERATOR) ||
+      !!(user.isAlumni || user.isAdvisor || user.isSeniorAdvisor));
+
+  const isAuthor = (job: any): boolean => !!user && user._id === job.postedBy?._id;
+  const canEdit = (job: any): boolean =>
+    isAuthor(job) || (!!user && hasMinRole(user.role, UserRole.MODERATOR));
+  const canDelete = (job: any): boolean =>
+    isAuthor(job) || (!!user && hasMinRole(user.role, UserRole.ADMIN));
 
   // A closed listing is only worth opening for the admins who still have to act on it.
   const isAdmin = !!user && hasMinRole(user.role, UserRole.ADMIN);
@@ -571,7 +576,8 @@ export default function JobBoardPage() {
 
                       {(job.postedBy ||
                         job.applicationLink ||
-                        canManage(job)) && (
+                        canEdit(job) ||
+                        canDelete(job)) && (
                         <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t">
                           <p className="text-xs text-muted-foreground truncate min-w-0 flex items-center gap-1.5">
                             {job.postedBy ? (
@@ -614,35 +620,35 @@ export default function JobBoardPage() {
                                 <ExternalLink className="h-4 w-4" />
                               </span>
                             )}
-                            {canManage(job) && (
-                              <>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    startEdit(job);
-                                  }}
-                                  className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                  title="Edit job"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    const ok = await confirm({
-                                      title: "Delete Job",
-                                      message: `Delete job listing "${job.title}"? This cannot be undone.`,
-                                      confirmLabel: "Delete",
-                                      variant: "danger",
-                                    });
-                                    if (ok) deleteMutation.mutate(job._id);
-                                  }}
-                                  className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  title="Delete job"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </>
+                            {canEdit(job) && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  startEdit(job);
+                                }}
+                                className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                title="Edit job"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                            )}
+                            {canDelete(job) && (
+                              <button
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  const ok = await confirm({
+                                    title: "Delete Job",
+                                    message: `Delete job listing "${job.title}"? This cannot be undone.`,
+                                    confirmLabel: "Delete",
+                                    variant: "danger",
+                                  });
+                                  if (ok) deleteMutation.mutate(job._id);
+                                }}
+                                className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                title="Delete job"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             )}
                           </div>
                         </div>

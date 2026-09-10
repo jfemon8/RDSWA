@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { authorize } from '../middlewares/rbac.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { JobPost } from '../models';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import { IJobPostDocument } from '../models/JobPost';
@@ -14,6 +13,28 @@ import { escapeRegex } from '../utils/escapeRegex';
 import { DEFAULT_JOB_VALIDITY_MS } from '../jobs/jobPostPurge';
 
 const router = Router();
+
+/** True when the tier role sits at or above the given one, ignoring the orthogonal tag roles. */
+function atLeast(role: string | undefined, min: UserRole): boolean {
+  return ROLE_HIERARCHY.indexOf(role as UserRole) >= ROLE_HIERARCHY.indexOf(min);
+}
+
+/** Posting is open to Moderator+ and to anyone carrying an Alumni, Advisor or Senior Advisor tag. */
+function canPostJob(user: any): boolean {
+  if (!user) return false;
+  if (user.membershipStatus === 'suspended') return false;
+  if (atLeast(user.role, UserRole.MODERATOR)) return true;
+  return !!(user.isAlumni || user.isAdvisor || user.isSeniorAdvisor);
+}
+
+/** Blocks the request unless the caller may post a job, mirroring `canPostJob` on the client. */
+function requireJobPoster(req: any, _res: any, next: any): void {
+  if (!req.user) return next(ApiError.unauthorized());
+  if (!canPostJob(req.user)) {
+    return next(ApiError.forbidden('Only moderators, alumni, advisors and senior advisors can post jobs'));
+  }
+  next();
+}
 
 // List active job posts (Public — anyone can view)
 router.get('/', asyncHandler(async (req, res) => {
@@ -66,8 +87,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
   ApiResponse.success(res, job);
 }));
 
-// Create job post (Alumni+ only)
-router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async (req, res) => {
+// Create job post (Moderator+, or an Alumni / Advisor / Senior Advisor tag)
+router.post('/', authenticate(), requireJobPoster, asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { title, company, location, type, description, image, requirements, salary, vacancy, applicationLink, deadline, expiresAt } = req.body;
 
@@ -118,8 +139,9 @@ router.patch('/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!job) throw ApiError.notFound('Job post not found');
 
   const isOwner = job.postedBy.toString() === (req.user._id as any).toString();
-  const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
-  if (!isOwner && !isAdmin) throw ApiError.forbidden('Not authorized');
+  if (!isOwner && !atLeast(req.user.role, UserRole.MODERATOR)) {
+    throw ApiError.forbidden('Not authorized');
+  }
 
   const allowed = ['title', 'company', 'location', 'type', 'description', 'image', 'requirements', 'salary', 'vacancy', 'applicationLink', 'deadline', 'expiresAt', 'isActive'];
   for (const key of allowed) {
@@ -146,8 +168,9 @@ router.delete('/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!job) throw ApiError.notFound('Job post not found');
 
   const isOwner = job.postedBy.toString() === (req.user._id as any).toString();
-  const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
-  if (!isOwner && !isAdmin) throw ApiError.forbidden('Not authorized');
+  if (!isOwner && !atLeast(req.user.role, UserRole.ADMIN)) {
+    throw ApiError.forbidden('Not authorized');
+  }
 
   job.isDeleted = true;
   await job.save();
