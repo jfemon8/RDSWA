@@ -20,6 +20,8 @@ interface ImageUploadProps {
   circular?: boolean;
   /** Accept mime types */
   accept?: string;
+  /** Stretches the preview to the container instead of capping it, matching a full-width dropzone. */
+  fullWidth?: boolean;
 }
 
 const SIZE_LIMITS = {
@@ -37,6 +39,7 @@ export default function ImageUpload({
   className = '',
   circular = false,
   accept = 'image/jpeg,image/png,image/gif,image/webp',
+  fullWidth = false,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -112,12 +115,12 @@ export default function ImageUpload({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`relative inline-block ${circular ? 'rounded-full' : 'rounded-lg'} overflow-hidden border-2 border-dashed border-primary/20`}
+            className={`relative ${fullWidth && !circular ? 'block w-full' : 'inline-block'} ${circular ? 'rounded-full' : 'rounded-lg'} overflow-hidden border-2 border-dashed border-primary/20`}
           >
             <img
               src={value}
               alt=""
-              className={`object-cover ${circular ? 'h-24 w-24 rounded-full' : 'h-32 w-full max-w-xs'}`}
+              className={`object-cover ${circular ? 'h-24 w-24 rounded-full' : `h-32 w-full ${fullWidth ? '' : 'max-w-xs'}`}`}
             />
             {/* Action buttons stay visible behind a backdrop and ring, because the old hover-reveal never fired without a `group` class on the parent. */}
             <div className="absolute top-1.5 right-1.5 flex gap-1.5">

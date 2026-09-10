@@ -15,6 +15,7 @@ import { hasMinRole } from '@/lib/roles';
 import RichContent from '@/components/ui/RichContent';
 import { formatDate } from '@/lib/date';
 import Promo from '@/components/promo/Promo';
+import ImageThumbnail from '@/components/ui/ImageThumbnail';
 import SEO from '@/components/SEO';
 import { buildJobPostingSchema, buildBreadcrumbSchema } from '@/components/seo/schemas';
 
@@ -82,6 +83,7 @@ export default function JobDetailPage() {
     employerName: job.company,
     location: job.location,
     employmentType: (job.type || 'FULL_TIME').toString().toUpperCase().replace(/-/g, '_'),
+    image: job.image,
     url: jobUrl,
   });
   const jobBreadcrumbJsonLd = buildBreadcrumbSchema([
@@ -96,6 +98,7 @@ export default function JobDetailPage() {
         title={`${job.title}${job.company ? ' at ' + job.company : ''}`}
         description={cleanJobDesc.slice(0, 160) || `Job opening: ${job.title}${job.location ? ' in ' + job.location : ''}.`}
         type="article"
+        image={job.image}
         jsonLd={[jobJsonLd, jobBreadcrumbJsonLd]}
         noindex={expired}
       />
@@ -132,7 +135,7 @@ export default function JobDetailPage() {
               )}
               {job.salary && (
                 <span className="flex items-center gap-1.5">
-                  <Banknote className="h-4 w-4 shrink-0" /> BDT {job.salary}
+                  <Banknote className="h-4 w-4 shrink-0" /> {job.salary}
                 </span>
               )}
               {typeof job.vacancy === 'number' && job.vacancy > 0 && (
@@ -191,7 +194,24 @@ export default function JobDetailPage() {
         </div>
       </FadeIn>
 
-      {/* In-article promo between description and requirements, with no FadeIn wrapper because that would block `empty:hidden` collapsing an unfilled slot. */}
+      {job.image && (
+        <FadeIn delay={0.12} direction="up">
+          <div className="border rounded-xl p-3 sm:p-4 bg-card mb-4 sm:mb-6">
+            <ImageThumbnail
+              src={job.image}
+              alt={`${job.title} circular`}
+              name={job.title}
+              fit="contain"
+              className="h-[18rem] sm:h-[26rem] w-full bg-muted/40"
+            />
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Tap the image to zoom, pan or download it.
+            </p>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* In-article promo above the requirements, with no FadeIn wrapper because that would block `empty:hidden` collapsing an unfilled slot. */}
       <div className="mb-4 sm:mb-6 empty:hidden">
         <Promo kind="inArticle" minHeight={250} />
       </div>

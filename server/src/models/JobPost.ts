@@ -6,6 +6,8 @@ export interface IJobPostDocument extends Document {
   location?: string;
   type: 'full-time' | 'part-time' | 'internship' | 'remote' | 'contract';
   description: string;
+  /** Optional poster or circular image shown on the board and detail page. */
+  image?: string;
   requirements: string[];
   salary?: string;
   vacancy?: number;
@@ -27,6 +29,7 @@ const jobPostSchema = new Schema<IJobPostDocument>(
     location: String,
     type: { type: String, enum: ['full-time', 'part-time', 'internship', 'remote', 'contract'], required: true },
     description: { type: String, required: true },
+    image: { type: String, trim: true },
     requirements: [String],
     salary: String,
     vacancy: { type: Number, min: 1 },

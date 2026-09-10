@@ -36,6 +36,8 @@ import RichTextEditor from "@/components/ui/RichTextEditor";
 import RichContent from "@/components/ui/RichContent";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import EmptyState from "@/components/ui/EmptyState";
+import ImageUpload from "@/components/ui/ImageUpload";
+import ImageThumbnail from "@/components/ui/ImageThumbnail";
 import Promo from "@/components/promo/Promo";
 
 // Career-intent traffic carries the highest CPM, so the cadence is tighter than on community pages.
@@ -60,6 +62,7 @@ const EMPTY_JOB = {
   location: "",
   type: "full-time" as string,
   description: "",
+  image: "",
   requirements: "",
   salary: "",
   vacancy: "",
@@ -133,6 +136,7 @@ export default function JobBoardPage() {
     if (!payload.location) delete payload.location;
     if (!payload.salary) delete payload.salary;
     if (!payload.applicationLink) delete payload.applicationLink;
+    payload.image = job.image || "";
     return payload;
   };
 
@@ -177,6 +181,7 @@ export default function JobBoardPage() {
       location: job.location || "",
       type: job.type || "full-time",
       description: job.description || "",
+      image: job.image || "",
       requirements: Array.isArray(job.requirements)
         ? job.requirements.join(", ")
         : "",
@@ -255,26 +260,29 @@ export default function JobBoardPage() {
               </select>
             </>
           )}
-          {canPost && (
-            <button
-              onClick={() => {
-                if (showForm) resetForm();
-                else setShowForm(true);
-              }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px] sm:ml-auto"
+          {/* One group so both actions stay together on the right, whatever the filters above are showing. */}
+          <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto sm:ml-auto">
+            {canPost && (
+              <button
+                onClick={() => {
+                  if (showForm) resetForm();
+                  else setShowForm(true);
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px]"
+              >
+                <Plus className="h-4 w-4" />{" "}
+                <span className="whitespace-nowrap">Post Job</span>
+              </button>
+            )}
+            <a
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px]"
+              href="https://jfemon.vercel.app/tools/jobs"
+              target="_blank"
             >
-              <Plus className="h-4 w-4" />{" "}
-              <span className="whitespace-nowrap">Post Job</span>
-            </button>
-          )}
-          <a
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg shrink-0 min-h-[44px] sm:ml-auto"
-            href="https://jfemon.vercel.app/tools/jobs"
-            target="_blank"
-          >
-            <span className="whitespace-nowrap">More Jobs</span>{" "}
-            <ExternalLink className="h-4 w-4" />
-          </a>
+              <span className="whitespace-nowrap">More Jobs</span>{" "}
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </FadeIn>
 
@@ -377,6 +385,14 @@ export default function JobBoardPage() {
                 placeholder="Job description..."
                 minHeight="100px"
               />
+              <ImageUpload
+                value={newJob.image}
+                onChange={(url) => setNewJob({ ...newJob, image: url })}
+                type="image"
+                folder="jobs"
+                label="Job Image / Circular"
+                fullWidth
+              />
               <input
                 placeholder="Requirements (comma separated)"
                 value={newJob.requirements}
@@ -477,7 +493,16 @@ export default function JobBoardPage() {
                         </div>
                       )}
 
-                      <div className="min-w-0">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                      {job.image && (
+                        <ImageThumbnail
+                          src={job.image}
+                          alt={`${job.title} poster`}
+                          name={job.title}
+                          className="h-44 w-full sm:h-40 sm:w-40 md:h-44 md:w-44 shrink-0 border"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
                         <div
                           className={`flex items-center gap-2 mb-2 flex-wrap ${expired ? "pr-16" : ""}`}
                         >
@@ -502,7 +527,7 @@ export default function JobBoardPage() {
                           )}
                           {job.salary && (
                             <span className="flex items-center gap-1">
-                              <Banknote className="h-3.5 w-3.5 shrink-0" /> BDT{" "}
+                              <Banknote className="h-3.5 w-3.5 shrink-0" />{" "}
                               {job.salary}
                             </span>
                           )}
@@ -541,6 +566,7 @@ export default function JobBoardPage() {
                             ))}
                           </div>
                         )}
+                      </div>
                       </div>
 
                       {(job.postedBy ||

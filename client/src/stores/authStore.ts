@@ -28,6 +28,12 @@ export interface AuthUser {
   linkedin?: string;
   website?: string;
   skills?: string[];
+  /** One entry per person who backed a skill, with `endorsedBy` populated to their name. */
+  skillEndorsements?: Array<{
+    skill: string;
+    endorsedBy?: { _id?: string; name?: string } | string;
+    endorsedAt?: string;
+  }>;
   /** Opt-in to the mentor directory, with the areas the member is willing to cover. */
   isMentor?: boolean;
   mentorAreas?: string[];

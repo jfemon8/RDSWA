@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { InlineListSkeleton } from '@/components/ui/Skeleton';
+import NotificationMessage from '@/components/ui/NotificationMessage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck } from 'lucide-react';
@@ -139,15 +140,21 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 notifications.map((n: any, i: number) => (
-                  <motion.button
+                  <motion.div
                     key={n._id}
-                    type="button"
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
                     role="menuitem"
+                    tabIndex={0}
                     onClick={() => handleNotificationClick(n)}
-                    className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-accent/50 transition-colors focus:outline-none focus:bg-accent/50 ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleNotificationClick(n);
+                      }
+                    }}
+                    className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-accent/50 transition-colors cursor-pointer focus:outline-none focus:bg-accent/50 ${
                       !n.isRead ? 'bg-primary/5' : ''
                     }`}
                   >
@@ -159,12 +166,16 @@ export default function NotificationBell() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{n.title}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{stripHtml(n.message)}</p>
+                      <NotificationMessage
+                        message={stripHtml(n.message)}
+                        metadata={n.metadata}
+                        className="text-xs text-muted-foreground line-clamp-2 mt-0.5"
+                      />
                       <p className="text-[11px] text-muted-foreground/70 mt-1">
                         {formatTimeAgo(n.createdAt)}
                       </p>
                     </div>
-                  </motion.button>
+                  </motion.div>
                 ))
               )}
             </div>

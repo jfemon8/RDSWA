@@ -17,6 +17,8 @@ import { formatDate, toDateInput } from '@/lib/date';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichContent from '@/components/ui/RichContent';
+import ImageUpload from '@/components/ui/ImageUpload';
+import ImageThumbnail from '@/components/ui/ImageThumbnail';
 
 const JOB_TYPES = ['full-time', 'part-time', 'internship', 'remote', 'contract'] as const;
 
@@ -26,6 +28,7 @@ const EMPTY_JOB = {
   location: '',
   type: 'full-time' as string,
   description: '',
+  image: '',
   requirements: '',
   salary: '',
   vacancy: '',
@@ -79,6 +82,7 @@ export default function AdminJobsPage() {
       for (const key of ['vacancy', 'deadline', 'location', 'salary', 'applicationLink'] as const) {
         if (!payload[key]) delete payload[key];
       }
+      payload.image = form.image || '';
       return api.patch(`/jobs/${editingId}`, payload);
     },
     onSuccess: () => {
@@ -103,6 +107,7 @@ export default function AdminJobsPage() {
       location: j.location || '',
       type: j.type || 'full-time',
       description: j.description || '',
+      image: j.image || '',
       requirements: Array.isArray(j.requirements) ? j.requirements.join(', ') : '',
       salary: j.salary || '',
       vacancy: typeof j.vacancy === 'number' ? String(j.vacancy) : '',
@@ -175,6 +180,15 @@ export default function AdminJobsPage() {
   /** Everything the table has no column for, so a job can be read without leaving the panel. */
   const renderDetails = (j: any) => (
     <div className="space-y-2 text-left">
+      {j.image && (
+        <ImageThumbnail
+          src={j.image}
+          alt={`${j.title} circular`}
+          name={j.title}
+          fit="contain"
+          className="h-56 w-full max-w-sm bg-muted/40 border"
+        />
+      )}
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>Company: {j.company}</span>
         {j.location && <span>Location: {j.location}</span>}
@@ -271,7 +285,7 @@ export default function AdminJobsPage() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Salary</label>
-                    <input value={form.salary} onChange={(e) => setField('salary', e.target.value)} placeholder="e.g. BDT 40,000/month" className={inputClass} />
+                    <input value={form.salary} onChange={(e) => setField('salary', e.target.value)} placeholder="e.g. 40,000 BDT/month" className={inputClass} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Vacancy</label>
@@ -286,6 +300,15 @@ export default function AdminJobsPage() {
                     <input value={form.applicationLink} onChange={(e) => setField('applicationLink', e.target.value)} placeholder="https://..." className={inputClass} />
                   </div>
                 </div>
+
+                <ImageUpload
+                  value={form.image}
+                  onChange={(url) => setField('image', url)}
+                  type="image"
+                  folder="jobs"
+                  label="Job Image / Circular"
+                  fullWidth
+                />
 
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Requirements</label>
@@ -350,15 +373,26 @@ export default function AdminJobsPage() {
                   <Fragment key={j._id}>
                     <tr data-accordion-item={j._id} className="border-t hover:bg-accent/30">
                       <td className="p-3 truncate">
-                        <button
-                          type="button"
-                          onClick={() => toggleExpand(j._id)}
-                          title="View details"
-                          className="font-medium hover:text-primary transition-colors inline-flex items-center gap-1.5 max-w-full text-left"
-                        >
-                          <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="truncate">{j.title}</span>
-                        </button>
+                        <div className="flex items-center gap-2 min-w-0">
+                          {j.image && (
+                            <ImageThumbnail
+                              src={j.image}
+                              alt=""
+                              name={j.title}
+                              showZoomHint={false}
+                              className="h-9 w-9 shrink-0 border"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleExpand(j._id)}
+                            title="View details"
+                            className="font-medium hover:text-primary transition-colors inline-flex items-center gap-1.5 min-w-0 text-left"
+                          >
+                            <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span className="truncate">{j.title}</span>
+                          </button>
+                        </div>
                       </td>
                       <td className="p-3 text-muted-foreground truncate" title={j.company}>{j.company}</td>
                       <td className="p-3">
@@ -400,6 +434,15 @@ export default function AdminJobsPage() {
             {jobs.map((j: any) => (
               <div key={j._id} data-accordion-item={j._id} className="border rounded-lg p-4 bg-card">
                 <div className="flex items-start justify-between gap-2 mb-2">
+                  {j.image && (
+                    <ImageThumbnail
+                      src={j.image}
+                      alt=""
+                      name={j.title}
+                      showZoomHint={false}
+                      className="h-11 w-11 shrink-0 border"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => toggleExpand(j._id)}

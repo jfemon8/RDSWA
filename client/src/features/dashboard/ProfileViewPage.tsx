@@ -5,6 +5,7 @@ import { Edit, User, Phone, Mail, Calendar, Droplets, MapPin, GraduationCap, Bri
 import { motion } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import ProfileBadges from '@/components/ui/ProfileBadges';
+import SkillChip from '@/components/ui/SkillChip';
 import { formatDate as formatDateBST } from '@/lib/date';
 
 function getOrdinal(n: number): string {
@@ -152,15 +153,7 @@ export default function ProfileViewPage() {
                 <p className="text-xs text-muted-foreground mb-1.5">Skills</p>
                 <div className="flex flex-wrap gap-1.5">
                   {u.skills.map((s: string, i: number) => (
-                    <motion.span
-                      key={i}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 + i * 0.03 }}
-                      className="px-2 py-0.5 text-xs bg-muted rounded-full"
-                    >
-                      {s}
-                    </motion.span>
+                    <SkillChip key={i} skill={s} index={i} endorsements={u.skillEndorsements} />
                   ))}
                 </div>
               </div>

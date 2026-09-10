@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn } from '@/components/reactbits';
 import RichContent from '@/components/ui/RichContent';
+import NotificationMessage from '@/components/ui/NotificationMessage';
 import Promo from '@/components/promo/Promo';
 
 const membershipStatusConfig: Record<string, { icon: typeof Clock; color: string; bgColor: string; label: string; description: string }> = {
@@ -179,9 +180,11 @@ export default function DashboardPage() {
                   {/<[a-z][\s\S]*>/i.test(n.message || '') ? (
                     <RichContent html={n.message} className="text-muted-foreground text-justify" />
                   ) : (
-                    <p className="text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere] text-justify">
-                      {n.message}
-                    </p>
+                    <NotificationMessage
+                      message={n.message}
+                      metadata={n.metadata}
+                      className="text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere] text-justify"
+                    />
                   )}
                 </div>
               ))}

@@ -21,7 +21,6 @@ import {
   Building2,
   ArrowLeft,
   MessageSquare,
-  ThumbsUp,
   Users,
   Heart,
   Hash,
@@ -35,6 +34,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn, BlurText } from "@/components/reactbits";
 import ProfileBadges from "@/components/ui/ProfileBadges";
+import SkillChip from "@/components/ui/SkillChip";
 import { UserRole } from "@rdswa/shared";
 import { useToast } from "@/components/ui/Toast";
 import { formatDate as formatDateBST } from "@/lib/date";
@@ -516,8 +516,6 @@ export default function UserProfilePage() {
                     const endorsements =
                       u.skillEndorsements?.filter((e: any) => e.skill === s) ||
                       [];
-                    const endorseCount = endorsements.length;
-                    const canEndorse = currentUser && !isSelf;
                     const hasEndorsed = endorsements.some(
                       (e: any) =>
                         String(e.endorsedBy?._id || e.endorsedBy) ===
@@ -525,58 +523,24 @@ export default function UserProfilePage() {
                     );
 
                     return (
-                      <motion.div
+                      <SkillChip
                         key={i}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 260,
-                          damping: 20,
-                          delay: 0.3 + i * 0.03,
-                        }}
-                        className="flex items-center gap-1"
-                      >
-                        <span className="px-2 py-0.5 text-xs bg-muted rounded-full">
-                          {s}
-                        </span>
-                        <AnimatePresence>
-                          {endorseCount > 0 && (
-                            <motion.span
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="text-[10px] text-primary font-medium"
-                            >
-                              {endorseCount}
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-                        {canEndorse && (
-                          <motion.button
-                            whileHover={{ scale: 1.15 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() =>
-                              hasEndorsed
-                                ? unendorseMutation.mutate(s)
-                                : endorseMutation.mutate(s)
-                            }
-                            disabled={
-                              endorseMutation.isPending ||
-                              unendorseMutation.isPending
-                            }
-                            title={
-                              hasEndorsed
-                                ? "Remove endorsement"
-                                : "Endorse this skill"
-                            }
-                            className={`p-0.5 rounded transition-colors ${hasEndorsed ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                          >
-                            <ThumbsUp
-                              className={`h-3 w-3 ${hasEndorsed ? "fill-primary" : ""}`}
-                            />
-                          </motion.button>
-                        )}
-                      </motion.div>
+                        skill={s}
+                        index={i}
+                        endorsements={u.skillEndorsements}
+                        hasEndorsed={hasEndorsed}
+                        disabled={
+                          endorseMutation.isPending || unendorseMutation.isPending
+                        }
+                        onToggleEndorse={
+                          currentUser && !isSelf
+                            ? () =>
+                                hasEndorsed
+                                  ? unendorseMutation.mutate(s)
+                                  : endorseMutation.mutate(s)
+                            : undefined
+                        }
+                      />
                     );
                   })}
                 </div>

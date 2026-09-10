@@ -74,7 +74,8 @@ export class UserService {
   }
 
   async getById(id: string, viewerRole?: string): Promise<any> {
-    const user = await User.findOne({ _id: id, isDeleted: false });
+    const user = await User.findOne({ _id: id, isDeleted: false })
+      .populate('skillEndorsements.endorsedBy', 'name avatar');
     if (!user) throw ApiError.notFound('User not found');
     return applyVisibilityFilter(user, viewerRole);
   }
@@ -315,12 +316,17 @@ export class UserService {
     });
     await target.save();
 
+    const endorser = await User.findById(endorserId).select('name').lean();
+    const endorserName = endorser?.name || 'A member';
+
     await Notification.create({
       recipient: target._id,
       type: 'skill_endorsed',
       title: 'Skill Endorsed',
-      message: `Someone endorsed your skill: ${skill}`,
+      message: `${endorserName} endorsed your skill: ${skill}`,
       link: '/dashboard/profile',
+      // The client turns the leading name into a link to the endorser's profile.
+      metadata: { actorId: endorserId, actorName: endorserName, skill },
     });
 
     return target;

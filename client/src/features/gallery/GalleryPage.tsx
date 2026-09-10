@@ -295,7 +295,7 @@ function ToolbarButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`tap-target flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm transition-colors ${className}`}
+      className={`tap-target flex items-center justify-center rounded-full border border-white/40 bg-black/60 text-white backdrop-blur-sm transition-colors hover:border-white/70 hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${className}`}
     >
       {children}
     </button>

@@ -30,6 +30,7 @@ import { startMentorshipReminder } from './jobs/mentorshipReminder';
 import { backfillAnnouncementFlags } from './jobs/announcementBackfill';
 import { backfillMentorListing } from './jobs/mentorListingBackfill';
 import { backfillAddressVisibility } from './jobs/addressVisibilityBackfill';
+import { backfillEndorsementNotifications } from './jobs/endorsementNotificationBackfill';
 import { verifyMailTransport } from './config/mail';
 
 // Initialize Sentry before anything else (skip in test mode)
@@ -101,6 +102,9 @@ async function start() {
 
   // Addresses were private with no way to opt back in, so that stored choice is lifted once.
   backfillAddressVisibility();
+
+  // Endorsement notifications that only said "Someone" get the endorser's name back, once.
+  backfillEndorsementNotifications();
 
   // Start scheduled jobs
   startAlumniTagger();

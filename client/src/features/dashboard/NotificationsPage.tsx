@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { normalizeNotificationLink } from '@/lib/notificationLink';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import RichContent from '@/components/ui/RichContent';
+import NotificationMessage from '@/components/ui/NotificationMessage';
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -127,9 +128,11 @@ export default function NotificationsPage() {
                   {/<[a-z][\s\S]*>/i.test(n.message || '') ? (
                     <RichContent html={n.message} className="text-sm text-muted-foreground mt-1 text-justify" />
                   ) : (
-                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap [overflow-wrap:anywhere] text-justify">
-                      {n.message}
-                    </p>
+                    <NotificationMessage
+                      message={n.message}
+                      metadata={n.metadata}
+                      className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap [overflow-wrap:anywhere] text-justify"
+                    />
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatDate(n.createdAt)}

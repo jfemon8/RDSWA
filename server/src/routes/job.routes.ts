@@ -67,7 +67,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // Create job post (Alumni+ only)
 router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-  const { title, company, location, type, description, requirements, salary, vacancy, applicationLink, deadline, expiresAt } = req.body;
+  const { title, company, location, type, description, image, requirements, salary, vacancy, applicationLink, deadline, expiresAt } = req.body;
 
   if (!title || !company || !type || !description) {
     throw ApiError.badRequest('Title, company, type, and description are required');
@@ -96,6 +96,7 @@ router.post('/', authenticate(), authorize(UserRole.ALUMNI), asyncHandler(async 
     location,
     type,
     description,
+    image: image || undefined,
     requirements: requirements || [],
     salary,
     vacancy: vacancy ? Number(vacancy) : undefined,
@@ -118,7 +119,7 @@ router.patch('/:id', authenticate(), asyncHandler(async (req, res) => {
   const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(req.user.role as UserRole);
   if (!isOwner && !isAdmin) throw ApiError.forbidden('Not authorized');
 
-  const allowed = ['title', 'company', 'location', 'type', 'description', 'requirements', 'salary', 'vacancy', 'applicationLink', 'deadline', 'expiresAt', 'isActive'];
+  const allowed = ['title', 'company', 'location', 'type', 'description', 'image', 'requirements', 'salary', 'vacancy', 'applicationLink', 'deadline', 'expiresAt', 'isActive'];
   for (const key of allowed) {
     if (req.body[key] !== undefined) {
       let value = req.body[key];
@@ -126,6 +127,8 @@ router.patch('/:id', authenticate(), asyncHandler(async (req, res) => {
       if (key === 'vacancy' && (value === null || value === '')) value = undefined;
       if (key === 'deadline' && value) value = new Date(value);
       if (key === 'deadline' && !value) value = undefined;
+      // An empty string clears the image, since the form sends the field on every save.
+      if (key === 'image' && !value) value = undefined;
       (job as any)[key] = value;
     }
   }

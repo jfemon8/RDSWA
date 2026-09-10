@@ -177,6 +177,7 @@ interface JobInput {
   employerName?: string;
   location?: string;
   employmentType?: string; // FULL_TIME | PART_TIME | INTERN | CONTRACTOR
+  image?: string;
   url: string;
 }
 
@@ -193,6 +194,7 @@ export function buildJobPostingSchema(job: JobInput) {
       validThrough: new Date(job.validThrough).toISOString(),
     }),
     employmentType: job.employmentType || 'FULL_TIME',
+    ...(job.image && { image: job.image }),
     hiringOrganization: {
       '@type': 'Organization',
       name: job.employerName || ORG_NAME,
