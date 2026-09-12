@@ -17,7 +17,7 @@ import PdfPreviewModal, { type PdfPreviewTarget } from '@/components/ui/PdfPrevi
 import { proxyFileUrl } from '@/lib/fileProxy';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-/** True if the attachment is a PDF — used to decide between in-app modal preview and a plain link. */
+/** True if the attachment is a PDF, used to decide between in-app modal preview and a plain link. */
 function isPdfAttachment(a: { type?: string; url?: string; name?: string }): boolean {
   return (
     (a.type || '').toLowerCase().includes('pdf') ||
@@ -45,8 +45,8 @@ export default function AdmissionPage() {
   return (
     <div className="container mx-auto py-8">
       <SEO
-        title="Admission — RDSWA"
-        description="University admission information for Rangpur Division students at University of Barishal — admission circulars, GST university seat distribution, and Barishal University cut-off marks. ভর্তি তথ্য, আসন সংখ্যা, কাট-অফ মার্ক।"
+        title="Admission - RDSWA"
+        description="University admission information for Rangpur Division students at University of Barishal: admission circulars, GST university seat distribution, and Barishal University cut-off marks. ভর্তি তথ্য, আসন সংখ্যা, কাট-অফ মার্ক।"
         keywords="university admission Bangladesh, GST admission, Barishal University admission, cut-off mark, seat distribution, RDSWA admission, ববি ভর্তি, GST ভর্তি"
       />
 
@@ -362,7 +362,7 @@ interface SeatRow {
 }
 
 function SeatsTab() {
-  // Fetch every published seat row in one shot — grouping + accordion is
+  // Fetch every published seat row in one shot, grouping + accordion is
   // done client-side so newer sessions can be added without the page needing
   // to re-query when the user expands an older year.
   const { data, isLoading } = useQuery({
@@ -418,7 +418,7 @@ function SeatsTab() {
   );
 }
 
-/** Inner seats table — pure renderer, no data fetching. */
+/** Inner seats table: pure renderer, no data fetching. */
 function SeatsTable({ rows }: { rows: SeatRow[] }) {
   // Preserve category order via first-seen, matching the DB's `sortOrder`.
   const grouped = useMemo(() => {
@@ -478,10 +478,10 @@ function SeatsTable({ rows }: { rows: SeatRow[] }) {
                     </td>
                   )}
                   <td className="px-3 py-2 border-b">{r.universityName}</td>
-                  <td className="px-3 py-2 border-b text-center tabular-nums">{r.aUnit || '—'}</td>
-                  <td className="px-3 py-2 border-b text-center tabular-nums">{r.bUnit || '—'}</td>
-                  <td className="px-3 py-2 border-b text-center tabular-nums">{r.cUnit || '—'}</td>
-                  <td className="px-3 py-2 border-b text-center tabular-nums font-semibold">{rowTotal || '—'}</td>
+                  <td className="px-3 py-2 border-b text-center tabular-nums">{r.aUnit || '-'}</td>
+                  <td className="px-3 py-2 border-b text-center tabular-nums">{r.bUnit || '-'}</td>
+                  <td className="px-3 py-2 border-b text-center tabular-nums">{r.cUnit || '-'}</td>
+                  <td className="px-3 py-2 border-b text-center tabular-nums font-semibold">{rowTotal || '-'}</td>
                 </motion.tr>
               );
             })
@@ -497,7 +497,7 @@ function SeatsTable({ rows }: { rows: SeatRow[] }) {
       </table>
     </div>
 
-    {/* Mobile card list — one card per university, so the unit counts read without sideways scrolling. */}
+    {/* Mobile card list: one card per university, so the unit counts read without sideways scrolling. */}
     <div className="sm:hidden space-y-2">
       {grouped.map(([category, items]) => (
         <div key={category} className="space-y-2">
@@ -511,7 +511,7 @@ function SeatsTable({ rows }: { rows: SeatRow[] }) {
                   {([['A', r.aUnit], ['B', r.bUnit], ['C', r.cUnit], ['Total', rowTotal]] as const).map(([label, value]) => (
                     <div key={label} className={label === 'Total' ? 'font-semibold' : ''}>
                       <p className="text-[10px] text-muted-foreground uppercase">{label}</p>
-                      <p className="text-sm tabular-nums text-foreground">{value || '—'}</p>
+                      <p className="text-sm tabular-nums text-foreground">{value || '-'}</p>
                     </div>
                   ))}
                 </div>
@@ -608,7 +608,7 @@ function CutoffsTab() {
   );
 }
 
-/** Inner cut-off table — pivots flat rows into a (faculty × department) grid with A/B/C unit cells. */
+/** Inner cut-off table, pivots flat rows into a (faculty × department) grid with A/B/C unit cells. */
 function CutoffsTable({ rows }: { rows: CutoffRow[] }) {
   const pivot = useMemo(() => {
     type Cell = { firstMerit?: number; firstScore?: number; lastMerit?: number; lastScore?: number };
@@ -687,7 +687,7 @@ function CutoffsTable({ rows }: { rows: CutoffRow[] }) {
                   const c = row.cells[u];
                   return <CellGroup key={u} cell={c} />;
                 })}
-                <td className="px-3 py-2 border-b">{row.dataSource || '—'}</td>
+                <td className="px-3 py-2 border-b">{row.dataSource || '-'}</td>
               </motion.tr>
             ))
           ))}
@@ -695,7 +695,7 @@ function CutoffsTable({ rows }: { rows: CutoffRow[] }) {
       </table>
     </div>
 
-    {/* Mobile card list — the three units stack per department instead of thirteen columns going off-screen. */}
+    {/* Mobile card list: the three units stack per department instead of thirteen columns going off-screen. */}
     <div className="md:hidden space-y-3">
       {pivot.map(([faculty, deptRows]) => (
         <div key={faculty} className="space-y-2">
@@ -711,9 +711,9 @@ function CutoffsTable({ rows }: { rows: CutoffRow[] }) {
                       <span className="w-12 shrink-0 font-medium text-foreground">{u} Unit</span>
                       {c ? (
                         <span className="text-muted-foreground tabular-nums">
-                          1st: {c.firstMerit ?? '—'} / {c.firstScore?.toFixed(2) ?? '—'}
+                          1st: {c.firstMerit ?? '-'} / {c.firstScore?.toFixed(2) ?? '-'}
                           {' · '}
-                          Last: {c.lastMerit ?? '—'} / {c.lastScore?.toFixed(2) ?? '—'}
+                          Last: {c.lastMerit ?? '-'} / {c.lastScore?.toFixed(2) ?? '-'}
                         </span>
                       ) : (
                         <span className="text-muted-foreground/50">Not offered</span>
@@ -769,10 +769,10 @@ function CellGroup({ cell }: { cell?: { firstMerit?: number; firstScore?: number
   }
   return (
     <>
-      <td className="px-2 py-2 border-b text-center tabular-nums">{cell.firstMerit ?? '—'}</td>
-      <td className="px-2 py-2 border-b text-center tabular-nums">{cell.firstScore?.toFixed(2) ?? '—'}</td>
-      <td className="px-2 py-2 border-b text-center tabular-nums">{cell.lastMerit ?? '—'}</td>
-      <td className="px-2 py-2 border-b border-r text-center tabular-nums">{cell.lastScore?.toFixed(2) ?? '—'}</td>
+      <td className="px-2 py-2 border-b text-center tabular-nums">{cell.firstMerit ?? '-'}</td>
+      <td className="px-2 py-2 border-b text-center tabular-nums">{cell.firstScore?.toFixed(2) ?? '-'}</td>
+      <td className="px-2 py-2 border-b text-center tabular-nums">{cell.lastMerit ?? '-'}</td>
+      <td className="px-2 py-2 border-b border-r text-center tabular-nums">{cell.lastScore?.toFixed(2) ?? '-'}</td>
     </>
   );
 }

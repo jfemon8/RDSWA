@@ -2,7 +2,7 @@ import { ChatGroup, Message } from '../models';
 
 /**
  * One-time reconciliation on server start, for announcements posted before they carried a flag of
- * their own — they are recognised by the `**title**` header the announcement channel writes.
+ * their own: they are recognised by the `**title**` header the announcement channel writes.
  */
 export async function backfillAnnouncementFlags(): Promise<void> {
   try {

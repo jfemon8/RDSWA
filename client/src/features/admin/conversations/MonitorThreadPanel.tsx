@@ -726,7 +726,7 @@ export default function MonitorThreadPanel({
                     )}
                   </div>
 
-                  {/* Touch devices have no hover, so the controls stay visible — stacked, to spend width on the message. */}
+                  {/* Touch devices have no hover, so the controls stay visible, stacked, to spend width on the message. */}
                   <div className="flex flex-col lg:flex-row items-center gap-0.5 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
                     {m.content && (
                       <button

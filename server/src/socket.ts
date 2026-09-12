@@ -32,7 +32,7 @@ export function initSocket(httpServer: HTTPServer): Server {
     path: '/socket.io',
   });
 
-  // Auth middleware — optional auth (allow anonymous watchers)
+  // Auth middleware: optional auth (allow anonymous watchers)
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     if (token) {
@@ -41,7 +41,7 @@ export function initSocket(httpServer: HTTPServer): Server {
         socket.data.userId = decoded.userId;
         socket.data.role = decoded.role;
       } catch {
-        // Invalid token — allow connection but without auth
+        // Invalid token: allow connection but without auth
       }
     }
     next();
@@ -119,7 +119,7 @@ export function initSocket(httpServer: HTTPServer): Server {
             const key = (u._id as any).toString();
             if (states[key]) states[key].lastSeenAt = u.lastSeenAt ? u.lastSeenAt.toISOString() : null;
           }
-        } catch { /* non-blocking — fall back to no lastSeenAt */ }
+        } catch { /* non-blocking: fall back to no lastSeenAt */ }
       }
       ack(states);
     });
@@ -162,36 +162,28 @@ export function isUserOnline(userId: string): boolean {
   return onlineUsers.has(userId);
 }
 
-/**
- * Broadcast a new group chat message to all clients in the group room.
- */
+/** Broadcast a new group chat message to all clients in the group room. */
 export function broadcastChatMessage(groupId: string, message: any): void {
   if (io) {
     io.to(`chat:${groupId}`).emit('chat:message', { groupId, message });
   }
 }
 
-/**
- * Broadcast a message edit to the group room.
- */
+/** Broadcast a message edit to the group room. */
 export function broadcastChatMessageEdit(groupId: string, message: any): void {
   if (io) {
     io.to(`chat:${groupId}`).emit('chat:message:edit', { groupId, message });
   }
 }
 
-/**
- * Broadcast a hard-deleted message (delete-for-everyone) to the group room.
- */
+/** Broadcast a hard-deleted message (delete-for-everyone) to the group room. */
 export function broadcastChatMessageDelete(groupId: string, messageId: string): void {
   if (io) {
     io.to(`chat:${groupId}`).emit('chat:message:delete', { groupId, messageId });
   }
 }
 
-/**
- * Broadcast a reaction add/remove to the group room.
- */
+/** Broadcast a reaction add/remove to the group room. */
 export function broadcastChatReaction(
   groupId: string,
   messageId: string,
@@ -202,10 +194,7 @@ export function broadcastChatReaction(
   }
 }
 
-/**
- * Broadcast a read-receipt update to the group room so every open client
- * updates its receipt ticks.
- */
+/** Broadcast a read-receipt update to the group room so every open client updates its receipt ticks. */
 export function broadcastChatRead(groupId: string, messageIds: string[], userId: string): void {
   if (io) {
     io.to(`chat:${groupId}`).emit('chat:message:read', { groupId, messageIds, userId });
@@ -229,9 +218,7 @@ export function broadcastGroupActivity(
   }
 }
 
-/**
- * Broadcast a DM to both sender and recipient personal rooms.
- */
+/** Broadcast a DM to both sender and recipient personal rooms. */
 export function broadcastDM(senderId: string, recipientId: string, message: any): void {
   if (io) {
     const data = { senderId, recipientId, message };
@@ -281,9 +268,7 @@ export function broadcastDMRead(senderId: string, recipientId: string, messageId
   }
 }
 
-/**
- * Broadcast updated vote counts to all clients watching a specific vote.
- */
+/** Broadcast updated vote counts to all clients watching a specific vote. */
 export function broadcastVoteUpdate(voteId: string, data: {
   totalVotes: number;
   options: Array<{ _id: string; text: string; voteCount: number }>;
@@ -293,9 +278,7 @@ export function broadcastVoteUpdate(voteId: string, data: {
   }
 }
 
-/**
- * Broadcast vote status change (closed, published).
- */
+/** Broadcast vote status change (closed, published). */
 export function broadcastVoteStatus(voteId: string, status: string): void {
   if (io) {
     io.to(`vote:${voteId}`).emit('vote:status', { voteId, status });

@@ -484,7 +484,7 @@ function OperatorsList() {
   );
 }
 
-// -- Routes (NO operator — routes are operator-agnostic) --
+// -- Routes (NO operator: routes are operator-agnostic) --
 
 function RoutesList() {
   const queryClient = useQueryClient();

@@ -124,12 +124,12 @@ export default function HomePage() {
   return (
     <div className="overflow-x-hidden">
       <SEO
-        description="RDSWA — Rangpur Divisional Student Welfare Association at the University of Barishal. Member directory, events, notices, blood donor network, Rangpur–Barishal bus schedule, scholarships, committees, alumni, and more for BU Rangpur students. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়।"
+        description="RDSWA: Rangpur Divisional Student Welfare Association at the University of Barishal. Member directory, events, notices, blood donor network, Rangpur–Barishal bus schedule, scholarships, committees, alumni, and more for BU Rangpur students. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়।"
         keywords="RDSWA, Rangpur Divisional Student Welfare Association, University of Barishal, BU Rangpur, রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়, Barishal University Rangpur students, Rangpur student association, BU student welfare, Bangladesh student welfare association, Rangpur to Barishal bus, BU blood donor"
       />
       {/* Visually-hidden semantic `<h1>`, because the animated hero heading is a `<div>` and the page would otherwise have no primary heading for crawlers or screen readers. */}
       <h1 className="sr-only">
-        RDSWA — Rangpur Divisional Student Welfare Association, University of
+        RDSWA: Rangpur Divisional Student Welfare Association, University of
         Barishal · রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়
       </h1>
       <section className="relative min-h-[50vh] flex items-center justify-center py-16 sm:py-20">

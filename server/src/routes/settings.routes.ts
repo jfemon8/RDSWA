@@ -121,7 +121,7 @@ router.patch('/', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricte
   ApiResponse.success(res, settings, 'Settings updated');
 }));
 
-// Get academic config (public — needed for registration/profile dropdowns)
+// Get academic config (public: needed for registration/profile dropdowns)
 router.get('/academic-config', cacheResponse(300), asyncHandler(async (_req, res) => {
   let settings = await SiteSettings.findOne();
   if (!settings) settings = await SiteSettings.create({});
@@ -161,7 +161,7 @@ router.patch('/homepage', authenticate(), authorize(UserRole.SUPER_ADMIN), denyR
   ApiResponse.success(res, settings, 'Homepage content updated');
 }));
 
-// Update vacation page content (SuperAdmin) — title + subtitle for /vacation.
+// Update vacation page content (SuperAdmin) - title + subtitle for /vacation.
 router.patch(
   '/vacation-page',
   authenticate(),
@@ -209,7 +209,7 @@ router.patch('/about', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRest
   ApiResponse.success(res, settings, 'Content updated');
 }));
 
-// Update general info (Admin+) — name, branding, contact
+// Update general info (Admin+) - name, branding, contact
 router.patch('/general', authenticate(), authorize(UserRole.ADMIN), auditLog('settings.update_general', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const allowed = ['siteName', 'siteNameFull', 'siteNameBn', 'siteNameBnFull', 'contactEmail', 'contactPhone', 'address', 'logo', 'logoDark', 'footerLogo', 'footerLogoDark', 'favicon', 'foundedYear'];
@@ -243,7 +243,7 @@ router.patch(
     if (!req.user) throw ApiError.unauthorized();
     const { brandColors } = req.body as z.infer<typeof brandColorsSchema>;
     // Build $set with dotted paths so we don't replace the entire subdoc
-    // (each key is optional — only provided colors update).
+    // (each key is optional, only provided colors update).
     const update: Record<string, unknown> = { updatedBy: req.user._id };
     for (const key of ['lightPrimary', 'lightSecondary', 'darkPrimary', 'darkSecondary'] as const) {
       if (brandColors[key] !== undefined) update[`brandColors.${key}`] = brandColors[key] || undefined;
@@ -265,7 +265,7 @@ router.patch('/organizations', authenticate(), authorize(UserRole.SUPER_ADMIN), 
   ApiResponse.success(res, settings, 'Organizations updated');
 }));
 
-// Update legal content (SuperAdmin) — FAQ, Privacy, Terms
+// Update legal content (SuperAdmin) - FAQ, Privacy, Terms
 router.patch('/legal', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_legal', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const update: any = { updatedBy: req.user._id };
@@ -326,7 +326,7 @@ router.get('/voting-rules', asyncHandler(async (_req, res) => {
   ApiResponse.success(res, settings?.votingRules || {});
 }));
 
-// Update membership criteria (SuperAdmin only — only reachable from System Config UI)
+// Update membership criteria (SuperAdmin only: only reachable from System Config UI)
 router.patch('/membership-criteria', authenticate(), authorize(UserRole.SUPER_ADMIN), denyRestricted(SETTINGS_RESTRICTED_SUPER_ADMINS), auditLog('settings.update_membership_criteria', 'site_settings'), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const settings = await SiteSettings.findOneAndUpdate(
@@ -439,7 +439,7 @@ router.patch(
   })
 );
 
-// Public contact form — throttled: 5 submissions / 15 min / IP
+// Public contact form: throttled: 5 submissions / 15 min / IP
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -510,7 +510,7 @@ router.post(
         await sendEmail(recipient, `[Contact] ${subject}`, html);
       } catch (err) {
         console.error('[Contact] Failed to send notification email:', err);
-        // Do not fail the request — submission is already persisted
+        // Do not fail the request, submission is already persisted
       }
     }
 

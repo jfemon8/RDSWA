@@ -383,7 +383,7 @@ function GeneralTab({ settings: s }: { settings: any }) {
 }
 
 // ═══════════════════════════════════════════
-// Brand Colors — SuperAdmin only
+// Brand Colors - SuperAdmin only
 // ═══════════════════════════════════════════
 
 function BrandColorsSection({ settings }: { settings: any }) {
@@ -416,7 +416,7 @@ function BrandColorsSection({ settings }: { settings: any }) {
       api.patch("/settings/brand-colors", { brandColors: colors }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
-      toast.success("Brand colors saved — preview is live");
+      toast.success("Brand colors saved: preview is live");
     },
     onError: (err: any) =>
       toast.error(err.response?.data?.message || "Failed to save colors"),
@@ -453,25 +453,25 @@ function BrandColorsSection({ settings }: { settings: any }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ColorField
-            label="Light Mode — Primary"
+            label="Light Mode - Primary"
             value={colors.lightPrimary}
             onChange={(v) => setColors({ ...colors, lightPrimary: v })}
             disabled={readOnly}
           />
           <ColorField
-            label="Light Mode — Secondary"
+            label="Light Mode - Secondary"
             value={colors.lightSecondary}
             onChange={(v) => setColors({ ...colors, lightSecondary: v })}
             disabled={readOnly}
           />
           <ColorField
-            label="Dark Mode — Primary"
+            label="Dark Mode - Primary"
             value={colors.darkPrimary}
             onChange={(v) => setColors({ ...colors, darkPrimary: v })}
             disabled={readOnly}
           />
           <ColorField
-            label="Dark Mode — Secondary"
+            label="Dark Mode - Secondary"
             value={colors.darkSecondary}
             onChange={(v) => setColors({ ...colors, darkSecondary: v })}
             disabled={readOnly}
@@ -532,7 +532,7 @@ function ColorField({
         {label}
       </label>
       <div className="flex items-center gap-2">
-        {/* Native swatch — standard, accessible, no third-party picker lib needed. */}
+        {/* Native swatch: standard, accessible, no third-party picker lib needed. */}
         <input
           type="color"
           value={valid ? value : "#000000"}

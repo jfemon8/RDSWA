@@ -5,7 +5,7 @@ import { signAccessToken } from '../utils/token';
 import { UserRole } from '@rdswa/shared';
 
 /**
- * Proves the whole HTTP path — route, controller, service — builds the query each admin page expects,
+ * Proves the whole HTTP path: route, controller, service, builds the query each admin page expects,
  * with the model stubbed so no database is needed.
  */
 const ADMIN_ID = '6512c0a1b2c3d4e5f6a7b8c9';

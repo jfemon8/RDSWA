@@ -9,7 +9,7 @@ export function getRedis(): Redis | null {
 
 export async function connectRedis(): Promise<void> {
   if (!env.REDIS_URL) {
-    console.warn('REDIS_URL not set — running without Redis (in-memory fallback)');
+    console.warn('REDIS_URL not set: running without Redis (in-memory fallback)');
     return;
   }
 
@@ -33,7 +33,7 @@ export async function connectRedis(): Promise<void> {
   try {
     await redis.connect();
   } catch (err) {
-    console.error('Failed to connect to Redis — falling back to in-memory');
+    console.error('Failed to connect to Redis, falling back to in-memory');
     redis.disconnect();
     redis = null;
   }

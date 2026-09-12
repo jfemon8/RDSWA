@@ -75,7 +75,7 @@ export default function CommitteePage() {
     <div className="container mx-auto py-6 md:py-12">
       <SEO
         title="Committee"
-        description="RDSWA committees and leadership team at the University of Barishal — President, General Secretary, Organizing Secretary, Treasurer and full executive lineup of every committee. Meet the people leading the Rangpur Divisional Student Welfare Association. RDSWA কমিটি ও নেতৃত্ব।"
+        description="RDSWA committees and leadership team at the University of Barishal: President, General Secretary, Organizing Secretary, Treasurer and full executive lineup of every committee. Meet the people leading the Rangpur Divisional Student Welfare Association. RDSWA কমিটি ও নেতৃত্ব।"
         keywords="RDSWA committee, RDSWA president, RDSWA general secretary, BU Rangpur committee, University of Barishal student committee, RDSWA executive, ববি কমিটি, RDSWA কমিটি"
       />
       <BlurText
@@ -95,7 +95,7 @@ export default function CommitteePage() {
               title="No Committees Yet"
               description="No committee information has been published yet. Once a committee is formed, members and positions will appear here."
               primary={{ label: 'Contact Admin', icon: Mail, to: '/contact' }}
-              hint="Committees are elected teams that lead RDSWA activities — President, General Secretary, Organizing Secretary, and more."
+              hint="Committees are elected teams that lead RDSWA activities: President, General Secretary, Organizing Secretary, and more."
             />
           ) : (
             <div className="space-y-3">

@@ -801,7 +801,7 @@ function CustomReportBuilder() {
           <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">
-                Results — {result.totalRows} records from {SOURCE_FIELDS[source]?.label}
+                Results: {result.totalRows} records from {SOURCE_FIELDS[source]?.label}
               </h3>
               <div className="flex gap-2">
                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -910,7 +910,7 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
           snapshot = data.data;
         }
       } catch {
-        /* snapshot is best-effort — proceed even if fetch fails */
+        /* snapshot is best-effort, proceed even if fetch fails */
       }
       const { data } = await api.post('/reports/publish', {
         title: form.title.trim(),
@@ -1068,7 +1068,7 @@ function PublishedReports({ isAdmin }: { isAdmin: boolean }) {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  FY {r.fiscalYear || '—'} · Created {formatDate(r.createdAt)}
+                  FY {r.fiscalYear || '-'} · Created {formatDate(r.createdAt)}
                   {r.publishedAt && ` · Published ${formatDate(r.publishedAt)} ${formatTime(r.publishedAt)}`}
                 </p>
               </div>

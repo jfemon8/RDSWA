@@ -747,7 +747,7 @@ function BudgetRow({
                             <span className="text-foreground">
                               {it.actualAmount != null
                                 ? it.actualAmount.toLocaleString()
-                                : "—"}
+                                : "-"}
                             </span>
                           )}
                         </td>
@@ -772,14 +772,14 @@ function BudgetRow({
                             ? Object.values(actuals)
                                 .reduce((s, n) => s + n, 0)
                                 .toLocaleString()
-                            : "—"}
+                            : "-"}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              {/* Mobile card list — one card per line item, so nothing has to scroll sideways. */}
+              {/* Mobile card list: one card per line item, so nothing has to scroll sideways. */}
               <div className="sm:hidden space-y-2">
                 {(budget.items || []).map((it: any, i: number) => (
                   <div key={i} className="border rounded-md p-3">
@@ -815,7 +815,7 @@ function BudgetRow({
                         <span className="text-foreground">
                           {it.actualAmount != null
                             ? it.actualAmount.toLocaleString()
-                            : "—"}
+                            : "-"}
                         </span>
                       )}
                     </div>
@@ -832,7 +832,7 @@ function BudgetRow({
                         ? Object.values(actuals)
                             .reduce((s, n) => s + n, 0)
                             .toLocaleString()
-                        : "—"}
+                        : "-"}
                   </span>
                 </div>
               </div>

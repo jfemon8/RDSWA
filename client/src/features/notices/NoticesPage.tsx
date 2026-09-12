@@ -23,7 +23,6 @@ export default function NoticesPage() {
   const category = params.get('category') || '';
   const showArchived = params.get('archived') === '1';
   const [search, setSearch] = useState(() => params.get('q') || '');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
 
   const setParam = (next: Record<string, string | null>, replace = false) =>

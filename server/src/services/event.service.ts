@@ -296,9 +296,7 @@ export class EventService {
     await event.save();
   }
 
-  /**
-   * Register the current user, seating them or adding them to the waitlist when the event is full.
-   */
+  /** Register the current user, seating them or adding them to the waitlist when the event is full. */
   async register(
     eventId: string,
     userId: string,

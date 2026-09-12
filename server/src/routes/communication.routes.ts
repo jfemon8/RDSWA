@@ -209,7 +209,7 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
     unreadAgg.map((u: any) => [u._id.toString(), u.count])
   );
 
-  // The newest message per group, which is what orders a chat list — the group document's own
+  // The newest message per group, which is what orders a chat list, the group document's own
   // `updatedAt` only moves when the group itself is edited, so it says nothing about conversation.
   const lastAgg = await Message.aggregate([
     {
@@ -578,7 +578,7 @@ router.post('/groups/:id/messages/:messageId/pin', authenticate(), asyncHandler(
   ApiResponse.success(res, message, message.pinnedAt ? 'Pinned' : 'Unpinned');
 }));
 
-// Toggle star (personal bookmark) on any message — group or DM.
+// Toggle star (personal bookmark) on any message: group or DM.
 router.post('/messages/:messageId/star', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -1196,7 +1196,7 @@ router.get('/dm/:userId/search', authenticate(), asyncHandler(async (req, res) =
   ApiResponse.success(res, results);
 }));
 
-// Edit DM — sender only, within EDIT_WINDOW
+// Edit DM: sender only, within EDIT_WINDOW
 router.patch('/dm/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -1230,7 +1230,7 @@ router.patch('/dm/messages/:messageId', authenticate(), asyncHandler(async (req,
   ApiResponse.success(res, message, 'Message updated');
 }));
 
-// Delete DM for everyone — sender within DELETE_EVERYONE_WINDOW
+// Delete DM for everyone, sender within DELETE_EVERYONE_WINDOW
 router.delete('/dm/messages/:messageId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -1277,7 +1277,7 @@ router.post('/dm/:userId/clear', authenticate(), asyncHandler(async (req, res) =
   ApiResponse.success(res, { cleared: result.modifiedCount }, 'Chat cleared');
 }));
 
-// Delete DM just for the current user — either participant, within DELETE_FOR_ME_WINDOW
+// Delete DM just for the current user, either participant, within DELETE_FOR_ME_WINDOW
 router.delete('/dm/messages/:messageId/me', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { messageId } = req.params;
@@ -1411,7 +1411,7 @@ router.delete('/forum/:id/reply/:replyId', authenticate(), asyncHandler(async (r
   ApiResponse.success(res, null, 'Reply deleted');
 }));
 
-// Edit topic — author can edit title/content, moderator+ can pin/lock
+// Edit topic: author can edit title/content, moderator+ can pin/lock
 router.patch('/forum/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
@@ -1666,7 +1666,7 @@ async function findEditableAnnouncement(messageId: string, user: any) {
   });
   if (!message) throw ApiError.notFound('Announcement not found');
 
-  // Posting is Moderator+, so managing one is too — a demoted author loses the right with the rank.
+  // Posting is Moderator+, so managing one is too, a demoted author loses the right with the rank.
   if (ROLE_HIERARCHY.indexOf(user.role as UserRole) < ROLE_HIERARCHY.indexOf(UserRole.MODERATOR)) {
     throw ApiError.forbidden('Only moderators and above can manage announcements');
   }
@@ -1791,7 +1791,7 @@ router.get('/announcements/:id', authenticate(), asyncHandler(async (req, res) =
   });
 }));
 
-// React to an announcement — a null type clears the viewer's reaction
+// React to an announcement, a null type clears the viewer's reaction
 router.post('/announcements/:id/react', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { type } = req.body;
@@ -1841,7 +1841,7 @@ router.get('/announcements/:id/comments', authenticate(), asyncHandler(async (re
   ApiResponse.success(res, roots.map((r: any) => ({ ...r, replies: byParent.get(r._id.toString()) || [] })));
 }));
 
-// Post a comment, or a reply when `parentId` is given — writing takes a membership, reacting does not
+// Post a comment, or a reply when `parentId` is given, writing takes a membership, reacting does not
 router.post('/announcements/:id/comments', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { content, parentId } = req.body;
@@ -1895,7 +1895,7 @@ async function findManageableComment(commentId: string, user: any) {
   return comment;
 }
 
-// Edit a comment — its author, or any moderator
+// Edit a comment: its author, or any moderator
 router.patch('/announcements/comments/:commentId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { content } = req.body;
@@ -1911,7 +1911,7 @@ router.patch('/announcements/comments/:commentId', authenticate(), asyncHandler(
   ApiResponse.success(res, comment, 'Comment updated');
 }));
 
-// Delete a comment — its author, or any moderator
+// Delete a comment: its author, or any moderator
 router.delete('/announcements/comments/:commentId', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const comment = await findManageableComment(req.params.commentId as string, req.user);
@@ -1924,7 +1924,7 @@ router.delete('/announcements/comments/:commentId', authenticate(), asyncHandler
   ApiResponse.success(res, null, 'Comment deleted');
 }));
 
-// React to a comment — a null type clears the viewer's reaction
+// React to a comment, a null type clears the viewer's reaction
 router.post('/announcements/comments/:commentId/react', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { type } = req.body;
@@ -1944,7 +1944,7 @@ router.post('/announcements/comments/:commentId/react', authenticate(), asyncHan
   ApiResponse.success(res, summariseReactions(comment.reactions as any, viewerId));
 }));
 
-// Edit an announcement — its author, or any Admin
+// Edit an announcement: its author, or any Admin
 router.patch('/announcements/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { title, content } = req.body;
@@ -1963,7 +1963,7 @@ router.patch('/announcements/:id', authenticate(), asyncHandler(async (req, res)
   ApiResponse.success(res, message, 'Announcement updated');
 }));
 
-// Delete an announcement — its author, or any Admin
+// Delete an announcement: its author, or any Admin
 router.delete('/announcements/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const message = await findEditableAnnouncement(req.params.id as string, req.user);

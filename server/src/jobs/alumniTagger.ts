@@ -58,9 +58,7 @@ export async function runAlumniTagger(): Promise<void> {
   }
 }
 
-/**
- * Start the alumni tagger on an interval (default: every 24 hours).
- */
+/** Start the alumni tagger on an interval (default: every 24 hours). */
 export function startAlumniTagger(intervalMs = 24 * 60 * 60 * 1000): NodeJS.Timeout {
   // Run once immediately
   runAlumniTagger();

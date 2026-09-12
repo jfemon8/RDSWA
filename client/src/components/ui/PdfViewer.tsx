@@ -11,7 +11,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — Vite handles the ?url suffix at build time
+// @ts-ignore: Vite handles the ?url suffix at build time
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -229,7 +229,7 @@ export default function PdfViewer({ url, fileName, height = 600, allowFullscreen
               >
                 {numPages > 0 ? (
                   <><span className="text-foreground font-medium">{visiblePage}</span> of {numPages}</>
-                ) : '—'}
+                ) : '-'}
               </button>
               <button
                 type="button"

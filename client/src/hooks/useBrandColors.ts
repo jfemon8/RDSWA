@@ -53,7 +53,7 @@ export function useBrandColors() {
       styleEl = document.createElement('style');
       styleEl.id = STYLE_TAG_ID;
       // Append to <head> last so it wins against index.css ':root' rules
-      // (same specificity — later-declared stylesheet takes precedence).
+      // (same specificity: later-declared stylesheet takes precedence).
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = css;

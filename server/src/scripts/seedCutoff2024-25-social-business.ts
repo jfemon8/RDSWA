@@ -26,7 +26,7 @@ const SOCIAL_SCIENCES: DeptInput[] = [
     dataSource: 'Mehedi',
     units: {
       A: { firstMerit: 11317, firstScore: 52.50, lastMerit: 11693, lastScore: 52.00 },
-      // Source chart leaves B 1st-position Score blank — keep it undefined.
+      // Source chart leaves B 1st-position Score blank. Keep it undefined.
       B: { firstMerit: 379, lastMerit: 3222, lastScore: 56.75 },
       C: { firstMerit: 2399, firstScore: 62.75, lastMerit: 3300, lastScore: 59.50 },
     },
@@ -137,7 +137,7 @@ async function main() {
       .select('_id email role')
       .lean();
     if (!creator) {
-      throw new Error('No admin/super_admin user found — cannot set createdBy. Create one before running this seed.');
+      throw new Error('No admin/super_admin user found, cannot set createdBy. Create one before running this seed.');
     }
     console.log(`[seed-cutoff] using createdBy = ${creator.email} (${creator.role})`);
 

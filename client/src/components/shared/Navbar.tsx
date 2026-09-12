@@ -69,7 +69,7 @@ export default function Navbar() {
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   const isActive = (href: string) => location.pathname === href;
 
-  // Unread badges for the profile dropdown — only fetched when authenticated.
+  // Unread badges for the profile dropdown, only fetched when authenticated.
   const { data: notifCountData } = useQuery({
     queryKey: ['unread-count'],
     queryFn: async () => {
@@ -325,7 +325,7 @@ export default function Navbar() {
       </div>
     </header>
 
-    {/* Mobile navigation — rendered OUTSIDE <header> so it is not constrained
+    {/* Mobile navigation: rendered OUTSIDE <header> so it is not constrained
         by any parent transform/containing-block and fills the viewport */}
     <AnimatePresence>
       {mobileOpen && (

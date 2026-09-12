@@ -35,9 +35,9 @@ type PermissionMap = Record<string, UserRole[]>;
 /**
  * Maps "module:action" to the roles allowed.
  *
- * Moderator — basic CRUD, content moderation, user approval, reports viewing
- * Admin     — all Moderator + full management, finance, votes, bus, logs
- * SuperAdmin — all Admin + settings, admin management, backup, broadcast
+ * Moderator: basic CRUD, content moderation, user approval, reports viewing
+ * Admin: all Moderator + full management, finance, votes, bus, logs
+ * SuperAdmin: all Admin + settings, admin management, backup, broadcast
  */
 export const PERMISSIONS: PermissionMap = {
   // Users

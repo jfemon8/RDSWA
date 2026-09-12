@@ -588,11 +588,11 @@ function AutoRoleConfig() {
       label: "Advisor",
       desc: cfg.advisorOnArchivePositions.length
         ? `Auto-granted on archive to ex-${cfg.advisorOnArchivePositions.map(formatPos).join(", ex-")}, or by admin grant`
-        : "Granted by an admin — no position grants it automatically right now",
+        : "Granted by an admin, no position grants it automatically right now",
     },
     [UserRole.SENIOR_ADVISOR]: {
       label: "Senior Advisor",
-      desc: "Manually granted by Admin+ (no membership gate — any user can hold this tag)",
+      desc: "Manually granted by Admin+ (no membership gate: any user can hold this tag)",
     },
   };
 
@@ -690,7 +690,7 @@ function AutoRoleConfig() {
           </div>
           <p className="text-xs text-muted-foreground">
             Triggered on committee create / member add / startup sync.
-            Higher-tier wins — a SuperAdmin in a committee is never downgraded.
+            Higher-tier wins: a SuperAdmin in a committee is never downgraded.
           </p>
 
           <div className="space-y-2">
@@ -707,7 +707,7 @@ function AutoRoleConfig() {
                     !cfg.moderatorPositions.includes(p),
                 )
                   .map(formatPos)
-                  .join(", ") || "—"}
+                  .join(", ") || "-"}
               </span>
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground italic">
@@ -833,7 +833,7 @@ function AutoRoleConfig() {
             </li>
             <li>
               Tag roles (alumni / advisor / senior advisor) are granted via
-              dedicated endpoints — see Admin → Roles & Tags.
+              dedicated endpoints. See Admin → Roles & Tags.
             </li>
             <li>
               Promoting to{" "}
@@ -1024,7 +1024,7 @@ function AutoRoleEditor({ liveConfig }: { liveConfig: AutoRoleConfigShape }) {
             setFn: setAdminPositions,
           })}
           <p className="text-[11px] text-muted-foreground mt-1">
-            A position cannot be both Admin and Moderator — selecting it in one
+            A position cannot be both Admin and Moderator, selecting it in one
             auto-removes it from the other.
           </p>
         </div>

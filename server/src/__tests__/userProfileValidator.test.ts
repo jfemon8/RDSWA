@@ -1,6 +1,6 @@
 import { updateProfileSchema } from '../validators/user.validator';
 
-describe('updateProfileSchema — blood donor fields', () => {
+describe('updateProfileSchema: blood donor fields', () => {
   it('drops an unset last donation date instead of storing an empty value', () => {
     const parsed = updateProfileSchema.parse({ isBloodDonor: true, bloodGroup: 'O+', lastDonationDate: '' });
     expect(parsed).toEqual({ isBloodDonor: true, bloodGroup: 'O+', lastDonationDate: undefined });
@@ -24,7 +24,7 @@ describe('updateProfileSchema — blood donor fields', () => {
   });
 });
 
-describe('updateProfileSchema — fields a profile edit may not set', () => {
+describe('updateProfileSchema: fields a profile edit may not set', () => {
   it('strips role, membership status and auth fields', () => {
     const parsed = updateProfileSchema.parse({
       name: 'Rifat',

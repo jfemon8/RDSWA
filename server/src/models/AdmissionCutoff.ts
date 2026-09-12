@@ -38,7 +38,7 @@ const admissionCutoffSchema = new Schema<IAdmissionCutoffDocument>(
   { timestamps: true }
 );
 
-// One row per (session, faculty, department, unit) — uniqueness on the
+// One row per (session, faculty, department, unit) - uniqueness on the
 // non-deleted slice so a row that's soft-deleted doesn't block re-creation.
 admissionCutoffSchema.index(
   { session: 1, faculty: 1, department: 1, unit: 1 },

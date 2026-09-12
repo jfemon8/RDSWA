@@ -121,9 +121,7 @@ function tableToVectorPdf(
 
 const CAPTURE_SCALE = 2;
 
-/**
- * The heights a page may end on, so a break never lands in the middle of a row.
- */
+/** The heights a page may end on, so a break never lands in the middle of a row. */
 export function pageSlices(
   boundaries: number[],
   totalHeight: number,
@@ -239,7 +237,7 @@ async function tableToRasterPdf(
       </div>
       <h2 style="text-align:center;font-size:16px;margin:8px 0 4px;">${title}</h2>
       <p style="text-align:center;color:#888;font-size:10px;margin:0 0 12px;">
-        Generated on ${formatDate(new Date())} — Total: ${rows.length} records
+        Generated on ${formatDate(new Date())} - Total: ${rows.length} records
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:10px;">
         <thead>
@@ -248,7 +246,7 @@ async function tableToRasterPdf(
         <tbody>${bodyRows}</tbody>
       </table>
       <p style="text-align:center;font-size:9px;color:#aaa;margin-top:12px;border-top:1px solid #e5e7eb;padding-top:8px;">
-        ${siteName}${siteNameFull ? ` — ${siteNameFull}` : ''}
+        ${siteName}${siteNameFull ? ` - ${siteNameFull}` : ''}
       </p>
     </div>
   `;

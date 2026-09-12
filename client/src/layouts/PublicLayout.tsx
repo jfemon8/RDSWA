@@ -41,7 +41,7 @@ export default function PublicLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
-      {/* Hide footer inside the Android app — bottom nav replaces it for navigation */}
+      {/* Hide footer inside the Android app, bottom nav replaces it for navigation */}
       {!isAndroidApp && <Footer />}
       {isAndroidApp && <BottomNav />}
     </div>

@@ -170,7 +170,7 @@ router.get(
   }),
 );
 
-// Editing someone else's profile — everyone else uses PATCH /me
+// Editing someone else's profile: everyone else uses PATCH /me
 router.patch(
   "/:id/profile",
   authenticate(),
@@ -287,7 +287,7 @@ router.patch(
       recipient: target._id,
       type: "password_reset_by_admin",
       title: "Your password was reset",
-      message: `Your account password was reset by ${authority}. The temporary password is in your email — please change it from Settings. If you did not expect this, contact ${siteName} support immediately.`,
+      message: `Your account password was reset by ${authority}. The temporary password is in your email: please change it from Settings. If you did not expect this, contact ${siteName} support immediately.`,
       link: "/dashboard/settings",
     });
 
@@ -302,7 +302,7 @@ router.patch(
       code: newPassword,
       bodyHtml:
         '<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#374151;">' +
-        'Please change it as soon as you sign in — open <strong>Dashboard → Settings</strong> and set a password only you know. ' +
+        'Please change it as soon as you sign in. Open <strong>Dashboard → Settings</strong> and set a password only you know. ' +
         'Until you do, treat this one as temporary and do not share this email.</p>',
       cta: { label: "Sign in and change password", url: `${getAppUrl()}/login` },
       footerNote: `If you did not expect this change, please contact ${siteName} support immediately.`,

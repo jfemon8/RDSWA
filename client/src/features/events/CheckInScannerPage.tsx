@@ -85,7 +85,7 @@ function playBeep(kind: ResultKind) {
     osc.stop(ctx.currentTime + 0.2);
     osc.onended = () => ctx.close();
   } catch {
-    // Audio is best-effort — never block scanning if it fails.
+    // Audio is best-effort, never block scanning if it fails.
   }
 }
 
@@ -168,7 +168,7 @@ export default function CheckInScannerPage() {
         } else {
           showResult({
             kind: 'success',
-            message: u?.name ? `${u.name} — checked in` : 'Checked in successfully',
+            message: u?.name ? `${u.name} - checked in` : 'Checked in successfully',
             user: userInfo,
           });
         }
@@ -206,7 +206,7 @@ export default function CheckInScannerPage() {
       showResult({
         kind: 'error',
         message: insecure
-          ? 'Camera needs a secure connection — open this page over HTTPS'
+          ? 'Camera needs a secure connection. Open this page over HTTPS'
           : 'Camera access denied or unavailable',
       });
     }
@@ -296,7 +296,7 @@ export default function CheckInScannerPage() {
         pausedRef.current = true;
         await checkin(userId, 'qr');
       } catch {
-        // Detector glitches happen on low-light frames — keep looping.
+        // Detector glitches happen on low-light frames, keep looping.
       }
     };
 
@@ -457,7 +457,7 @@ export default function CheckInScannerPage() {
               </div>
             )}
 
-            {/* Camera overlay during scanning — busy indicator + result. */}
+            {/* Camera overlay during scanning, busy indicator + result. */}
             {scanning && busy && !result && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <Loader2 className="h-10 w-10 animate-spin text-white" />

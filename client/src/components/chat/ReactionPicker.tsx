@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 
-/** Fixed set — must match server's ALLOWED_REACTIONS. */
+/** Fixed set: must match server's ALLOWED_REACTIONS. */
 export const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉'] as const;
 
 interface Props {

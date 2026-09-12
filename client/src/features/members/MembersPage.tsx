@@ -33,7 +33,6 @@ const MEMBER_CATEGORIES: ReadonlyArray<{ key: CategoryKey; label: string; icon: 
 export default function MembersPage() {
   const { user, isAuthenticated } = useAuthStore();
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const { config: academicConfig, departments } = useAcademicConfig();
   const [batch, setBatch] = useState('');
@@ -75,8 +74,8 @@ export default function MembersPage() {
   return (
     <div className="container mx-auto py-8">
       <SEO
-        title={`${activeCategory.label} — RDSWA Member Directory`}
-        description={`Browse the RDSWA ${activeCategory.label.toLowerCase()} directory — verified students and alumni of the University of Barishal from Rangpur Division. Find members by department, batch, district, and profession. RDSWA সদস্য ডিরেক্টরি।`}
+        title={`${activeCategory.label} - RDSWA Member Directory`}
+        description={`Browse the RDSWA ${activeCategory.label.toLowerCase()} directory: verified students and alumni of the University of Barishal from Rangpur Division. Find members by department, batch, district, and profession. RDSWA সদস্য ডিরেক্টরি।`}
         keywords={`RDSWA members, ${activeCategory.label} RDSWA, BU Rangpur students, University of Barishal student directory, Rangpur students BU, ববি রংপুর শিক্ষার্থী, RDSWA সদস্য`}
       />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">

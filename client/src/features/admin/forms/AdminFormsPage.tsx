@@ -139,7 +139,7 @@ export default function AdminFormsPage() {
                         <div className="flex items-center gap-2 flex-wrap justify-end">
                           {overdue && (
                             <span
-                              title={`Pending ${ageDays} days — over the ${maxPendingDays}-day SLA target`}
+                              title={`Pending ${ageDays} days: over the ${maxPendingDays}-day SLA target`}
                               className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                             >
                               <Clock className="h-3 w-3" /> Overdue {ageDays}d
@@ -231,7 +231,7 @@ export default function AdminFormsPage() {
                               </div>
                             )}
 
-                            {/* Attachments — view / download via Cloudinary proxy */}
+                            {/* Attachments: view / download via Cloudinary proxy */}
                             {attachments.length > 0 && (
                               <div className="space-y-2">
                                 <p className="text-xs font-semibold text-muted-foreground uppercase">Attached Documents ({attachments.length})</p>

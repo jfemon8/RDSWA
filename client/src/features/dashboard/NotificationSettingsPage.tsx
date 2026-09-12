@@ -123,12 +123,12 @@ export default function NotificationSettingsPage() {
       </div>
 
       <div className="space-y-4">
-        {/* Appearance — theme + language */}
+        {/* Appearance - theme + language */}
         <FadeIn direction="up" distance={20}>
           <AppearanceSection />
         </FadeIn>
 
-        {/* Privacy & Security — change password */}
+        {/* Privacy & Security: change password */}
         <FadeIn delay={0.04} direction="up" distance={20}>
           <SecuritySection />
         </FadeIn>
@@ -241,7 +241,7 @@ export default function NotificationSettingsPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="text-xs text-amber-600 dark:text-amber-400 mt-2"
                 >
-                  DND is active — you won't receive any notifications.
+                  DND is active; you won't receive any notifications.
                 </motion.p>
               )}
             </AnimatePresence>

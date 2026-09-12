@@ -43,9 +43,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   );
   const message =
     status === 'pending'
-      ? 'Submitted — an organiser will review your answers before your QR code is issued'
+      ? 'Submitted: an organiser will review your answers before your QR code is issued'
       : status === 'waitlisted'
-        ? 'Event is full — you have been added to the waitlist'
+        ? 'Event is full; you have been added to the waitlist'
         : status === 'interested'
           ? 'Your interest has been recorded'
           : 'Registered for event';
@@ -137,7 +137,7 @@ export const checkin = asyncHandler(async (req: Request, res: Response) => {
     actorRole: req.user.role,
     checkedInAt,
   });
-  // 200 with status='duplicate' is intentional — the scanner UI uses it to
+  // 200 with status='duplicate' is intentional, the scanner UI uses it to
   // render a warning ("already checked in: Name") instead of a hard error.
   const message =
     result.status === 'duplicate'

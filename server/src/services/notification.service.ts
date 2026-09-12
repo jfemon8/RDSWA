@@ -144,9 +144,7 @@ export class NotificationService {
     return inAppDocs.length;
   }
 
-  /**
-   * Emit real-time notification to a specific user via Socket.IO.
-   */
+  /** Emit real-time notification to a specific user via Socket.IO. */
   private emitToUser(userId: string, data: any): void {
     const io = getIO();
     if (io) {
@@ -154,9 +152,7 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Send email without throwing (fire-and-forget).
-   */
+  /** Send email without throwing (fire-and-forget). */
   private async sendEmailSafe(to: string, subject: string, body: string, link?: string): Promise<void> {
     try {
       const html = await renderEmailLayout({
@@ -171,14 +167,12 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Send web push notification without throwing.
-   */
+  /** Send web push notification without throwing. */
   private async sendPushSafe(userId: string, title: string, body: string, link?: string): Promise<void> {
     try {
       await sendPushNotification(userId, { title, body, link });
     } catch {
-      // Push subscription may not exist — ignore
+      // Push subscription may not exist, ignore
     }
   }
 }

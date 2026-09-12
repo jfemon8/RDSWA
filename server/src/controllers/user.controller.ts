@@ -7,7 +7,7 @@ import { UserRole } from "@rdswa/shared";
 
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  // Own profile — always full visibility
+  // Own profile: always full visibility
   const user = await userService.getById(
     (req.user._id as any).toString(),
     req.user.role,
@@ -73,7 +73,7 @@ export const restoreUser = asyncHandler(async (req: Request, res: Response) => {
 export const listMembers = asyncHandler(async (req: Request, res: Response) => {
   const query = { ...(req.query as any), membershipStatus: "approved" };
   const { users, total, page, limit } = await userService.listUsers(query);
-  // Apply privacy filter — public/unauthenticated viewers only see visible fields
+  // Apply privacy filter: public/unauthenticated viewers only see visible fields
   const viewerRole = req.user?.role;
   const filtered = users.map((u: any) =>
     userService.filterVisibility(u, viewerRole),

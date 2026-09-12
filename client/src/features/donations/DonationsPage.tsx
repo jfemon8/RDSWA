@@ -85,7 +85,7 @@ export default function DonationsPage() {
     <div className="container mx-auto py-8">
       <SEO
         title="Donations"
-        description="Support RDSWA — donate to active scholarship, emergency-aid, and student-welfare campaigns at the University of Barishal. Help BU Rangpur students with education funding, blood-donor coordination, and community programs. RDSWA-কে দান করুন।"
+        description="Support RDSWA: donate to active scholarship, emergency-aid, and student-welfare campaigns at the University of Barishal. Help BU Rangpur students with education funding, blood-donor coordination, and community programs. RDSWA-কে দান করুন।"
         keywords="RDSWA donation, donate to RDSWA, BU student scholarship, University of Barishal student welfare donation, Rangpur student fund, RDSWA দান, scholarship donation Bangladesh"
       />
       <div className="flex items-center justify-between mb-6">
@@ -575,7 +575,7 @@ function DonationForm({
           </select>
         </div>
 
-        {/* Campaign selector — donations tied to a campaign update its
+        {/* Campaign selector: donations tied to a campaign update its
             collected amount on admin approval. */}
         {campaigns.length > 0 && (
           <div>
@@ -587,7 +587,7 @@ function DonationForm({
               onChange={(e) => setForm({ ...form, campaign: e.target.value })}
               className="w-full px-3 py-2 border rounded-md bg-background text-sm"
             >
-              <option value="">— General donation (no campaign) —</option>
+              <option value="">- General donation (no campaign) -</option>
               {campaigns.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.title} (BDT {c.raisedAmount?.toLocaleString()} /{" "}
@@ -724,7 +724,7 @@ function DonationForm({
         </AnimatePresence>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-          {/* Donation date — offered for every payment method, blank meaning today. */}
+          {/* Donation date: offered for every payment method, blank meaning today. */}
           <div className="sm:max-w-xs">
             <label className="text-xs text-muted-foreground mb-1 block">
               Donation Date

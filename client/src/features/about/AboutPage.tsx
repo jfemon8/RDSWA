@@ -28,7 +28,7 @@ export default function AboutPage() {
     <div className="container mx-auto py-6 md:py-12">
       <SEO
         title="About RDSWA"
-        description="About Rangpur Divisional Student Welfare Association (RDSWA) at the University of Barishal — our mission, vision, objectives, and history. The official student welfare body for BU students from Rangpur Division. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি সম্পর্কে জানুন।"
+        description="About Rangpur Divisional Student Welfare Association (RDSWA) at the University of Barishal: our mission, vision, objectives, and history. The official student welfare body for BU students from Rangpur Division. রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি সম্পর্কে জানুন।"
         keywords="About RDSWA, Rangpur Divisional Student Welfare Association, RDSWA history, RDSWA mission, University of Barishal student association, BU Rangpur, ববি রংপুর, রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি"
       />
       <BlurText

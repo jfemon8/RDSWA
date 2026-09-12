@@ -301,7 +301,7 @@ export default function UserProfilePage() {
                         }
                         className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                       >
-                        <option value="">—</option>
+                        <option value="">-</option>
                         {f.options?.map((o) => (
                           <option key={o} value={o}>
                             {o.charAt(0).toUpperCase() + o.slice(1)}

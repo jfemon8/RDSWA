@@ -29,7 +29,6 @@ export default function AdminMembersPage() {
   const confirm = useConfirm();
 
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const [batch, setBatch] = useState('');
   const [department, setDepartment] = useState('');

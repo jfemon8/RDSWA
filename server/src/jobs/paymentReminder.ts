@@ -1,12 +1,6 @@
 import { Donation, Notification } from '../models';
 
-/**
- * Send reminders for:
- * 1. Pending donations older than 48h (overdue)
- * 2. Recurring donations with nextPaymentDate <= now
- *
- * Run on a schedule (e.g., every 6 hours).
- */
+/** Reminds donors about pledges left pending past 48 hours and recurring donations now due. */
 export async function runPaymentReminder(): Promise<void> {
   try {
     const now = new Date();

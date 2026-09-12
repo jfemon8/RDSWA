@@ -52,7 +52,7 @@ export async function sendPushNotification(
         data
       );
     } catch (err: any) {
-      // 410 Gone or 404 — subscription expired, remove it
+      // 410 Gone or 404, subscription expired, remove it
       if (err.statusCode === 410 || err.statusCode === 404) {
         await PushSubscription.deleteOne({ _id: sub._id });
       }

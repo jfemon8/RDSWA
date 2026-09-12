@@ -388,7 +388,7 @@ export default function AdminDashboardPage() {
           </div>
         </FadeIn>
 
-        {/* Recent Activity — SuperAdmin only, matching the Logs & Security page it links to */}
+        {/* Recent Activity: SuperAdmin only, matching the Logs & Security page it links to */}
         {isSuperAdmin && (
         <FadeIn direction="up" delay={0.7}>
           <div className="border rounded-lg p-4 sm:p-5 bg-card">

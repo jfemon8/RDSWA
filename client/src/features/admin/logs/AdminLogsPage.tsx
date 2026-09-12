@@ -153,7 +153,7 @@ function AuditLogsTab() {
                       className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 cursor-pointer hover:bg-accent/30 transition-colors"
                       onClick={() => toggleExpand(log._id)}
                     >
-                      {/* Primary info — stacks above metadata on mobile so the
+                      {/* Primary info: stacks above metadata on mobile so the
                           action/actor/resource can use the full row width. */}
                       <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0 flex-1">
                         {/* Action badge */}
@@ -231,7 +231,7 @@ function AuditLogsTab() {
                           </button>
                           {(log.resourceName || log.resourceId) && (
                             <span className="ml-1 text-[10px]">
-                              —{" "}
+                              -{" "}
                               <span className="font-medium text-foreground">
                                 {log.resourceName?.includes("<") ? (
                                   <span
@@ -249,7 +249,7 @@ function AuditLogsTab() {
                         </span>
                       </div>
 
-                      {/* Metadata — below on mobile (date never clips), right-aligned on desktop. */}
+                      {/* Metadata: below on mobile (date never clips), right-aligned on desktop. */}
                       <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-muted-foreground">
                         <span className="text-[10px] font-mono hidden sm:inline">
                           {ip}
@@ -298,7 +298,7 @@ function AuditLogsTab() {
                                 let isHtmlString = false;
 
                                 if (val === null || val === undefined) {
-                                  display = "—";
+                                  display = "-";
                                 } else if (typeof val === "boolean") {
                                   display = val ? "Yes" : "No";
                                 } else if (Array.isArray(val)) {
@@ -375,7 +375,7 @@ function AuditLogsTab() {
                                 );
                               })}
                             </div>
-                            {/* IP and User Agent in expanded view — stacked
+                            {/* IP and User Agent in expanded view, stacked
                                 so the UA string (always long) wraps cleanly
                                 instead of being clipped by a max-width. */}
                             <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t mt-2">

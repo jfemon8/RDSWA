@@ -30,7 +30,7 @@ export default function MessageBell() {
     const invalidate = () =>
       queryClient.invalidateQueries({ queryKey: ['message-unread-count'] });
 
-    // `chat:*` only reaches sockets inside that group's room, which the badge is never in — group
+    // `chat:*` only reaches sockets inside that group's room, which the badge is never in, group
     // traffic arrives on the personal room as `chat:group:activity` instead.
     s.on('dm:message', invalidate);
     s.on('dm:message:read', invalidate);

@@ -33,7 +33,7 @@ export function buildOrganizationSchema(opts?: {
     image: ORG_OG,
     description:
       opts?.description ||
-      'Official platform of Rangpur Divisional Student Welfare Association at the University of Barishal — connecting students from the Rangpur division through events, notices, scholarships, blood donor network, bus schedules, and alumni community.',
+      'Official platform of Rangpur Divisional Student Welfare Association at the University of Barishal: connecting students from the Rangpur division through events, notices, scholarships, blood donor network, bus schedules, and alumni community.',
     parentOrganization: {
       '@type': 'CollegeOrUniversity',
       name: PARENT_UNI,

@@ -421,7 +421,7 @@ export default function AdminEventsPage() {
                     }
                     className="w-full px-3 py-2 border rounded-md bg-card text-foreground text-sm"
                   >
-                    <option value="">— None —</option>
+                    <option value="">- None -</option>
                     {committees.map((c) => (
                       <option key={c._id} value={c._id}>
                         {committeeDisplayName(c)}
@@ -744,7 +744,7 @@ export default function AdminEventsPage() {
   );
 }
 
-/** Expanded panel for each event — shows QR, attendance list, photos management */
+/** Expanded panel for each event: shows QR, attendance list, photos management */
 function EventDetailPanel({ event }: { event: any }) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -1001,7 +1001,7 @@ function EventDetailPanel({ event }: { event: any }) {
       if (kind === "pdf") {
         await downloadTablePdf(
           csv,
-          `${fullEvent.title} — Attendance`,
+          `${fullEvent.title} - Attendance`,
           `${fullEvent.title}-attendance`,
         );
       } else {
@@ -1021,7 +1021,7 @@ function EventDetailPanel({ event }: { event: any }) {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Event Meta — mirrors the public detail view so admins see the same
+      {/* Event Meta: mirrors the public detail view so admins see the same
           committee / venue / schedule context while managing the event. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-3 border-b">
         <span className="flex items-center gap-1">

@@ -7,7 +7,7 @@
  */
 export function proxyFileUrl(rawUrl: string, name?: string, inline = true): string {
   if (!rawUrl) return '';
-  // Non-Cloudinary URLs (e.g. external links) should pass through untouched —
+  // Non-Cloudinary URLs (e.g. external links) should pass through untouched -
   // the proxy rejects them anyway as an SSRF guard.
   if (!rawUrl.includes('res.cloudinary.com')) return rawUrl;
   const params = new URLSearchParams({ url: rawUrl, inline: String(inline) });

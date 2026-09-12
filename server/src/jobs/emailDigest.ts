@@ -70,7 +70,7 @@ export async function runEmailDigest(): Promise<void> {
         greeting: `Hi ${user.name},`,
         intro: `Here's a quick recap of what happened ${
           freq === 'weekly' ? 'this week' : 'in the last 24 hours'
-        } — ${count} new update${count === 1 ? '' : 's'}.`,
+        } - ${count} new update${count === 1 ? '' : 's'}.`,
         bodyHtml: cards,
         cta: { label: 'View all notifications', url: dashboardUrl },
         footerNote:

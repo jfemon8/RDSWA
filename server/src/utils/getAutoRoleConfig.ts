@@ -8,7 +8,7 @@ export interface EffectiveAutoRoleConfig {
   moderatorPositions: string[];
   /** Positions that auto-grant the Advisor tag when their committee archives. */
   advisorOnArchivePositions: string[];
-  /** Convenience union — all positions that receive any auto-role in current committee. */
+  /** Convenience union: all positions that receive any auto-role in current committee. */
   allAutoPositions: string[];
 }
 

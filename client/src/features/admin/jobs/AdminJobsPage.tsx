@@ -43,7 +43,6 @@ export default function AdminJobsPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -347,7 +346,7 @@ export default function AdminJobsPage() {
         <FadeIn><p className="text-center text-muted-foreground py-12">No jobs found.</p></FadeIn>
       ) : (
         <FadeIn direction="up" delay={0.1}>
-          {/* Desktop table — the columns a job is scanned by, with the rest behind the details toggle. */}
+          {/* Desktop table: the columns a job is scanned by, with the rest behind the details toggle. */}
           <div className="hidden lg:block border rounded-lg overflow-x-auto">
             <table className="w-full text-sm table-fixed min-w-[760px]">
               <colgroup>

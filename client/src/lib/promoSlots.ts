@@ -4,21 +4,21 @@ export const PROMO_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | und
 
 /** Slot IDs are public so they live in git, while the publisher ID stays in env to keep environments separated. */
 export const PROMO_SLOTS = {
-  /** rdswa-sidebar — vertical responsive display unit for desktop right rails. */
+  /** rdswa-sidebar: vertical responsive display unit for desktop right rails. */
   sidebar: '4716324992',
-  /** rdswa-infeed — fluid in-feed unit for native-feeling cards in lists. */
+  /** rdswa-infeed: fluid in-feed unit for native-feeling cards in lists. */
   infeed: '5837834971',
-  /** rdswa-multiplex — autorelaxed multiplex unit for end-of-page grids. */
+  /** rdswa-multiplex: autorelaxed multiplex unit for end-of-page grids. */
   multiplex: '2573377382',
-  /** rdswa-display-responsive — horizontal responsive display unit for bottom banners. */
+  /** rdswa-display-responsive: horizontal responsive display unit for bottom banners. */
   displayResponsive: '3503315674',
-  /** rdswa-in-article — fluid in-article unit for long-form bodies. */
+  /** rdswa-in-article: fluid in-article unit for long-form bodies. */
   inArticle: '5937907323',
 } as const;
 
 export type PromoKind = keyof typeof PROMO_SLOTS;
 
-/** Routes where promos are forbidden — auth flows, private records, admin surfaces, and payment flows — on which `<Promo>` returns `null`. */
+/** Routes where promos are forbidden: auth flows, private records, admin surfaces, and payment flows, on which `<Promo>` returns `null`. */
 export const PROMO_BLOCKED_ROUTES: RegExp[] = [
   // Auth flows
   /^\/login(\/|$)/,
@@ -47,7 +47,7 @@ export const PROMO_BLOCKED_ROUTES: RegExp[] = [
   // Voting (private ballot screens)
   /^\/voting(\/|$)/,
 
-  // Payment-adjacent (defensive — no current routes match, future-proofing)
+  // Payment-adjacent (defensive: no current routes match, future-proofing)
   /^\/checkout(\/|$)/,
   /^\/payment(\/|$)/,
   /^\/donations\/new(\/|$)/,

@@ -352,7 +352,7 @@ export default function TopicDetailPage() {
             replyMutation.mutate();
           }} noValidate className="space-y-1">
             {/* FieldError intentionally rendered OUTSIDE the flex row so it
-                doesn't inflate the row height — otherwise the stretched
+                doesn't inflate the row height; otherwise the stretched
                 button would grow taller than the textarea. */}
             <div className="flex items-stretch gap-2">
               <textarea

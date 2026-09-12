@@ -12,14 +12,14 @@ const OUTPUT = path.join(PUBLIC_DIR, 'feature-graphic.png');
 const WIDTH = 1024;
 const HEIGHT = 500;
 
-// Brand palette — keep in sync with tailwind theme + manifest theme_color
+// Brand palette: keep in sync with tailwind theme + manifest theme_color
 // + OG image generator.
 const BRAND_DARK = '#042f1f';
 const BRAND_PRIMARY = '#008f57';
 const BRAND_ACCENT = '#10b981';
 
 async function buildBackground() {
-  // Diagonal gradient — same vibe as the OG image so the visual identity
+  // Diagonal gradient: same vibe as the OG image so the visual identity
   // is consistent across every channel a visitor first encounters.
   const svg = `
     <svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
@@ -68,7 +68,7 @@ async function buildTextOverlay() {
       <!-- University attribution -->
       <text x="370" y="362" class="small" font-size="22">University of Barishal · বরিশাল বিশ্ববিদ্যালয়</text>
 
-      <!-- Footer URL — bottom-aligned -->
+      <!-- Footer URL: bottom-aligned -->
       <text x="370" y="442" class="small" font-size="20" opacity="0.85">rdswa.info.bd</text>
     </svg>
   `;

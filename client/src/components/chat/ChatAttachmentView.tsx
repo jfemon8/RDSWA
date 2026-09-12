@@ -23,7 +23,7 @@ interface Props {
   attachment: ChatAttachmentData;
   /** True when rendered inside the sender's own (primary-colored) bubble. */
   isMine?: boolean;
-  /** Click handler for image attachments — typically opens the lightbox. */
+  /** Click handler for image attachments, typically opens the lightbox. */
   onImageClick?: (url: string, name?: string) => void;
 }
 

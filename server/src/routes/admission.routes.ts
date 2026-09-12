@@ -43,7 +43,7 @@ const circularBaseSchema = z.object({
 
 const circularUpdateSchema = circularBaseSchema.partial();
 
-/** GET /admissions/circulars — public list, sorted pinned + newest first. */
+/** GET /admissions/circulars: public list, sorted pinned + newest first. */
 router.get(
   '/circulars',
   asyncHandler(async (req, res) => {
@@ -58,7 +58,7 @@ router.get(
   })
 );
 
-/** GET /admissions/circulars/admin — all circulars including drafts, Moderator+. */
+/** GET /admissions/circulars/admin, all circulars including drafts, Moderator+. */
 router.get(
   '/circulars/admin',
   authenticate(),
@@ -161,7 +161,7 @@ router.get(
   })
 );
 
-/** Distinct session list — populates dropdowns on both public + admin pages. */
+/** Distinct session list: populates dropdowns on both public + admin pages. */
 router.get(
   '/seats/sessions',
   asyncHandler(async (_req, res) => {
@@ -236,7 +236,7 @@ router.post(
     }
     const existing = await AdmissionSeat.countDocuments({ session: targetSession, isDeleted: false });
     if (existing > 0) {
-      throw ApiError.conflict(`Session "${targetSession}" already has data — pick a different label.`);
+      throw ApiError.conflict(`Session "${targetSession}" already has data. Pick a different label.`);
     }
     const source = await AdmissionSeat.find({ session: sourceSession, isDeleted: false }).lean();
     if (source.length === 0) {
@@ -275,7 +275,7 @@ router.patch(
     if (from === to) throw ApiError.badRequest('New session label must differ from the old one.');
     const collision = await AdmissionSeat.countDocuments({ session: to, isDeleted: false });
     if (collision > 0) {
-      throw ApiError.conflict(`Session "${to}" already exists — cannot merge by renaming.`);
+      throw ApiError.conflict(`Session "${to}" already exists: cannot merge by renaming.`);
     }
     const result = await AdmissionSeat.updateMany(
       { session: from, isDeleted: false },
@@ -308,7 +308,7 @@ router.delete(
   })
 );
 
-/** Rename a category within a session — affects only that session's rows. */
+/** Rename a category within a session, affects only that session's rows. */
 const seatCategoryRenameSchema = z.object({
   session: z.string().trim().min(2).max(20),
   from: z.string().trim().min(1).max(120),
@@ -413,7 +413,7 @@ router.post(
       ApiResponse.created(res, doc, 'Cut-off row created');
     } catch (err: unknown) {
       // The unique index on (session, faculty, department, unit) prevents
-      // accidental duplicates — surface a friendly 409 instead of a 500.
+      // accidental duplicates: surface a friendly 409 instead of a 500.
       if ((err as { code?: number }).code === 11000) {
         throw ApiError.conflict(
           'A cut-off row for this faculty, department, unit and session already exists.'
@@ -491,7 +491,7 @@ router.post(
     }
     const existing = await AdmissionCutoff.countDocuments({ session: targetSession, isDeleted: false });
     if (existing > 0) {
-      throw ApiError.conflict(`Session "${targetSession}" already has cut-off data — pick a different label.`);
+      throw ApiError.conflict(`Session "${targetSession}" already has cut-off data. Pick a different label.`);
     }
     const source = await AdmissionCutoff.find({ session: sourceSession, isDeleted: false }).lean();
     if (source.length === 0) {
@@ -532,7 +532,7 @@ router.patch(
     if (from === to) throw ApiError.badRequest('New session label must differ from the old one.');
     const collision = await AdmissionCutoff.countDocuments({ session: to, isDeleted: false });
     if (collision > 0) {
-      throw ApiError.conflict(`Session "${to}" already exists — cannot merge by renaming.`);
+      throw ApiError.conflict(`Session "${to}" already exists: cannot merge by renaming.`);
     }
     const result = await AdmissionCutoff.updateMany(
       { session: from, isDeleted: false },

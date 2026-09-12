@@ -159,7 +159,7 @@ router.post('/', authenticate(), authorize(UserRole.MEMBER), asyncHandler(async 
   ApiResponse.success(res, mentorship, 'Mentorship requested');
 }));
 
-// List my mentorships — includes contact info for active mentorships
+// List my mentorships: includes contact info for active mentorships
 router.get('/my', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { page, limit } = parsePagination(req.query as any);
@@ -330,7 +330,7 @@ router.patch('/:id/cancel', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, mentorship, 'Mentorship cancelled');
 }));
 
-// Admin: list all mentorships — readable by Moderator+, since acting on them stays Admin-only
+// Admin: list all mentorships, readable by Moderator+, since acting on them stays Admin-only
 router.get('/admin/all', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter = await buildAdminFilter(req.query);
@@ -362,7 +362,7 @@ router.get('/admin/all', authenticate(), authorize(UserRole.MODERATOR), asyncHan
   ApiResponse.paginated(res, enriched, total, page, limit);
 }));
 
-// Admin: programme health at a glance — counts by status, stalled requests and busiest mentors
+// Admin: programme health at a glance, counts by status, stalled requests and busiest mentors
 router.get('/admin/stats', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (_req, res) => {
   const { staleRequestDays, maxActiveMentees } = await getMentorshipConfig();
   const staleBefore = new Date(Date.now() - staleRequestDays * 24 * 60 * 60 * 1000);

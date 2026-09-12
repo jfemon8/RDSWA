@@ -18,7 +18,7 @@ export const AUTO_ROLE_CONFIG_FALLBACK: AutoRoleConfigShape = {
 
 /**
  * The single reader for the auto-role rules, so every page that shows them shares one cache
- * entry in one shape — two callers normalising the same key differently would hand whichever
+ * entry in one shape, two callers normalising the same key differently would hand whichever
  * loaded second a config it cannot parse.
  */
 export function useAutoRoleConfig() {

@@ -12,7 +12,7 @@ const EMPTY: AcademicConfig = { batches: [], sessions: [], faculties: [] };
 
 /**
  * The single reader for batches, sessions and faculties, so every dropdown shares one cache entry
- * in one shape — two callers normalising the same key differently would hand whichever loaded
+ * in one shape: two callers normalising the same key differently would hand whichever loaded
  * second a config it cannot parse, leaving its dropdowns silently empty.
  */
 export function useAcademicConfig() {

@@ -332,7 +332,7 @@ export default function EventDetailPage() {
                 {seatsLeft > 0
                   ? `${seatsLeft} of ${event.maxParticipants} seats left`
                   : needsApproval
-                    ? "All seats are taken — an organiser may still place you on the waitlist"
+                    ? "All seats are taken, an organiser may still place you on the waitlist"
                     : "All seats are taken. You will join the waitlist"}
               </p>
             )}
@@ -440,7 +440,7 @@ export default function EventDetailPage() {
               {regStatus === "pending"
                 ? "Submitted! An organiser is reviewing your answers."
                 : regStatus === "waitlisted"
-                  ? "You are on the waitlist — we will confirm if a seat opens"
+                  ? "You are on the waitlist; we will confirm if a seat opens"
                   : regStatus === "interested"
                     ? "You have marked yourself as interested"
                     : "You are registered for this event"}
@@ -514,7 +514,7 @@ export default function EventDetailPage() {
           </FadeIn>
         )}
 
-      {/* Self Check-in — stays available for 7 days after the event ends. */}
+      {/* Self Check-in: stays available for 7 days after the event ends. */}
       {isAuthenticated &&
         event &&
         derivedStatus !== "cancelled" &&
@@ -694,7 +694,7 @@ export default function EventDetailPage() {
                 {!editingFeedbackId
                   ? "Submit Feedback"
                   : editingAuthor
-                    ? `Edit Feedback — ${editingAuthor}`
+                    ? `Edit Feedback - ${editingAuthor}`
                     : "Edit Your Feedback"}
               </h3>
               <div className="flex gap-1 mb-4">

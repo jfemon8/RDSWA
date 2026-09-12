@@ -32,7 +32,6 @@ export default function EventsPage() {
   const [type, setType] = useState('');
   const [committee, setCommittee] = useState('');
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const [viewMode, setViewMode] = useTabParam<EventViewMode>(EVENT_VIEW_MODES, 'grid', 'viewMode');
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
@@ -111,7 +110,7 @@ export default function EventsPage() {
     <div className="container mx-auto py-6 md:py-12">
       <SEO
         title="Events"
-        description="Upcoming and past RDSWA events at the University of Barishal — workshops, seminars, cultural programs, sports, scholarships, and social gatherings for Rangpur Division students. RDSWA ইভেন্টস ও কর্মসূচি।"
+        description="Upcoming and past RDSWA events at the University of Barishal: workshops, seminars, cultural programs, sports, scholarships, and social gatherings for Rangpur Division students. RDSWA ইভেন্টস ও কর্মসূচি।"
         keywords="RDSWA events, BU events, University of Barishal events, Rangpur student events, RDSWA workshops, RDSWA seminars, ববি ইভেন্ট, RDSWA কর্মসূচি"
       />
       <BlurText
@@ -214,7 +213,7 @@ export default function EventsPage() {
                 title="No Events Found"
                 description={search || status || type || committee
                   ? 'No events match your filters. Try clearing them to see all events.'
-                  : 'No events have been scheduled yet. Check back soon — new events are posted regularly.'}
+                  : 'No events have been scheduled yet. Check back soon, new events are posted regularly.'}
                 primary={search || status || type || committee
                   ? { label: 'Clear Filters', icon: X, onClick: () => { setSearch(''); setStatus(''); setType(''); setCommittee(''); } }
                   : { label: 'Contact Admin', icon: Mail, to: '/contact' }}

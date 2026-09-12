@@ -81,7 +81,7 @@ function readInitialTab(urlTab: string | null): Tab {
   try {
     const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
     if (saved && (VALID_TABS as string[]).includes(saved)) return saved as Tab;
-  } catch { /* sessionStorage unavailable — private mode, etc. */ }
+  } catch { /* sessionStorage unavailable: private mode, etc. */ }
   return 'all';
 }
 
@@ -197,7 +197,7 @@ export default function ChatHubPage() {
           : `${g.members?.length || 0} members`,
         timestamp: g.lastActivityAt || g.updatedAt,
         // Server reports per-group unread count via aggregation on the
-        // /communication/groups endpoint — see its handler for the query.
+        // /communication/groups endpoint. See its handler for the query.
         unreadCount: g.unreadCount || 0,
         groupType: g.type,
         to: `/dashboard/groups/${g._id}`,
@@ -205,7 +205,7 @@ export default function ChatHubPage() {
       });
     }
 
-    // Sort by most recent activity — missing timestamps sink to the bottom.
+    // Sort by most recent activity, missing timestamps sink to the bottom.
     items.sort((a, b) => {
       const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
       const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
@@ -344,7 +344,7 @@ export default function ChatHubPage() {
         </FadeIn>
       )}
 
-      {/* Tabs — WhatsApp style pill tabs */}
+      {/* Tabs: WhatsApp style pill tabs */}
       <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1 w-fit">
         {(['all', 'chats', 'groups', 'unread'] as const).map((t) => (
           <button
@@ -382,7 +382,7 @@ export default function ChatHubPage() {
                 : tab === 'groups'
                   ? 'You are not in any groups yet.'
                   : tab === 'unread'
-                    ? 'Nothing unread — you are all caught up.'
+                    ? 'Nothing unread: you are all caught up.'
                     : 'No conversations yet.'}
             </p>
             <p className="text-xs mt-1">
@@ -393,7 +393,7 @@ export default function ChatHubPage() {
         </FadeIn>
       ) : (
         // `layout` animates the reorder, and the entry animation is tied to mount rather than to
-        // scrolling into view — a scroll-triggered one leaves rows that merely moved stuck at opacity 0.
+        // scrolling into view: a scroll-triggered one leaves rows that merely moved stuck at opacity 0.
         <motion.div layout className="space-y-1">
           {filtered.map((item) => (
             <motion.div

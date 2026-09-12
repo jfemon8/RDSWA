@@ -11,7 +11,7 @@ export async function sendSms(options: SmsOptions): Promise<boolean> {
   const apiKey = env.SMS_API_KEY;
 
   if (!gatewayUrl || !apiKey) {
-    console.warn('[SMS] Gateway not configured — skipping SMS to', options.to);
+    console.warn('[SMS] Gateway not configured, skipping SMS to', options.to);
     return false;
   }
 

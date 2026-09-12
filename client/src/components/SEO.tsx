@@ -90,11 +90,11 @@ export default function SEO({
       <meta name="description" content={desc} />
       {keywords && <meta name="keywords" content={keywords} />}
 
-      {/* Robots — only emitted when explicitly opted out, so default
+      {/* Robots: only emitted when explicitly opted out, so default
           behaviour (indexable) is preserved for every existing page. */}
       {noindex && <meta name="robots" content="noindex,nofollow" />}
 
-      {/* Canonical — every indexable page self-canonicalises so query
+      {/* Canonical: every indexable page self-canonicalises so query
           strings, trailing slashes, and preview-deployment hostnames
           collapse to a single ranked URL. */}
       <link rel="canonical" href={canonicalUrl} />
@@ -121,7 +121,7 @@ export default function SEO({
         <link key={alt.hreflang} rel="alternate" hrefLang={alt.hreflang} href={alt.href} />
       ))}
 
-      {/* JSON-LD structured data — multiple schemas stack as separate
+      {/* JSON-LD structured data, multiple schemas stack as separate
           <script> tags per Google's recommendation. */}
       {jsonLdArray.map((schema, i) => (
         <script key={i} type="application/ld+json">

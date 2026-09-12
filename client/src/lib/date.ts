@@ -8,12 +8,12 @@ const TIME_OPTS: Intl.DateTimeFormatOptions = {
   hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: TZ,
 };
 
-/** Format date — e.g. "02 April 2026" (dd MMMM yyyy, BST) */
+/** Format date: e.g. "02 April 2026" (dd MMMM yyyy, BST) */
 export function formatDate(date: string | Date, _style?: string) {
   return new Date(date).toLocaleDateString('en-GB', DATE_OPTS);
 }
 
-/** Format time — e.g. "09:20:00 PM" (hh:mm:ss AM/PM, BST) */
+/** Format time: e.g. "09:20:00 PM" (hh:mm:ss AM/PM, BST) */
 export function formatTime(date: string | Date, _style?: string) {
   return new Date(date).toLocaleTimeString('en-US', TIME_OPTS);
 }
@@ -28,12 +28,12 @@ export function formatTimeString(hhmm: string | undefined | null): string {
   return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-/** Format date + time — e.g. "02 April 2026, 09:20:00 PM" (BST) */
+/** Format date + time: e.g. "02 April 2026, 09:20:00 PM" (BST) */
 export function formatDateTime(date: string | Date, _dateStyle?: string, _timeStyle?: string) {
   return `${formatDate(date)}, ${formatTime(date)}`;
 }
 
-/** Format a numeric stamp — e.g. "02/04/2026, 09:20:00 PM" (dd/mm/yyyy, BST) */
+/** Format a numeric stamp: e.g. "02/04/2026, 09:20:00 PM" (dd/mm/yyyy, BST) */
 export function formatTimestamp(date: string | Date) {
   const d = new Date(date);
   const day = d.toLocaleDateString('en-GB', {

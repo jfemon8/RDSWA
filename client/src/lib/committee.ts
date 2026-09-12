@@ -13,7 +13,7 @@ interface CommitteeLike {
   tenure?: { startDate?: string; endDate?: string };
 }
 
-/** The tenure decides what is current — a committee runs until it is given an end date — with the stored flag as the fallback for populated references that carry none. */
+/** The tenure decides what is current, a committee runs until it is given an end date, with the stored flag as the fallback for populated references that carry none. */
 export function isCurrentCommittee(committee?: CommitteeLike | null): boolean {
   if (!committee) return false;
   if (committee.tenure) return !committee.tenure.endDate;
@@ -88,7 +88,7 @@ interface CommitteeWithMembers extends CommitteeLike {
 }
 
 export interface CommitteePostBadge {
-  /** Badge text — the post on its own while serving, prefixed with "Former" once the committee is archived. */
+  /** Badge text: the post on its own while serving, prefixed with "Former" once the committee is archived. */
   label: string;
   /** Which committee the post belongs to, shown on hover since the badge itself never names it. */
   tooltip: string;

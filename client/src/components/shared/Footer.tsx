@@ -39,9 +39,9 @@ export default function Footer() {
                 {settings?.siteNameFull || siteName}
                 {settings?.address ? `, ${settings.address}` : ''}
               </p>
-              {/* Conditional — renders nothing if no app links are configured */}
+              {/* Conditional: renders nothing if no app links are configured */}
               <AppDownloadButtons />
-              {/* Conditional — renders nothing if no social links are configured */}
+              {/* Conditional: renders nothing if no social links are configured */}
               <SocialIcons />
             </div>
           </FadeIn>

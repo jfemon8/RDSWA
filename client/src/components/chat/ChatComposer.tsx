@@ -12,7 +12,7 @@ interface Props {
     attachments: ChatAttachment[],
     replyToId?: string,
   ) => Promise<void> | void;
-  /** Reply being composed — shown as a chip above the input */
+  /** Reply being composed: shown as a chip above the input */
   replyTo?: ReplyData | null;
   onCancelReply?: () => void;
   /** Emit typing state on keystroke */
@@ -104,7 +104,7 @@ export default function ChatComposer({
     }
   };
 
-  // Paste image support — intercept clipboard images, drop them into the upload flow.
+  // Paste image support: intercept clipboard images, drop them into the upload flow.
   const handlePaste = (e: React.ClipboardEvent) => {
     const files = Array.from(e.clipboardData?.files || []);
     const images = files.filter((f) => f.type.startsWith("image/"));

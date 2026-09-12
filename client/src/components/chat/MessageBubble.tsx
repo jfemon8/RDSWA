@@ -37,7 +37,7 @@ export interface MessageBubbleProps {
   msg: ChatMessage;
   /** Hide sender name + avatar (used inside groups for consecutive messages from same sender). */
   groupedWithPrevious?: boolean;
-  /** True for the current user's own messages — controls bubble color and alignment. */
+  /** True for the current user's own messages: controls bubble color and alignment. */
   isMine: boolean;
   /** True when this is a group conversation (controls receipt + sender-name display). */
   isGroup: boolean;
@@ -58,7 +58,7 @@ export interface MessageBubbleProps {
   onEdit: (msg: ChatMessage) => void;
   onDeleteEveryone: (messageId: string) => void;
   onDeleteForMe: (messageId: string) => void;
-  /** Click on an embedded image — opens lightbox */
+  /** Click on an embedded image, opens lightbox */
   onImageClick?: (url: string, name?: string) => void;
   /** Click the reply preview to scroll to the original */
   onJumpToMessage?: (messageId: string) => void;

@@ -44,14 +44,14 @@ export async function verifyMailTransport(): Promise<void> {
       if (res.status === 401) {
         const body = await res.text().catch(() => '');
         console.error(
-          `[Mail] Resend verification FAILED: 401 Unauthorized — ${body.slice(0, 200)}`
+          `[Mail] Resend verification FAILED: 401 Unauthorized, ${body.slice(0, 200)}`
         );
         console.error('[Mail] The RESEND_API_KEY is wrong, revoked, or restricted in a way that blocks even sending.');
       } else if (res.status >= 500) {
         console.error(`[Mail] Resend verification: upstream returned ${res.status} (transient)`);
       } else {
-        // 200 / 422 / 4xx-other — auth is fine, transport is reachable.
-        console.log('[Mail] Resend HTTP API verified — ready to send.');
+        // 200 / 422 / 4xx-other, auth is fine, transport is reachable.
+        console.log('[Mail] Resend HTTP API verified, ready to send.');
       }
     } catch (err: any) {
       console.error('[Mail] Resend verification FAILED (network):', err?.message || err);
@@ -62,7 +62,7 @@ export async function verifyMailTransport(): Promise<void> {
   if (smtpTransporter) {
     try {
       await smtpTransporter.verify();
-      console.log('[Mail] SMTP transporter verified — ready to send.');
+      console.log('[Mail] SMTP transporter verified, ready to send.');
     } catch (err: any) {
       console.error('[Mail] SMTP verification FAILED:', err?.message || err);
       console.error(
@@ -74,7 +74,7 @@ export async function verifyMailTransport(): Promise<void> {
     return;
   }
 
-  console.warn('[Mail] No mail transport configured — set RESEND_API_KEY or SMTP credentials.');
+  console.warn('[Mail] No mail transport configured. Set RESEND_API_KEY or SMTP credentials.');
 }
 
 /** Send a transactional email, throwing on failure so callers decide whether to surface or swallow it. */

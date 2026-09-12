@@ -13,7 +13,7 @@ export interface IJobPostDocument extends Document {
   vacancy?: number;
   applicationLink?: string;
   postedBy: mongoose.Types.ObjectId;
-  /** Application deadline — after this date the job is considered expired */
+  /** Application deadline: after this date the job is considered expired */
   deadline?: Date;
   expiresAt?: Date;
   isActive: boolean;

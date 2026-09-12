@@ -24,7 +24,6 @@ export default function AdminDonationsPage() {
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);

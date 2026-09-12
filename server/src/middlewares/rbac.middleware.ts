@@ -2,10 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UserRole, ROLE_HIERARCHY, PERMISSIONS } from '@rdswa/shared';
 import { ApiError } from '../utils/ApiError';
 
-/**
- * Authorize by specific roles.
- * Usage: authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN)
- */
+/** Authorize by specific roles. Usage: authorize(UserRole.ADMIN, UserRole.SUPER_ADMIN) */
 export function authorize(...allowedRoles: UserRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -54,10 +51,7 @@ export function denyRestricted(deniedEmails: string[]) {
   };
 }
 
-/**
- * Check permission by module:action key.
- * Usage: hasPermission('events', 'create')
- */
+/** Check permission by module:action key. Usage: hasPermission('events', 'create') */
 export function hasPermission(module: string, action: string) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {

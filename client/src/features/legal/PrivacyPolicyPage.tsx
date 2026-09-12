@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
 
   return (
     <div className="container mx-auto py-6 md:py-12">
-      <SEO title="Privacy Policy" description="RDSWA privacy policy — how we collect, use, and protect your personal information." />
+      <SEO title="Privacy Policy" description="RDSWA privacy policy: how we collect, use, and protect your personal information." />
       <BlurText
         text="Privacy Policy"
         className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 justify-center md:justify-start"

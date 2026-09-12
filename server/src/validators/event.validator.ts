@@ -9,9 +9,7 @@ const registrationFieldSchema = z.object({
   required: z.boolean().optional(),
 });
 
-/**
- * Guards that keep a question set answerable, since a bad one silently blocks every registration.
- */
+/** Guards that keep a question set answerable, since a bad one silently blocks every registration. */
 const registrationFieldsSchema = z
   .array(registrationFieldSchema)
   .max(20, 'A registration form is limited to 20 questions')

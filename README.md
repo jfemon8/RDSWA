@@ -2,7 +2,7 @@
 
 <img src="client/public/icons/logo-light.png" alt="RDSWA" width="220" />
 
-# RDSWA — Rangpur Divisional Student Welfare Association
+# RDSWA: Rangpur Divisional Student Welfare Association
 
 **The official membership platform for Rangpur-Division students at the University of Barishal.**
 
@@ -27,20 +27,20 @@
 
 **RDSWA** is a full-stack community platform built for the students, alumni, and welfare officers of the Rangpur Divisional Student Welfare Association at the University of Barishal. It runs the membership directory, committee elections, event lifecycle, real-time chat, donations, alumni network, mentorship, and a dozen more day-to-day operations on a single MERN + TypeScript codebase deployed across Vercel and Render.
 
-The platform is **publicly browsable** for non-members (committee, events, notices, blood-donor list, vacation calendar, bus schedule), gated behind RBAC for members, and centrally manageable from a unified admin panel — all in one TypeScript monorepo.
+The platform is **publicly browsable** for non-members (committee, events, notices, blood-donor list, vacation calendar, bus schedule), gated behind RBAC for members, and centrally manageable from a unified admin panel, all in one TypeScript monorepo.
 
 ---
 
 ## 🌟 Highlights
 
-- **One TypeScript codebase, three workspaces** — `shared/` (types & constants) compiles first, then `server/` (Express API) and `client/` (React 19 + Vite SPA) consume it via npm workspaces.
+- **One TypeScript codebase, three workspaces**: `shared/` (types & constants) compiles first, then `server/` (Express API) and `client/` (React 19 + Vite SPA) consume it via npm workspaces.
 - **31 Mongoose models** across 23 route modules covering everything from user profiles to bus counters.
-- **Two-dimensional role system** — orthogonal _tier roles_ (`guest → user → member → moderator → admin → super_admin`) plus _tag flags_ (`isAlumni`, `isAdvisor`, `isSeniorAdvisor`). Auto-assigned from committee positions.
-- **PWA-ready** — installable on Android (TWA published on APKPure), service-worker offline shell, NetworkFirst API caching, CacheFirst fonts.
-- **i18n out of the box** — full English + বাংলা translations via i18next with browser-language detection.
-- **Real-time everything** — Socket.IO for notifications, chat, presence, typing indicators, group memberships.
-- **Accessible by default** — semantic landmarks, skip-to-content, ARIA roles/labels, keyboard nav across modals and lightboxes.
-- **SEO-optimised** — react-helmet-async, OG/Twitter cards, sitemap.xml served from the API, prerender step in the build.
+- **Two-dimensional role system**: orthogonal _tier roles_ (`guest → user → member → moderator → admin → super_admin`) plus _tag flags_ (`isAlumni`, `isAdvisor`, `isSeniorAdvisor`). Auto-assigned from committee positions.
+- **PWA-ready**: installable on Android (TWA published on APKPure), service-worker offline shell, NetworkFirst API caching, CacheFirst fonts.
+- **i18n out of the box**: full English + বাংলা translations via i18next with browser-language detection.
+- **Real-time everything**: Socket.IO for notifications, chat, presence, typing indicators, group memberships.
+- **Accessible by default**: semantic landmarks, skip-to-content, ARIA roles/labels, keyboard nav across modals and lightboxes.
+- **SEO-optimised**: react-helmet-async, OG/Twitter cards, sitemap.xml served from the API, prerender step in the build.
 
 ---
 
@@ -86,10 +86,10 @@ The platform is **publicly browsable** for non-members (committee, events, notic
 
 ### Deployment & Tooling
 
-- **Vercel** — client (SPA + prerender + static assets); rewrites `/api/*` and `/sitemap.xml` to Render in production.
-- **Render** — Express server, Socket.IO upgrade path.
-- **MongoDB Atlas** — managed M0/M2 cluster.
-- **Cloudinary** — media CDN with proxy route for inline preview of `raw` PDFs/docs.
+- **Vercel**: client (SPA + prerender + static assets); rewrites `/api/*` and `/sitemap.xml` to Render in production.
+- **Render**: Express server, Socket.IO upgrade path.
+- **MongoDB Atlas**: managed M0/M2 cluster.
+- **Cloudinary**: media CDN with proxy route for inline preview of `raw` PDFs/docs.
 - **Docker Compose**, **PM2 ecosystem**, **k6** load tests, **Playwright** E2E, **GitHub Actions**-ready scripts.
 
 ---
@@ -191,17 +191,17 @@ Routes only wire `authenticate → authorize → validate → auditLog`. Service
 
 ### Auth flow
 
-- JWT **access token** — 15 min, returned in body
-- JWT **refresh token** — 365 days, httpOnly cookie, rotated on use
+- JWT **access token**: 15 min, returned in body
+- JWT **refresh token**: 365 days, httpOnly cookie, rotated on use
 - Axios interceptor on the client silently refreshes and retries on 401
-- Three SuperAdmin emails are hardcoded in `shared/src/constants/roles.ts` and **auto-promoted on every request** — surviving any DB tampering
+- Three SuperAdmin emails are hardcoded in `shared/src/constants/roles.ts` and **auto-promoted on every request**: surviving any DB tampering
 
 ### Scheduled jobs (booted from `app.ts`)
 
-- `syncRolesOnStart` — one-shot legacy role reconciliation
+- `syncRolesOnStart` - one-shot legacy role reconciliation
 - `alumniTagger` (24 h) · `voteCloser` (5 min) · `voteActivator` · `reminderSender` (1 h)
 - `paymentReminder` · `noticePublisher` · `emailDigest` · `chatMediaPurge`
-- `initializeGroups` — central + department chat groups synced against academic config
+- `initializeGroups` - central + department chat groups synced against academic config
 
 ---
 
@@ -209,13 +209,13 @@ Routes only wire `authenticate → authorize → validate → auditLog`. Service
 
 ```
 RDSWA/
-├── shared/                       # @rdswa/shared — types, constants, enums
+├── shared/                       # @rdswa/shared: types, constants, enums
 │   └── src/
 │       ├── constants/            # roles, permissions, restricted lists
 │       ├── types/                # User, Event, common DTOs
 │       └── utils/
 │
-├── server/                       # @rdswa/server — Express + Mongoose
+├── server/                       # @rdswa/server: Express + Mongoose
 │   └── src/
 │       ├── config/               # env (Zod), db, redis, cloudinary, mail, sentry
 │       ├── controllers/          # thin req/res handlers
@@ -229,7 +229,7 @@ RDSWA/
 │       ├── sockets/              # Socket.IO handlers (presence, chat)
 │       └── app.ts                # bootstrap + all wiring
 │
-├── client/                       # @rdswa/client — React 19 + Vite SPA
+├── client/                       # @rdswa/client: React 19 + Vite SPA
 │   ├── public/                   # static assets, ads.txt, icons, manifest
 │   └── src/
 │       ├── app/                  # router (lazy + guards)
@@ -267,11 +267,11 @@ RDSWA/
 
 - **Node.js ≥ 18** (project tested on 18 / 20 LTS)
 - **npm 9+** (workspaces support)
-- **MongoDB** — Atlas cluster or local instance
-- **Cloudinary account** (free tier works) — for media uploads
-- **Gmail App Password** — for transactional email (forgot-password, OTP, digest)
-- **Redis** _(optional)_ — falls back to in-memory rate-limit if unset
-- **Web Push VAPID keys** _(optional)_ — `npx web-push generate-vapid-keys`
+- **MongoDB**: Atlas cluster or local instance
+- **Cloudinary account** (free tier works) - for media uploads
+- **Gmail App Password**: for transactional email (forgot-password, OTP, digest)
+- **Redis** _(optional)_: falls back to in-memory rate-limit if unset
+- **Web Push VAPID keys** _(optional)_: `npx web-push generate-vapid-keys`
 
 ### 1. Clone and install
 
@@ -344,7 +344,7 @@ npm run dev:server
 npm run dev:client
 ```
 
-The first request to the server triggers DB connection, schema sync, central + department chat-group initialisation, role-sync job, and SMTP verification. Watch the terminal for `[Mail] SMTP transporter verified — ready to send.`
+The first request to the server triggers DB connection, schema sync, central + department chat-group initialisation, role-sync job, and SMTP verification. Watch the terminal for `[Mail] SMTP transporter verified, ready to send.`
 
 ### 4. Build for production
 
@@ -373,10 +373,10 @@ Tag flags  (orthogonal booleans, can stack)
 isAlumni · isAdvisor · isSeniorAdvisor
 ```
 
-- **`authorize(UserRole.X)`** — middleware that enforces a minimum tier
-- **`denyRestricted(emails)`** — blocks specific SuperAdmin emails from a scoped capability (e.g. backup or settings)
-- **Auto-promotion** — `SUPER_ADMIN_EMAILS` (hardcoded in `shared/`) get `super_admin` injected on every authenticated request
-- **Committee-driven roles** — President/General Secretary → Admin · Organizing Secretary/Treasurer → Moderator · ex-Pres/GS in archived committee → Moderator + Advisor
+- **`authorize(UserRole.X)`**: middleware that enforces a minimum tier
+- **`denyRestricted(emails)`**: blocks specific SuperAdmin emails from a scoped capability (e.g. backup or settings)
+- **Auto-promotion**: `SUPER_ADMIN_EMAILS` (hardcoded in `shared/`) get `super_admin` injected on every authenticated request
+- **Committee-driven roles**: President/General Secretary → Admin · Organizing Secretary/Treasurer → Moderator · ex-Pres/GS in archived committee → Moderator + Advisor
 
 ---
 
@@ -418,7 +418,7 @@ npm run generate:feature --workspace=client     # Play Store graphic
 | Service           | Hosts             | Notes                                                                                                                                    |
 | ----------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | **Vercel**        | `client/dist` SPA | `vercel.json` rewrites `/api/*` → Render, `/sitemap.xml` → API. Static-file globbing excludes `ads.txt`, `robots.txt` from SPA fallback. |
-| **Render**        | `server/` Express | Auto-deploys on push to `main`. Free tier sleeps after 15 min idle — use UptimeRobot or upgrade for 24/7.                                |
+| **Render**        | `server/` Express | Auto-deploys on push to `main`. Free tier sleeps after 15 min idle. Use UptimeRobot or upgrade for 24/7.                                |
 | **MongoDB Atlas** | All collections   | Whitelist Render egress IPs in Atlas Network Access.                                                                                     |
 | **Cloudinary**    | All media         | Image / raw / video resource types. PDFs go through `/api/upload/proxy` for inline preview.                                              |
 
@@ -429,16 +429,16 @@ npm run generate:feature --workspace=client     # Play Store graphic
 
 ### Troubleshooting
 
-- **Email not sending in production** — most often Gmail App Password revoked. Generate a new one at <https://myaccount.google.com/apppasswords>, paste into Render `SMTP_PASS`, restart. `[Mail] SMTP transporter verified` should appear in logs.
-- **`ads.txt` returns 404 intermittently** — service worker bug. Already fixed: `navigateFallbackDenylist` excludes static-file extensions.
-- **Render cold start** — first request after 15 min idle takes ~60 s. Ping the service every 5 min via UptimeRobot, or upgrade plan.
+- **Email not sending in production**: most often Gmail App Password revoked. Generate a new one at <https://myaccount.google.com/apppasswords>, paste into Render `SMTP_PASS`, restart. `[Mail] SMTP transporter verified` should appear in logs.
+- **`ads.txt` returns 404 intermittently**: service worker bug. Already fixed: `navigateFallbackDenylist` excludes static-file extensions.
+- **Render cold start**: first request after 15 min idle takes ~60 s. Ping the service every 5 min via UptimeRobot, or upgrade plan.
 
 ---
 
 ## 🧪 Quality Gates
 
-- **Type-safe end-to-end** — `shared/` types reused in client and server.
-- **Zod validation at every boundary** — request bodies, query params, env vars.
+- **Type-safe end-to-end**: `shared/` types reused in client and server.
+- **Zod validation at every boundary**: request bodies, query params, env vars.
 - **Sentry** for runtime errors (client and server SDKs).
 - **Vercel Analytics + Speed Insights** for Core Web Vitals.
 - **Microsoft Clarity** for session replay and heatmaps.
@@ -454,8 +454,8 @@ This is a private project for the RDSWA organisation. If you're a member with co
 1. Fork or branch from `main`.
 2. `npm install` from the root (workspaces resolve automatically).
 3. Run `npm run dev` and verify both client and server boot cleanly.
-4. Make changes — keep the **Routes → Controller → Service → Model** layering on the server.
-5. Run `npm run build` from the root **before opening a PR** — TypeScript errors only surface in the full chain because of the shared workspace.
+4. Make changes, keep the **Routes → Controller → Service → Model** layering on the server.
+5. Run `npm run build` from the root **before opening a PR**: TypeScript errors only surface in the full chain because of the shared workspace.
 6. Add tests when you touch service logic or shared utilities.
 7. Match existing animation patterns: `motion/react` primitives, `FadeIn` for staggered lists, `BlurText`/`GradientText` for headings.
 

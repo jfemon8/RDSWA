@@ -398,7 +398,7 @@ export default function AdminNoticesPage() {
                   Highlight on homepage
                 </label>
 
-                {/* Attachment — single image or PDF, up to 5 MB, optional */}
+                {/* Attachment: single image or PDF, up to 5 MB, optional */}
                 <div>
                   <label className="text-xs text-muted-foreground font-medium block mb-1.5">
                     Attachment{" "}

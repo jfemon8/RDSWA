@@ -32,7 +32,7 @@ const entrySchema = new Schema<IVacationEntry>(
     event: { type: String, required: true, trim: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    // Stored, not derived — admins occasionally need to override (e.g. when
+    // Stored, not derived: admins occasionally need to override (e.g. when
     // a holiday falls on a Friday and the institution counts the weekend).
     totalDays: { type: Number, min: 0 },
   },
@@ -55,7 +55,7 @@ const vacationSchema = new Schema<IVacationDocument>(
       type: String,
       required: true,
       trim: true,
-      // Schema-level format guard — defence in depth alongside Zod.
+      // Schema-level format guard, defence in depth alongside Zod.
       match: /^\d{4}-\d{2}$/,
     },
     notes: { type: String, trim: true },

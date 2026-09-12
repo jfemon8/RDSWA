@@ -135,7 +135,7 @@ router.get('/sitemap.xml', async (_req: Request, res: Response) => {
       });
     }
 
-    // Dynamic: job postings (live ones only — closed jobs are noindex'd
+    // Dynamic: job postings (live ones only: closed jobs are noindex'd
     // client-side too, so we don't waste crawl budget on them).
     for (const j of jobs) {
       const lastmod = (j.updatedAt || (j as any).createdAt || new Date()).toISOString();

@@ -47,7 +47,7 @@ const TYPE_ICONS: Record<string, typeof Globe> = {
 export default function GroupChatPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  // Back returns to whatever opened this group — mentorship, a profile, the hub — rather than always the hub.
+  // Back returns to whatever opened this group: mentorship, a profile, the hub, rather than always the hub.
   const goBack = useBackNavigation("/dashboard/chat");
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
@@ -278,7 +278,7 @@ export default function GroupChatPage() {
       toast.error(err?.response?.data?.message || "Failed to delete"),
   });
 
-  // Join requests (custom groups — group admin or platform admin)
+  // Join requests (custom groups: group admin or platform admin)
   const { data: joinRequests } = useQuery({
     queryKey: ["group-join-requests", id],
     queryFn: async () => {
@@ -494,7 +494,7 @@ export default function GroupChatPage() {
           onClick={() => setShowMembers(true)}
           className="flex-1 min-w-0 text-left"
           title={group.name}
-          aria-label={`${group.name} — tap to view members`}
+          aria-label={`${group.name} - tap to view members`}
         >
           {/* line-clamp-2 lets a long group name wrap to a second line rather than being truncated, with leading-tight keeping the header compact when it does. */}
           <h2 className="font-semibold text-sm leading-tight line-clamp-2 break-words">
@@ -886,7 +886,7 @@ export default function GroupChatPage() {
                     )}
                   </AnimatePresence>
 
-                  {/* Pending join requests — for group admins on custom groups */}
+                  {/* Pending join requests: for group admins on custom groups */}
                   {canManageMembers &&
                     group.type === "custom" &&
                     (joinRequests || []).length > 0 && (

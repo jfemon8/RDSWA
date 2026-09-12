@@ -14,7 +14,7 @@ export interface IUserDocument extends Document {
     rotatedAt: Date;
   }>;
 
-  // Profile — Personal
+  // Profile - Personal
   name: string;
   nameBn?: string;
   nickName?: string;
@@ -29,7 +29,7 @@ export interface IUserDocument extends Document {
   presentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
   permanentAddress?: { division?: string; district?: string; upazila?: string; details?: string };
 
-  // Profile — Academic
+  // Profile - Academic
   studentId?: string;
   registrationNumber?: string;
   batch?: number;
@@ -40,7 +40,7 @@ export interface IUserDocument extends Document {
   admissionYear?: number;
   expectedGraduation?: number;
 
-  // Profile — Professional
+  // Profile - Professional
   profession?: string;
   jobHistory: Array<{
     company: string;
@@ -91,11 +91,11 @@ export interface IUserDocument extends Document {
     assignedAt: Date;
   };
 
-  // Alumni tracking — sticky flag set when alumni form is approved (persists even if user removes job)
+  // Alumni tracking: sticky flag set when alumni form is approved (persists even if user removes job)
   alumniApproved: boolean;
   /** Admin override set on revoke that stops the pre-save hook re-flipping isAlumni, cleared when the admin grants again. */
   alumniManuallyRevoked: boolean;
-  // Alumni flag — derived in pre-save hook: approved member AND NOT alumniManuallyRevoked AND (alumniApproved OR current job/business)
+  // Alumni flag: derived in pre-save hook: approved member AND NOT alumniManuallyRevoked AND (alumniApproved OR current job/business)
   isAlumni: boolean;
   alumniAssignment?: {
     type: 'auto' | 'manual' | 'form';
@@ -104,7 +104,7 @@ export interface IUserDocument extends Document {
     assignedAt: Date;
   };
 
-  // Advisor tracking — auto-set for ex-president/GS on committee archive, or manually by admin
+  // Advisor tracking: auto-set for ex-president/GS on committee archive, or manually by admin
   isAdvisor: boolean;
   advisorAssignment?: {
     type: 'auto' | 'manual';
@@ -113,7 +113,7 @@ export interface IUserDocument extends Document {
     assignedAt: Date;
   };
 
-  // Senior Advisor tracking — only manually assigned by admin
+  // Senior Advisor tracking: only manually assigned by admin
   isSeniorAdvisor: boolean;
   seniorAdvisorAssignment?: {
     reason?: string;
@@ -157,7 +157,7 @@ export interface IUserDocument extends Document {
 
   // Meta
   lastLogin?: Date;
-  /** Most recent socket activity — used for "last seen 5 min ago" presence displays */
+  /** Most recent socket activity, used for "last seen 5 min ago" presence displays */
   lastSeenAt?: Date;
   isActive: boolean;
   isDeleted: boolean;
@@ -200,7 +200,7 @@ const userSchema = new Schema<IUserDocument>(
       select: false,
     },
 
-    // Profile — Personal
+    // Profile - Personal
     name: { type: String, required: true, trim: true },
     nameBn: { type: String, trim: true },
     nickName: { type: String, trim: true, maxlength: 50 },
@@ -215,7 +215,7 @@ const userSchema = new Schema<IUserDocument>(
     presentAddress: addressSchema,
     permanentAddress: addressSchema,
 
-    // Profile — Academic
+    // Profile - Academic
     studentId: String,
     registrationNumber: String,
     batch: Number,
@@ -226,7 +226,7 @@ const userSchema = new Schema<IUserDocument>(
     admissionYear: Number,
     expectedGraduation: Number,
 
-    // Profile — Professional
+    // Profile - Professional
     profession: String,
     jobHistory: [
       {
@@ -289,7 +289,7 @@ const userSchema = new Schema<IUserDocument>(
       assignedAt: Date,
     },
 
-    // Alumni tracking — recomputed in pre-save hook
+    // Alumni tracking: recomputed in pre-save hook
     alumniApproved: { type: Boolean, default: false },
     alumniManuallyRevoked: { type: Boolean, default: false },
     isAlumni: { type: Boolean, default: false },
@@ -300,7 +300,7 @@ const userSchema = new Schema<IUserDocument>(
       assignedAt: Date,
     },
 
-    // Advisor tracking — auto for ex-president/GS on archive, manual by admin
+    // Advisor tracking: auto for ex-president/GS on archive, manual by admin
     isAdvisor: { type: Boolean, default: false },
     advisorAssignment: {
       type: { type: String, enum: ['auto', 'manual'] },
@@ -309,7 +309,7 @@ const userSchema = new Schema<IUserDocument>(
       assignedAt: Date,
     },
 
-    // Senior Advisor tracking — manual only
+    // Senior Advisor tracking: manual only
     isSeniorAdvisor: { type: Boolean, default: false },
     seniorAdvisorAssignment: {
       reason: String,

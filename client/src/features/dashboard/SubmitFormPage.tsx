@@ -171,7 +171,7 @@ export default function SubmitFormPage() {
     mutation.mutate();
   };
 
-  // Alumni upload fields (legacy single-file flow — unchanged)
+  // Alumni upload fields (legacy single-file flow, unchanged)
   const alumniUploads = [
     { label: 'Business ID Card / Trade Licence / Employee ID Card', key: 'work_id' },
   ];
@@ -294,14 +294,14 @@ export default function SubmitFormPage() {
                 <RichTextEditor
                   value={reason}
                   onChange={(v) => { setReason(v); setErrors((prev) => { const { reason, ...rest } = prev; return rest; }); }}
-                  placeholder={isMembershipForm ? 'Tell us about yourself — your district, department, why you want to join...' : isAlumniForm ? 'Describe your current profession, company/business...' : 'Provide details about your application...'}
+                  placeholder={isMembershipForm ? 'Tell us about yourself: your district, department, why you want to join...' : isAlumniForm ? 'Describe your current profession, company/business...' : 'Provide details about your application...'}
                   minHeight="120px"
                   error={!!errors.reason}
                 />
                 <FieldError message={errors.reason} />
               </motion.div>
 
-              {/* Grouped uploads for membership — one of each accepted type */}
+              {/* Grouped uploads for membership, one of each accepted type */}
               {isMembershipForm && (criteria.academicDocs.enabled || criteria.identityDocs.enabled) && (
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
@@ -380,7 +380,7 @@ export default function SubmitFormPage() {
                         ) : (
                           <label className="flex items-center gap-2 px-3 py-2 border border-dashed rounded-md cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
                             <Upload className="h-4 w-4" />
-                            <span>{uploading ? 'Uploading...' : 'Choose file (JPEG, PNG, PDF — max 5MB)'}</span>
+                            <span>{uploading ? 'Uploading...' : 'Choose file (JPEG, PNG, PDF: max 5MB)'}</span>
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -496,7 +496,7 @@ function DocGroupUpload({
               {uploading
                 ? 'Uploading...'
                 : selectedDocType
-                  ? 'Choose file (JPEG, PNG, PDF — max 5MB)'
+                  ? 'Choose file (JPEG, PNG, PDF: max 5MB)'
                   : 'Select a document type first'}
             </span>
             <input

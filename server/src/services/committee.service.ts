@@ -167,7 +167,7 @@ export class CommitteeService {
   }
 
   /**
-   * Reject a member list that breaks the one-holder rule — the same user twice, or two people
+   * Reject a member list that breaks the one-holder rule, the same user twice, or two people
    * sharing a position that only one member may hold.
    */
   private async validateMemberInputs(members: CommitteeMemberInput[]): Promise<void> {
@@ -208,7 +208,7 @@ export class CommitteeService {
     );
     if (existing) throw ApiError.conflict('User is already a member of this committee');
 
-    // Only sitting members hold a post, so removing one leaves the seat free for anyone — the same person included.
+    // Only sitting members hold a post, so removing one leaves the seat free for anyone, the same person included.
     const uniquePositions = await this.uniquePositions();
     if (uniquePositions.includes(memberInput.position)) {
       const seatTaken = committee.members.some(
@@ -326,10 +326,7 @@ export class CommitteeService {
     }
   }
 
-  /**
-   * Auto-assign roles to qualifying positions in a new current committee,
-   * based on the editable auto-role config.
-   */
+  /** Auto-assign roles to qualifying positions in a new current committee, based on the editable auto-role config. */
   private async assignAutoRoles(committee: ICommitteeDocument): Promise<void> {
     const cfg = await getAutoRoleConfig();
     for (const member of committee.members) {
@@ -392,7 +389,7 @@ export class CommitteeService {
 
     const previousRole = user.role;
     user.role = UserRole.MODERATOR;
-    // isModerator stays true — they retain Moderator as ex-officer
+    // isModerator stays true; they retain Moderator as ex-officer
     user.moderatorAssignment = {
       type: 'auto',
       reason: `ex_officer_${reason}`,
@@ -417,9 +414,7 @@ export class CommitteeService {
     });
   }
 
-  /**
-   * Grant or revoke Moderator role for a user (auto-assignment for OS/Treasurer).
-   */
+  /** Grant or revoke Moderator role for a user (auto-assignment for OS/Treasurer). */
   private async setAutoModeratorRole(userId: string, grant: boolean, reason: string): Promise<void> {
     const user = await User.findById(userId);
     if (!user) return;
@@ -487,9 +482,7 @@ export class CommitteeService {
     }
   }
 
-  /**
-   * Check if a user still qualifies for a role via another active committee.
-   */
+  /** Check if a user still qualifies for a role via another active committee. */
   private async stillQualifiesForRole(userId: string, positions: string[]): Promise<boolean> {
     const activeCommittees = await Committee.find({
       isCurrent: true,
@@ -508,9 +501,7 @@ export class CommitteeService {
     );
   }
 
-  /**
-   * Auto-grant the Advisor tag to a user (used on committee archive for ex-president/GS).
-   */
+  /** Auto-grant the Advisor tag to a user (used on committee archive for ex-president/GS). */
   private async grantAdvisorTag(userId: string, reason: string): Promise<void> {
     const user = await User.findById(userId);
     if (!user) return;

@@ -29,9 +29,9 @@ interface Props {
   onEdit: (msg: ChatMessage) => void;
   onDeleteEveryone: (messageId: string) => void;
   onDeleteForMe: (messageId: string) => void;
-  /** Called when messages are actually visible — used to post read receipts */
+  /** Called when messages are actually visible, used to post read receipts */
   onVisibleMessages?: (messageIds: string[]) => void;
-  /** Cursor pagination — called when the user scrolls near the top */
+  /** Cursor pagination: called when the user scrolls near the top */
   onLoadOlder?: () => void;
   hasMore?: boolean;
   isLoadingOlder?: boolean;
@@ -75,7 +75,7 @@ export default function MessageList(props: Props) {
   const initialScrollDoneRef = useRef(false);
   const firstMessageIdRef = useRef<string | null>(null);
 
-  // Collect all images in order — used to power the lightbox "carousel".
+  // Collect all images in order, used to power the lightbox "carousel".
   const allImages: ListImage[] = useMemo(() => {
     const acc: ListImage[] = [];
     for (const m of messages) {
@@ -101,7 +101,7 @@ export default function MessageList(props: Props) {
     lastCountRef.current = 0;
   }
 
-  /** Imperative jump to the bottom — works even with images that load later. */
+  /** Imperative jump to the bottom, works even with images that load later. */
   const jumpToBottom = useCallback((smooth = false) => {
     const el = scrollRef.current;
     if (!el) return;
@@ -121,7 +121,7 @@ export default function MessageList(props: Props) {
     const el = scrollRef.current;
     if (!el || isLoading || messages.length === 0 || initialScrollDoneRef.current) return;
 
-    // Immediate jump — runs before paint so the user never sees the top.
+    // Immediate jump: runs before paint so the user never sees the top.
     el.scrollTop = el.scrollHeight;
     setStickToBottom(true);
 
@@ -162,7 +162,7 @@ export default function MessageList(props: Props) {
   // Track whether the user is at the bottom so we can freeze auto-scroll when they scroll up.
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     // Ignore the synthetic scroll fired by our own jumpToBottom before the
-    // initial scroll has completed — otherwise it can flip stickToBottom to
+    // initial scroll has completed; otherwise it can flip stickToBottom to
     // false on first paint when scrollHeight is still being computed.
     if (!initialScrollDoneRef.current) return;
     const el = e.currentTarget;

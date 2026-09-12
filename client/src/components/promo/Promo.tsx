@@ -56,7 +56,7 @@ export default function Promo({
       (window.adsbygoogle = window.adsbygoogle || []).push({});
       pushed.current = true;
     } catch {
-      /* AdSense script not yet loaded — fail silently; remount will retry. */
+      /* AdSense script not yet loaded, fail silently; remount will retry. */
     }
 
     // Watch for AdSense's "unfilled" signal so we can collapse the slot

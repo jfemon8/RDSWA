@@ -54,7 +54,7 @@ router.patch('/read-all', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, null, 'All notifications marked as read');
 }));
 
-// Broadcast (SuperAdmin only) — uses centralized service with preferences
+// Broadcast (SuperAdmin only) - uses centralized service with preferences
 router.post('/broadcast', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const { title, message, link } = req.body;
   const users = await User.find({ isDeleted: false, isActive: true }).select('_id');
@@ -70,7 +70,7 @@ router.post('/broadcast', authenticate(), authorize(UserRole.SUPER_ADMIN), async
   ApiResponse.success(res, { count }, 'Broadcast sent');
 }));
 
-// Targeted notification (Moderator+) — uses centralized service
+// Targeted notification (Moderator+) - uses centralized service
 router.post('/targeted', authenticate(), authorize(UserRole.MODERATOR), asyncHandler(async (req, res) => {
   const { recipientIds, title, message, link, type, targetRole, targetBatch } = req.body;
 

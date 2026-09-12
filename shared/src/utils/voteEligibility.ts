@@ -33,11 +33,11 @@ export function isEligibleVoter(vote: VoteEligibilityRule, voter: VoterIdentity)
 export function describeEligibility(vote: VoteEligibilityRule, formatBatch: (batch: number) => string): string {
   if (vote.eligibleVoters === 'batch_specific') {
     const batches = (vote.eligibleBatches || []).map(formatBatch);
-    return batches.length ? `Only for batch ${batches.join(', ')}` : 'No batch selected — nobody can vote';
+    return batches.length ? `Only for batch ${batches.join(', ')}` : 'No batch selected: nobody can vote';
   }
   if (vote.eligibleVoters === 'role_specific') {
     const roles = (vote.eligibleRoles || []).map((r) => r.replace(/_/g, ' '));
-    return roles.length ? `Only for ${roles.join(', ')}` : 'No role selected — nobody can vote';
+    return roles.length ? `Only for ${roles.join(', ')}` : 'No role selected: nobody can vote';
   }
   return 'Open to all members';
 }

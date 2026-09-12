@@ -69,8 +69,8 @@ export default function BloodDonorsPage() {
   return (
     <div className="container mx-auto py-8">
       <SEO
-        title="Blood Donor List — University of Barishal Rangpur Students"
-        description="Find verified blood donors from RDSWA — students of University of Barishal from Rangpur Division. Filter by blood group (A+, A−, B+, B−, AB+, AB−, O+, O−) and district. Direct contact for emergency blood needs in Barishal, Rangpur, Dhaka and across Bangladesh."
+        title="Blood Donor List: University of Barishal Rangpur Students"
+        description="Find verified blood donors from RDSWA: students of University of Barishal from Rangpur Division. Filter by blood group (A+, A−, B+, B−, AB+, AB−, O+, O−) and district. Direct contact for emergency blood needs in Barishal, Rangpur, Dhaka and across Bangladesh."
         keywords="blood donor list Bangladesh, blood donor Barishal, blood donor Rangpur, BU blood donor, ববি ব্লাড ডোনার, রক্তদাতা, emergency blood Bangladesh, A+ blood donor, B+ blood donor, O+ blood donor, RDSWA blood, University of Barishal blood donor"
       />
 

@@ -143,7 +143,7 @@ export default function NotificationsPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={async (e) => {
-                      // Stop the card's click handler from also firing —
+                      // Stop the card's click handler from also firing -
                       // otherwise we'd navigate + delete in the same tap.
                       e.stopPropagation();
                       const ok = await confirm({ title: 'Delete Notification', message: 'Remove this notification from your list?', confirmLabel: 'Delete', variant: 'danger' });

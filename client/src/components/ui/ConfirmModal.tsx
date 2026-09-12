@@ -176,7 +176,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               aria-hidden="true"
             />
 
-            {/* Modal — bottom sheet on mobile, centered on desktop */}
+            {/* Modal: bottom sheet on mobile, centered on desktop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

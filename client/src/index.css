@@ -110,7 +110,7 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Minimum touch target (44x44) — iOS HIG guideline */
+  /* Minimum touch target (44x44) - iOS HIG guideline */
   .tap-target {
     min-width: 44px;
     min-height: 44px;
@@ -123,7 +123,7 @@
     scrollbar-width: none;
   }
 
-  /* Thin styled scrollbar for chat areas — adapts to light/dark via CSS vars. */
+  /* Thin styled scrollbar for chat areas, adapts to light/dark via CSS vars. */
   .chat-scroll {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;

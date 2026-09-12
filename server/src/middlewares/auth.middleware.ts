@@ -40,7 +40,7 @@ export function authenticate(optional = false) {
         throw ApiError.unauthorized('User not found or deactivated');
       }
 
-      // SuperAdmin auto-detection — ensure role + flags are always correct
+      // SuperAdmin auto-detection: ensure role + flags are always correct
       if (SUPER_ADMIN_EMAILS.includes(user.email)) {
         let needsSave = false;
         if (user.role !== UserRole.SUPER_ADMIN) { user.role = UserRole.SUPER_ADMIN; needsSave = true; }

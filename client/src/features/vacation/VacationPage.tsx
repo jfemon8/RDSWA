@@ -378,7 +378,7 @@ function YearCard({ vacation }: { vacation: Vacation }) {
             </Suspense>
           ))}
 
-          {/* Other formats — fallback card with Open + Download. */}
+          {/* Other formats: fallback card with Open + Download. */}
           {classified.filter((a) => !a.isImage && !a.isPdf).map((other, i) => (
             <OtherAttachmentCard key={`other-${i}`} attachment={other} />
           ))}
@@ -407,7 +407,7 @@ function ensureExt(name: string, url: string, type: string): string {
   return ext ? `${name}.${ext}` : name;
 }
 
-/** Word / Excel / archives — formats the browser can't embed inline. */
+/** Word / Excel / archives: formats the browser can't embed inline. */
 function OtherAttachmentCard({ attachment }: { attachment: { name: string; url: string; type: string } }) {
   const { name, url, type } = attachment;
   const previewUrl = proxyFileUrl(url, name, true);

@@ -30,7 +30,7 @@ const idbStorage: AsyncStorageLike = {
 export const queryPersister = createAsyncStoragePersister({
   storage: idbStorage,
   key: STORE_KEY,
-  // Throttle writes — without this, every query update triggers an IDB put,
+  // Throttle writes: without this, every query update triggers an IDB put,
   // which thrashes the main thread on lists with many concurrent queries.
   throttleTime: 1000,
 });
@@ -39,7 +39,7 @@ export const queryPersister = createAsyncStoragePersister({
 export const persistOptions = {
   persister: queryPersister,
   maxAge: THIRTY_DAYS_MS,
-  // Bump this when the query cache shape changes in an incompatible way —
+  // Bump this when the query cache shape changes in an incompatible way -
   // persisted data with a different buster is discarded on app load.
   buster: 'v2-offlineFirst',
   dehydrateOptions: {
@@ -66,5 +66,5 @@ export async function clearPersistedQueries(): Promise<void> {
 }
 
 export function buildDefaultClient(client: QueryClient): QueryClient {
-  return client; // placeholder — kept so persistence setup has one entry point.
+  return client; // placeholder: kept so persistence setup has one entry point.
 }

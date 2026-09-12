@@ -399,7 +399,7 @@ function PhoneContactMode({ onSelect }: { onSelect: (contact: NonNullable<ChatAt
       }
       setPicked(normalized);
     } catch (err: any) {
-      // User cancelled or permission denied — silent.
+      // User cancelled or permission denied, silent.
       if (err?.name !== 'AbortError') {
         console.error('contacts.select error:', err);
       }

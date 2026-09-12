@@ -33,7 +33,7 @@ export class NoticeService {
 
     if (query.category) filter.category = query.category;
 
-    // Search filter — build $or separately and merge with $and if needed
+    // Search filter: build $or separately and merge with $and if needed
     if (query.search) {
       const term = escapeRegex(query.search);
       const searchCondition = [

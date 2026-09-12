@@ -50,8 +50,7 @@ const text = (value: unknown, fallback = 'Untitled'): string => {
   return str || fallback;
 };
 
-/** Every soft-deletable collection, so retention covers all of them while the bin lists the ones worth recovering by hand. */
-// Users are absent on purpose, since their delete, restore and purge carry extra rules on the Users page.
+/** Every soft-deletable collection except users, whose own page carries the extra rules their lifecycle needs. */
 export const TRASH_RESOURCES: TrashResource[] = [
   { key: 'notices', label: 'Notices', model: Notice, select: 'title status createdAt deletedAt', title: (d) => text(d.title), recoverable: true },
   { key: 'events', label: 'Events', model: Event, select: 'title startDate createdAt deletedAt', title: (d) => text(d.title), recoverable: true },
@@ -62,7 +61,7 @@ export const TRASH_RESOURCES: TrashResource[] = [
   { key: 'committees', label: 'Committees', model: Committee, select: 'name createdAt deletedAt', title: (d) => text(d.name), recoverable: true },
   { key: 'votes', label: 'Votes', model: Vote, select: 'title createdAt deletedAt', title: (d) => text(d.title), recoverable: true },
   { key: 'campaigns', label: 'Donation campaigns', model: DonationCampaign, select: 'title createdAt deletedAt', title: (d) => text(d.title), recoverable: true },
-  { key: 'donations', label: 'Donations', model: Donation, select: 'receiptNumber amount createdAt deletedAt', title: (d) => text(d.receiptNumber, `Donation of ${d.amount ?? '—'}`), recoverable: true },
+  { key: 'donations', label: 'Donations', model: Donation, select: 'receiptNumber amount createdAt deletedAt', title: (d) => text(d.receiptNumber, `Donation of ${d.amount ?? '-'}`), recoverable: true },
   { key: 'expenses', label: 'Expenses', model: Expense, select: 'title amount createdAt deletedAt', title: (d) => text(d.title), recoverable: true },
   { key: 'budgets', label: 'Budgets', model: Budget, select: 'title createdAt deletedAt', title: (d) => text(d.title), recoverable: true },
   { key: 'vacations', label: 'Vacation calendars', model: Vacation, select: 'academicYear createdAt deletedAt', title: (d) => text(d.academicYear, 'Vacation calendar'), recoverable: true },

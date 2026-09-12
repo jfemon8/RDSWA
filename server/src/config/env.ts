@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { z } from 'zod';
 
-// Load .env before validation — must run before any import reads env
+// Load .env before validation, must run before any import reads env
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 const envSchema = z.object({

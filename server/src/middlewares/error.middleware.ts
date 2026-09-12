@@ -46,7 +46,7 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
-  // Default 500 — report to Sentry
+  // Default 500: report to Sentry
   captureException(err);
   console.error('Unhandled error:', err);
   res.status(500).json({

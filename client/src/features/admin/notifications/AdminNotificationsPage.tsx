@@ -285,7 +285,7 @@ function HistoryPanel() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{stripHtml(n.message)}</p>
                   <p className="text-[11px] text-muted-foreground/80 mt-1">
-                    To: {n.recipient?.name || 'Unknown'} ({n.recipient?.email || '—'})
+                    To: {n.recipient?.name || 'Unknown'} ({n.recipient?.email || '-'})
                     {' · '}
                     {formatDate(n.createdAt)} {formatTime(n.createdAt)}
                   </p>

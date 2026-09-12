@@ -43,7 +43,7 @@ function uniqueEmail() {
 }
 
 // ---------------------------------------------------------------------------
-// Main test function — executed once per VU iteration
+// Main test function: executed once per VU iteration
 // ---------------------------------------------------------------------------
 
 export default function () {
@@ -60,7 +60,7 @@ export default function () {
 
   sleep(0.5);
 
-  // ---- 2. Auth flow — register then login --------------------------------
+  // ---- 2. Auth flow: register then login --------------------------------
   group('Auth Flow', () => {
     const email = uniqueEmail();
     const password = 'LoadTest1';

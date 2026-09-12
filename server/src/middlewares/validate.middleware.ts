@@ -8,9 +8,7 @@ interface ValidationSchemas {
   params?: ZodSchema;
 }
 
-/**
- * Validates request body, query, and/or params against Zod schemas.
- */
+/** Validates request body, query, and/or params against Zod schemas. */
 export function validate(schemas: ValidationSchemas) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {

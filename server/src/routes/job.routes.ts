@@ -36,7 +36,7 @@ function requireJobPoster(req: any, _res: any, next: any): void {
   next();
 }
 
-// List active job posts (Public — anyone can view)
+// List active job posts (Public: anyone can view)
 router.get('/', asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const filter: FilterQuery<IJobPostDocument> = { isDeleted: false, isActive: true };
@@ -63,7 +63,7 @@ router.get('/', asyncHandler(async (req, res) => {
   ApiResponse.paginated(res, jobs, total, page, limit);
 }));
 
-// My job posts (authenticated) — MUST be before /:id to avoid route conflict
+// My job posts (authenticated) - MUST be before /:id to avoid route conflict
 router.get('/my/posts', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const { page, limit } = parsePagination(req.query as any);
@@ -79,7 +79,7 @@ router.get('/my/posts', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.paginated(res, jobs, total, page, limit);
 }));
 
-// Get single job post (Public — anyone can view)
+// Get single job post (Public: anyone can view)
 router.get('/:id', asyncHandler(async (req, res) => {
   const job = await JobPost.findOne({ _id: req.params.id as string, isDeleted: false })
     .populate('postedBy', 'name avatar department');

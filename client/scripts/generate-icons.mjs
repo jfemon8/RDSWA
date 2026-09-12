@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_ICONS = path.resolve(__dirname, '../public/icons');
 const SOURCE = path.join(PUBLIC_ICONS, 'source-logo.png');
 
-// Brand background color for the maskable icon — matches manifest background_color
+// Brand background color for the maskable icon, matches manifest background_color
 // so the icon looks intentional against Android adaptive icon masks.
 const MASKABLE_BG = { r: 255, g: 255, b: 255, alpha: 1 };
 

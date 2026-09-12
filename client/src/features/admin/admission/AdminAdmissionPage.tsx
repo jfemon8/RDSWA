@@ -354,7 +354,7 @@ function CircularsSection() {
       {isLoading ? (
         <CardListSkeleton />
       ) : items.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground py-8">No circulars yet — click "New Circular" above.</p>
+        <p className="text-center text-sm text-muted-foreground py-8">No circulars yet. Click "New Circular" above.</p>
       ) : (
         <div className="space-y-2">
           {items.map((c: any, i: number) => {
@@ -588,7 +588,7 @@ function SeatsSection() {
   const [cloneFrom, setCloneFrom] = useState('');
   const [cloneTo, setCloneTo] = useState('');
 
-  // Rename modal state — shared by session-rename and category-rename so we
+  // Rename modal state: shared by session-rename and category-rename so we
   // don't ship two near-identical dialogs.
   const [renameTarget, setRenameTarget] = useState<RenameTarget>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -780,7 +780,7 @@ function SeatsSection() {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm text-muted-foreground">
           Sessions are at the top level; expand any session to manage its categories and rows. The session is
-          implicit when adding rows — no need to retype it. Use <span className="font-medium text-foreground">Clone Session</span>
+          implicit when adding rows, no need to retype it. Use <span className="font-medium text-foreground">Clone Session</span>
           to copy an existing year forward without re-entering every row.
         </p>
         <div className="flex gap-2 flex-wrap">
@@ -809,7 +809,7 @@ function SeatsSection() {
         <CardListSkeleton />
       ) : bySession.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">
-          No seat data yet — click "New Session" above to add the first session.
+          No seat data yet. Click "New Session" above to add the first session.
         </p>
       ) : (
         <div className="space-y-3">
@@ -870,7 +870,7 @@ function SeatsSection() {
 
                 {sessionRows.length === 0 && !formActive ? (
                   <p className="text-center text-xs text-muted-foreground py-6">
-                    No rows in this session yet — click "Add Row" above to add one.
+                    No rows in this session yet. Click "Add Row" above to add one.
                   </p>
                 ) : (
                   <SeatsSessionBody
@@ -1041,7 +1041,7 @@ function SeatsSessionBody({
             </table>
           </div>
 
-          {/* Mobile card list — one card per university, so no column is pushed off-screen. */}
+          {/* Mobile card list: one card per university, so no column is pushed off-screen. */}
           <div className="sm:hidden divide-y">
             {items.map((r: any) => (
               <div key={r._id} className="p-3">
@@ -1177,7 +1177,7 @@ function InlineSeatForm({
         <Field label="C Unit Seats">
           <NumberInput value={form.cUnit} onChange={(v) => onChange({ ...form, cUnit: v })} />
         </Field>
-        <Field label="Total Seats" hint="Computed — A + B + C">
+        <Field label="Total Seats" hint="Computed: A + B + C">
           <div className="w-full px-3 py-2 border rounded-md bg-background/50 text-sm tabular-nums font-medium text-foreground">
             {(form.aUnit || 0) + (form.bUnit || 0) + (form.cUnit || 0)}
           </div>
@@ -1261,7 +1261,7 @@ function NewSessionDialog({
                 Create a new admission session. The session opens immediately with the inline form
                 so you can add the first row right away.
               </p>
-              <Field label="Session label *" hint="e.g., 2026-27 — must be unique">
+              <Field label="Session label *" hint="e.g., 2026-27, must be unique">
                 <input
                   autoFocus
                   value={value}
@@ -1355,7 +1355,7 @@ function CloneSessionDialog({
                   {sessions.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </Field>
-              <Field label="New session label *" hint="e.g., 2026-27 — must be unique">
+              <Field label="New session label *" hint="e.g., 2026-27, must be unique">
                 <input
                   value={targetSession}
                   onChange={(e) => onTargetChange(e.target.value)}
@@ -1531,13 +1531,13 @@ function CutoffsSection() {
   const [cloneFrom, setCloneFrom] = useState('');
   const [cloneTo, setCloneTo] = useState('');
 
-  // Rename dialog state (only the 'session' kind applies here — cut-off rows
+  // Rename dialog state (only the 'session' kind applies here: cut-off rows
   // don't have a category-level grouping admins can rename).
   const [renameTarget, setRenameTarget] = useState<RenameTarget>(null);
   const [renameValue, setRenameValue] = useState('');
 
   // Faculty + Department dropdowns are driven by SiteSettings.academicConfig
-  // — the same source the rest of the platform uses.
+  //: the same source the rest of the platform uses.
   const { config: academicConfig } = useAcademicConfig();
   const faculties = academicConfig.faculties;
 
@@ -1597,7 +1597,7 @@ function CutoffsSection() {
         }
       });
       if (ops.length === 0) {
-        // Nothing changed — let the UI close gracefully without hitting the API.
+        // Nothing changed: let the UI close gracefully without hitting the API.
         return [];
       }
       return Promise.all(ops);
@@ -1672,7 +1672,7 @@ function CutoffsSection() {
         lastMerit: p.lastPositionMerit?.toString() || '',
         lastScore: p.lastPositionScore?.toString() || '',
       };
-      // Last writer wins for shared metadata — peers usually agree on these.
+      // Last writer wins for shared metadata, peers usually agree on these.
       if (p.dataSource) dataSource = p.dataSource;
       sortOrder = p.sortOrder || 0;
     }
@@ -1733,7 +1733,7 @@ function CutoffsSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm text-muted-foreground">
-          Cut-off marks are grouped by admission session. The session is implicit when adding rows — no need
+          Cut-off marks are grouped by admission session. The session is implicit when adding rows, no need
           to retype it. Faculties &amp; departments come from{' '}
           <span className="font-medium text-foreground">Settings → Academic Config</span>. Use{' '}
           <span className="font-medium text-foreground">Clone Session</span> to copy an existing year forward.
@@ -1764,7 +1764,7 @@ function CutoffsSection() {
         <CardListSkeleton />
       ) : bySession.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-8">
-          No cut-off data yet — click "New Session" above to add the first session.
+          No cut-off data yet. Click "New Session" above to add the first session.
         </p>
       ) : (
         <div className="space-y-3">
@@ -1824,7 +1824,7 @@ function CutoffsSection() {
 
                 {sessionRows.length === 0 && !formActive ? (
                   <p className="text-center text-xs text-muted-foreground py-6">
-                    No cut-off rows in this session yet — click "Add Row" above to add one.
+                    No cut-off rows in this session yet. Click "Add Row" above to add one.
                   </p>
                 ) : (
                   <CutoffsAdminTable
@@ -1833,7 +1833,7 @@ function CutoffsSection() {
                     onDelete={async (r) => {
                       const ok = await confirm({
                         title: 'Delete cut-off row?',
-                        message: `${r.faculty} — ${r.department} (Unit ${r.unit}) for session ${r.session} will be removed.`,
+                        message: `${r.faculty} - ${r.department} (Unit ${r.unit}) for session ${r.session} will be removed.`,
                         confirmLabel: 'Delete',
                         variant: 'danger',
                       });
@@ -1963,9 +1963,9 @@ function InlineCutoffForm({
         </Field>
       </div>
 
-      {/* Per-unit sections — empty ones are skipped on save. */}
+      {/* Per-unit sections: empty ones are skipped on save. */}
       <p className="text-xs text-muted-foreground">
-        Fill the unit sections that apply to this department — leave the rest empty and they will be skipped.
+        Fill the unit sections that apply to this department, leave the rest empty and they will be skipped.
       </p>
       <div className="space-y-3">
         {(['A', 'B', 'C'] as const).map((key) => (
@@ -2021,14 +2021,14 @@ function UnitFieldset({
         </p>
         <span className="text-[10px] text-muted-foreground">
           {hasExisting
-            ? 'Existing — will be updated'
+            ? 'Existing: will be updated'
             : empty
-              ? 'Empty — will be skipped'
-              : 'New — will be added'}
+              ? 'Empty: will be skipped'
+              : 'New: will be added'}
         </span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Field label="1st — Merit">
+        <Field label="1st - Merit">
           <input
             type="number"
             value={data.firstMerit}
@@ -2037,7 +2037,7 @@ function UnitFieldset({
             className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
           />
         </Field>
-        <Field label="1st — Score">
+        <Field label="1st - Score">
           <input
             type="number" step="0.01"
             value={data.firstScore}
@@ -2046,7 +2046,7 @@ function UnitFieldset({
             className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
           />
         </Field>
-        <Field label="Last — Merit">
+        <Field label="Last - Merit">
           <input
             type="number"
             value={data.lastMerit}
@@ -2055,7 +2055,7 @@ function UnitFieldset({
             className="w-full px-2.5 py-1.5 border rounded-md bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
           />
         </Field>
-        <Field label="Last — Score">
+        <Field label="Last - Score">
           <input
             type="number" step="0.01"
             value={data.lastScore}
@@ -2108,11 +2108,11 @@ function CutoffsAdminTable({
               <td className="px-3 py-2 text-xs text-muted-foreground">{r.faculty}</td>
               <td className="px-3 py-2">{r.department}</td>
               <td className="px-3 py-2 text-center font-medium">{r.unit}</td>
-              <td className="px-3 py-2 text-center tabular-nums">{r.firstPositionMerit ?? '—'}</td>
-              <td className="px-3 py-2 text-center tabular-nums">{r.firstPositionScore?.toFixed(2) ?? '—'}</td>
-              <td className="px-3 py-2 text-center tabular-nums">{r.lastPositionMerit ?? '—'}</td>
-              <td className="px-3 py-2 text-center tabular-nums">{r.lastPositionScore?.toFixed(2) ?? '—'}</td>
-              <td className="px-3 py-2 text-xs text-muted-foreground">{r.dataSource || '—'}</td>
+              <td className="px-3 py-2 text-center tabular-nums">{r.firstPositionMerit ?? '-'}</td>
+              <td className="px-3 py-2 text-center tabular-nums">{r.firstPositionScore?.toFixed(2) ?? '-'}</td>
+              <td className="px-3 py-2 text-center tabular-nums">{r.lastPositionMerit ?? '-'}</td>
+              <td className="px-3 py-2 text-center tabular-nums">{r.lastPositionScore?.toFixed(2) ?? '-'}</td>
+              <td className="px-3 py-2 text-xs text-muted-foreground">{r.dataSource || '-'}</td>
               <td className="px-3 py-2 text-right">
                 <button onClick={() => onEdit(r)} className="p-1.5 rounded hover:bg-accent" title="Edit">
                   <Pencil className="h-3.5 w-3.5" />
@@ -2131,7 +2131,7 @@ function CutoffsAdminTable({
       </table>
     </div>
 
-    {/* Mobile card list — one card per cut-off row, so the four score columns stack instead of scrolling. */}
+    {/* Mobile card list: one card per cut-off row, so the four score columns stack instead of scrolling. */}
     <div className="sm:hidden divide-y">
       {rows.map((r: any) => (
         <div key={r._id} className="p-3">
@@ -2155,10 +2155,10 @@ function CutoffsAdminTable({
           </div>
           <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
             <span className="text-muted-foreground tabular-nums">
-              1st: {r.firstPositionMerit ?? '—'} / {r.firstPositionScore?.toFixed(2) ?? '—'}
+              1st: {r.firstPositionMerit ?? '-'} / {r.firstPositionScore?.toFixed(2) ?? '-'}
             </span>
             <span className="text-muted-foreground tabular-nums">
-              Last: {r.lastPositionMerit ?? '—'} / {r.lastPositionScore?.toFixed(2) ?? '—'}
+              Last: {r.lastPositionMerit ?? '-'} / {r.lastPositionScore?.toFixed(2) ?? '-'}
             </span>
           </div>
           {r.dataSource && (
@@ -2187,7 +2187,7 @@ function AdminSessionAccordion({
   defaultOpen: boolean;
   icon: typeof Megaphone;
   onAddRow: () => void;
-  /** Optional extra action buttons rendered to the LEFT of "Add Row" — used
+  /** Optional extra action buttons rendered to the LEFT of "Add Row" - used
    *  by SeatsSection to surface Rename / Delete bulk ops. */
   extraActions?: React.ReactNode;
   /** Literal text shown before the session label, which Seats overrides and Cut-offs leaves at the default. */

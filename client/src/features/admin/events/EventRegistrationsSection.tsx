@@ -77,7 +77,7 @@ export default function EventRegistrationsSection({ event }: { event: any }) {
         `${event.title || 'event'}-registrations.csv`
       );
       if (kind === 'pdf') {
-        await downloadTablePdf(csv, `${event.title} — Registrations`, `${event.title}-registrations`);
+        await downloadTablePdf(csv, `${event.title} - Registrations`, `${event.title}-registrations`);
       } else {
         saveTextFile(csv, filename);
       }
@@ -136,7 +136,7 @@ export default function EventRegistrationsSection({ event }: { event: any }) {
       {countOf('pending') > 0 && (
         <p className="mb-3 flex items-center gap-1.5 px-2.5 py-2 rounded-md bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-          {countOf('pending')} submission{countOf('pending') > 1 ? 's are' : ' is'} waiting on your review — approving one issues that member their check-in QR code.
+          {countOf('pending')} submission{countOf('pending') > 1 ? 's are' : ' is'} waiting on your review, approving one issues that member their check-in QR code.
         </p>
       )}
 

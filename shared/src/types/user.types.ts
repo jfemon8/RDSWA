@@ -95,9 +95,9 @@ export interface IUser {
   alumniManuallyRevoked: boolean;
   /** Derived flag: approved member AND NOT alumniManuallyRevoked AND (alumniApproved OR current job/business) */
   isAlumni: boolean;
-  /** Advisor flag — auto-set for ex-president/GS on committee archive, or manually by admin */
+  /** Advisor flag: auto-set for ex-president/GS on committee archive, or manually by admin */
   isAdvisor: boolean;
-  /** Senior Advisor flag — only manually assigned by admin */
+  /** Senior Advisor flag: only manually assigned by admin */
   isSeniorAdvisor: boolean;
 
   // Meta

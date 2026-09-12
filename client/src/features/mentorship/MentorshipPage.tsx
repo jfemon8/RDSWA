@@ -413,7 +413,7 @@ export default function MentorshipPage() {
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock className="h-3.5 w-3.5 animate-pulse" />
                 Waiting for mentor's response
-                {stale && " — a reminder has been sent"}
+                {stale && " - a reminder has been sent"}
               </span>
             )}
             {m.status === "active" && (

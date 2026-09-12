@@ -69,7 +69,7 @@ async function backfill(): Promise<Counters> {
     // (3) legacy role === 'senior_advisor' → isSeniorAdvisor tag
     if (user.role === UserRole.SENIOR_ADVISOR && !user.isSeniorAdvisor) {
       user.isSeniorAdvisor = true;
-      // No assignedBy available in backfill — use a system marker
+      // No assignedBy available in backfill. Use a system marker
       user.seniorAdvisorAssignment = {
         reason: 'backfill_from_legacy_role',
         assignedBy: user._id as any, // self-reference as system placeholder

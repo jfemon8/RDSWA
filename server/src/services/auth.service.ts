@@ -113,7 +113,7 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    // SuperAdmin check — ensure role + flags are always correct
+    // SuperAdmin check: ensure role + flags are always correct
     if (SUPER_ADMIN_EMAILS.includes(user.email)) {
       user.role = UserRole.SUPER_ADMIN;
       user.membershipStatus = 'approved' as any;
@@ -291,13 +291,13 @@ export class AuthService {
 
     const html = await renderEmailLayout({
       heading: 'Password Reset',
-      preheader: 'Reset your RDSWA password — link expires in 1 hour.',
+      preheader: 'Reset your RDSWA password, link expires in 1 hour.',
       greeting: `Hello ${user.name},`,
       intro: 'Please click the button below to reset your password:',
       cta: { label: 'Reset Password', url: buttonUrl },
       fallbackUrl,
       footerNote:
-        'This link expires in 1 hour. If you didn\'t request a password reset, please ignore this email — your account is safe.',
+        'This link expires in 1 hour. If you didn\'t request a password reset, please ignore this email, your account is safe.',
     });
 
     // Persist the token and return immediately rather than blocking the response on a slow or throttled SMTP send.

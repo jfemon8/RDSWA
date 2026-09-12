@@ -12,7 +12,7 @@ export interface IAnnouncementCommentDocument extends Document {
   announcement: mongoose.Types.ObjectId;
   author: mongoose.Types.ObjectId;
   content: string;
-  /** Set on a reply, pointing at the top-level comment it answers — replies never nest further. */
+  /** Set on a reply, pointing at the top-level comment it answers, replies never nest further. */
   parent?: mongoose.Types.ObjectId;
   reactions: ICommentReaction[];
   isEdited: boolean;

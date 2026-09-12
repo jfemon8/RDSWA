@@ -12,7 +12,7 @@ import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import { deriveEventStatus } from '@rdswa/shared';
 import Promo from '@/components/promo/Promo';
 
-// Meetings list reads like a long article — drop one in-article promo per
+// Meetings list reads like a long article, drop one in-article promo per
 // 5 entries so a typical screen has one ad without dominating the list.
 const PROMO_EVERY = 5;
 

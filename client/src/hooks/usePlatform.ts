@@ -11,7 +11,7 @@ function computePlatform(): { isAndroidApp: boolean; isAndroid: boolean; channel
   const ua = navigator.userAgent || '';
   const isAndroid = /Android/i.test(ua);
 
-  // ── 1. URL query param (primary — works with any third-party WebView wrapper) ──
+  // ── 1. URL query param (primary: works with any third-party WebView wrapper) ──
   if (typeof window !== 'undefined') {
     try {
       const params = new URLSearchParams(window.location.search);

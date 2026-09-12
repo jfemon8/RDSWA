@@ -6,7 +6,7 @@ let initialized = false;
 /** Initialize Sentry error tracking, only when SENTRY_DSN is set. */
 export function initSentry(): void {
   if (!env.SENTRY_DSN) {
-    console.log('Sentry DSN not configured — skipping Sentry initialization');
+    console.log('Sentry DSN not configured, skipping Sentry initialization');
     return;
   }
 

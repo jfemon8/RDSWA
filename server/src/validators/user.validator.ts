@@ -93,7 +93,7 @@ export const updateProfileSchema = z.object({
 });
 
 export const changeRoleSchema = z.object({
-  // Tier roles only — alumni/advisor/senior_advisor are tags managed via separate grant endpoints
+  // Tier roles only: alumni/advisor/senior_advisor are tags managed via separate grant endpoints
   role: z.enum(['guest', 'user', 'member', 'moderator', 'admin', 'super_admin']),
 });
 
@@ -101,7 +101,7 @@ export const memberActionSchema = z.object({
   reason: z.string().optional(),
 });
 
-/** SuperAdmin force-set password — overrides target user's existing password. */
+/** SuperAdmin force-set password, overrides target user's existing password. */
 export const forceSetPasswordSchema = z.object({
   newPassword: z.string()
     .min(6, 'Password must be at least 6 characters')

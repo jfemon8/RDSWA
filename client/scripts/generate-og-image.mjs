@@ -12,7 +12,7 @@ const OUTPUT = path.join(PUBLIC_DIR, 'og-image.png');
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-// Brand palette — keep in sync with tailwind theme + manifest theme_color.
+// Brand palette: keep in sync with tailwind theme + manifest theme_color.
 const BRAND_DARK = '#042f1f';
 const BRAND_PRIMARY = '#008f57';
 const BRAND_ACCENT = '#10b981';

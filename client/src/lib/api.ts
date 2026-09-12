@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// Request interceptor — attach access token
+// Request interceptor: attach access token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
@@ -26,7 +26,7 @@ let refreshPromise: Promise<string> | null = null;
 
 async function performRefresh(): Promise<string> {
   // Use the bare axios module (not the `api` instance) so this call does NOT
-  // re-enter our response interceptor — otherwise a 401 from the refresh
+  // re-enter our response interceptor; otherwise a 401 from the refresh
   // endpoint itself would recurse.
   const { data } = await axios.post(
     `${API_BASE}/auth/refresh-token`,
@@ -57,7 +57,7 @@ function handleAuthFailure() {
   }
 }
 
-// Response interceptor — handle token refresh
+// Response interceptor: handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -65,7 +65,7 @@ api.interceptors.response.use(
       | (AxiosRequestConfig & { _retry?: boolean })
       | undefined;
 
-    // Routes that must NOT trigger a refresh retry on 401 — either public
+    // Routes that must NOT trigger a refresh retry on 401, either public
     // (no token to refresh) or the refresh endpoint itself (would loop).
     const noRetryAuthRoutes = [
       '/auth/login',

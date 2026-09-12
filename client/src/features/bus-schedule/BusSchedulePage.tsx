@@ -80,7 +80,7 @@ export default function BusSchedulePage() {
         queryKey: key,
         queryFn: async () => (await api.get(url)).data,
         ...BUS_OFFLINE_OPTS,
-      }).catch(() => { /* offline — ignore, SW/persister handle it */ });
+      }).catch(() => { /* offline: ignore, SW/persister handle it */ });
 
     fire(['bus', 'routes', 'university'], '/bus/routes?routeType=university');
     fire(['bus', 'routes', 'intercity'], '/bus/routes?routeType=intercity');
@@ -304,7 +304,7 @@ export default function BusSchedulePage() {
     <div className="container mx-auto py-8 overflow-x-hidden">
       <SEO
         title="Rangpur to Barishal Bus Schedule"
-        description="Complete Rangpur to Barishal and Barishal to Rangpur bus schedule for University of Barishal students — operator timings, routes, counters, and seasonal variations updated regularly. RDSWA official transport guide."
+        description="Complete Rangpur to Barishal and Barishal to Rangpur bus schedule for University of Barishal students: operator timings, routes, counters, and seasonal variations updated regularly. RDSWA official transport guide."
         keywords="Rangpur to Barishal bus, Barishal to Rangpur bus, BU Rangpur bus schedule, University of Barishal transport, ববি বাস, রংপুর বরিশাল বাস, RDSWA bus, intercity bus Bangladesh, bus counter Rangpur Barishal"
       />
       <BlurText text="Bus Schedules" className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6" delay={80} animateBy="words" direction="bottom" />

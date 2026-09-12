@@ -7,9 +7,9 @@ export interface IMessageAttachment {
   kind: MessageAttachmentKind;
   /** File URL (Cloudinary secure_url for media, undefined for contact) */
   url?: string;
-  /** Cloudinary public_id — used by the purge job to delete the file */
+  /** Cloudinary public_id: used by the purge job to delete the file */
   publicId?: string;
-  /** Cloudinary resource_type ('image' | 'video' | 'raw') — needed to call destroy */
+  /** Cloudinary resource_type ('image' | 'video' | 'raw') - needed to call destroy */
   resourceType?: 'image' | 'video' | 'raw';
   /** Original filename (e.g. "report.pdf") */
   name?: string;
@@ -65,7 +65,7 @@ export interface IMessageDocument extends Document {
   replyTo?: IMessageReplySnapshot;
   /** If set, this message was forwarded from the referenced original */
   forwardedFrom?: mongoose.Types.ObjectId;
-  /** Emoji reactions — one entry per distinct user */
+  /** Emoji reactions: one entry per distinct user */
   reactions: IMessageReaction[];
   /** Users who starred this message (personal bookmark, per-user) */
   starredBy: mongoose.Types.ObjectId[];
@@ -77,7 +77,7 @@ export interface IMessageDocument extends Document {
   /** When the recipient actively opened the chat with this message visible */
   deliveredTo: Array<{ user: mongoose.Types.ObjectId; deliveredAt: Date }>;
   isDeleted: boolean;
-  /** Per-user "delete for me" — users in this list will not see this message */
+  /** Per-user "delete for me" - users in this list will not see this message */
   deletedFor: mongoose.Types.ObjectId[];
   /** Whether message content was edited after the original send */
   isEdited: boolean;
@@ -171,7 +171,7 @@ messageSchema.index({ isAnnouncement: 1, createdAt: -1 });
 messageSchema.index({ starredBy: 1, createdAt: -1 });
 // Text index for search across content
 messageSchema.index({ content: 'text' });
-// Purge job scans expiring attachments — this index makes that cheap.
+// Purge job scans expiring attachments; this index makes that cheap.
 messageSchema.index({ 'attachments.expiresAt': 1, 'attachments.expired': 1 });
 
 export const Message = mongoose.model<IMessageDocument>('Message', messageSchema);

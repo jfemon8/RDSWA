@@ -236,7 +236,7 @@ export default function JobBoardPage() {
         </div>
       )}
 
-      {/* Filters — hidden in "My Posts" view since user wants to see all their posts */}
+      {/* Filters: hidden in "My Posts" view since user wants to see all their posts */}
       <FadeIn delay={0.3}>
         <div className="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-3 mb-2 sm:mb-4">
           {view === "all" && (
@@ -464,7 +464,7 @@ export default function JobBoardPage() {
           description={
             search || typeFilter
               ? "No job posts match your filters. Try clearing them or searching with different keywords."
-              : "No job opportunities have been posted yet. Check back soon — new openings are shared by members and admins."
+              : "No job opportunities have been posted yet. Check back soon, new openings are shared by members and admins."
           }
           primary={
             search || typeFilter

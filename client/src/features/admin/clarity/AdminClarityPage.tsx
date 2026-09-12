@@ -177,7 +177,7 @@ export default function AdminClarityPage() {
         </div>
       </FadeIn>
 
-      {/* Quick action cards — deep links into Microsoft Clarity */}
+      {/* Quick action cards: deep links into Microsoft Clarity */}
       <FadeIn direction="up" delay={0.15}>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <ActionCard

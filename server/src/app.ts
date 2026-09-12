@@ -48,7 +48,7 @@ if (env.NODE_ENV !== 'test') {
 const app = express();
 const httpServer = createServer(app);
 
-// Trust proxy — required for correct req.ip behind reverse proxies (Vercel, Render, Cloudflare, nginx)
+// Trust proxy: required for correct req.ip behind reverse proxies (Vercel, Render, Cloudflare, nginx)
 // Use 1 (single proxy hop) instead of true to satisfy express-rate-limit v7+ validation
 app.set('trust proxy', 1);
 
@@ -95,10 +95,10 @@ async function start() {
   // Initialize central + department groups
   initializeGroups();
 
-  // Committee flags first — the role sync below reads isCurrent to decide who holds an auto-role.
+  // Committee flags first: the role sync below reads isCurrent to decide who holds an auto-role.
   await syncCommitteeCurrentFlags();
 
-  // One-time role sync — ensures DB matches new auto-assignment rules
+  // One-time role sync, ensures DB matches new auto-assignment rules
   syncRolesOnStart();
 
   // Announcements predating their own flag are recognised and marked, then notifications for deleted ones are dropped.
@@ -139,7 +139,7 @@ async function start() {
 
     // Force-kill after 10 seconds if graceful shutdown stalls
     const forceTimeout = setTimeout(() => {
-      console.error('Graceful shutdown timed out — forcing exit');
+      console.error('Graceful shutdown timed out, forcing exit');
       process.exit(1);
     }, 10_000);
     forceTimeout.unref();

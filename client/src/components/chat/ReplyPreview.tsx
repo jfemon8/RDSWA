@@ -11,7 +11,7 @@ export interface ReplyData {
 
 interface Props {
   reply: ReplyData;
-  /** Called when the user removes the reply — only shown on composer preview */
+  /** Called when the user removes the reply, only shown on composer preview */
   onCancel?: () => void;
   /** Match bubble color scheme when rendered inside a sent message */
   isMine?: boolean;

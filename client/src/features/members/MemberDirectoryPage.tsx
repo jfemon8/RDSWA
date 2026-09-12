@@ -24,7 +24,7 @@ export interface MemberDirectoryPageProps {
   title: string;
   /** SEO description */
   description: string;
-  /** Backend flag filter — which boolean to query on */
+  /** Backend flag filter: which boolean to query on */
   flagFilter: 'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor';
   /** Label for the empty state ("No alumni found" etc.) */
   emptyLabel: string;
@@ -38,7 +38,6 @@ export default function MemberDirectoryPage({
   emptyLabel,
 }: MemberDirectoryPageProps) {
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const { config: academicConfig, departments } = useAcademicConfig();
   const [batch, setBatch] = useState('');

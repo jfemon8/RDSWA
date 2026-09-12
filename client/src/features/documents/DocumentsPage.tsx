@@ -39,7 +39,7 @@ export default function DocumentsPage() {
       await api.get(`/documents/${docId}/download`);
       queryClient.invalidateQueries({ queryKey: ['documents'] });
     } catch {
-      /* non-fatal — still attempt the download */
+      /* non-fatal; still attempt the download */
     }
     window.open(proxyFileUrl(fileUrl, title, false), '_blank', 'noopener');
   };
@@ -76,7 +76,7 @@ export default function DocumentsPage() {
     <div className="container mx-auto py-8">
       <SEO
         title="Documents"
-        description="Official RDSWA documents — constitution, policies, meeting resolutions, financial reports, membership forms, and downloadable resources for the University of Barishal Rangpur student community. RDSWA ডকুমেন্টস ও ফরম।"
+        description="Official RDSWA documents: constitution, policies, meeting resolutions, financial reports, membership forms, and downloadable resources for the University of Barishal Rangpur student community. RDSWA ডকুমেন্টস ও ফরম।"
         keywords="RDSWA documents, RDSWA constitution, RDSWA policies, RDSWA membership form, RDSWA financial report, BU Rangpur documents, RDSWA ডকুমেন্ট, RDSWA ফরম"
       />
       <BlurText
@@ -207,11 +207,11 @@ export default function DocumentsPage() {
                           </div>
                           <div>
                             <p className="font-medium text-muted-foreground mb-0.5">File type</p>
-                            <p className="text-foreground uppercase">{doc.fileType || '—'}</p>
+                            <p className="text-foreground uppercase">{doc.fileType || '-'}</p>
                           </div>
                           <div>
                             <p className="font-medium text-muted-foreground mb-0.5">Size</p>
-                            <p className="text-foreground">{formatSize(doc.fileSize) || '—'}</p>
+                            <p className="text-foreground">{formatSize(doc.fileSize) || '-'}</p>
                           </div>
                           <div>
                             <p className="font-medium text-muted-foreground mb-0.5">Downloads</p>
@@ -219,7 +219,7 @@ export default function DocumentsPage() {
                           </div>
                           <div className="col-span-2 sm:col-span-2">
                             <p className="font-medium text-muted-foreground mb-0.5">Uploaded</p>
-                            <p className="text-foreground">{doc.createdAt ? formatDateTime(doc.createdAt) : '—'}</p>
+                            <p className="text-foreground">{doc.createdAt ? formatDateTime(doc.createdAt) : '-'}</p>
                           </div>
                           {doc.uploadedBy?.name && (
                             <div className="col-span-2 sm:col-span-2">

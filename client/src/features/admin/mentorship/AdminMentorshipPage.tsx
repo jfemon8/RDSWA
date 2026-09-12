@@ -119,7 +119,6 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
   const [search, setSearch] = useState('');
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const toggleExpand = useAccordionToggle(expandedId, setExpandedId);
@@ -237,8 +236,8 @@ function PairingsTab({ canManage }: { canManage: boolean }) {
     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground text-left">
       <span>Area: {m.area || 'Not specified'}</span>
       <span>Requested: {formatDate(m.requestedAt || m.createdAt)}</span>
-      <span>Accepted: {m.acceptedAt ? formatDate(m.acceptedAt) : '—'}</span>
-      <span>Completed: {m.completedAt ? formatDate(m.completedAt) : '—'}</span>
+      <span>Accepted: {m.acceptedAt ? formatDate(m.acceptedAt) : '-'}</span>
+      <span>Completed: {m.completedAt ? formatDate(m.completedAt) : '-'}</span>
       {m.mentor?.department && <span>Mentor dept: {m.mentor.department}</span>}
       {m.mentor?.profession && <span>Mentor works as: {m.mentor.profession}</span>}
       {m.mentee?.department && <span>Mentee dept: {m.mentee.department}</span>}
@@ -588,7 +587,7 @@ function MentorRosterTab({ canManage }: { canManage: boolean }) {
                   <div className="min-w-0">
                     <Link to={`/members/${m._id}`} className="font-medium text-foreground hover:text-primary transition-colors break-words">{m.name}</Link>
                     <p className="text-xs text-muted-foreground break-words">
-                      {[m.department, m.profession].filter(Boolean).join(' · ') || '—'}
+                      {[m.department, m.profession].filter(Boolean).join(' · ') || '-'}
                     </p>
                   </div>
                   <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium ${

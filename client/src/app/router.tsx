@@ -125,7 +125,7 @@ export default function AppRouter() {
         {/* Public routes */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
-          {/* Auth routes — redirect to dashboard if already logged in */}
+          {/* Auth routes: redirect to dashboard if already logged in */}
           <Route element={<GuestGuard />}>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

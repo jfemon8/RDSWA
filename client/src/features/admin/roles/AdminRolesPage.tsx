@@ -75,7 +75,7 @@ export default function AdminRolesPage() {
     <div className="container mx-auto space-y-8 py-4 sm:py-6">
       <h1 className="text-xl sm:text-2xl font-bold text-foreground">Role Management</h1>
 
-      {/* Role Hierarchy — tier roles only */}
+      {/* Role Hierarchy: tier roles only */}
       <FadeIn direction="up" delay={0.1}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <div className="flex items-center gap-2 mb-4">
@@ -106,7 +106,7 @@ export default function AdminRolesPage() {
         </div>
       </FadeIn>
 
-      {/* Role Details — tier roles */}
+      {/* Role Details - tier roles */}
       <FadeIn direction="up" delay={0.2}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <h2 className="font-semibold text-lg mb-4 text-foreground">Tier Roles</h2>
@@ -135,7 +135,7 @@ export default function AdminRolesPage() {
         </div>
       </FadeIn>
 
-      {/* Tag Roles — orthogonal flags */}
+      {/* Tag Roles - orthogonal flags */}
       <FadeIn direction="up" delay={0.25}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <h2 className="font-semibold text-lg mb-4 text-foreground">Tag Roles</h2>
@@ -172,12 +172,12 @@ export default function AdminRolesPage() {
       {/* Auto-Assignment Logic */}
       <AutoAssignmentRules />
 
-      {/* Permission Matrix — tier roles only */}
+      {/* Permission Matrix: tier roles only */}
       <FadeIn direction="up" delay={0.35}>
         <div className="border rounded-lg p-4 sm:p-5 bg-card">
           <h2 className="font-semibold text-lg mb-4 text-foreground">Permission Matrix</h2>
 
-          {/* Desktop matrix — table, fits without scroll at lg+ */}
+          {/* Desktop matrix: table, fits without scroll at lg+ */}
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-xs min-w-[480px]">
               <thead>
@@ -220,7 +220,7 @@ export default function AdminRolesPage() {
             </table>
           </div>
 
-          {/* Mobile — grouped by module with role chips showing which roles have access */}
+          {/* Mobile: grouped by module with role chips showing which roles have access */}
           <div className="lg:hidden space-y-3">
             {modules.map((mod) => {
               const modActions = actions.filter((a) => PERMISSIONS[`${mod}:${a}`]);
@@ -386,7 +386,7 @@ function RoleHistorySection() {
                       <td className="p-2.5 text-xs text-muted-foreground truncate" title={h.reason}>
                         {h.reason?.replace(/_/g, ' ')}
                       </td>
-                      <td className="p-2.5 text-xs text-muted-foreground truncate" title={h.assignedBy?.name || ''}>{h.assignedBy?.name || '—'}</td>
+                      <td className="p-2.5 text-xs text-muted-foreground truncate" title={h.assignedBy?.name || ''}>{h.assignedBy?.name || '-'}</td>
                       <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(h.createdAt)}</td>
                     </motion.tr>
                   ))}

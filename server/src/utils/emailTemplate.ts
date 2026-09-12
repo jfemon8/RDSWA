@@ -76,15 +76,15 @@ async function getBranding(): Promise<Branding> {
 interface EmailLayoutOptions {
   /** Page-title-style heading shown at the top of the body. */
   heading: string;
-  /** Optional preheader — shows in the inbox preview row. */
+  /** Optional preheader: shows in the inbox preview row. */
   preheader?: string;
-  /** Greeting line (e.g. "Hello Emon,") — leave undefined to skip. */
+  /** Greeting line (e.g. "Hello Emon,") - leave undefined to skip. */
   greeting?: string;
-  /** Body paragraphs — already escaped/safe HTML or plain strings. */
+  /** Body paragraphs: already escaped/safe HTML or plain strings. */
   intro?: string | string[];
   /** Primary CTA button, which the layout renders cleanly without. */
   cta?: { label: string; url: string };
-  /** Plaintext fallback link shown after "or," — recipients can copy/paste. */
+  /** Plaintext fallback link shown after "or," - recipients can copy/paste. */
   fallbackUrl?: string;
   /** Highlighted code block (used for OTPs etc.). */
   code?: string;

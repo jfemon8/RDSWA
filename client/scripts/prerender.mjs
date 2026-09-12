@@ -25,7 +25,7 @@ const ORG_SCHEMA = {
   url: SITE_URL,
   logo: ORG_LOGO,
   image: OG_IMAGE,
-  description: `Official platform of ${ORG_NAME} at the University of Barishal — connecting students from the Rangpur Division through events, notices, scholarships, blood-donor network, bus schedules, and alumni community.`,
+  description: `Official platform of ${ORG_NAME} at the University of Barishal: connecting students from the Rangpur Division through events, notices, scholarships, blood-donor network, bus schedules, and alumni community.`,
   parentOrganization: {
     '@type': 'CollegeOrUniversity',
     name: 'University of Barishal',
@@ -78,7 +78,7 @@ const ROUTES = [
     path: '/',
     title: 'RDSWA - Rangpur Divisional Student Welfare Association',
     description:
-      `RDSWA — ${ORG_NAME} at the University of Barishal. Member directory, events, notices, blood-donor network, Rangpur–Barishal bus schedule, scholarships, committees, alumni, and more for BU Rangpur students. ${ORG_NAME_BN}, বরিশাল বিশ্ববিদ্যালয়।`,
+      `RDSWA: ${ORG_NAME} at the University of Barishal. Member directory, events, notices, blood-donor network, Rangpur–Barishal bus schedule, scholarships, committees, alumni, and more for BU Rangpur students. ${ORG_NAME_BN}, বরিশাল বিশ্ববিদ্যালয়।`,
     keywords:
       'RDSWA, Rangpur Divisional Student Welfare Association, University of Barishal, BU Rangpur, রংপুর বিভাগীয় ছাত্র কল্যাণ সমিতি, বরিশাল বিশ্ববিদ্যালয়, Barishal University Rangpur students, Rangpur student association, BU student welfare, Rangpur to Barishal bus, BU blood donor',
     crumbs: [{ name: 'Home', path: '/' }],
@@ -87,7 +87,7 @@ const ROUTES = [
     path: '/about',
     title: 'About RDSWA | RDSWA',
     description:
-      `About ${ORG_NAME} (RDSWA) at the University of Barishal — our mission, vision, objectives, and history. The official student welfare body for BU students from Rangpur Division. ${ORG_NAME_BN} সম্পর্কে জানুন।`,
+      `About ${ORG_NAME} (RDSWA) at the University of Barishal: our mission, vision, objectives, and history. The official student welfare body for BU students from Rangpur Division. ${ORG_NAME_BN} সম্পর্কে জানুন।`,
     keywords:
       'About RDSWA, Rangpur Divisional Student Welfare Association, RDSWA history, RDSWA mission, University of Barishal student association, BU Rangpur, ববি রংপুর',
     crumbs: [
@@ -99,7 +99,7 @@ const ROUTES = [
     path: '/university',
     title: 'University of Barishal | RDSWA',
     description:
-      'About the University of Barishal (BU) — overview, history, campus information, departments, faculty, admissions, and campus life. Comprehensive university guide for Rangpur Division students. বরিশাল বিশ্ববিদ্যালয় সম্পর্কে জানুন।',
+      'About the University of Barishal (BU) - overview, history, campus information, departments, faculty, admissions, and campus life. Comprehensive university guide for Rangpur Division students. বরিশাল বিশ্ববিদ্যালয় সম্পর্কে জানুন।',
     keywords:
       'University of Barishal, BU Bangladesh, Barishal University, ববি, বরিশাল বিশ্ববিদ্যালয়, BU admissions, BU departments, BU campus, Bangladesh public university',
     crumbs: [
@@ -111,7 +111,7 @@ const ROUTES = [
     path: '/bus-schedule',
     title: 'Rangpur to Barishal Bus Schedule | RDSWA',
     description:
-      'Complete Rangpur to Barishal and Barishal to Rangpur bus schedule for University of Barishal students — operator timings, routes, counters, and seasonal variations updated regularly. RDSWA official transport guide.',
+      'Complete Rangpur to Barishal and Barishal to Rangpur bus schedule for University of Barishal students: operator timings, routes, counters, and seasonal variations updated regularly. RDSWA official transport guide.',
     keywords:
       'Rangpur to Barishal bus, Barishal to Rangpur bus, BU Rangpur bus schedule, University of Barishal transport, ববি বাস, রংপুর বরিশাল বাস, RDSWA bus, intercity bus Bangladesh, bus counter Rangpur Barishal',
     crumbs: [
@@ -135,7 +135,7 @@ const ROUTES = [
     path: '/events',
     title: 'Events | RDSWA',
     description:
-      'Upcoming and past RDSWA events at the University of Barishal — workshops, seminars, cultural programs, sports, scholarships, and social gatherings for Rangpur Division students.',
+      'Upcoming and past RDSWA events at the University of Barishal: workshops, seminars, cultural programs, sports, scholarships, and social gatherings for Rangpur Division students.',
     keywords:
       'RDSWA events, BU events, University of Barishal events, Rangpur student events, RDSWA workshops, RDSWA seminars, ববি ইভেন্ট, RDSWA কর্মসূচি',
     crumbs: [
@@ -147,7 +147,7 @@ const ROUTES = [
     path: '/committee',
     title: 'Committee | RDSWA',
     description:
-      'RDSWA committees and leadership team at the University of Barishal — President, General Secretary, Organizing Secretary, Treasurer and full executive lineup of every committee.',
+      'RDSWA committees and leadership team at the University of Barishal: President, General Secretary, Organizing Secretary, Treasurer and full executive lineup of every committee.',
     keywords:
       'RDSWA committee, RDSWA president, RDSWA general secretary, BU Rangpur committee, University of Barishal student committee, ববি কমিটি',
     crumbs: [
@@ -159,7 +159,7 @@ const ROUTES = [
     path: '/members',
     title: 'Members | RDSWA',
     description:
-      'RDSWA member directory — verified students of the University of Barishal from Rangpur Division. Find members by department, batch, district, and profession.',
+      'RDSWA member directory: verified students of the University of Barishal from Rangpur Division. Find members by department, batch, district, and profession.',
     keywords:
       'RDSWA members, BU Rangpur students, University of Barishal student directory, Rangpur students BU, ববি রংপুর শিক্ষার্থী, RDSWA সদস্য',
     crumbs: [
@@ -171,7 +171,7 @@ const ROUTES = [
     path: '/alumni',
     title: 'Honorable Alumnis | RDSWA',
     description:
-      'RDSWA alumni network — graduates of the University of Barishal from Rangpur Division. Find ex-students by batch, department, district, and current profession.',
+      'RDSWA alumni network: graduates of the University of Barishal from Rangpur Division. Find ex-students by batch, department, district, and current profession.',
     keywords:
       'RDSWA alumni, BU Rangpur alumni, University of Barishal alumni, RDSWA প্রাক্তন শিক্ষার্থী, ববি প্রাক্তন',
     crumbs: [
@@ -183,7 +183,7 @@ const ROUTES = [
     path: '/advisors',
     title: 'Honorable Advisors | RDSWA',
     description:
-      'RDSWA Advisors at the University of Barishal — former committee leaders and appointed advisors guiding the Rangpur Divisional Student Welfare Association.',
+      'RDSWA Advisors at the University of Barishal, former committee leaders and appointed advisors guiding the Rangpur Divisional Student Welfare Association.',
     keywords: 'RDSWA advisors, RDSWA উপদেষ্টা, BU Rangpur advisors',
     crumbs: [
       { name: 'Home', path: '/' },
@@ -194,7 +194,7 @@ const ROUTES = [
     path: '/senior-advisors',
     title: 'Honorable Senior Advisors | RDSWA',
     description:
-      'RDSWA Senior Advisors at the University of Barishal — senior mentors appointed to guide the Rangpur Divisional Student Welfare Association.',
+      'RDSWA Senior Advisors at the University of Barishal, senior mentors appointed to guide the Rangpur Divisional Student Welfare Association.',
     keywords: 'RDSWA senior advisors, RDSWA সিনিয়র উপদেষ্টা',
     crumbs: [
       { name: 'Home', path: '/' },
@@ -203,9 +203,9 @@ const ROUTES = [
   },
   {
     path: '/blood-donors',
-    title: 'Blood Donor List — University of Barishal Rangpur Students | RDSWA',
+    title: 'Blood Donor List: University of Barishal Rangpur Students | RDSWA',
     description:
-      'Find verified blood donors from RDSWA — students of the University of Barishal from Rangpur Division. Filter by blood group (A+, A−, B+, B−, AB+, AB−, O+, O−) and district.',
+      'Find verified blood donors from RDSWA: students of the University of Barishal from Rangpur Division. Filter by blood group (A+, A−, B+, B−, AB+, AB−, O+, O−) and district.',
     keywords:
       'blood donor list Bangladesh, blood donor Barishal, blood donor Rangpur, BU blood donor, ববি ব্লাড ডোনার, রক্তদাতা, emergency blood Bangladesh, A+ blood donor, B+ blood donor, O+ blood donor, RDSWA blood',
     crumbs: [
@@ -217,7 +217,7 @@ const ROUTES = [
     path: '/gallery',
     title: 'Gallery | RDSWA',
     description:
-      'RDSWA photo gallery — events, cultural programs, sports, social gatherings, and memorable moments of Rangpur Division students at the University of Barishal.',
+      'RDSWA photo gallery: events, cultural programs, sports, social gatherings, and memorable moments of Rangpur Division students at the University of Barishal.',
     keywords: 'RDSWA gallery, RDSWA photos, BU Rangpur photos, RDSWA গ্যালারি',
     crumbs: [
       { name: 'Home', path: '/' },
@@ -228,7 +228,7 @@ const ROUTES = [
     path: '/documents',
     title: 'Documents | RDSWA',
     description:
-      'Official RDSWA documents — constitution, policies, meeting resolutions, financial reports, membership forms, and downloadable resources.',
+      'Official RDSWA documents: constitution, policies, meeting resolutions, financial reports, membership forms, and downloadable resources.',
     keywords: 'RDSWA documents, RDSWA constitution, RDSWA policies, RDSWA membership form, RDSWA ডকুমেন্ট',
     crumbs: [
       { name: 'Home', path: '/' },
@@ -239,7 +239,7 @@ const ROUTES = [
     path: '/donations',
     title: 'Donations | RDSWA',
     description:
-      'Support RDSWA — donate to active scholarship, emergency-aid, and student-welfare campaigns at the University of Barishal.',
+      'Support RDSWA: donate to active scholarship, emergency-aid, and student-welfare campaigns at the University of Barishal.',
     keywords: 'RDSWA donation, donate to RDSWA, BU student scholarship, Rangpur student fund, RDSWA দান',
     crumbs: [
       { name: 'Home', path: '/' },
@@ -261,7 +261,7 @@ const ROUTES = [
     path: '/contact',
     title: 'Contact Us | RDSWA',
     description:
-      `Get in touch with the ${ORG_NAME} (RDSWA) at the University of Barishal — email, phone, social media, and official feedback form.`,
+      `Get in touch with the ${ORG_NAME} (RDSWA) at the University of Barishal: email, phone, social media, and official feedback form.`,
     keywords: 'contact RDSWA, RDSWA email, RDSWA phone, RDSWA যোগাযোগ',
     crumbs: [
       { name: 'Home', path: '/' },
@@ -282,7 +282,7 @@ const ROUTES = [
     path: '/privacy',
     title: 'Privacy Policy | RDSWA',
     description:
-      'RDSWA privacy policy — how we collect, use, and protect your personal information.',
+      'RDSWA privacy policy: how we collect, use, and protect your personal information.',
     keywords: 'RDSWA privacy policy, RDSWA গোপনীয়তা',
     noindex: true,
     crumbs: [
@@ -413,7 +413,7 @@ async function main() {
     console.log(`  ✓ ${path.relative(DIST_DIR, outPath)}`);
   }
 
-  console.log(`Done — ${ROUTES.length} routes prerendered.`);
+  console.log(`Done: ${ROUTES.length} routes prerendered.`);
 }
 
 main().catch((err) => {

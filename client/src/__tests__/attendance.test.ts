@@ -137,7 +137,7 @@ describe('resolveCheckedInAt', () => {
   });
 
   it("clamps today's date back to now rather than stamping hours ahead", () => {
-    // 04:00Z on 3 Sep is 10:00 Dhaka — noon Dhaka would be two hours ahead.
+    // 04:00Z on 3 Sep is 10:00 Dhaka, noon Dhaka would be two hours ahead.
     const morning = new Date('2026-09-03T04:00:00.000Z');
     const r = resolveCheckedInAt({
       supplied: '2026-09-03',

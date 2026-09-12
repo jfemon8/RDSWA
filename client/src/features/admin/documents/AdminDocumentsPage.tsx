@@ -204,7 +204,7 @@ export default function AdminDocumentsPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">File</p>
             <div className="rounded border bg-background p-2.5">
-              <p className="text-xs text-foreground break-all" title={filename}>{filename || '—'}</p>
+              <p className="text-xs text-foreground break-all" title={filename}>{filename || '-'}</p>
               {(doc.fileType || doc.fileSize > 0) && (
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {doc.fileType ? doc.fileType.toUpperCase() : ''}{doc.fileType && doc.fileSize > 0 ? ' · ' : ''}{fmtSize(doc.fileSize)}
@@ -231,15 +231,15 @@ export default function AdminDocumentsPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Uploaded by</p>
-              <p className="text-xs text-foreground">{doc.uploadedBy?.name || '—'}</p>
+              <p className="text-xs text-foreground">{doc.uploadedBy?.name || '-'}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Created</p>
-              <p className="text-xs text-foreground">{doc.createdAt ? formatDateTime(doc.createdAt) : '—'}</p>
+              <p className="text-xs text-foreground">{doc.createdAt ? formatDateTime(doc.createdAt) : '-'}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Updated</p>
-              <p className="text-xs text-foreground">{doc.updatedAt ? formatDateTime(doc.updatedAt) : '—'}</p>
+              <p className="text-xs text-foreground">{doc.updatedAt ? formatDateTime(doc.updatedAt) : '-'}</p>
             </div>
           </div>
         </div>
@@ -288,7 +288,7 @@ export default function AdminDocumentsPage() {
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
                 </select>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">Upload File (max 10MB — PDF, Word, Excel, or Image)</p>
+                  <p className="text-xs text-muted-foreground mb-1.5">Upload File (max 10MB: PDF, Word, Excel, or Image)</p>
                   {form.fileUrl ? (
                     <div className="flex items-center gap-2 p-2.5 border rounded-md bg-muted/50">
                       <FileText className="h-4 w-4 text-primary shrink-0" />

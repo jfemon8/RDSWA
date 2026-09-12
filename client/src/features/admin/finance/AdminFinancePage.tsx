@@ -1337,13 +1337,13 @@ function ExpensesList({ committeeId }: { committeeId: string }) {
                                 className="p-3 text-xs text-muted-foreground truncate"
                                 title={e.event?.title || ""}
                               >
-                                {e.event?.title || "—"}
+                                {e.event?.title || "-"}
                               </td>
                               <td
                                 className="p-3 text-xs text-muted-foreground truncate"
                                 title={committeeDisplayName(e.committee)}
                               >
-                                {committeeDisplayName(e.committee) || "—"}
+                                {committeeDisplayName(e.committee) || "-"}
                               </td>
                               <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
                                 {formatDate(e.expenseDate || e.createdAt)}

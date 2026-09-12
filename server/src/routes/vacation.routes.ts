@@ -60,7 +60,7 @@ router.post(
   })
 );
 
-// Update (Moderator+) — full or partial.
+// Update (Moderator+) - full or partial.
 router.patch(
   '/:id',
   authenticate(),

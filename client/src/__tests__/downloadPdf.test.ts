@@ -48,9 +48,18 @@ describe('isStandardFontSafe', () => {
     expect(isStandardFontSafe('মোঃ জান্নাতুল')).toBe(false);
   });
 
+  // Built from code points, so a sweep over the project's own prose cannot quietly weaken these.
+  const EM_DASH = String.fromCharCode(0x2014);
+  const OPEN_QUOTE = String.fromCharCode(0x2018);
+  const CLOSE_QUOTE = String.fromCharCode(0x2019);
+
   it('rejects typographic punctuation, which the built-in fonts also drop', () => {
-    expect(isStandardFontSafe('Registrations — 2026')).toBe(false);
-    expect(isStandardFontSafe('‘quoted’')).toBe(false);
+    expect(isStandardFontSafe(`Registrations ${EM_DASH} 2026`)).toBe(false);
+    expect(isStandardFontSafe(`${OPEN_QUOTE}quoted${CLOSE_QUOTE}`)).toBe(false);
+  });
+
+  it('accepts the plain hyphen the project writes instead of a dash', () => {
+    expect(isStandardFontSafe('Registrations - 2026')).toBe(true);
   });
 });
 

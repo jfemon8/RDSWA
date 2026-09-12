@@ -22,7 +22,7 @@ export default function NotificationBell() {
   // Real-time notifications
   useNotificationSocket();
 
-  // Unread count — only fetch when authenticated
+  // Unread count: only fetch when authenticated
   const { data: countData } = useQuery({
     queryKey: ['unread-count'],
     queryFn: async () => {

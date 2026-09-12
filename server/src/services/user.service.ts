@@ -214,7 +214,7 @@ export class UserService {
       throw ApiError.badRequest("Cannot edit a deleted user");
     }
 
-    // Defence in depth — the route's Zod schema already strips these, but the service is callable directly.
+    // Defence in depth: the route's Zod schema already strips these, but the service is callable directly.
     const safeData = { ...data };
     for (const field of PROTECTED_ADMIN_EDIT_FIELDS) delete safeData[field];
 
@@ -436,7 +436,7 @@ export class UserService {
       .sort({ name: 1 })
       .lean();
 
-    // Respect profileVisibility — hide fields users marked as private
+    // Respect profileVisibility: hide fields users marked as private
     const safeVal = (user: any, field: string, fallback = "") => {
       const vis = user.profileVisibility || {};
       // If visibility is explicitly false (private), hide the value
@@ -527,7 +527,7 @@ export class UserService {
     ];
     if (!ALLOWED_TIER_ROLES.includes(newRole as UserRole)) {
       throw ApiError.badRequest(
-        "Alumni, Advisor, and Senior Advisor are tags — not tier roles. Use the grant endpoints.",
+        "Alumni, Advisor, and Senior Advisor are tags, not tier roles. Use the grant endpoints.",
       );
     }
 
@@ -560,7 +560,7 @@ export class UserService {
       newRole !== UserRole.ADMIN &&
       newRole !== UserRole.SUPER_ADMIN
     ) {
-      // Demoting from Moderator — clean up moderator flag
+      // Demoting from Moderator: clean up moderator flag
       target.isModerator = false;
       target.moderatorAssignment = undefined;
     }
@@ -574,7 +574,7 @@ export class UserService {
     let justDemoted = false;
 
     if (becomesMemberOrAbove && !wasApproved) {
-      // Promote — mark membership approved
+      // Promote: mark membership approved
       target.membershipStatus = "approved";
       target.memberApprovedBy = assignedBy._id as any;
       target.memberApprovedAt = new Date();
@@ -584,7 +584,7 @@ export class UserService {
       target.suspendedBy = undefined;
       justApproved = true;
     } else if (!becomesMemberOrAbove && wasApproved) {
-      // Demote below member — revert membership
+      // Demote below member: revert membership
       target.membershipStatus = "none";
       target.memberApprovedBy = undefined;
       target.memberApprovedAt = undefined;
@@ -811,7 +811,7 @@ export class UserService {
     const target = await User.findById(targetUserId);
     if (!target) throw ApiError.notFound("User not found");
 
-    // Senior Advisor has no membership gate — any user can hold this tag.
+    // Senior Advisor has no membership gate, any user can hold this tag.
 
     if (target.isSeniorAdvisor === grant) return target; // no-op
 
@@ -878,7 +878,7 @@ export class UserService {
       title: "Membership Approved",
       message: "Your RDSWA membership has been approved!",
       link: "/dashboard",
-      force: true, // Important notification — bypass DND
+      force: true, // Important notification, bypass DND
     });
 
     // Auto-add to central RDSWA group (creates it with full seeding if missing)

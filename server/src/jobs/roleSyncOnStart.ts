@@ -3,14 +3,7 @@ import { resolveBaseRole } from '../utils/resolveBaseRole';
 import { getAutoRoleConfig } from '../utils/getAutoRoleConfig';
 import { UserRole, SUPER_ADMIN_EMAILS } from '@rdswa/shared';
 
-/**
- * One-time role sync on server start.
- *
- * 1. Ensures all SUPER_ADMIN_EMAILS have role=super_admin
- * 2. Re-evaluates current committee members:
- *    - President/GS → Admin (was Moderator under old logic)
- *    - OS/Treasurer → Moderator (unchanged, but ensures consistency)
- */
+/** Reconciles stored roles with the current rules on boot, for SuperAdmin emails and sitting committee officers alike. */
 export async function syncRolesOnStart(): Promise<void> {
   try {
     // ── 1. Sync SuperAdmin emails ──

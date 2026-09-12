@@ -1,4 +1,4 @@
-# k6 Load Testing — RDSWA API
+# k6 Load Testing: RDSWA API
 
 ## Prerequisites
 
@@ -24,13 +24,13 @@ Verify the installation: `k6 version`
 
 Make sure the RDSWA backend is running before you start.
 
-### Load test (moderate — 20 VUs)
+### Load test (moderate - 20 VUs)
 
 ```bash
 k6 run k6/load-test.js
 ```
 
-### Stress test (heavy — up to 100 VUs)
+### Stress test (heavy: up to 100 VUs)
 
 ```bash
 k6 run k6/stress-test.js
@@ -51,7 +51,7 @@ After a run completes k6 prints a summary table. Key metrics to watch:
 
 | Metric | Meaning |
 |---|---|
-| `http_req_duration` | Response time distribution. Look at **p(95)** — this is the value 95% of requests finished under. |
+| `http_req_duration` | Response time distribution. Look at **p(95)**: this is the value 95% of requests finished under. |
 | `http_req_failed` | Percentage of requests that returned a non-2xx status. |
 | `http_reqs` | Total number of HTTP requests made during the test. |
 | `vus` | Number of concurrent virtual users at any point. |
@@ -62,17 +62,17 @@ After a run completes k6 prints a summary table. Key metrics to watch:
 
 Each script defines pass/fail thresholds:
 
-- **load-test.js** — `p(95) < 2000 ms`, failure rate < 5%
-- **stress-test.js** — `p(95) < 5000 ms`, failure rate < 10%
+- **load-test.js**: `p(95) < 2000 ms`, failure rate < 5%
+- **stress-test.js**: `p(95) < 5000 ms`, failure rate < 10%
 
 If any threshold is breached k6 exits with a non-zero code, making it easy to integrate into CI pipelines.
 
 ### Custom metrics
 
-- `auth_duration` (load-test) — tracks latency of register/login calls specifically.
-- `public_duration` (load-test) — tracks latency of public (unauthenticated) endpoints.
-- `read_endpoint_duration` (stress-test) — tracks latency across all read endpoints.
-- `custom_error_rate` — application-level error rate based on check failures.
+- `auth_duration` (load-test) - tracks latency of register/login calls specifically.
+- `public_duration` (load-test) - tracks latency of public (unauthenticated) endpoints.
+- `read_endpoint_duration` (stress-test) - tracks latency across all read endpoints.
+- `custom_error_rate` - application-level error rate based on check failures.
 
 ## Tips
 

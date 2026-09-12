@@ -20,7 +20,7 @@ export enum CommitteePosition {
   MEMBER = 'member',
 }
 
-/** Full role ordering including tag roles — used by RBAC middleware for legacy DB compat */
+/** Full role ordering including tag roles, used by RBAC middleware for legacy DB compat */
 export const ROLE_HIERARCHY: UserRole[] = [
   UserRole.GUEST,
   UserRole.USER,
@@ -43,7 +43,7 @@ export const TIER_HIERARCHY: UserRole[] = [
   UserRole.SUPER_ADMIN,
 ];
 
-/** Tag roles — orthogonal boolean flags, not privilege tiers */
+/** Tag roles: orthogonal boolean flags, not privilege tiers */
 export const TAG_ROLES: UserRole[] = [
   UserRole.ALUMNI,
   UserRole.ADVISOR,

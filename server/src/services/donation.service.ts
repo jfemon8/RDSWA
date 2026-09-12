@@ -63,7 +63,7 @@ export class DonationService {
     if (query.committee) {
       const tenure = await committeeTenure(query.committee);
       if (!tenure) throw ApiError.badRequest('Committee not found');
-      // Donations carry no committee of their own, so the term they fall in decides — the same rule the finance report uses.
+      // Donations carry no committee of their own, so the term they fall in decides, the same rule the finance report uses.
       addConditions(filter, [withinDates('$donationDate', tenure.start, tenure.end)]);
     }
 
@@ -77,7 +77,7 @@ export class DonationService {
       Donation.countDocuments(filter),
     ]);
 
-    // Respect donation privacy — hide donor info for private donations (skip for moderator+)
+    // Respect donation privacy: hide donor info for private donations (skip for moderator+)
     const isPrivileged = requesterRole && ROLE_HIERARCHY.indexOf(requesterRole as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
     const sanitized = donations.map((d) => {
       const obj = d.toObject();
@@ -172,9 +172,7 @@ export class DonationService {
     return donation;
   }
 
-  /**
-   * Edit any field of an existing donation, adjusting the campaign total for whatever changed.
-   */
+  /** Edit any field of an existing donation, adjusting the campaign total for whatever changed. */
   async update(id: string, data: any, options: { actorRole?: string } = {}): Promise<IDonationDocument> {
     const donation = await Donation.findOne({ _id: id, isDeleted: false });
     if (!donation) throw ApiError.notFound('Donation not found');

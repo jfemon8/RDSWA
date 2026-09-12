@@ -7,10 +7,7 @@ function getClientIp(req: Request): string {
   return requestIp.getClientIp(req) || req.ip || 'unknown';
 }
 
-/**
- * Audit logging middleware — logs CRUD operations after response.
- * Usage: auditLog('user.approve')
- */
+/** Audit logging middleware - logs CRUD operations after response. Usage: auditLog('user.approve') */
 export function auditLog(action: string, resource: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const clientIp = getClientIp(req);

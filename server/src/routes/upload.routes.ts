@@ -67,7 +67,7 @@ const docUpload = multer({
 const CHAT_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 const CHAT_OTHER_MAX_BYTES = 10 * 1024 * 1024;
 const chatMediaFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Reject executables and script types — everything else is allowed.
+  // Reject executables and script types, everything else is allowed.
   const blocked = [
     'application/x-msdownload',
     'application/x-msdos-program',
@@ -105,7 +105,7 @@ function uploadToCloudinary(
     const uploadOpts: Record<string, any> = {
       folder: `rdswa/${options.folder}`,
       resource_type: options.resourceType || 'image',
-      // Per-call timeout matches the global SDK config — needed because some
+      // Per-call timeout matches the global SDK config, needed because some
       // SDK versions don't honor the global timeout for upload_stream.
       timeout: 180_000,
     };
@@ -193,7 +193,7 @@ function ensureExtension(filename: string, mimeType: string): string {
   const trimmed = filename.replace(/\.+$/, '');
   if (/\.[a-zA-Z0-9]{1,8}$/.test(trimmed)) return trimmed;
   const m = (mimeType || '').toLowerCase();
-  // Skip when we genuinely don't know the type — appending "octetstream"
+  // Skip when we genuinely don't know the type, appending "octetstream"
   // (the subtype fallback) is worse than no extension at all.
   if (!m || m === 'application/octet-stream' || m === 'binary/octet-stream') {
     return trimmed;
@@ -210,15 +210,15 @@ function ensureExtension(filename: string, mimeType: string): string {
 /** Best-effort MIME detection from a buffer's leading bytes, for legacy files whose URL and Content-Type say nothing. */
 function sniffMagic(buf: Buffer): string | null {
   if (!buf || buf.length < 4) return null;
-  // PDF — `%PDF`
+  // PDF - `%PDF`
   if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'application/pdf';
-  // PNG — 89 50 4E 47 0D 0A 1A 0A
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
   if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
-  // JPEG — FF D8 FF
+  // JPEG: FF D8 FF
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
-  // GIF — "GIF8"
+  // GIF - "GIF8"
   if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return 'image/gif';
-  // WebP — RIFF....WEBP
+  // WebP - RIFF....WEBP
   if (
     buf.length >= 12 &&
     buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
@@ -226,28 +226,28 @@ function sniffMagic(buf: Buffer): string | null {
   ) {
     return 'image/webp';
   }
-  // SVG — text starting with `<?xml` or `<svg`
+  // SVG: text starting with `<?xml` or `<svg`
   if (buf.length >= 5) {
     const head = buf.slice(0, Math.min(buf.length, 64)).toString('utf8').trim().toLowerCase();
     if (head.startsWith('<?xml') && head.includes('<svg')) return 'image/svg+xml';
     if (head.startsWith('<svg')) return 'image/svg+xml';
   }
-  // ZIP container (includes DOCX/XLSX/PPTX) — `PK\x03\x04`
+  // ZIP container (includes DOCX/XLSX/PPTX) - `PK\x03\x04`
   if (buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) return 'application/zip';
-  // Legacy OLE (DOC/XLS/PPT) — D0 CF 11 E0
+  // Legacy OLE (DOC/XLS/PPT) - D0 CF 11 E0
   if (buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) return 'application/msword';
-  // MP4 / MOV — `ftyp` box marker at offset 4
+  // MP4 / MOV: `ftyp` box marker at offset 4
   if (buf.length >= 12 && buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) {
-    // brand at offsets 8-11 — "qt  " → mov, otherwise treat as mp4
+    // brand at offsets 8-11, "qt  " → mov, otherwise treat as mp4
     if (buf[8] === 0x71 && buf[9] === 0x74) return 'video/quicktime';
     return 'video/mp4';
   }
-  // WebM / Matroska — 1A 45 DF A3
+  // WebM / Matroska: 1A 45 DF A3
   if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return 'video/webm';
-  // MP3 — ID3 tag or frame sync (FF Ex/Fx)
+  // MP3: ID3 tag or frame sync (FF Ex/Fx)
   if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return 'audio/mpeg';
   if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'audio/mpeg';
-  // WAV — RIFF....WAVE
+  // WAV - RIFF....WAVE
   if (
     buf.length >= 12 &&
     buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
@@ -288,7 +288,7 @@ function handleMulter(upload: any, maxSizeLabel: string) {
 }
 
 // ──────────────────────────────────────────────
-// POST /upload/avatar — profile picture, 2MB max, auto-cropped to 256x256.
+// POST /upload/avatar: profile picture, 2MB max, auto-cropped to 256x256.
 // ──────────────────────────────────────────────
 router.post('/avatar', authenticate(), handleMulter(avatarUpload, '2MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -308,7 +308,7 @@ router.post('/avatar', authenticate(), handleMulter(avatarUpload, '2MB'), asyncH
 }));
 
 // ──────────────────────────────────────────────
-// POST /upload/image — general image, 5MB max, capped at 1920px wide.
+// POST /upload/image: general image, 5MB max, capped at 1920px wide.
 // ──────────────────────────────────────────────
 router.post('/image', authenticate(), handleMulter(imageUpload, '5MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -331,7 +331,7 @@ router.post('/image', authenticate(), handleMulter(imageUpload, '5MB'), asyncHan
 }));
 
 // ──────────────────────────────────────────────
-// POST /upload/document — document or file, 10MB max, stored as a raw resource.
+// POST /upload/document: document or file, 10MB max, stored as a raw resource.
 // ──────────────────────────────────────────────
 router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -357,7 +357,7 @@ router.post('/document', authenticate(), handleMulter(docUpload, '10MB'), asyncH
 }));
 
 // ──────────────────────────────────────────────
-// POST /upload/chat-media — chat attachments, routed to the matching Cloudinary resource type and returned ready for attachments[].
+// POST /upload/chat-media, chat attachments, routed to the matching Cloudinary resource type and returned ready for attachments[].
 // ──────────────────────────────────────────────
 router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB'), asyncHandler(async (req, res) => {
   ensureCloudinary();
@@ -394,7 +394,7 @@ router.post('/chat-media', authenticate(), handleMulter(chatMediaUpload, '50MB')
 }));
 
 // ──────────────────────────────────────────────
-// GET /upload/proxy — re-serve a Cloudinary file with the right Content-Type so raw PDFs preview instead of downloading as blobs.
+// GET /upload/proxy: re-serve a Cloudinary file with the right Content-Type so raw PDFs preview instead of downloading as blobs.
 // Query: ?url=<cloudinaryUrl>&name=<filename>&inline=true|false
 // ──────────────────────────────────────────────
 const MIME_BY_EXT: Record<string, string> = {
@@ -507,7 +507,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
           'Content-Disposition',
           `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`,
         );
-        // Cache for an hour — Cloudinary URLs are versioned and effectively immutable.
+        // Cache for an hour: Cloudinary URLs are versioned and effectively immutable.
         res.setHeader('Cache-Control', 'private, max-age=3600');
 
         if (buffered.length > 0) res.write(buffered);
@@ -527,7 +527,7 @@ router.get('/proxy', authenticate(true), asyncHandler(async (req, res) => {
       });
       upstream.on('end', () => {
         // Short responses (< SNIFF_LEN bytes) reach `end` before we've
-        // flushed — do it now with whatever we buffered.
+        // flushed: do it now with whatever we buffered.
         if (!headersSent) flushHeadersAndBuffer();
         res.end();
         resolve();

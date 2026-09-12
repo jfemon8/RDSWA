@@ -48,7 +48,6 @@ export default function AdminUsersPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [search, setSearch] = useState("");
-  // Debounced so the list refetches once the typing settles, not on every keystroke.
   const debouncedSearch = useDebouncedValue(search);
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
@@ -56,7 +55,7 @@ export default function AdminUsersPage() {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [bulkEmail, setBulkEmail] = useState({ subject: "", body: "" });
   const [showDeleted, setShowDeleted] = useState(false);
-  // Force-password modal state — { user } when open, null when closed.
+  // Force-password modal state, { user } when open, null when closed.
   const [forcePwdTarget, setForcePwdTarget] = useState<any | null>(null);
 
   const filters: Record<string, string> = {};
@@ -147,7 +146,7 @@ export default function AdminUsersPage() {
     },
   });
 
-  // SuperAdmin only — force-set a user's password, overriding the current one.
+  // SuperAdmin only: force-set a user's password, overriding the current one.
   const forcePwdMutation = useMutation({
     mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
       api.patch(`/users/${id}/force-password`, { newPassword }),
@@ -953,7 +952,7 @@ export default function AdminUsersPage() {
         </>
       )}
 
-      {/* SuperAdmin force-password modal — overrides target user's password */}
+      {/* SuperAdmin force-password modal, overrides target user's password */}
       <ForcePasswordModal
         target={forcePwdTarget}
         onClose={() => setForcePwdTarget(null)}

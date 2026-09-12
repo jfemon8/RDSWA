@@ -122,7 +122,7 @@ export function useWebPush() {
         try {
           await api.delete('/notifications/push/unsubscribe', { data: { endpoint } });
         } catch {
-          /* ignore — browser unsubscribe is what matters */
+          /* ignore: browser unsubscribe is what matters */
         }
       }
       setState((s) => ({ ...s, busy: false, subscribed: false }));

@@ -66,7 +66,7 @@ export function useGroupActivitySocket() {
 
     const handler = (data: any) => {
       if (!data?.groupId) return;
-      // Chat-list / preview queries — ChatHubPage, GroupsPage, ForwardModal.
+      // Chat-list / preview queries: ChatHubPage, GroupsPage, ForwardModal.
       queryClient.invalidateQueries({ queryKey: ['my-groups'] });
       queryClient.invalidateQueries({ queryKey: ['group', data.groupId] });
       // Global unread badge shown in the navbar's MessageBell.
@@ -350,9 +350,7 @@ export function useBusSocket() {
   }, [queryClient]);
 }
 
-/**
- * Hook to subscribe to real-time vote updates for a specific vote.
- */
+/** Hook to subscribe to real-time vote updates for a specific vote. */
 export function useVoteSocket(
   voteId: string | undefined,
   onUpdate: (data: {

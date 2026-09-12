@@ -63,7 +63,7 @@ export default function RegisterPage() {
     <div className="container mx-auto min-h-[80vh] flex items-center justify-center py-8">
       <SEO
         title="Create account"
-        description="Register for RDSWA membership — Rangpur Divisional Student Welfare Association, University of Barishal. Join the network of Rangpur students at BU."
+        description="Register for RDSWA membership: Rangpur Divisional Student Welfare Association, University of Barishal. Join the network of Rangpur students at BU."
         noindex
       />
       <FadeIn direction="up" duration={0.5} blur>

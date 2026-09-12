@@ -49,7 +49,7 @@ export default function MessagesPage() {
           setSelectedUser({ _id: u._id, name: u.name, avatar: u.avatar });
         }
       } catch {
-        /* silent — the hub link below is the way out */
+        /* silent: the hub link below is the way out */
       }
     })();
     return () => { cancelled = true; };

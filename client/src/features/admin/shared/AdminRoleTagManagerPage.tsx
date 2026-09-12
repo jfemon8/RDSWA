@@ -19,13 +19,13 @@ type TagFlag = 'isAlumni' | 'isAdvisor' | 'isSeniorAdvisor';
 type TagEndpoint = 'alumni' | 'advisor' | 'senior-advisor';
 
 export interface AdminRoleTagManagerPageProps {
-  /** Heading title — e.g. "Alumni Management" */
+  /** Heading title: e.g. "Alumni Management" */
   title: string;
   /** Intro paragraph shown at the top */
   description: string;
   /** Filter flag for listing users currently holding the tag */
   flagFilter: TagFlag;
-  /** REST endpoint segment for grant/revoke — e.g. 'alumni' → PATCH /users/:id/alumni */
+  /** REST endpoint segment for grant/revoke, e.g. 'alumni' → PATCH /users/:id/alumni */
   endpoint: TagEndpoint;
   /** Heading icon */
   icon: LucideIcon;

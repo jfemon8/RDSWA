@@ -5,7 +5,7 @@ import { useSiteSettings } from './useSiteSettings';
 export function useDynamicSiteMeta() {
   const { settings } = useSiteSettings();
 
-  // Favicon — replace any existing icon links with the settings favicon
+  // Favicon: replace any existing icon links with the settings favicon
   useEffect(() => {
     if (!settings?.favicon) return;
 
@@ -25,7 +25,7 @@ export function useDynamicSiteMeta() {
     const link = document.createElement('link');
     link.rel = 'icon';
     link.href = href;
-    // Let the browser infer the type from the URL — Cloudinary serves correct mime
+    // Let the browser infer the type from the URL, Cloudinary serves correct mime
     document.head.appendChild(link);
 
     // Also add apple-touch-icon for iOS home-screen bookmarks
@@ -35,7 +35,7 @@ export function useDynamicSiteMeta() {
     document.head.appendChild(appleLink);
   }, [settings?.favicon, settings?.updatedAt]);
 
-  // Title — use the full site name from settings as the default document title
+  // Title. Use the full site name from settings as the default document title
   // Per-page <SEO /> components still override this when mounted.
   useEffect(() => {
     if (!settings?.siteName) return;
@@ -45,7 +45,7 @@ export function useDynamicSiteMeta() {
     document.title = fullTitle;
   }, [settings?.siteName, settings?.siteNameFull]);
 
-  // Meta description — fallback for pages without <SEO />
+  // Meta description: fallback for pages without <SEO />
   useEffect(() => {
     if (!settings?.siteName) return;
     const description = `Official platform of ${settings.siteNameFull || settings.siteName}. Member directory, events, notices, committees, and more.`;
