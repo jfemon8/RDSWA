@@ -15,6 +15,7 @@ import {
   announcementPreview,
   removeAnnouncementNotifications,
 } from '../utils/announcementNotifications';
+import { chatMediaExpiry } from '../config/retention';
 import {
   broadcastChatMessage,
   broadcastChatMessageEdit,
@@ -75,15 +76,6 @@ function canManageGroupMembers(group: { type: string; createdBy?: any }, user: {
   return false;
 }
 
-/** Media retention policy in days, keyed by attachment kind. */
-const RETENTION_DAYS: Record<string, number> = {
-  image: 30,
-  video: 7,
-  audio: 30,
-  pdf: 30,
-  file: 30,
-};
-
 /** Time window (ms) within which the sender can edit their own message. */
 const EDIT_WINDOW_MS = 6 * 60 * 60 * 1000;        // 6 hours
 /** Time window (ms) within which the sender can delete their message for everyone. */
@@ -136,7 +128,7 @@ async function buildReplySnapshot(replyToId: unknown): Promise<any | undefined> 
 /** Allowed emoji reaction set, with anything else rejected. */
 const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉']);
 
-/** Validate and normalize a new message's attachments[], dropping unknown kinds and stamping expiresAt on media only. */
+/** Validates a new message's attachments, dropping unknown kinds and dating media for retention. */
 function buildAttachments(raw: any): any[] {
   if (!Array.isArray(raw)) return [];
   const now = Date.now();
@@ -161,9 +153,7 @@ function buildAttachments(raw: any): any[] {
       continue;
     }
 
-    // Media attachment
-    if (!a.url || !a.publicId) continue; // require a valid Cloudinary upload result
-    const retentionDays = RETENTION_DAYS[kind] ?? 90;
+    if (!a.url || !a.publicId) continue; // media needs a real Cloudinary upload behind it
     out.push({
       kind,
       url: a.url,
@@ -175,7 +165,7 @@ function buildAttachments(raw: any): any[] {
       width: a.width,
       height: a.height,
       duration: a.duration,
-      expiresAt: new Date(now + retentionDays * 24 * 60 * 60 * 1000),
+      expiresAt: chatMediaExpiry(kind, new Date(now)),
       expired: false,
     });
   }
