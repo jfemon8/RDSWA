@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, RotateCcw, Inbox, ChevronRight } from 'lucide-react';
 import api from '@/lib/api';
@@ -8,7 +9,7 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn, BlurText } from '@/components/reactbits';
 import { RecordsSkeleton, CardListSkeleton } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
-import { formatDate } from '@/lib/date';
+import { formatDate, formatDateTime } from '@/lib/date';
 
 interface ResourceSummary {
   key: string;
@@ -23,11 +24,43 @@ interface TrashItem {
   createdAt: string | null;
 }
 
+interface RecordDetail {
+  label: string;
+  value: string;
+  isDate?: boolean;
+  userId?: string;
+}
+
+interface TrashDetail extends TrashItem {
+  details: RecordDetail[];
+}
+
+function DetailRow({ label, value, isDate, userId }: RecordDetail) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground/70">{label}</dt>
+      <dd className="text-sm text-foreground break-words">
+        {userId ? (
+          <Link to={`/members/${userId}`} className="text-primary hover:underline">
+            {value}
+          </Link>
+        ) : isDate ? (
+          formatDateTime(value)
+        ) : (
+          value
+        )}
+      </dd>
+    </div>
+  );
+}
+
 export default function AdminTrashPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
   const [active, setActive] = useState<ResourceSummary | null>(null);
+  // Only one record is expanded at a time, so the details on screen always belong to the row being acted on.
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['trash', 'summary'],
@@ -40,14 +73,21 @@ export default function AdminTrashPage() {
     enabled: !!active,
   });
 
-  const invalidate = () => {
+  const { data: detail, isLoading: detailLoading } = useQuery<TrashDetail>({
+    queryKey: ['trash', active?.key, openId],
+    queryFn: async () => (await api.get(`/trash/${active!.key}/${openId}`)).data.data,
+    enabled: !!active && !!openId,
+  });
+
+  const settle = () => {
     queryClient.invalidateQueries({ queryKey: ['trash'] });
+    setOpenId(null);
   };
 
   const restoreMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/trash/${active!.key}/${id}/restore`),
     onSuccess: () => {
-      invalidate();
+      settle();
       toast.success('Restored');
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to restore'),
@@ -56,7 +96,7 @@ export default function AdminTrashPage() {
   const purgeMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/trash/${active!.key}/${id}`),
     onSuccess: () => {
-      invalidate();
+      settle();
       toast.success('Permanently deleted');
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to delete'),
@@ -102,7 +142,10 @@ export default function AdminTrashPage() {
                 type="button"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setActive(active?.key === resource.key ? null : resource)}
+                onClick={() => {
+                  setOpenId(null);
+                  setActive(active?.key === resource.key ? null : resource);
+                }}
                 className={`w-full flex items-center justify-between gap-3 p-4 border rounded-xl bg-card text-left transition-colors ${
                   active?.key === resource.key ? 'border-primary' : 'hover:border-primary/40'
                 }`}
@@ -148,55 +191,97 @@ export default function AdminTrashPage() {
             ) : (
               <ul className="divide-y">
                 {rows.map((item) => (
-                  <li
-                    key={item._id}
-                    className="flex items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {item.title}
-                      </p>
-                      {item.deletedAt && (
-                        <p className="text-xs text-muted-foreground">
-                          Deleted {formatDate(item.deletedAt)}
+                  <li key={item._id}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenId(openId === item._id ? null : item._id)}
+                      aria-expanded={openId === item._id}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {item.title}
                         </p>
+                        {item.deletedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Deleted {formatDate(item.deletedAt)}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight
+                        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                          openId === item._id ? 'rotate-90' : ''
+                        }`}
+                      />
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {openId === item._id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeOut' }}
+                          className="overflow-hidden bg-muted/30"
+                        >
+                          <div className="px-4 py-3 border-t">
+                            {detailLoading ? (
+                              <RecordsSkeleton />
+                            ) : (
+                              <>
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-4">
+                                  {item.createdAt && (
+                                    <DetailRow label="Created" value={item.createdAt} isDate />
+                                  )}
+                                  {item.deletedAt && (
+                                    <DetailRow label="Deleted" value={item.deletedAt} isDate />
+                                  )}
+                                  {(detail?.details || []).map((entry) => (
+                                    <DetailRow key={entry.label} {...entry} />
+                                  ))}
+                                </dl>
+
+                                <div className="flex flex-wrap gap-2">
+                                  <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={restoreMutation.isPending}
+                                    onClick={async () => {
+                                      const ok = await confirm({
+                                        title: 'Restore',
+                                        message: `Restore “${item.title}”? It goes back where it was and appears to everyone again.`,
+                                        confirmLabel: 'Restore',
+                                        variant: 'warning',
+                                      });
+                                      if (ok) restoreMutation.mutate(item._id);
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                                  >
+                                    <RotateCcw className="h-3.5 w-3.5" /> Restore
+                                  </motion.button>
+                                  <motion.button
+                                    whileTap={{ scale: 0.97 }}
+                                    disabled={purgeMutation.isPending}
+                                    onClick={async () => {
+                                      const ok = await confirm({
+                                        title: 'Delete Permanently',
+                                        message: `Erase “${item.title}” from the database? This cannot be undone.`,
+                                        confirmLabel: 'Delete Permanently',
+                                        variant: 'danger',
+                                        requireTypeToConfirm: 'DELETE',
+                                      });
+                                      if (ok) purgeMutation.mutate(item._id);
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+                                  </motion.button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </motion.div>
                       )}
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={async () => {
-                          const ok = await confirm({
-                            title: 'Restore',
-                            message: `Restore “${item.title}”?`,
-                            confirmLabel: 'Restore',
-                            variant: 'warning',
-                          });
-                          if (ok) restoreMutation.mutate(item._id);
-                        }}
-                        title="Restore"
-                        className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </motion.button>
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={async () => {
-                          const ok = await confirm({
-                            title: 'Delete Permanently',
-                            message: `Erase “${item.title}” from the database? This cannot be undone.`,
-                            confirmLabel: 'Delete Permanently',
-                            variant: 'danger',
-                            requireTypeToConfirm: 'DELETE',
-                          });
-                          if (ok) purgeMutation.mutate(item._id);
-                        }}
-                        title="Delete permanently"
-                        className="p-1.5 text-destructive hover:bg-destructive/10 rounded"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </motion.button>
-                    </div>
+                    </AnimatePresence>
                   </li>
                 ))}
               </ul>

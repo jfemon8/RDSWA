@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Types } from 'mongoose';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
@@ -9,6 +10,7 @@ import { parsePagination, getSkip } from '../utils/pagination';
 import { UserRole } from '@rdswa/shared';
 import { TRASH_RESOURCES, findTrashResource, TrashResource } from '../config/trashResources';
 import { RETENTION_DAYS } from '../config/retention';
+import { describeRecord } from '../utils/describeRecord';
 
 const router = Router();
 
@@ -27,6 +29,19 @@ function resourceFromParam(key: string): TrashResource {
   const resource = findTrashResource(key);
   if (!resource || !resource.recoverable) throw ApiError.notFound('Unknown trash resource');
   return resource;
+}
+
+/** A malformed id is a miss, not the cast error Mongoose would otherwise raise. */
+function objectId(id: string): Types.ObjectId {
+  if (!Types.ObjectId.isValid(id)) throw ApiError.notFound('Record not found');
+  return new Types.ObjectId(id);
+}
+
+/** Reference fields, so the detail panel can name what a record points at. */
+function referencePaths(resource: TrashResource): string[] {
+  return Object.entries(resource.model.schema.paths)
+    .filter(([, type]: [string, any]) => type.instance === 'ObjectId' && type.options?.ref)
+    .map(([path]) => path);
 }
 
 // What is in the bin, per resource
@@ -56,7 +71,8 @@ router.get(
     const [docs, total] = await Promise.all([
       resource.model
         .find(filter)
-        .select(resource.select)
+        // `updatedAt` has to come along, since it stands in for a missing `deletedAt` below.
+        .select(`${resource.select} updatedAt`)
         .sort({ deletedAt: -1, updatedAt: -1 })
         .skip(getSkip({ page, limit }))
         .limit(limit)
@@ -76,13 +92,35 @@ router.get(
   })
 );
 
+// What one deleted record was, for a last look before restoring or erasing it
+router.get(
+  '/:resource/:id',
+  asyncHandler(async (req, res) => {
+    const resource = resourceFromParam(req.params.resource as string);
+    const doc: any = await resource.model
+      .findOne({ _id: objectId(req.params.id as string), ...deletedFilter(resource) })
+      // References are pulled in by name, since a bare id tells the reader nothing.
+      .populate(referencePaths(resource), 'name title')
+      .lean();
+    if (!doc) throw ApiError.notFound(`Deleted ${resource.label.toLowerCase()} not found`);
+
+    ApiResponse.success(res, {
+      _id: doc._id,
+      title: resource.title(doc),
+      createdAt: doc.createdAt ?? null,
+      deletedAt: doc.deletedAt ?? doc.updatedAt ?? null,
+      details: describeRecord(doc, resource.model.schema),
+    });
+  })
+);
+
 router.patch(
   '/:resource/:id/restore',
   auditLog('trash.restore', 'system'),
   asyncHandler(async (req, res) => {
     const resource = resourceFromParam(req.params.resource as string);
     const restored = await resource.model.findOneAndUpdate(
-      { _id: req.params.id as string, ...deletedFilter(resource) },
+      { _id: objectId(req.params.id as string), ...deletedFilter(resource) },
       { $set: { isDeleted: false } },
       { new: true }
     );
@@ -98,7 +136,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const resource = resourceFromParam(req.params.resource as string);
     const result = await resource.model.deleteOne({
-      _id: req.params.id as string,
+      _id: objectId(req.params.id as string),
       ...deletedFilter(resource),
     });
     if (result.deletedCount === 0) {
