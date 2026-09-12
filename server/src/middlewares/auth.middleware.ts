@@ -50,6 +50,16 @@ export function authenticate(optional = false) {
         if (needsSave) await user.save();
       }
 
+      // Suspension is checked in authorize(), which most write routes never reach, so it is enforced
+      // here for anything that changes state; reading and logging out stay open.
+      if (
+        (user as any).membershipStatus === 'suspended' &&
+        req.method !== 'GET' &&
+        !req.path.endsWith('/logout')
+      ) {
+        throw ApiError.forbidden('Your account has been suspended. Please contact an admin.');
+      }
+
       req.user = user;
       req.tokenPayload = payload;
       next();

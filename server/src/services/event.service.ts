@@ -208,6 +208,9 @@ function csvFilename(title: string, kind: string): string {
   return `${slug}-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
 }
 
+/** How many times a registration re-reads and retries when another one lands first. */
+const REGISTRATION_ATTEMPTS = 3;
+
 export class EventService {
   async list(query: ListEventsQuery, isPublicOnly = true) {
     const { page, limit } = parsePagination(query);
@@ -302,37 +305,44 @@ export class EventService {
     userId: string,
     responses?: Record<string, string>
   ): Promise<{ event: IEventDocument; status: EventRegistrationStatus }> {
-    const event = await Event.findOne({ _id: eventId, isDeleted: false });
-    if (!event) throw ApiError.notFound('Event not found');
-    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
-      throw ApiError.badRequest('Registration deadline has passed');
+    // Two people can reach the last seat at once, so the list is written back only if nobody moved it meanwhile.
+    for (let attempt = 0; attempt < REGISTRATION_ATTEMPTS; attempt++) {
+      const event = await Event.findOne({ _id: eventId, isDeleted: false });
+      if (!event) throw ApiError.notFound('Event not found');
+      if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+        throw ApiError.badRequest('Registration deadline has passed');
+      }
+
+      const existing = findRegistration(event, userId);
+      if (existing && existing.status !== 'cancelled') {
+        throw ApiError.conflict('Already registered for this event');
+      }
+
+      const answers = validateResponses(event, responses);
+      const status = nextRegistrationStatus(event);
+
+      if (existing) {
+        existing.status = status;
+        existing.registeredAt = new Date();
+        existing.responses = answers;
+        existing.updatedBy = undefined;
+      } else {
+        event.registrations.push({
+          user: new mongoose.Types.ObjectId(userId),
+          registeredAt: new Date(),
+          status,
+          responses: answers,
+        } as any);
+      }
+
+      const written = await Event.updateOne(
+        { _id: eventId, __v: (event as any).__v },
+        { $set: { registrations: event.registrations }, $inc: { __v: 1 } }
+      );
+      if (written.matchedCount > 0) return { event, status };
     }
 
-    const existing = findRegistration(event, userId);
-    if (existing && existing.status !== 'cancelled') {
-      throw ApiError.conflict('Already registered for this event');
-    }
-
-    const answers = validateResponses(event, responses);
-
-    const status = nextRegistrationStatus(event);
-
-    if (existing) {
-      existing.status = status;
-      existing.registeredAt = new Date();
-      existing.responses = answers;
-      existing.updatedBy = undefined;
-    } else {
-      event.registrations.push({
-        user: new mongoose.Types.ObjectId(userId),
-        registeredAt: new Date(),
-        status,
-        responses: answers,
-      } as any);
-    }
-
-    await event.save();
-    return { event, status };
+    throw ApiError.conflict('Registrations are changing too quickly, please try again');
   }
 
   /** Withdraw the current user's own registration, promoting the first waitlisted person into the seat. */

@@ -1,5 +1,6 @@
 import { Donation, IDonationDocument, DonationCampaign, IDonationCampaignDocument, Notification } from '../models';
 import { ApiError } from '../utils/ApiError';
+import { canSeeDonationDetails } from './userDonations.service';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { FilterQuery } from 'mongoose';
 import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
@@ -93,7 +94,8 @@ export class DonationService {
     return { donations: sanitized, total, page, limit };
   }
 
-  async getById(id: string, requesterId?: string): Promise<any> {
+  /** One donation, which carries contact and payment identifiers and so is for the donor or an Admin only. */
+  async getById(id: string, requesterId?: string, requesterRole?: string): Promise<any> {
     const donation = await Donation.findOne({ _id: id, isDeleted: false })
       .populate('donor', 'name avatar email')
       .populate('campaign', 'title')
@@ -101,14 +103,9 @@ export class DonationService {
     if (!donation) throw ApiError.notFound('Donation not found');
 
     const obj = donation.toObject();
-    // Hide donor info for private donations unless the requester is the donor
     const donorId = obj.donor?._id?.toString();
-    const isDonor = requesterId && donorId && donorId === requesterId;
-    if (obj.visibility === 'private' && !isDonor) {
-      obj.donor = undefined;
-      obj.donorName = undefined;
-      obj.donorEmail = undefined;
-      obj.donorPhone = undefined;
+    if (!canSeeDonationDetails(donorId || '', requesterId, requesterRole)) {
+      throw ApiError.forbidden('You cannot view this donation');
     }
     return obj;
   }

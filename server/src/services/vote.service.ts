@@ -59,16 +59,25 @@ export class VoteService {
     const option = vote.options.find((o) => (o._id as any).toString() === optionId);
     if (!option) throw ApiError.notFound('Vote option not found');
 
-    vote.voters.push({
-      user: new mongoose.Types.ObjectId(userId),
-      selectedOption: new mongoose.Types.ObjectId(optionId),
-      votedAt: new Date(),
-      skipped: false,
-    } as any);
-
-    option.voteCount += 1;
-    vote.totalVotes += 1;
-    await vote.save();
+    // One atomic write, since a read-then-save lets two concurrent clicks both pass the check above.
+    const recorded = await Vote.findOneAndUpdate(
+      { _id: voteId, isDeleted: false, status: 'active', 'voters.user': { $ne: user._id } },
+      {
+        $push: {
+          voters: {
+            user: new mongoose.Types.ObjectId(userId),
+            selectedOption: new mongoose.Types.ObjectId(optionId),
+            votedAt: new Date(),
+            skipped: false,
+          },
+        },
+        $inc: { totalVotes: 1, 'options.$[opt].voteCount': 1 },
+      },
+      { new: true, arrayFilters: [{ 'opt._id': new mongoose.Types.ObjectId(optionId) }] }
+    );
+    if (!recorded) throw ApiError.conflict('You have already voted');
+    vote.totalVotes = recorded.totalVotes;
+    vote.options = recorded.options;
 
     // Broadcast real-time update
     broadcastVoteUpdate(voteId, {
@@ -94,14 +103,22 @@ export class VoteService {
     const alreadyVoted = vote.voters.some((v) => v.user.toString() === userId);
     if (alreadyVoted) throw ApiError.conflict('You have already voted or skipped');
 
-    vote.voters.push({
-      user: new mongoose.Types.ObjectId(userId),
-      selectedOption: new mongoose.Types.ObjectId(), // placeholder, not used
-      votedAt: new Date(),
-      skipped: true,
-    } as any);
-
-    await vote.save();
+    // Atomic for the same reason as casting: the check and the write must not be separable.
+    const recorded = await Vote.findOneAndUpdate(
+      { _id: voteId, isDeleted: false, 'voters.user': { $ne: user._id } },
+      {
+        $push: {
+          voters: {
+            user: new mongoose.Types.ObjectId(userId),
+            selectedOption: new mongoose.Types.ObjectId(), // placeholder, not used
+            votedAt: new Date(),
+            skipped: true,
+          },
+        },
+      },
+      { new: true }
+    );
+    if (!recorded) throw ApiError.conflict('You have already voted or skipped');
   }
 
   async getResults(id: string): Promise<any> {

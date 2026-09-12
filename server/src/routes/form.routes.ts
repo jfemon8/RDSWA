@@ -7,7 +7,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { Form, User, Notification } from '../models';
-import { UserRole } from '@rdswa/shared';
+import { UserRole, ROLE_HIERARCHY } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { submitFormSchema, reviewFormSchema } from '../validators/form.validator';
 import { userService } from '../services/user.service';
@@ -36,11 +36,20 @@ router.get('/my', authenticate(), asyncHandler(async (req, res) => {
   ApiResponse.success(res, forms);
 }));
 
-// Get by ID
+// Get by ID: the applicant's own, or any of them for a reviewer
 router.get('/:id', authenticate(), asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
   const form = await Form.findOne({ _id: req.params.id, isDeleted: false })
     .populate('submittedBy', 'name email').populate('reviewedBy', 'name');
   if (!form) throw ApiError.notFound('Form not found');
+
+  // A submission carries its applicant's identity documents, so it is not readable across accounts.
+  const submitterId = (form.submittedBy as any)?._id?.toString() ?? form.submittedBy?.toString();
+  const isOwner = submitterId === (req.user._id as any).toString();
+  const isReviewer =
+    ROLE_HIERARCHY.indexOf(req.user.role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+  if (!isOwner && !isReviewer) throw ApiError.forbidden('You cannot view this submission');
+
   ApiResponse.success(res, form);
 }));
 

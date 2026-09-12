@@ -15,8 +15,9 @@ router.get('/payment-methods', donationController.getPaymentMethods);
 router.get('/', authenticate(true), donationController.list);
 router.get('/campaigns', donationController.listCampaigns);
 router.get('/my', authenticate(), donationController.myDonations);
-router.get('/:id', donationController.getById);
-router.get('/:id/receipt', donationController.getReceipt);
+// Both carry the donor's contact and payment identifiers, so neither may be read anonymously.
+router.get('/:id', authenticate(), donationController.getById);
+router.get('/:id/receipt', authenticate(), donationController.getReceipt);
 router.post('/', authenticate(true), validate({ body: createDonationSchema }), donationController.create);
 router.patch('/:id/verify', authenticate(), authorize(UserRole.ADMIN), validate({ body: verifyDonationSchema }), auditLog('donation.verify', 'donations'), donationController.verifyPayment);
 router.patch('/:id', authenticate(), authorize(UserRole.ADMIN), validate({ body: updateDonationSchema }), auditLog('donation.update', 'donations'), donationController.update);
