@@ -29,6 +29,7 @@ import { syncRolesOnStart } from './jobs/roleSyncOnStart';
 import { syncCommitteeCurrentFlags } from './jobs/committeeCurrentSync';
 import { startMentorshipReminder } from './jobs/mentorshipReminder';
 import { backfillAnnouncementFlags } from './jobs/announcementBackfill';
+import { cleanupAnnouncementNotifications } from './jobs/announcementNotificationCleanup';
 import { backfillMentorListing } from './jobs/mentorListingBackfill';
 import { backfillAddressVisibility } from './jobs/addressVisibilityBackfill';
 import { backfillEndorsementNotifications } from './jobs/endorsementNotificationBackfill';
@@ -93,8 +94,8 @@ async function start() {
   // One-time role sync — ensures DB matches new auto-assignment rules
   syncRolesOnStart();
 
-  // Announcements predating their own flag are recognised and marked, once.
-  backfillAnnouncementFlags();
+  // Announcements predating their own flag are recognised and marked, then notifications for deleted ones are dropped.
+  backfillAnnouncementFlags().then(cleanupAnnouncementNotifications);
 
   // Members who were eligible to mentor before listing defaulted on are listed, once.
   backfillMentorListing();

@@ -34,18 +34,22 @@ const PRIVATE_FIELDS = [
   "linkedin",
 ] as const;
 
+/** Auth and identity fields no profile edit may touch, since `email` alone can trigger SuperAdmin auto-promotion. */
+const PROTECTED_ADMIN_EDIT_FIELDS = [
+  "password",
+  "refreshTokens",
+  "role",
+  "email",
+  "emailVerificationToken",
+  "passwordResetToken",
+  "otp",
+] as const;
+
 /** Check if a role is at least Moderator level */
 function isModeratorOrAbove(role: string): boolean {
   const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
   const modIdx = ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
   return idx >= modIdx;
-}
-
-/** Check if a role is at least Admin level */
-function isAdminOrAbove(role: string): boolean {
-  const idx = ROLE_HIERARCHY.indexOf(role as UserRole);
-  const adminIdx = ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
-  return idx >= adminIdx;
 }
 
 /** Strip private fields per the user's profileVisibility settings, which Moderator+ bypasses entirely. */
@@ -100,11 +104,12 @@ export class UserService {
     return applyVisibilityFilter(user, viewerRole);
   }
 
+  /** The one profile write, shared by a member editing their own and a SuperAdmin editing theirs. */
   async updateProfile(
     userId: string,
     rawData: Partial<IUserDocument>,
   ): Promise<IUserDocument> {
-    // Strip undefined values (from Zod transforms) so Mongoose doesn't set fields to null
+    // Strip undefined values (from Zod transforms) so Mongoose doesn't set fields to null.
     const data = JSON.parse(JSON.stringify(rawData));
 
     // The previous values drive both the group-membership sync and the academic checks below.
@@ -126,7 +131,6 @@ export class UserService {
     if (data.department && user.membershipStatus === "approved") {
       const newDept = data.department as string;
 
-      // Remove from old department group if department changed
       if (oldDepartment && oldDepartment !== newDept) {
         ChatGroup.findOneAndUpdate(
           { type: "department", department: oldDepartment, isDeleted: false },
@@ -136,7 +140,6 @@ export class UserService {
           .catch(() => {});
       }
 
-      // Add to new department group
       ensureDepartmentGroup(newDept)
         .then(() => {
           ChatGroup.findOneAndUpdate(
@@ -189,8 +192,7 @@ export class UserService {
           });
         }
       } else if (wasAlumni && !user.alumniApproved) {
-        // User removed their current job/business — recompute (pre-save will clear isAlumni
-        // unless alumniApproved sticky flag is set via form approval)
+        // The current job or business is gone, so pre-save clears isAlumni unless form approval made it sticky.
         await user.save();
       }
     }
@@ -198,42 +200,28 @@ export class UserService {
     return user;
   }
 
-  /** Admin+ can update any user's profile fields. */
+  /** Only a SuperAdmin may edit someone else's profile; everyone else edits their own via updateProfile. */
   async adminUpdateUser(
     targetUserId: string,
     data: Record<string, any>,
     adminUser: IUserDocument,
   ): Promise<IUserDocument> {
-    if (!isAdminOrAbove(adminUser.role)) {
-      throw ApiError.forbidden("Only Admin or SuperAdmin can edit other users");
+    if (adminUser.role !== UserRole.SUPER_ADMIN) {
+      throw ApiError.forbidden("Only a SuperAdmin can edit a user's profile");
     }
 
-    const target = await User.findById(targetUserId);
+    const target = await User.findById(targetUserId).select("isDeleted");
     if (!target) throw ApiError.notFound("User not found");
-
-    // Prevent editing SuperAdmin unless you are SuperAdmin
-    if (
-      SUPER_ADMIN_EMAILS.includes(target.email) &&
-      adminUser.role !== UserRole.SUPER_ADMIN
-    ) {
-      throw ApiError.forbidden("Cannot edit SuperAdmin profile");
+    if (target.isDeleted) {
+      throw ApiError.badRequest("Cannot edit a deleted user");
     }
 
-    // Disallow changing sensitive auth fields
-    delete data.password;
-    delete data.refreshTokens;
-    delete data.role;
-    delete data.emailVerificationToken;
-    delete data.passwordResetToken;
-    delete data.otp;
+    // Defence in depth — the route's Zod schema already strips these, but the service is callable directly.
+    const safeData = { ...data };
+    for (const field of PROTECTED_ADMIN_EDIT_FIELDS) delete safeData[field];
 
-    const updated = await User.findByIdAndUpdate(
-      targetUserId,
-      { $set: data },
-      { new: true, runValidators: true },
-    );
-    if (!updated) throw ApiError.notFound("User not found");
-    return updated;
+    // Reuse the self-edit path so academic validation, department group sync and the alumni hook all still run.
+    return this.updateProfile(targetUserId, safeData as Partial<IUserDocument>);
   }
 
   async listUsers(query: ListUsersQuery, includeDeleted = false) {

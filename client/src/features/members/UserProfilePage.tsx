@@ -91,8 +91,14 @@ export default function UserProfilePage() {
   });
 
   const editMutation = useMutation({
+    // Untouched fields come through as empty strings, which the server's profile schema rejects for typed fields like batch.
     mutationFn: (updates: Record<string, any>) =>
-      api.patch(`/users/${id}/profile`, updates),
+      api.patch(
+        `/users/${id}/profile`,
+        Object.fromEntries(
+          Object.entries(updates).filter(([, v]) => v !== "" && v != null),
+        ),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
       toast.success("Profile updated");

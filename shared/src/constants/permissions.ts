@@ -42,7 +42,8 @@ type PermissionMap = Record<string, UserRole[]>;
 export const PERMISSIONS: PermissionMap = {
   // Users
   'users:read': [UserRole.MEMBER, UserRole.ALUMNI, UserRole.ADVISOR, UserRole.SENIOR_ADVISOR, UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],
-  'users:update': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  // Editing someone else's profile is SuperAdmin-only; owners edit their own through PATCH /users/me.
+  'users:update': [UserRole.SUPER_ADMIN],
   'users:approve': [UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],
   'users:suspend': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   'users:export': [UserRole.ADMIN, UserRole.SUPER_ADMIN],

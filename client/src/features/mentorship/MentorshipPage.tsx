@@ -834,7 +834,8 @@ function MentorOptIn({
 
   const mutation = useMutation({
     mutationFn: (patch: { isMentor?: boolean; mentorAreas?: string[] }) =>
-      api.patch(`/users/${user?._id}/profile`, patch),
+      // A mentor is tag-based, not tier-based, so this has to go through the self-edit route.
+      api.patch("/users/me", patch),
     onSuccess: (res, patch) => {
       // The store drives the toggle, so it has to reflect the saved value immediately.
       setUser({ ...user!, ...patch });

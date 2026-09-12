@@ -16,6 +16,12 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
 
 export const updateMe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
+  // This route has no authorize() to carry the suspension check, so it is enforced here.
+  if ((req.user as any).membershipStatus === "suspended") {
+    throw ApiError.forbidden(
+      "Your account has been suspended. Please contact an admin.",
+    );
+  }
   const user = await userService.updateProfile(
     (req.user._id as any).toString(),
     req.body,

@@ -12,6 +12,10 @@ import { notificationService } from '../services/notification.service';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { escapeRegex } from '../utils/escapeRegex';
 import {
+  announcementPreview,
+  removeAnnouncementNotifications,
+} from '../utils/announcementNotifications';
+import {
   broadcastChatMessage,
   broadcastChatMessageEdit,
   broadcastChatMessageDelete,
@@ -1656,11 +1660,6 @@ router.get('/monitor/groups', authenticate(), authorize(UserRole.SUPER_ADMIN), a
 /** The stored shape of an announcement, where the title rides in front of the body. */
 const composeAnnouncement = (title: string, content: string) => `**${title}**\n\n${content}`;
 
-/** Notification text for an announcement, with the rich-text markup taken back out. */
-function announcementPreview(content: string): string {
-  return content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
-}
-
 /** The announcement plus the right to change it, which its author and any Admin hold. */
 async function findEditableAnnouncement(messageId: string, user: any) {
   const centralGroup = await ChatGroup.findOne({ type: 'central', isDeleted: false });
@@ -1691,7 +1690,6 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
   const { title, content, link, image } = req.body;
   if (!title || !content) throw ApiError.badRequest('Title and content are required');
 
-  // Find or create the central announcement group
   let centralGroup = await ChatGroup.findOne({ type: 'central', isDeleted: false });
   if (!centralGroup) {
     const allMembers = await User.find({ isDeleted: false, isActive: true }).select('_id');
@@ -1703,14 +1701,12 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
     });
   }
 
-  // Post message to the central group
   const message = await Message.create({
     group: centralGroup._id,
     sender: req.user._id,
     content: composeAnnouncement(title, content),
     attachments: image?.url ? [{ kind: 'image', ...image }] : [],
-    // The announcement channel and the group's own chat share this collection, so only the
-    // messages published here are announcements — a chat message in the group is not one.
+    // The group's own chat shares this collection, so only what is published here is an announcement.
     isAnnouncement: true,
   });
   await message.populate('sender', 'name avatar');
@@ -1718,7 +1714,6 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
   centralGroup.updatedAt = new Date();
   await centralGroup.save();
 
-  // Send notification to all members
   const recipientIds = centralGroup.members
     .map((m) => m.toString())
     .filter((id) => id !== req.user!._id.toString());
@@ -1729,7 +1724,9 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
       type: 'announcement',
       title,
       message: announcementPreview(content),
-      link: link || `/dashboard/groups/${centralGroup._id}`,
+      link: link || `/dashboard/announcements/${message._id}`,
+      // Deleting the announcement clears these, which needs the notification to name it.
+      metadata: { announcementId: message._id.toString() },
     });
   }
 
@@ -1885,6 +1882,7 @@ router.post('/announcements/:id/comments', authenticate(), authorize(UserRole.ME
       title: parent ? 'New reply to your comment' : 'New comment on your announcement',
       message: `${req.user.name}: ${content.trim().slice(0, 120)}`,
       link: `/dashboard/announcements/${announcement._id}`,
+      metadata: { announcementId: announcement._id.toString() },
     });
   }
 
@@ -1979,6 +1977,13 @@ router.delete('/announcements/:id', authenticate(), asyncHandler(async (req, res
 
   message.isDeleted = true;
   await message.save();
+
+  // Nothing links back to a deleted announcement, so its notifications and comments go with it.
+  await removeAnnouncementNotifications(message._id.toString(), message.content);
+  await AnnouncementComment.updateMany(
+    { announcement: message._id, isDeleted: false },
+    { $set: { isDeleted: true } }
+  );
 
   ApiResponse.success(res, null, 'Announcement deleted');
 }));

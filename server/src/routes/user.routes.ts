@@ -169,11 +169,12 @@ router.get(
   }),
 );
 
-// Admin+ can edit any user's profile
+// Only SuperAdmin can edit someone else's profile; everyone else edits their own via PATCH /me.
 router.patch(
   "/:id/profile",
   authenticate(),
-  authorize(UserRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN),
+  validate({ body: updateProfileSchema }),
   auditLog("user.admin_edit", "users"),
   userController.adminUpdateUser,
 );
