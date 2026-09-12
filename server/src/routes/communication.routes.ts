@@ -536,10 +536,11 @@ router.post('/groups/:id/messages/:messageId/react', authenticate(), asyncHandle
     // No emoji = remove the user's reaction.
     message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
   } else {
-    if (!ALLOWED_REACTIONS.has(emoji)) throw ApiError.badRequest('Unsupported reaction');
+    // Taking a reaction back is always allowed, even one stored before the current set existed.
     if (existing && existing.emoji === emoji) {
-      // Toggle off when re-reacting with the same emoji.
       message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
+    } else if (!ALLOWED_REACTIONS.has(emoji)) {
+      throw ApiError.badRequest('Unsupported reaction');
     } else if (existing) {
       existing.emoji = emoji;
       existing.reactedAt = new Date();
@@ -1129,9 +1130,11 @@ router.post('/dm/messages/:messageId/react', authenticate(), asyncHandler(async 
   if (!emoji) {
     message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
   } else {
-    if (!ALLOWED_REACTIONS.has(emoji)) throw ApiError.badRequest('Unsupported reaction');
+    // Taking a reaction back is always allowed, even one stored before the current set existed.
     if (existing && existing.emoji === emoji) {
       message.reactions = message.reactions.filter((r: any) => r.user.toString() !== userId);
+    } else if (!ALLOWED_REACTIONS.has(emoji)) {
+      throw ApiError.badRequest('Unsupported reaction');
     } else if (existing) {
       existing.emoji = emoji;
       existing.reactedAt = new Date();

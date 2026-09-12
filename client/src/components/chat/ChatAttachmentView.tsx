@@ -99,8 +99,9 @@ export default function ChatAttachmentView({ attachment, isMine, onImageClick }:
   }
 
   if (kind === 'audio') {
+    // The player wants room, but never more than the bubble has, or a narrow screen scrolls sideways.
     return (
-      <div className="w-full min-w-[220px]">
+      <div className="w-full" style={{ minWidth: 'min(220px, 100%)' }}>
         <audio src={url} controls preload="metadata" className="w-full" />
         {attachment.name && (
           <p className={`text-[10px] mt-1 truncate ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
@@ -125,13 +126,13 @@ function buildProxyUrl(rawUrl: string, name?: string, inline = true): string {
 function FileCard({ attachment, isMine }: Props) {
   const isPdf = attachment.kind === 'pdf';
   const Icon = isPdf ? FileText : FileIcon;
-  // Route through the proxy so PDFs/Office docs preview inline and downloads
-  // arrive with the original filename instead of a Cloudinary hash.
+  // The proxy previews PDFs inline and keeps the original filename instead of a Cloudinary hash.
   const viewUrl = attachment.url ? buildProxyUrl(attachment.url, attachment.name, true) : undefined;
   const downloadUrl = attachment.url ? buildProxyUrl(attachment.url, attachment.name, false) : undefined;
   return (
     <div
-      className={`flex items-center gap-3 min-w-[220px] max-w-sm px-3 py-2.5 rounded-lg transition-colors ${
+      style={{ minWidth: 'min(220px, 100%)' }}
+      className={`flex items-center gap-3 max-w-sm px-3 py-2.5 rounded-lg transition-colors ${
         isMine
           ? 'bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground'
           : 'bg-background hover:bg-accent text-foreground border'
@@ -185,7 +186,8 @@ function ContactCard({ attachment, isMine }: Props) {
   if (!c) return null;
   const inner = (
     <div
-      className={`flex items-center gap-3 min-w-[220px] max-w-sm px-3 py-2.5 rounded-lg transition-colors ${
+      style={{ minWidth: 'min(220px, 100%)' }}
+      className={`flex items-center gap-3 max-w-sm px-3 py-2.5 rounded-lg transition-colors ${
         isMine
           ? 'bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground'
           : 'bg-background hover:bg-accent text-foreground border'
@@ -244,7 +246,7 @@ function ExpiredPlaceholder({
     FileIcon;
   return (
     <div
-      className={`flex items-center gap-3 min-w-[220px] max-w-sm px-3 py-2.5 rounded-lg border-dashed border ${
+      className={`flex w-full items-center gap-3 max-w-full px-3 py-2.5 rounded-lg border-dashed border ${
         isMine
           ? 'bg-primary-foreground/5 border-primary-foreground/30 text-primary-foreground/80'
           : 'bg-muted/50 border-muted-foreground/30 text-muted-foreground'
@@ -258,7 +260,12 @@ function ExpiredPlaceholder({
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {EXPIRED_LABEL[kind] || 'Attachment expired'}
         </p>
-        {name && <p className="text-[11px] truncate opacity-70">{name}</p>}
+        {/* A stored filename is one long token, so it wraps instead of being cut off mid-name. */}
+        {name && (
+          <p className="text-[11px] opacity-70" style={{ overflowWrap: 'anywhere' }}>
+            {name}
+          </p>
+        )}
       </div>
     </div>
   );

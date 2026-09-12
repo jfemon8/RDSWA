@@ -172,7 +172,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchEnd}
     >
-      <div className={`flex items-end gap-2 max-w-[85%] sm:max-w-[70%] ${isMine ? 'flex-row-reverse' : ''}`}>
+      <div className={`flex items-end gap-2 min-w-0 max-w-[85%] sm:max-w-[70%] ${isMine ? 'flex-row-reverse' : ''}`}>
         {/* Avatar (only for received messages, only on the first of a group) */}
         {!isMine && isGroup && !groupedWithPrevious && (
           <Link to={`/members/${senderId}`} className="shrink-0">
@@ -210,7 +210,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
             )}
           </AnimatePresence>
 
-          <div className="flex items-end gap-1">
+          <div className="flex items-end gap-1 min-w-0">
             {/* Hover-only quick action toolbar (sender side first) */}
             {isMine && !isEditing && (
               <QuickActions
@@ -230,7 +230,8 @@ export default function MessageBubble(props: MessageBubbleProps) {
               />
             ) : (
               <div
-                className={`px-3 py-2 rounded-2xl text-sm shadow-sm ${
+                // Anything that genuinely cannot wrap scrolls inside the bubble rather than widening it.
+                className={`min-w-0 max-w-full overflow-x-auto px-3 py-2 rounded-2xl text-sm shadow-sm ${
                   isMine
                     ? 'bg-primary text-primary-foreground rounded-br-sm'
                     : 'bg-muted rounded-bl-sm'
@@ -267,7 +268,9 @@ export default function MessageBubble(props: MessageBubbleProps) {
                 )}
                 {/* Text */}
                 {msg.content && (
-                  <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                  <p className="whitespace-pre-wrap" style={{ overflowWrap: 'anywhere' }}>
+                    {msg.content}
+                  </p>
                 )}
                 {/* Meta row */}
                 <div className={`flex items-center gap-1 text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70 justify-end' : 'text-muted-foreground'}`}>

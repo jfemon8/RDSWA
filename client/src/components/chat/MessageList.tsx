@@ -210,10 +210,11 @@ export default function MessageList(props: Props) {
 
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden">
+      {/* `overflow-y-auto` alone would compute the x axis to `auto` too, letting the thread scroll sideways. */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto scroll-smooth-touch chat-scroll px-3 sm:px-4 py-2"
+        className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth-touch chat-scroll px-3 sm:px-4 py-2"
       >
         {isLoadingOlder && (
           <div className="flex justify-center py-3">

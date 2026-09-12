@@ -12,6 +12,17 @@ interface Props {
   align?: 'start' | 'end';
 }
 
+/** The announcement channel reacts to the same messages by name, which the chat shows as a glyph. */
+const NAMED_REACTIONS: Record<string, string> = {
+  like: '👍',
+  love: '❤️',
+  care: '🤗',
+  haha: '😂',
+  wow: '😮',
+  sad: '😢',
+  angry: '😡',
+};
+
 /** Aggregated reaction chips under a bubble, where clicking your own reaction toggles it off. */
 export default function ReactionBar({ reactions, currentUserId, onToggle, align = 'start' }: Props) {
   if (!reactions || reactions.length === 0) return null;
@@ -44,8 +55,9 @@ export default function ReactionBar({ reactions, currentUserId, onToggle, align 
               : 'bg-background border-border hover:bg-accent'
           }`}
           title={`${count} reaction${count > 1 ? 's' : ''}`}
+          aria-label={`${emoji}, ${count} reaction${count > 1 ? 's' : ''}`}
         >
-          <span className="text-sm">{emoji}</span>
+          <span className="text-sm">{NAMED_REACTIONS[emoji] ?? emoji}</span>
           {count > 1 && <span className="font-medium">{count}</span>}
         </motion.button>
       ))}

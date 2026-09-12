@@ -795,7 +795,7 @@ export default function GroupChatPage() {
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "spring", stiffness: 400, damping: 36 }}
-                className="fixed lg:static top-0 right-0 z-50 h-full lg:h-auto w-[85vw] max-w-[300px] lg:w-72 border-l bg-card overflow-y-auto shrink-0"
+                className="fixed lg:static top-0 right-0 z-50 h-full lg:h-auto w-[85vw] max-w-[300px] lg:w-72 border-l bg-card overflow-y-auto overflow-x-hidden shrink-0"
                 style={{
                   paddingTop: "env(safe-area-inset-top)",
                   paddingBottom: "env(safe-area-inset-bottom)",
