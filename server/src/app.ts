@@ -22,6 +22,10 @@ import { startPaymentReminder } from './jobs/paymentReminder';
 import { startNoticePublisher } from './jobs/noticePublisher';
 import { startEmailDigest } from './jobs/emailDigest';
 import { startChatMediaPurge } from './jobs/chatMediaPurge';
+import { startDeletedUserPurge } from './jobs/deletedUserPurge';
+import { startAnnouncementRetention } from './jobs/announcementRetention';
+import { startNoticeRetention } from './jobs/noticeRetention';
+import { startTrashPurge } from './jobs/trashPurge';
 import { startJobPostPurge } from './jobs/jobPostPurge';
 import { initSocket } from './socket';
 import { initWebPush } from './config/webpush';
@@ -119,6 +123,10 @@ async function start() {
   startEmailDigest();
   startChatMediaPurge();
   startJobPostPurge();
+  startDeletedUserPurge();
+  startAnnouncementRetention();
+  startNoticeRetention();
+  startTrashPurge();
   startMentorshipReminder();
 
   httpServer.listen(env.PORT, () => {

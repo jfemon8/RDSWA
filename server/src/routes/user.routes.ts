@@ -354,4 +354,26 @@ router.patch(
   userController.restoreUser,
 );
 
+// SuperAdmin: remove a soft-deleted account from the database, which the retention job also does after a year.
+router.delete(
+  "/:id/permanent",
+  authenticate(),
+  authorize(UserRole.SUPER_ADMIN),
+  auditLog("user.permanent_delete", "users"),
+  asyncHandler(async (req, res) => {
+    const { User } = await import("../models");
+    const id = req.params.id as string;
+    const target = await User.findById(id).select("role isDeleted");
+    if (!target) throw ApiError.notFound("User not found");
+    if (target.role === UserRole.SUPER_ADMIN)
+      throw ApiError.forbidden("Cannot delete a SuperAdmin");
+    if (!target.isDeleted) {
+      throw ApiError.badRequest("Delete the account first, then remove it permanently");
+    }
+
+    await User.deleteOne({ _id: target._id });
+    ApiResponse.success(res, null, "Account permanently deleted");
+  }),
+);
+
 export default router;

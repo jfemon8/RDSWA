@@ -23,6 +23,7 @@ import uploadRoutes from './upload.routes';
 import sitemapRoutes from './sitemap.routes';
 import vacationRoutes from './vacation.routes';
 import admissionRoutes from './admission.routes';
+import trashRoutes from './trash.routes';
 
 const router = Router();
 
@@ -49,6 +50,7 @@ router.use('/budgets', budgetRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/vacations', vacationRoutes);
 router.use('/admissions', admissionRoutes);
+router.use('/trash', trashRoutes);
 // Sitemap is mounted at the API prefix so a Vercel rewrite from
 // /sitemap.xml → /api/sitemap.xml resolves cleanly.
 router.use('/', sitemapRoutes);

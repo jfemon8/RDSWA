@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import {
   LayoutDashboard, Users, Building2, Calendar, CalendarDays, FileText, Image, FolderOpen,
-  Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap,
+  Banknote, Vote, Bus, Bell, Settings, ScrollText, Shield, GraduationCap, Trash2,
   LogOut, Menu, X, ChevronLeft, Crown, UserCog, UserCheck, BarChart3, KeyRound, CreditCard, Settings2,
   Briefcase, MessageSquare, MessagesSquare, Heart, Award, Star, Wallet, Database, Inbox, Eye,
 } from 'lucide-react';
@@ -81,6 +81,7 @@ const adminLinks: AdminLink[] = [
   { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: UserRole.SUPER_ADMIN },
   { label: 'Logs & Security', href: '/admin/logs', icon: Shield, minRole: UserRole.SUPER_ADMIN },
   { label: 'Backup & Restore', href: '/admin/backup', icon: Database, minRole: UserRole.SUPER_ADMIN },
+  { label: 'Recycle Bin', href: '/admin/trash', icon: Trash2, minRole: UserRole.SUPER_ADMIN },
 ];
 
 export default function AdminLayout() {

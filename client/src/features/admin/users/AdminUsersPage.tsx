@@ -136,6 +136,17 @@ export default function AdminUsersPage() {
     },
   });
 
+  const purgeUserMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/users/${id}/permanent`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("Account permanently deleted");
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to delete account");
+    },
+  });
+
   // SuperAdmin only — force-set a user's password, overriding the current one.
   const forcePwdMutation = useMutation({
     mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
@@ -332,7 +343,11 @@ export default function AdminUsersPage() {
                     `/users/export/directory?format=csv${exportQuery}`,
                     { responseType: "text" },
                   );
-                  await downloadTablePdf(data, exportLabel, `RDSWA-${exportFile}`);
+                  await downloadTablePdf(
+                    data,
+                    exportLabel,
+                    `RDSWA-${exportFile}`,
+                  );
                   toast.success("PDF download started");
                 } catch {
                   toast.error("Export failed");
@@ -683,12 +698,30 @@ export default function AdminUsersPage() {
                       <RotateCcw className="h-4 w-4" />
                     </button>
                   )}
+                  {showDeleted && isSuperAdmin && u.role !== "super_admin" && (
+                    <button
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: "Delete Permanently",
+                          message: `Erase ${u.name}'s account from the database? This cannot be undone.`,
+                          confirmLabel: "Delete Permanently",
+                          variant: "danger",
+                          requireTypeToConfirm: "DELETE",
+                        });
+                        if (ok) purgeUserMutation.mutate(u._id);
+                      }}
+                      title="Delete permanently"
+                      className="p-1.5 text-destructive hover:bg-destructive/10 rounded"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                   {!showDeleted && isSuperAdmin && u.role !== "super_admin" && (
                     <button
                       onClick={async () => {
                         const ok = await confirm({
                           title: "Delete User",
-                          message: `Permanently delete ${u.name}'s account? This removes all their data and cannot be undone.`,
+                          message: `Delete ${u.name}'s account? It stops working immediately and moves to Deleted users.`,
                           confirmLabel: "Delete",
                           variant: "danger",
                           requireTypeToConfirm: "DELETE",

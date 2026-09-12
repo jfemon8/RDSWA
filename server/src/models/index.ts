@@ -1,3 +1,9 @@
+import mongoose from 'mongoose';
+import { softDeletePlugin } from './plugins/softDelete';
+
+// Registered before any schema below is compiled, so every soft-deletable model records when it was deleted.
+mongoose.plugin(softDeletePlugin);
+
 export { User } from './User';
 export type { IUserDocument } from './User';
 

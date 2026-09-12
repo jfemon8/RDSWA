@@ -7,7 +7,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import { Vacation } from '../models/Vacation';
+import { Vacation } from '../models';
 import { UserRole } from '@rdswa/shared';
 import { createVacationSchema, updateVacationSchema } from '../validators/vacation.validator';
 
