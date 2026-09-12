@@ -55,7 +55,6 @@ function isModeratorOrAbove(role: string): boolean {
 /** Strip private fields per the user's profileVisibility settings, which Moderator+ bypasses entirely. */
 function applyVisibilityFilter(user: any, viewerRole?: string): any {
   if (!user) return user;
-  // Moderator+ sees everything
   if (viewerRole && isModeratorOrAbove(viewerRole)) return user;
 
   const obj =
@@ -63,7 +62,6 @@ function applyVisibilityFilter(user: any, viewerRole?: string): any {
   const visibility = obj.profileVisibility || {};
 
   for (const field of PRIVATE_FIELDS) {
-    // If visibility[field] is explicitly false (private), hide it
     if (visibility[field] === false) {
       delete obj[field];
     }
@@ -319,10 +317,13 @@ export class UserService {
     limit?: string;
   }) {
     const { page, limit } = parsePagination(query);
+    // An emergency needs every donor it can reach, so approval is not asked for, only a reachable account.
     const filter: FilterQuery<IUserDocument> = {
       isDeleted: false,
+      isActive: true,
       isBloodDonor: true,
-      membershipStatus: "approved",
+      role: { $ne: UserRole.GUEST },
+      membershipStatus: { $ne: "suspended" },
     };
 
     if (query.bloodGroup) filter.bloodGroup = query.bloodGroup;

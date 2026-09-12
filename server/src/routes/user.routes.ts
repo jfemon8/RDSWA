@@ -169,7 +169,7 @@ router.get(
   }),
 );
 
-// Only SuperAdmin can edit someone else's profile; everyone else edits their own via PATCH /me.
+// Editing someone else's profile — everyone else uses PATCH /me
 router.patch(
   "/:id/profile",
   authenticate(),

@@ -91,7 +91,7 @@ export default function UserProfilePage() {
   });
 
   const editMutation = useMutation({
-    // Untouched fields come through as empty strings, which the server's profile schema rejects for typed fields like batch.
+    // Untouched fields arrive as empty strings, which the server's schema rejects on typed ones like batch.
     mutationFn: (updates: Record<string, any>) =>
       api.patch(
         `/users/${id}/profile`,

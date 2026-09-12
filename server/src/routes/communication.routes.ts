@@ -1733,7 +1733,7 @@ router.post('/announcements', authenticate(), authorize(UserRole.MODERATOR), asy
   ApiResponse.created(res, message);
 }));
 
-// Get announcements (from central group)
+// The announcement feed, newest first
 router.get('/announcements', authenticate(), asyncHandler(async (req, res) => {
   const { page, limit } = parsePagination(req.query as any);
   const centralGroup = await ChatGroup.findOne({ type: 'central', isDeleted: false });

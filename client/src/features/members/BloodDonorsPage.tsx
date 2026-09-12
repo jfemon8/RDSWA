@@ -145,11 +145,11 @@ export default function BloodDonorsPage() {
           title="No Donors Found"
           description={hasFilters
             ? 'No blood donors match your filters. Try a different blood group or district, or clear filters to see all donors.'
-            : 'No blood donors are listed yet. Members can mark themselves as donors from their profile to appear here.'}
+            : 'No blood donors are listed yet. Anyone with an account can mark themselves as a donor from their profile to appear here.'}
           primary={hasFilters
             ? { label: 'Clear Filters', icon: X, onClick: clearFilters }
             : { label: 'Become a Donor', icon: UserPlus, to: '/dashboard/profile/edit' }}
-          hint="Enable “Available as blood donor” on your profile to help fellow members in emergencies."
+          hint="Enable “Available as Blood Donor” on your profile to help someone in an emergency."
         />
       ) : (
         <div className="grid grid-equal grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
