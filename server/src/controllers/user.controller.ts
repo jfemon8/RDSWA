@@ -3,6 +3,7 @@ import { userService } from "../services/user.service";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
+import { UserRole } from "@rdswa/shared";
 
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
@@ -211,18 +212,28 @@ export const removeEndorsement = asyncHandler(
 export const exportDirectory = asyncHandler(
   async (req: Request, res: Response) => {
     const format = (req.query.format as string) === "csv" ? "csv" : "json";
-    const filters = {
-      role: req.query.role as string | undefined,
-      membershipStatus: req.query.membershipStatus as string | undefined,
-      search: req.query.search as string | undefined,
-    };
-    const result = await userService.exportDirectory(format, filters);
+    // Everything but the transport params is a filter, and the service reads only the keys it knows.
+    const { format: _format, page: _page, limit: _limit, includeDeleted, ...filters } =
+      req.query;
+    // Deleted users are a SuperAdmin-only listing, so exporting them is gated the same way.
+    const onlyDeleted =
+      includeDeleted === "true" && req.user?.role === UserRole.SUPER_ADMIN;
+    const result = await userService.exportDirectory(
+      format,
+      filters as any,
+      onlyDeleted,
+    );
 
     if (format === "csv") {
+      const scope = onlyDeleted
+        ? "deleted-users"
+        : req.query.membershipStatus === "approved"
+          ? "members"
+          : "users";
       res.setHeader("Content-Type", "text/csv");
       res.setHeader(
         "Content-Disposition",
-        "attachment; filename=member-directory.csv",
+        `attachment; filename=${scope}-directory.csv`,
       );
       res.send(result);
     } else {

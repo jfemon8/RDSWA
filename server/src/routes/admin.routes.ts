@@ -475,7 +475,8 @@ router.get('/backup/export/:collection', authenticate(), authorize(UserRole.SUPE
 
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename=${collectionName}-${new Date().toISOString().slice(0, 10)}.json`);
-  res.send(JSON.stringify(documents, null, 2));
+  // Restore reads this back as JSON, so the indentation was only ever paid for in bytes.
+  res.send(JSON.stringify(documents));
 }));
 
 // Restore a collection from JSON

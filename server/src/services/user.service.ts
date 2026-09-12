@@ -94,7 +94,7 @@ export class UserService {
   }
 
   async getById(id: string, viewerRole?: string): Promise<any> {
-    const user = await User.findOne({ _id: id, isDeleted: false }).populate(
+    const user = await User.findOne({ _id: id, isDeleted: { $ne: true } }).populate(
       "skillEndorsements.endorsedBy",
       "name avatar",
     );
@@ -222,9 +222,12 @@ export class UserService {
     return this.updateProfile(targetUserId, safeData as Partial<IUserDocument>);
   }
 
-  async listUsers(query: ListUsersQuery, includeDeleted = false) {
-    const { page, limit } = parsePagination(query);
-    const filter: FilterQuery<IUserDocument> = { isDeleted: includeDeleted };
+  /** The one query behind both the listing and its export, so a page exports exactly what it shows. */
+  private buildUserFilter(query: ListUsersQuery, onlyDeleted = false) {
+    // `$ne: true` rather than `false`, so accounts predating the soft-delete flag are still listed.
+    const filter: FilterQuery<IUserDocument> = {
+      isDeleted: onlyDeleted ? true : { $ne: true },
+    };
 
     if (query.batch) filter.batch = parseInt(query.batch, 10);
     if (query.department) filter.department = query.department;
@@ -268,6 +271,13 @@ export class UserService {
       };
       filter.$and = [...(filter.$and || []), searchCondition];
     }
+
+    return filter;
+  }
+
+  async listUsers(query: ListUsersQuery, includeDeleted = false) {
+    const { page, limit } = parsePagination(query);
+    const filter = this.buildUserFilter(query, includeDeleted);
 
     const [users, total] = await Promise.all([
       User.find(filter)
@@ -319,8 +329,8 @@ export class UserService {
     const { page, limit } = parsePagination(query);
     // An emergency needs every donor it can reach, so approval is not asked for, only a reachable account.
     const filter: FilterQuery<IUserDocument> = {
-      isDeleted: false,
-      isActive: true,
+      isDeleted: { $ne: true },
+      isActive: { $ne: false },
       isBloodDonor: true,
       role: { $ne: UserRole.GUEST },
       membershipStatus: { $ne: "suspended" },
@@ -412,26 +422,13 @@ export class UserService {
     return target;
   }
 
+  /** Exports whatever the caller's filters select, which for an unfiltered call is every user. */
   async exportDirectory(
     format: "json" | "csv",
-    filters?: { role?: string; membershipStatus?: string; search?: string },
+    filters?: ListUsersQuery,
+    includeDeleted = false,
   ) {
-    const query: FilterQuery<IUserDocument> = { isDeleted: false };
-    if (filters?.role) query.role = filters.role;
-    if (filters?.membershipStatus)
-      query.membershipStatus = filters.membershipStatus;
-    if (filters?.search) {
-      const term = escapeRegex(filters.search);
-      query.$or = [
-        { name: { $regex: term, $options: "i" } },
-        { email: { $regex: term, $options: "i" } },
-        { studentId: { $regex: term, $options: "i" } },
-      ];
-    }
-    // If no filters at all, default to approved members
-    if (!filters?.role && !filters?.membershipStatus && !filters?.search) {
-      query.membershipStatus = "approved";
-    }
+    const query = this.buildUserFilter(filters || {}, includeDeleted);
     const users = await User.find(query)
       .select(
         "name nameBn email phone studentId registrationNumber faculty department batch session permanentAddress gender bloodGroup isBloodDonor profession earningSource skills role membershipStatus profileVisibility createdAt",

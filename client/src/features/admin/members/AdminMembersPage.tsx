@@ -16,7 +16,7 @@ import { useConfirm } from '@/components/ui/ConfirmModal';
 import { FadeIn, BlurText, SpotlightCard } from '@/components/reactbits';
 import InfiniteScrollSentinel from '@/components/ui/InfiniteScrollSentinel';
 import SEO from '@/components/SEO';
-import { downloadTablePdf } from '@/lib/downloadPdf';
+import { downloadTablePdf, parseCsv } from '@/lib/downloadPdf';
 import { useAcademicConfig } from '@/hooks/useAcademicConfig';
 
 type MemberStats = { approved: number; pending: number; suspended: number };
@@ -136,7 +136,9 @@ export default function AdminMembersPage() {
       a.download = `members.${fmt}`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`Exported as ${fmt.toUpperCase()}`);
+      // The count makes it obvious when an export covers fewer rows than the list.
+      const count = fmt === 'csv' ? parseCsv(data).rows.length : (data.data?.length ?? 0);
+      toast.success(`Exported ${count} records as ${fmt.toUpperCase()}`);
     } catch {
       toast.error('Export failed');
     }

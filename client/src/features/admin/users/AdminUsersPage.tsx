@@ -31,7 +31,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { downloadTablePdf } from "@/lib/downloadPdf";
+import { downloadTablePdf, parseCsv } from "@/lib/downloadPdf";
 import { motion, AnimatePresence } from "motion/react";
 import { FadeIn } from "@/components/reactbits";
 import { useConfirm } from "@/components/ui/ConfirmModal";
@@ -239,12 +239,15 @@ export default function AdminUsersPage() {
     },
   });
 
-  // Build export URL with current filters (no pagination — exports ALL matching rows)
+  // No page or limit goes along, so an export covers every row the filters match, not the page on screen.
   const exportParams = new URLSearchParams();
   if (search) exportParams.set("search", search);
   if (role) exportParams.set("role", role);
   if (status) exportParams.set("membershipStatus", status);
+  if (showDeleted) exportParams.set("includeDeleted", "true");
   const exportQuery = exportParams.toString() ? `&${exportParams}` : "";
+  const exportLabel = showDeleted ? "Deleted Users" : "User Directory";
+  const exportFile = showDeleted ? "deleted-users" : "users-directory";
 
   return (
     <div className="container mx-auto py-4 sm:py-6">
@@ -302,10 +305,15 @@ export default function AdminUsersPage() {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
-                    a.download = `member-directory.${fmt === "csv" ? "csv" : "json"}`;
+                    a.download = `${exportFile}.${fmt === "csv" ? "csv" : "json"}`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    toast.success(`Exported as ${label}`);
+                    // The count makes it obvious when an export covers fewer rows than the list.
+                    const count =
+                      fmt === "csv"
+                        ? parseCsv(data).rows.length
+                        : (data.data?.length ?? 0);
+                    toast.success(`Exported ${count} records as ${label}`);
                   } catch {
                     toast.error("Export failed");
                   }
@@ -324,11 +332,7 @@ export default function AdminUsersPage() {
                     `/users/export/directory?format=csv${exportQuery}`,
                     { responseType: "text" },
                   );
-                  await downloadTablePdf(
-                    data,
-                    "Member Directory",
-                    "RDSWA-Member-Directory",
-                  );
+                  await downloadTablePdf(data, exportLabel, `RDSWA-${exportFile}`);
                   toast.success("PDF download started");
                 } catch {
                   toast.error("Export failed");

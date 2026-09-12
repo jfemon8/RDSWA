@@ -434,7 +434,7 @@ router.get('/export/:type', authenticate(), authorize(UserRole.ADMIN), asyncHand
   } else {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}.json`);
-    res.send(JSON.stringify(data, null, 2));
+    res.send(JSON.stringify(data));
   }
 }));
 

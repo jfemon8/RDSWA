@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { sanitizeMongoInput } from './middlewares/sanitizeQuery.middleware';
@@ -49,6 +50,8 @@ app.set('trust proxy', 1);
 
 // Security & parsing middleware
 app.use(helmet());
+// Gzip every text response, which is what makes JSON payloads and CSV exports cheap to transfer.
+app.use(compression());
 app.use(cors({
   origin: env.CLIENT_URL.split(',').map((u) => u.trim()),
   credentials: true,
