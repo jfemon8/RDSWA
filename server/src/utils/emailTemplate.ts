@@ -29,6 +29,7 @@ export function escapeHtml(s: string): string {
 }
 
 interface Branding {
+  siteName: string;
   orgName: string;
   address?: string;
   email?: string;
@@ -47,6 +48,7 @@ async function getBranding(): Promise<Branding> {
     return brandingCache.data;
   }
   let data: Branding = {
+    siteName: 'RDSWA',
     orgName: 'Rangpur Divisional Student Welfare Association',
     website: getCanonicalAppUrl(),
   };
@@ -56,6 +58,7 @@ async function getBranding(): Promise<Branding> {
       .lean();
     if (s) {
       data = {
+        siteName: s.siteName || data.siteName,
         orgName: s.siteNameFull || s.siteName || data.orgName,
         address: s.address || undefined,
         email: s.contactEmail || undefined,
@@ -92,6 +95,11 @@ interface EmailLayoutOptions {
 }
 
 /** Build a self-contained HTML email with inline styles and table layout, reading the footer identity live from SiteSettings. */
+/** The short site name for message copy, sharing the branding cache the layout already keeps. */
+export async function getSiteName(): Promise<string> {
+  return (await getBranding()).siteName;
+}
+
 export async function renderEmailLayout(opts: EmailLayoutOptions): Promise<string> {
   const {
     heading,

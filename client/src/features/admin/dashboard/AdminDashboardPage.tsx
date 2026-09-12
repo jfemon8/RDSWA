@@ -28,6 +28,9 @@ import {
   Cell,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
+import { hasMinRole } from "@/lib/roles";
+import { UserRole } from "@rdswa/shared";
 import { formatDateCustom } from "@/lib/date";
 import { buildFinanceTrend } from "@/lib/financeTrend";
 
@@ -44,6 +47,10 @@ const COLORS = [
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
+  const currentUser = useAuthStore((s) => s.user);
+  const isSuperAdmin = currentUser
+    ? hasMinRole(currentUser.role, UserRole.SUPER_ADMIN)
+    : false;
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "dashboard"],
@@ -80,13 +87,14 @@ export default function AdminDashboardPage() {
     },
   });
 
-  // Recent audit logs
+  // Recent audit logs, which only a SuperAdmin may read, so nobody else asks for them.
   const { data: logsData } = useQuery({
     queryKey: ["admin", "logs", "recent"],
     queryFn: async () => {
       const { data } = await api.get("/admin/logs?limit=8");
       return data;
     },
+    enabled: isSuperAdmin,
   });
 
   if (isLoading) {
@@ -380,7 +388,8 @@ export default function AdminDashboardPage() {
           </div>
         </FadeIn>
 
-        {/* Recent Activity */}
+        {/* Recent Activity — SuperAdmin only, matching the Logs & Security page it links to */}
+        {isSuperAdmin && (
         <FadeIn direction="up" delay={0.7}>
           <div className="border rounded-lg p-4 sm:p-5 bg-card">
             <div className="flex items-center justify-between mb-4">
@@ -451,6 +460,7 @@ export default function AdminDashboardPage() {
             )}
           </div>
         </FadeIn>
+        )}
       </div>
     </div>
   );

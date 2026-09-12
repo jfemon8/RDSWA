@@ -25,6 +25,7 @@ import { sendEmail } from "../config/mail";
 import {
   renderEmailLayout,
   getAppUrl,
+  getSiteName,
   escapeHtml,
 } from "../utils/emailTemplate";
 
@@ -243,7 +244,7 @@ router.patch(
   userController.unsuspendUser,
 );
 
-// SuperAdmin force-set of a user's password, audited and emailed to the target, and blocked against other SuperAdmins so none can lock out another.
+// SuperAdmin force-set of a user's password, mailed to them and blocked against other SuperAdmins so none can lock out another.
 router.patch(
   "/:id/force-password",
   authenticate(),
@@ -278,38 +279,47 @@ router.patch(
     target.passwordResetExpiry = undefined;
     await target.save();
 
-    // Notify the target so they know their password was changed by an admin.
+    // The reset is credited to the association rather than the individual who performed it.
+    const siteName = await getSiteName();
+    const authority = `${siteName} authority`;
+
     await Notification.create({
       recipient: target._id,
       type: "password_reset_by_admin",
       title: "Your password was reset",
-      message: `Your account password was reset by ${req.user.name || "an administrator"}. If you did not expect this, contact RDSWA support immediately.`,
-      link: "/dashboard/profile",
+      message: `Your account password was reset by ${authority}. The temporary password is in your email — please change it from Settings. If you did not expect this, contact ${siteName} support immediately.`,
+      link: "/dashboard/settings",
     });
 
-    // Email the user too — async, doesn't block the response.
-    const adminName = req.user.name || "an administrator";
     const html = await renderEmailLayout({
       heading: "Your password was reset",
-      preheader: "An admin reset your RDSWA password.",
+      preheader: `${siteName} authority reset your account password.`,
       greeting: `Hello ${target.name},`,
       intro: [
-        `Your RDSWA account password was reset by ${escapeHtml(adminName)}.`,
-        "You can now sign in with the new password that was provided to you.",
+        `Your account password was reset by ${escapeHtml(authority)}.`,
+        "Sign in with the temporary password below:",
       ],
-      cta: { label: "Open RDSWA", url: `${getAppUrl()}/login` },
-      footerNote:
-        "If you did not expect this change, please contact RDSWA support immediately.",
+      code: newPassword,
+      bodyHtml:
+        '<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#374151;">' +
+        'Please change it as soon as you sign in — open <strong>Dashboard → Settings</strong> and set a password only you know. ' +
+        'Until you do, treat this one as temporary and do not share this email.</p>',
+      cta: { label: "Sign in and change password", url: `${getAppUrl()}/login` },
+      footerNote: `If you did not expect this change, please contact ${siteName} support immediately.`,
     });
-    void sendEmail(target.email, "Your RDSWA password was reset", html).catch(
-      (err: any) => {
-        console.error(
-          `[forcePasswordSet] Email failed to ${target.email}:`,
-          err?.code || "",
-          err?.message || err,
-        );
-      },
-    );
+
+    // Sending is left unawaited so a slow mail provider does not hold up the response.
+    void sendEmail(
+      target.email,
+      `Your ${siteName} password was reset`,
+      html,
+    ).catch((err: any) => {
+      console.error(
+        `[forcePasswordSet] Email failed to ${target.email}:`,
+        err?.code || "",
+        err?.message || err,
+      );
+    });
 
     ApiResponse.success(res, null, "Password updated");
   }),
