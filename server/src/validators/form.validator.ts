@@ -6,7 +6,8 @@ const attachmentSchema = z.object({
 });
 
 export const submitFormSchema = z.object({
-  type: z.enum(['membership', 'construction_fund', 'alumni'], {
+  // Construction Fund is retired: the model still reads old rows, but no new one may be submitted.
+  type: z.enum(['membership', 'alumni'], {
     required_error: 'Form type is required',
     invalid_type_error: 'Invalid form type',
   }),

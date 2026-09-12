@@ -705,6 +705,13 @@ export class UserService {
       };
     }
     await target.save(); // pre-save hook recomputes isAlumni
+    await this.settleForm(
+      targetUserId,
+      "alumni",
+      grant ? "approved" : "rejected",
+      adminUser,
+      reason,
+    );
 
     await RoleAssignment.create({
       user: target._id,
@@ -852,15 +859,16 @@ export class UserService {
     return target;
   }
 
-  /** Settles the applicant's membership form, so a decision taken on the Users page shows there too. */
-  private async settleMembershipForm(
+  /** Settles an applicant's pending form, so a decision taken on the Users page shows there too. */
+  private async settleForm(
     userId: string,
+    type: "membership" | "alumni",
     status: "approved" | "rejected",
     reviewer?: IUserDocument,
     comment?: string,
   ): Promise<void> {
     await Form.updateMany(
-      { submittedBy: userId, type: "membership", status: "pending", isDeleted: false },
+      { submittedBy: userId, type, status: "pending", isDeleted: false },
       {
         $set: {
           status,
@@ -891,7 +899,7 @@ export class UserService {
     target.memberApprovedBy = approvedBy._id as any;
     target.memberApprovedAt = new Date();
     await target.save();
-    await this.settleMembershipForm(targetUserId, "approved", approvedBy);
+    await this.settleForm(targetUserId, "membership", "approved", approvedBy);
 
     // Send notification via centralized service (handles preferences/DND/socket/email/push)
     await notificationService.send({
@@ -937,7 +945,7 @@ export class UserService {
     target.membershipStatus = "rejected";
     target.memberRejectionReason = reason || "Application rejected";
     await target.save();
-    await this.settleMembershipForm(targetUserId, "rejected", undefined, reason);
+    await this.settleForm(targetUserId, "membership", "rejected", undefined, reason);
 
     await Notification.create({
       recipient: target._id,

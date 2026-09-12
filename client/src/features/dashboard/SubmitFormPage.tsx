@@ -245,7 +245,6 @@ export default function SubmitFormPage() {
             <select value={type} onChange={(e) => { setType(e.target.value); setAttachments([]); setErrors({}); }}
               className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50">
               <option value="membership">Membership Application</option>
-              <option value="construction_fund">Construction Fund</option>
               {canApplyAlumni && <option value="alumni">Alumni Registration</option>}
             </select>
           </motion.div>
