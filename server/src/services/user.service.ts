@@ -4,6 +4,7 @@ import {
   RoleAssignment,
   Notification,
   ChatGroup,
+  Form,
 } from "../models";
 import { ApiError } from "../utils/ApiError";
 import { parsePagination, getSkip } from "../utils/pagination";
@@ -851,6 +852,26 @@ export class UserService {
     return target;
   }
 
+  /** Settles the applicant's membership form, so a decision taken on the Users page shows there too. */
+  private async settleMembershipForm(
+    userId: string,
+    status: "approved" | "rejected",
+    reviewer?: IUserDocument,
+    comment?: string,
+  ): Promise<void> {
+    await Form.updateMany(
+      { submittedBy: userId, type: "membership", status: "pending", isDeleted: false },
+      {
+        $set: {
+          status,
+          reviewedAt: new Date(),
+          ...(reviewer ? { reviewedBy: reviewer._id } : {}),
+          ...(comment ? { reviewComment: comment } : {}),
+        },
+      },
+    );
+  }
+
   async approveMembership(
     targetUserId: string,
     approvedBy: IUserDocument,
@@ -870,6 +891,7 @@ export class UserService {
     target.memberApprovedBy = approvedBy._id as any;
     target.memberApprovedAt = new Date();
     await target.save();
+    await this.settleMembershipForm(targetUserId, "approved", approvedBy);
 
     // Send notification via centralized service (handles preferences/DND/socket/email/push)
     await notificationService.send({
@@ -915,6 +937,7 @@ export class UserService {
     target.membershipStatus = "rejected";
     target.memberRejectionReason = reason || "Application rejected";
     await target.save();
+    await this.settleMembershipForm(targetUserId, "rejected", undefined, reason);
 
     await Notification.create({
       recipient: target._id,

@@ -4,5 +4,6 @@ export function stripHtml(val: unknown): string {
   if (!str.includes('<')) return str;
   const div = document.createElement('div');
   div.innerHTML = str;
-  return div.textContent || div.innerText || str;
+  // Markup carrying no text yields an empty string, which beats falling back to showing the tags.
+  return div.textContent ?? '';
 }

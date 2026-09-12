@@ -177,8 +177,11 @@ export default function AdminFormsPage() {
                         </div>
                       </div>
 
-                      {f.data?.reason && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(f.data.reason)}</p>
+                      {/* The expanded panel shows the reason in full, so the preview steps aside for it. */}
+                      {expandedId !== f._id && stripHtml(f.data?.reason).trim() && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {stripHtml(f.data.reason)}
+                        </p>
                       )}
 
                       {/* Review comment display (collapsed view) */}
