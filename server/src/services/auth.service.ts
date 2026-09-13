@@ -1,4 +1,6 @@
 import { User, IUserDocument, LoginHistory, ChatGroup } from '../models';
+import { isSuperAdminUser, syncUserDepartmentGroups } from './departmentGroup.service';
+import { seatSuperAdminEverywhere } from './groupMembership.service';
 import { ApiError } from '../utils/ApiError';
 import {
   signAccessToken,
@@ -62,12 +64,9 @@ export class AuthService {
 
     // SuperAdmin is auto-approved so joins the central group at registration, while regular users join once membership is approved.
     if (isSuperAdmin) {
-      ensureCentralGroup().then(() => {
-        ChatGroup.findOneAndUpdate(
-          { type: 'central', isDeleted: false },
-          { $addToSet: { members: user._id, admins: user._id } }
-        ).exec().catch(() => {});
-      }).catch(() => {});
+      ensureCentralGroup()
+        .then(() => seatSuperAdminEverywhere(user._id as any))
+        .catch(() => {});
     }
 
     // Send verification email
@@ -134,14 +133,11 @@ export class AuthService {
 
     await this.logLogin(user._id as any, meta, true);
 
-    // Auto-join Admin/SuperAdmin to all existing groups with admin access
-    const roleIdx = ROLE_HIERARCHY.indexOf(user.role as UserRole);
-    const adminIdx = ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
-    if (roleIdx >= adminIdx) {
-      ChatGroup.updateMany(
-        { isDeleted: false, members: { $ne: user._id } },
-        { $addToSet: { members: user._id, admins: user._id } }
-      ).exec().catch(() => { /* non-blocking */ });
+    // Only a SuperAdmin is seated in every group; no lower rank earns a seat anywhere it is not a member.
+    if (isSuperAdminUser(user)) {
+      seatSuperAdminEverywhere(user._id as any).catch(() => { /* non-blocking */ });
+    } else {
+      syncUserDepartmentGroups(user._id as any).catch(() => { /* non-blocking */ });
     }
 
     return { user, tokens };

@@ -109,6 +109,8 @@ export default function ProfilePage() {
     }
     if (payload.batch) payload.batch = Number(payload.batch);
     else delete payload.batch;
+    // Emptying a department is a real change, since it moves the member out of that department's group.
+    const clearsDepartment = !payload.department && !!user?.department;
     // Strip empty strings and null values; also clean address objects with all-empty fields
     for (const key of Object.keys(payload)) {
       if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
@@ -119,6 +121,7 @@ export default function ProfilePage() {
         if (allEmpty) delete payload[key];
       }
     }
+    if (clearsDepartment) payload.department = '';
     updateMutation.mutate(payload);
   };
 

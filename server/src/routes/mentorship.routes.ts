@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { Mentorship, Notification, User, ChatGroup } from '../models';
+import { superAdminDirectory, superAdminIds, visibleMembers } from '../services/groupMembership.service';
 import { UserRole } from '@rdswa/shared';
 import { parsePagination, getSkip } from '../utils/pagination';
 import { auditLog } from '../middlewares/audit.middleware';
@@ -24,13 +25,15 @@ async function ensureConsultationGroup(mentorId: string, mentorName: string) {
     isDeleted: false,
   });
   if (!group) {
+    // SuperAdmins sit in silently, so they never show in the roster the mentor and mentees see.
+    const supers = await superAdminIds();
     group = await ChatGroup.create({
       name: `${mentorName}'s Consultation`,
       description: `Mentorship consultation group managed by ${mentorName}`,
       type: 'consultation',
       mentorUser: mentorId,
-      members: [mentorId],
-      admins: [mentorId],
+      members: [...new Set([String(mentorId), ...supers])],
+      admins: [...new Set([String(mentorId), ...supers])],
       createdBy: mentorId,
     });
   }
@@ -65,9 +68,10 @@ async function removeFromConsultationGroup(mentorId: string, menteeId: string) {
     $pull: { members: menteeId },
   });
 
-  // The group has no reason to exist once the last mentee leaves.
+  // The group has no reason to exist once the last mentee leaves, and a hidden SuperAdmin is not a mentee.
   const updated = await ChatGroup.findById(group._id);
-  if (updated && updated.members.length <= 1) {
+  const supers = await superAdminDirectory();
+  if (updated && visibleMembers(updated, updated.members.map(String), supers).length <= 1) {
     updated.isDeleted = true;
     await updated.save();
   }

@@ -13,10 +13,8 @@ import { resolveBaseRole } from "../utils/resolveBaseRole";
 import { SUPER_ADMIN_EMAILS } from "../config/constants";
 import { FilterQuery } from "mongoose";
 import { notificationService } from "./notification.service";
-import {
-  ensureDepartmentGroup,
-  ensureCentralGroup,
-} from "../jobs/groupInitializer";
+import { ensureCentralGroup } from "../jobs/groupInitializer";
+import { syncUserDepartmentGroups } from "./departmentGroup.service";
 import { validateAcademicFields } from "../utils/validateAcademicFields";
 
 import { escapeRegex } from "../utils/escapeRegex";
@@ -119,36 +117,20 @@ export class UserService {
 
     await validateAcademicFields(data, oldUser || {});
 
+    // A null department is an explicit removal, which $set would store rather than clear.
+    const clearDepartment = data.department === null;
+    if (clearDepartment) delete data.department;
+
     const user = await User.findByIdAndUpdate(
       userId,
-      { $set: data },
+      { $set: data, ...(clearDepartment ? { $unset: { department: 1 } } : {}) },
       { new: true, runValidators: true },
     );
     if (!user) throw ApiError.notFound("User not found");
 
-    // Sync department group membership on change, but only for approved members since the rest join at approval time.
-    if (data.department && user.membershipStatus === "approved") {
-      const newDept = data.department as string;
-
-      if (oldDepartment && oldDepartment !== newDept) {
-        ChatGroup.findOneAndUpdate(
-          { type: "department", department: oldDepartment, isDeleted: false },
-          { $pull: { members: user._id } },
-        )
-          .exec()
-          .catch(() => {});
-      }
-
-      ensureDepartmentGroup(newDept)
-        .then(() => {
-          ChatGroup.findOneAndUpdate(
-            { type: "department", department: newDept, isDeleted: false },
-            { $addToSet: { members: user._id } },
-          )
-            .exec()
-            .catch(() => {});
-        })
-        .catch(() => {});
+    // Setting, changing or removing a department moves the user between department groups to match.
+    if (clearDepartment || (data.department !== undefined && data.department !== oldDepartment)) {
+      await syncUserDepartmentGroups(user._id as any);
     }
 
     // Save explicitly so the pre-save alumni hook runs, unless an admin's manual revoke override is in place.
@@ -601,17 +583,6 @@ export class UserService {
         { type: "central", isDeleted: false },
         { $addToSet: { members: target._id } },
       );
-      if (target.department) {
-        await ensureDepartmentGroup(target.department);
-        await ChatGroup.findOneAndUpdate(
-          {
-            type: "department",
-            department: target.department,
-            isDeleted: false,
-          },
-          { $addToSet: { members: target._id } },
-        );
-      }
     }
 
     // Demotion below Member removes the central and department groups, leaving custom and consultation groups intact.
@@ -620,17 +591,10 @@ export class UserService {
         { type: "central", isDeleted: false },
         { $pull: { members: target._id, admins: target._id } },
       );
-      if (target.department) {
-        await ChatGroup.findOneAndUpdate(
-          {
-            type: "department",
-            department: target.department,
-            isDeleted: false,
-          },
-          { $pull: { members: target._id, admins: target._id } },
-        );
-      }
     }
+
+    // A rank change can grant or take group-admin rights, so the department seat is re-derived every time.
+    await syncUserDepartmentGroups(target._id as any);
 
     // Record role assignment history
     await RoleAssignment.create({
@@ -918,14 +882,7 @@ export class UserService {
       { $addToSet: { members: target._id } },
     );
 
-    // Auto-add to department group (creates it with full seeding if missing)
-    if (target.department) {
-      await ensureDepartmentGroup(target.department);
-      await ChatGroup.findOneAndUpdate(
-        { type: "department", department: target.department, isDeleted: false },
-        { $addToSet: { members: target._id } },
-      );
-    }
+    await syncUserDepartmentGroups(target._id as any);
 
     return target;
   }
@@ -946,6 +903,7 @@ export class UserService {
     target.memberRejectionReason = reason || "Application rejected";
     await target.save();
     await this.settleForm(targetUserId, "membership", "rejected", undefined, reason);
+    await syncUserDepartmentGroups(target._id as any);
 
     await Notification.create({
       recipient: target._id,
@@ -975,6 +933,7 @@ export class UserService {
     target.suspendedAt = new Date();
     target.suspendedBy = suspendedBy._id as any;
     await target.save();
+    await syncUserDepartmentGroups(target._id as any);
 
     await Notification.create({
       recipient: target._id,
@@ -1005,6 +964,7 @@ export class UserService {
     // Restore appropriate role
     target.role = resolveBaseRole(target);
     await target.save();
+    await syncUserDepartmentGroups(target._id as any);
 
     await Notification.create({
       recipient: target._id,

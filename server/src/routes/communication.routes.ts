@@ -16,6 +16,8 @@ import {
   removeAnnouncementNotifications,
 } from '../utils/announcementNotifications';
 import { chatMediaExpiry } from '../config/retention';
+import { homeDepartment, isSuperAdminUser } from '../services/departmentGroup.service';
+import { presentGroup, superAdminDirectory, superAdminIds } from '../services/groupMembership.service';
 import {
   broadcastChatMessage,
   broadcastChatMessageEdit,
@@ -71,7 +73,7 @@ async function recordMessageModeration(
 
 /** Permission to add/remove members on a group: admin+, OR creator of a custom group. */
 function canManageGroupMembers(group: { type: string; createdBy?: any }, user: { _id: any; role: string }): boolean {
-  if (isAdminOrAbove(user.role)) return true;
+  if (isSuperAdmin(user.role)) return true;
   if (group.type === 'custom' && group.createdBy?.toString() === user._id.toString()) return true;
   return false;
 }
@@ -181,7 +183,7 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const filter: any = { isDeleted: false };
   // Admin+ can see all groups; others only their own
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = userId;
   }
   const groups = await ChatGroup.find(filter)
@@ -234,10 +236,11 @@ router.get('/groups', authenticate(), asyncHandler(async (req, res) => {
   ]);
   const lastMap = new Map<string, any>(lastAgg.map((m: any) => [m._id.toString(), m]));
 
+  const supers = await superAdminDirectory();
   const result = groups.map((g: any) => {
     const last = lastMap.get(g._id.toString());
     return {
-      ...g,
+      ...presentGroup(g, supers),
       unreadCount: unreadMap.get(g._id.toString()) || 0,
       lastMessage: last
         ? {
@@ -267,17 +270,13 @@ router.post('/groups', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
   const { name, description, avatar, members: extraMembers } = req.body;
   if (!name?.trim()) throw ApiError.badRequest('Group name is required');
 
-  // Fetch all admin/superadmin users to auto-add
-  const adminUsers = await User.find({
-    isDeleted: false, isActive: true,
-    role: { $in: [UserRole.ADMIN, UserRole.SUPER_ADMIN] },
-  }).select('_id').lean();
-  const adminIds = adminUsers.map((u) => u._id.toString());
+  // SuperAdmins join silently; no Admin or Moderator is seated just for their rank.
+  const supers = await superAdminIds();
 
   const memberSet = new Set<string>([
     req.user._id.toString(),
     ...(Array.isArray(extraMembers) ? extraMembers.map(String) : []),
-    ...adminIds,
+    ...supers,
   ]);
 
   const group = await ChatGroup.create({
@@ -286,7 +285,7 @@ router.post('/groups', authenticate(), authorize(UserRole.MODERATOR), asyncHandl
     avatar,
     type: 'custom',
     createdBy: req.user._id,
-    admins: [...new Set([req.user._id.toString(), ...adminIds])],
+    admins: [...new Set([req.user._id.toString(), ...supers])],
     members: [...memberSet],
   });
   ApiResponse.created(res, group);
@@ -298,8 +297,9 @@ router.get('/groups/browse', authenticate(), asyncHandler(async (req, res) => {
   const groups = await ChatGroup.find({
     isDeleted: false,
     members: { $ne: req.user._id },
-  }).select('name description type department avatar members joinRequests').sort({ updatedAt: -1 });
+  }).select('name description type department avatar members joinRequests createdBy mentorUser').sort({ updatedAt: -1 });
 
+  const supers = await superAdminDirectory();
   const result = groups.map((g) => ({
     _id: g._id,
     name: g.name,
@@ -307,7 +307,7 @@ router.get('/groups/browse', authenticate(), asyncHandler(async (req, res) => {
     type: g.type,
     department: g.department,
     avatar: g.avatar,
-    memberCount: g.members.length,
+    memberCount: presentGroup(g.toObject(), supers).members!.length,
     hasPendingRequest: g.joinRequests?.some(
       (r) => r.user.toString() === req.user!._id.toString() && r.status === 'pending'
     ) || false,
@@ -320,7 +320,7 @@ router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
   const filter: any = { _id: id, isDeleted: false };
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter)
@@ -350,8 +350,9 @@ router.get('/groups/:id', authenticate(), asyncHandler(async (req, res) => {
 
   const isMuted = group.mutedBy?.some((u: any) => u.toString() === req.user!._id.toString()) || false;
 
+  const supers = await superAdminDirectory();
   ApiResponse.success(res, {
-    group: { ...group.toObject(), isMuted },
+    group: { ...presentGroup(group.toObject(), supers), isMuted },
     messages: messages.reverse(),
     hasMore,
   });
@@ -362,7 +363,7 @@ router.get('/groups/:id/pinned', authenticate(), asyncHandler(async (req, res) =
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
   const filter: any = { _id: id, isDeleted: false };
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter).select('_id');
@@ -390,7 +391,7 @@ router.get('/groups/:id/search', authenticate(), asyncHandler(async (req, res) =
   if (q.length < 2) throw ApiError.badRequest('Search query must be at least 2 characters');
 
   const filter: any = { _id: id, isDeleted: false };
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter).select('_id');
@@ -418,7 +419,7 @@ router.patch('/groups/:id/mute', authenticate(), asyncHandler(async (req, res) =
   const group = await ChatGroup.findOne({ _id: id, isDeleted: false });
   if (!group) throw ApiError.notFound('Group not found');
 
-  if (!isAdminOrAbove(req.user.role) && !group.members.map(String).includes(req.user._id.toString())) {
+  if (!isSuperAdmin(req.user.role) && !group.members.map(String).includes(req.user._id.toString())) {
     throw ApiError.forbidden('Not a member of this group');
   }
 
@@ -440,7 +441,7 @@ router.post('/groups/:id/messages/read', authenticate(), asyncHandler(async (req
   }
 
   const filter: any = { _id: id, isDeleted: false };
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter).select('_id');
@@ -468,7 +469,7 @@ router.post('/groups/:id/messages', authenticate(), asyncHandler(async (req, res
   if (!req.user) throw ApiError.unauthorized();
   const id = req.params.id as string;
   const filter: any = { _id: id, isDeleted: false };
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter);
@@ -510,7 +511,7 @@ router.post('/groups/:id/messages/:messageId/react', authenticate(), asyncHandle
   const { emoji } = req.body;
 
   const filter: any = { _id: id, isDeleted: false };
-  if (!isAdminOrAbove(req.user.role)) {
+  if (!isSuperAdmin(req.user.role)) {
     filter.members = req.user._id;
   }
   const group = await ChatGroup.findOne(filter).select('_id');
@@ -587,7 +588,7 @@ router.post('/messages/:messageId/star', authenticate(), asyncHandler(async (req
 
   // Verify the user can see this message (group member, DM participant, or admin).
   const userId = req.user._id.toString();
-  let canAccess = isAdminOrAbove(req.user.role);
+  let canAccess = isSuperAdmin(req.user.role);
   if (!canAccess && message.group) {
     const group = await ChatGroup.findOne({ _id: message.group, isDeleted: false }).select('members');
     canAccess = !!group && group.members.map(String).includes(userId);
@@ -639,7 +640,7 @@ router.post('/messages/:messageId/forward', authenticate(), asyncHandler(async (
 
   // Verify the sender can see the original.
   const userId = req.user._id.toString();
-  let canAccess = isAdminOrAbove(req.user.role);
+  let canAccess = isSuperAdmin(req.user.role);
   if (!canAccess && original.group) {
     const group = await ChatGroup.findOne({ _id: original.group, isDeleted: false }).select('members');
     canAccess = !!group && group.members.map(String).includes(userId);
@@ -671,7 +672,7 @@ router.post('/messages/:messageId/forward', authenticate(), asyncHandler(async (
   const created: any[] = [];
   for (const gid of groupIds) {
     const filter: any = { _id: gid, isDeleted: false };
-    if (!isAdminOrAbove(req.user.role)) filter.members = req.user._id;
+    if (!isSuperAdmin(req.user.role)) filter.members = req.user._id;
     const group = await ChatGroup.findOne(filter);
     if (!group) continue;
 
@@ -712,7 +713,7 @@ router.patch('/groups/:id/messages/:messageId', authenticate(), asyncHandler(asy
   if (!message) throw ApiError.notFound('Message not found');
 
   const isSender = message.sender.toString() === req.user._id.toString();
-  const isAdmin = isAdminOrAbove(req.user.role);
+  const isAdmin = isSuperAdmin(req.user.role);
   if (!isSender && !isAdmin) {
     throw ApiError.forbidden('Cannot edit this message');
   }
@@ -745,7 +746,7 @@ router.delete('/groups/:id/messages/:messageId', authenticate(), asyncHandler(as
   if (!message) throw ApiError.notFound('Message not found');
 
   const isSender = message.sender.toString() === req.user._id.toString();
-  const isAdmin = isAdminOrAbove(req.user.role);
+  const isAdmin = isSuperAdmin(req.user.role);
   if (!isSender && !isAdmin) {
     throw ApiError.forbidden('Cannot delete this message');
   }
@@ -781,7 +782,8 @@ router.delete('/groups/:id/messages/:messageId/me', authenticate(), asyncHandler
 }));
 
 // Admin+ can delete entire group
-router.delete('/groups/:id', authenticate(), authorize(UserRole.ADMIN), asyncHandler(async (req, res) => {
+// Deleting a group is authority over one its deleter may not belong to, so it is kept to SuperAdmins.
+router.delete('/groups/:id', authenticate(), authorize(UserRole.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const id = req.params.id as string;
   const group = await ChatGroup.findById(id);
   if (!group) throw ApiError.notFound('Group not found');
@@ -807,6 +809,16 @@ router.post('/groups/:id/members', authenticate(), asyncHandler(async (req, res)
 
   if (group.members.map(String).includes(userId)) {
     throw ApiError.badRequest('User is already a member');
+  }
+
+  // A department group's roster is derived from the department itself, so nobody is added to one by hand.
+  if (group.type === 'department') {
+    const candidate = await User.findById(userId).select('email role department membershipStatus isDeleted isActive').lean();
+    if (!candidate) throw ApiError.notFound('User not found');
+    const belongs = isSuperAdminUser(candidate as any) || homeDepartment(candidate as any) === group.department?.trim();
+    if (!belongs) {
+      throw ApiError.badRequest('Only approved students of this department can be in its group');
+    }
   }
 
   await ChatGroup.findByIdAndUpdate(id, { $addToSet: { members: userId } });
@@ -894,7 +906,7 @@ router.get('/groups/:id/join-requests', authenticate(), asyncHandler(async (req,
   if (!group) throw ApiError.notFound('Group not found');
 
   const isGroupAdmin = group.admins.map(String).includes(req.user._id.toString());
-  if (!isGroupAdmin && !isAdminOrAbove(req.user.role)) {
+  if (!isGroupAdmin && !isSuperAdmin(req.user.role)) {
     throw ApiError.forbidden('Not authorized to view join requests');
   }
 
@@ -917,7 +929,7 @@ router.patch('/groups/:id/join-requests/:requestId', authenticate(), asyncHandle
   if (!group) throw ApiError.notFound('Group not found');
 
   const isGroupAdmin = group.admins.map(String).includes(req.user._id.toString());
-  if (!isGroupAdmin && !isAdminOrAbove(req.user.role)) {
+  if (!isGroupAdmin && !isSuperAdmin(req.user.role)) {
     throw ApiError.forbidden('Not authorized to manage join requests');
   }
 

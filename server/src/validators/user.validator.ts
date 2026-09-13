@@ -35,7 +35,8 @@ export const updateProfileSchema = z.object({
   registrationNumber: optionalString,
   batch: z.number().int().positive().optional(),
   session: optionalString,
-  department: optionalString,
+  // Unlike the other fields, an emptied department is sent on purpose, so it becomes null to clear it.
+  department: z.string().nullable().optional().transform((v) => (v === '' ? null : v)),
   university: optionalString,
   faculty: optionalString,
   admissionYear: z.number().int().optional(),

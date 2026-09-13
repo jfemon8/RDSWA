@@ -6,7 +6,8 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatSocket, useTypingState, usePresence } from "@/hooks/useSocket";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
-import { ROLE_HIERARCHY, UserRole } from "@rdswa/shared";
+import { UserRole } from "@rdswa/shared";
+import { hasMinRole } from "@/lib/roles";
 import {
   ArrowLeft,
   Users,
@@ -68,10 +69,8 @@ export default function GroupChatPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin =
-    !!user &&
-    ROLE_HIERARCHY.indexOf(user.role as UserRole) >=
-      ROLE_HIERARCHY.indexOf(UserRole.ADMIN);
+  // Only a SuperAdmin holds authority over a group by rank, matching the server's group routes.
+  const isAdmin = !!user && hasMinRole(user.role, UserRole.SUPER_ADMIN);
 
   useEffect(() => {
     if (!menuOpen) return;
