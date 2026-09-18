@@ -1,29 +1,42 @@
-import { useState, useMemo, useEffect } from 'react';
-import { CardListSkeleton } from '@/components/ui/Skeleton';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { usePresence, useDMSocket, useGroupActivitySocket } from '@/hooks/useSocket';
+import { useState, useMemo, useEffect } from "react";
+import { CardListSkeleton } from "@/components/ui/Skeleton";
+import { Link, useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
 import {
-  Search, MessagesSquare, MailOpen, Globe, Building2, Hash,
-  Plus, ChevronRight, Users, UserPlus,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { FadeIn, BlurText } from '@/components/reactbits';
-import PresenceBadge from '@/components/chat/PresenceBadge';
-import { useAuthStore } from '@/stores/authStore';
-import { useToast } from '@/components/ui/Toast';
-import { hasMinRole } from '@/lib/roles';
-import { UserRole } from '@rdswa/shared';
-import CreateGroupForm from '@/components/chat/CreateGroupForm';
-import { formatDateCustom } from '@/lib/date';
+  usePresence,
+  useDMSocket,
+  useGroupActivitySocket,
+} from "@/hooks/useSocket";
+import {
+  Search,
+  MessagesSquare,
+  MailOpen,
+  Globe,
+  Building2,
+  Hash,
+  Plus,
+  ChevronRight,
+  Users,
+  UserPlus,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { FadeIn, BlurText } from "@/components/reactbits";
+import PresenceBadge from "@/components/chat/PresenceBadge";
+import { useAuthStore } from "@/stores/authStore";
+import { useToast } from "@/components/ui/Toast";
+import { hasMinRole } from "@/lib/roles";
+import { UserRole } from "@rdswa/shared";
+import CreateGroupForm from "@/components/chat/CreateGroupForm";
+import { formatDateCustom } from "@/lib/date";
+import { stripHtml } from "@/lib/stripHtml";
 
 /** Unified chat hub listing DMs and groups, holding no chat state and only routing to the dedicated pages. */
 
-type Tab = 'all' | 'chats' | 'groups' | 'unread';
+type Tab = "all" | "chats" | "groups" | "unread";
 
 interface UnifiedItem {
-  kind: 'dm' | 'group';
+  kind: "dm" | "group";
   id: string;
   name: string;
   avatar?: string;
@@ -42,17 +55,17 @@ const GROUP_TYPE_ICONS: Record<string, typeof Globe> = {
 };
 
 function formatTimeAgo(dateStr?: string): string {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (seconds < 60) return 'now';
+  if (seconds < 60) return "now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
-  return formatDateCustom(dateStr, { month: 'short', day: 'numeric' });
+  return formatDateCustom(dateStr, { month: "short", day: "numeric" });
 }
 
 /** A group row names who wrote last, since several people can be talking in one thread. */
@@ -60,29 +73,31 @@ function groupMessagePreview(msg: any, viewerId?: string): string {
   const body = lastMessagePreview(msg);
   const sender = msg?.sender;
   if (!sender?.name) return body;
-  return `${sender._id === viewerId ? 'You' : sender.name.split(' ')[0]}: ${body}`;
+  return `${sender._id === viewerId ? "You" : sender.name.split(" ")[0]}: ${body}`;
 }
 
 function lastMessagePreview(msg: any): string {
-  if (!msg) return 'No messages yet';
-  if (msg.content) return msg.content;
+  if (!msg) return "No messages yet";
+  if (msg.content) return stripHtml(msg.content).replace(/\s+/g, " ").trim();
   if (msg.attachments?.length) {
-    const kind = msg.attachments[0]?.kind || 'file';
+    const kind = msg.attachments[0]?.kind || "file";
     return `📎 ${kind.charAt(0).toUpperCase() + kind.slice(1)}`;
   }
-  return '';
+  return "";
 }
 
-const TAB_STORAGE_KEY = 'chat-hub-tab';
-const VALID_TABS: Tab[] = ['all', 'chats', 'groups', 'unread'];
+const TAB_STORAGE_KEY = "chat-hub-tab";
+const VALID_TABS: Tab[] = ["all", "chats", "groups", "unread"];
 
 function readInitialTab(urlTab: string | null): Tab {
   if (urlTab && (VALID_TABS as string[]).includes(urlTab)) return urlTab as Tab;
   try {
     const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
     if (saved && (VALID_TABS as string[]).includes(saved)) return saved as Tab;
-  } catch { /* sessionStorage unavailable: private mode, etc. */ }
-  return 'all';
+  } catch {
+    /* sessionStorage unavailable: private mode, etc. */
+  }
+  return "all";
 }
 
 export default function ChatHubPage() {
@@ -93,18 +108,24 @@ export default function ChatHubPage() {
   const isMod = !!user?.role && hasMinRole(user.role, UserRole.MODERATOR);
   const [searchParams, setSearchParams] = useSearchParams();
   // The tab survives leaving and re-entering a conversation, read from ?tab= first, then sessionStorage, then 'all'.
-  const [tab, setTab] = useState<Tab>(() => readInitialTab(searchParams.get('tab')));
-  const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<Tab>(() =>
+    readInitialTab(searchParams.get("tab")),
+  );
+  const [search, setSearch] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
 
   // Persist the active tab so returning from a conversation restores it.
   useEffect(() => {
-    try { sessionStorage.setItem(TAB_STORAGE_KEY, tab); } catch { /* ignore */ }
-    const current = searchParams.get('tab');
+    try {
+      sessionStorage.setItem(TAB_STORAGE_KEY, tab);
+    } catch {
+      /* ignore */
+    }
+    const current = searchParams.get("tab");
     if (current !== tab) {
       const next = new URLSearchParams(searchParams);
-      if (tab === 'all') next.delete('tab');
-      else next.set('tab', tab);
+      if (tab === "all") next.delete("tab");
+      else next.set("tab", tab);
       setSearchParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,45 +133,51 @@ export default function ChatHubPage() {
 
   // Fetch both data sources in parallel; each has independent loading state.
   const { data: dms, isLoading: loadingDms } = useQuery({
-    queryKey: ['dm-conversations'],
+    queryKey: ["dm-conversations"],
     queryFn: async () => {
-      const { data } = await api.get('/communication/dm');
+      const { data } = await api.get("/communication/dm");
       return data.data as any[];
     },
   });
 
   const { data: groups, isLoading: loadingGroups } = useQuery({
-    queryKey: ['my-groups'],
+    queryKey: ["my-groups"],
     queryFn: async () => {
-      const { data } = await api.get('/communication/groups');
+      const { data } = await api.get("/communication/groups");
       return data.data as any[];
     },
   });
 
   // Discoverable groups, loaded only while the Groups tab is open since it is the only place they show.
   const { data: browseGroups } = useQuery({
-    queryKey: ['browse-groups'],
+    queryKey: ["browse-groups"],
     queryFn: async () => {
-      const { data } = await api.get('/communication/groups/browse');
+      const { data } = await api.get("/communication/groups/browse");
       return data.data as any[];
     },
-    enabled: tab === 'groups',
+    enabled: tab === "groups",
   });
 
   const joinMutation = useMutation({
-    mutationFn: (groupId: string) => api.post(`/communication/groups/${groupId}/join`),
+    mutationFn: (groupId: string) =>
+      api.post(`/communication/groups/${groupId}/join`),
     onSuccess: () => {
-      toast.success('Join request submitted!');
-      queryClient.invalidateQueries({ queryKey: ['browse-groups'] });
+      toast.success("Join request submitted!");
+      queryClient.invalidateQueries({ queryKey: ["browse-groups"] });
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to send join request'),
+    onError: (err: any) =>
+      toast.error(
+        err?.response?.data?.message || "Failed to send join request",
+      ),
   });
 
   // Member search for the "New chat" popover.
   const { data: memberResults } = useQuery({
-    queryKey: ['hub-member-search', search],
+    queryKey: ["hub-member-search", search],
     queryFn: async () => {
-      const { data } = await api.get(`/users/members?search=${encodeURIComponent(search)}&limit=8`);
+      const { data } = await api.get(
+        `/users/members?search=${encodeURIComponent(search)}&limit=8`,
+      );
       return data.data as any[];
     },
     enabled: showNewChat && search.length >= 2,
@@ -159,7 +186,7 @@ export default function ChatHubPage() {
   // Presence for the online dots on DM tiles.
   const partnerIds = useMemo(
     () => (dms || []).map((c) => c.user?._id).filter(Boolean),
-    [dms]
+    [dms],
   );
   const { online } = usePresence(partnerIds);
 
@@ -174,9 +201,9 @@ export default function ChatHubPage() {
     for (const conv of dms || []) {
       if (!conv.user?._id) continue;
       items.push({
-        kind: 'dm',
+        kind: "dm",
         id: conv.user._id,
-        name: conv.user.name || 'Unknown',
+        name: conv.user.name || "Unknown",
         avatar: conv.user.avatar,
         subtitle: lastMessagePreview(conv.lastMessage),
         timestamp: conv.lastMessage?.createdAt,
@@ -188,7 +215,7 @@ export default function ChatHubPage() {
 
     for (const g of groups || []) {
       items.push({
-        kind: 'group',
+        kind: "group",
         id: g._id,
         name: g.name,
         avatar: g.avatar,
@@ -217,12 +244,16 @@ export default function ChatHubPage() {
 
   const filtered = useMemo(() => {
     let list = unified;
-    if (tab === 'chats') list = list.filter((i) => i.kind === 'dm');
-    if (tab === 'groups') list = list.filter((i) => i.kind === 'group');
-    if (tab === 'unread') list = list.filter((i) => (i.unreadCount || 0) > 0);
+    if (tab === "chats") list = list.filter((i) => i.kind === "dm");
+    if (tab === "groups") list = list.filter((i) => i.kind === "group");
+    if (tab === "unread") list = list.filter((i) => (i.unreadCount || 0) > 0);
     if (search.trim() && !showNewChat) {
       const q = search.toLowerCase();
-      list = list.filter((i) => i.name.toLowerCase().includes(q) || i.subtitle.toLowerCase().includes(q));
+      list = list.filter(
+        (i) =>
+          i.name.toLowerCase().includes(q) ||
+          i.subtitle.toLowerCase().includes(q),
+      );
     }
     return list;
   }, [unified, tab, search, showNewChat]);
@@ -242,14 +273,20 @@ export default function ChatHubPage() {
         <div className="flex items-center gap-2">
           {isMod && (
             <button
-              onClick={() => { setShowCreateGroup((v) => !v); setShowNewChat(false); }}
+              onClick={() => {
+                setShowCreateGroup((v) => !v);
+                setShowNewChat(false);
+              }}
               className="flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-sm hover:bg-accent"
             >
               <Users className="h-4 w-4" /> New Group
             </button>
           )}
           <button
-            onClick={() => { setShowNewChat((v) => !v); setShowCreateGroup(false); }}
+            onClick={() => {
+              setShowNewChat((v) => !v);
+              setShowCreateGroup(false);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> New Chat
@@ -261,15 +298,19 @@ export default function ChatHubPage() {
         {showCreateGroup && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto', transitionEnd: { overflow: 'visible' } }}
-            exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+            animate={{
+              opacity: 1,
+              height: "auto",
+              transitionEnd: { overflow: "visible" },
+            }}
+            exit={{ opacity: 0, height: 0, overflow: "hidden" }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
             <CreateGroupForm
               onCreated={() => {
                 setShowCreateGroup(false);
-                queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+                queryClient.invalidateQueries({ queryKey: ["my-groups"] });
               }}
               onCancel={() => setShowCreateGroup(false)}
             />
@@ -282,12 +323,14 @@ export default function ChatHubPage() {
         {showNewChat && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-4 overflow-hidden"
           >
             <div className="bg-card border rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-2">Start a conversation</h3>
+              <h3 className="text-sm font-semibold mb-2">
+                Start a conversation
+              </h3>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -304,11 +347,18 @@ export default function ChatHubPage() {
                     <Link
                       key={u._id}
                       to={`/dashboard/messages?with=${u._id}`}
-                      onClick={() => { setShowNewChat(false); setSearch(''); }}
+                      onClick={() => {
+                        setShowNewChat(false);
+                        setSearch("");
+                      }}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors"
                     >
                       {u.avatar ? (
-                        <img src={u.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        <img
+                          src={u.avatar}
+                          alt=""
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
                       ) : (
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold">
                           {u.name?.[0]}
@@ -317,7 +367,9 @@ export default function ChatHubPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{u.name}</p>
                         {u.department && (
-                          <p className="text-[11px] text-muted-foreground truncate">{u.department}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {u.department}
+                          </p>
                         )}
                       </div>
                     </Link>
@@ -346,23 +398,25 @@ export default function ChatHubPage() {
 
       {/* Tabs: WhatsApp style pill tabs */}
       <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1 w-fit">
-        {(['all', 'chats', 'groups', 'unread'] as const).map((t) => (
+        {(["all", "chats", "groups", "unread"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`relative px-4 py-1.5 rounded-md text-sm capitalize transition-colors ${
-              tab === t ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+              tab === t
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab === t && (
               <motion.div
                 layoutId="chat-hub-tab-indicator"
                 className="absolute inset-0 bg-background rounded-md shadow-sm"
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
             <span className="relative z-10 flex items-center gap-1">
-              {t === 'unread' && <MailOpen className="h-3 w-3" />}
+              {t === "unread" && <MailOpen className="h-3 w-3" />}
               {t}
             </span>
           </button>
@@ -377,17 +431,24 @@ export default function ChatHubPage() {
           <div className="text-center py-16 text-sm text-muted-foreground">
             <MessagesSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>
-              {tab === 'chats'
-                ? 'No direct messages yet.'
-                : tab === 'groups'
-                  ? 'You are not in any groups yet.'
-                  : tab === 'unread'
-                    ? 'Nothing unread: you are all caught up.'
-                    : 'No conversations yet.'}
+              {tab === "chats"
+                ? "No direct messages yet."
+                : tab === "groups"
+                  ? "You are not in any groups yet."
+                  : tab === "unread"
+                    ? "Nothing unread: you are all caught up."
+                    : "No conversations yet."}
             </p>
             <p className="text-xs mt-1">
-              Tap "New Chat" to start a conversation or{' '}
-              <button type="button" onClick={() => setTab('groups')} className="text-primary hover:underline">browse groups</button>.
+              Tap "New Chat" to start a conversation or{" "}
+              <button
+                type="button"
+                onClick={() => setTab("groups")}
+                className="text-primary hover:underline"
+              >
+                browse groups
+              </button>
+              .
             </p>
           </div>
         </FadeIn>
@@ -401,27 +462,39 @@ export default function ChatHubPage() {
               layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              <ConversationTile item={item} online={item.kind === 'dm' ? online.has(item.id) : false} />
+              <ConversationTile
+                item={item}
+                online={item.kind === "dm" ? online.has(item.id) : false}
+              />
             </motion.div>
           ))}
         </motion.div>
       )}
 
-      {tab === 'groups' && (browseGroups?.length || 0) > 0 && (
+      {tab === "groups" && (browseGroups?.length || 0) > 0 && (
         <FadeIn direction="up" delay={0.1}>
           <div className="mt-6">
-            <h2 className="text-sm font-semibold text-muted-foreground mb-2">Groups you can join</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground mb-2">
+              Groups you can join
+            </h2>
             <div className="space-y-1">
               {(browseGroups || []).map((g: any) => (
-                <div key={g._id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                <div
+                  key={g._id}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+                >
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate text-foreground">{g.name}</p>
-                    <p className="text-xs text-muted-foreground">{g.members?.length || 0} members</p>
+                    <p className="font-medium text-sm truncate text-foreground">
+                      {g.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {g.members?.length || 0} members
+                    </p>
                   </div>
                   <button
                     onClick={() => joinMutation.mutate(g._id)}
@@ -440,21 +513,37 @@ export default function ChatHubPage() {
   );
 }
 
-
-function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean }) {
-  const TypeIcon = item.kind === 'group' ? (GROUP_TYPE_ICONS[item.groupType || 'custom'] || Hash) : null;
+function ConversationTile({
+  item,
+  online,
+}: {
+  item: UnifiedItem;
+  online: boolean;
+}) {
+  const TypeIcon =
+    item.kind === "group"
+      ? GROUP_TYPE_ICONS[item.groupType || "custom"] || Hash
+      : null;
 
   return (
     <Link
       to={item.to}
-      state={item.kind === 'dm' ? { partner: { _id: item.id, name: item.name, avatar: item.avatar } } : undefined}
+      state={
+        item.kind === "dm"
+          ? { partner: { _id: item.id, name: item.name, avatar: item.avatar } }
+          : undefined
+      }
       className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
     >
       {/* Avatar */}
       <div className="relative shrink-0">
         {item.avatar ? (
-          <img src={item.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
-        ) : item.kind === 'group' && TypeIcon ? (
+          <img
+            src={item.avatar}
+            alt=""
+            className="h-11 w-11 rounded-full object-cover"
+          />
+        ) : item.kind === "group" && TypeIcon ? (
           <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center">
             <TypeIcon className="h-5 w-5 text-primary" />
           </div>
@@ -463,7 +552,7 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
             {item.name[0]?.toUpperCase()}
           </div>
         )}
-        {item.kind === 'dm' && online && (
+        {item.kind === "dm" && online && (
           <span className="absolute bottom-0 right-0">
             <PresenceBadge online size={10} />
           </span>
@@ -474,8 +563,10 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <span className="text-sm font-medium truncate min-w-0">{item.name}</span>
-            {item.kind === 'group' && item.groupType && (
+            <span className="text-sm font-medium truncate min-w-0">
+              {item.name}
+            </span>
+            {item.kind === "group" && item.groupType && (
               <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground capitalize font-normal shrink-0">
                 {item.groupType}
               </span>
@@ -487,7 +578,9 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">
+          {item.subtitle}
+        </p>
       </div>
 
       {/* Unread badge */}
@@ -497,7 +590,7 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
           animate={{ scale: 1 }}
           className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shrink-0"
         >
-          {item.unreadCount > 99 ? '99+' : item.unreadCount}
+          {item.unreadCount > 99 ? "99+" : item.unreadCount}
         </motion.span>
       ) : (
         <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -505,4 +598,3 @@ function ConversationTile({ item, online }: { item: UnifiedItem; online: boolean
     </Link>
   );
 }
-

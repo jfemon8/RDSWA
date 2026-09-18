@@ -1,5 +1,15 @@
-import { X, Image as ImageIcon, Video, Music, FileText, File as FileIcon, UserRound, Reply } from 'lucide-react';
-import type { MessageAttachmentKind } from './ChatAttachmentMenu';
+import {
+  X,
+  Image as ImageIcon,
+  Video,
+  Music,
+  FileText,
+  File as FileIcon,
+  UserRound,
+  Reply,
+} from "lucide-react";
+import type { MessageAttachmentKind } from "./ChatAttachmentMenu";
+import ChatRichContent from "./ChatRichContent";
 
 export interface ReplyData {
   messageId?: string;
@@ -29,42 +39,69 @@ const KIND_ICON: Record<string, typeof ImageIcon> = {
 };
 
 const KIND_LABEL: Record<string, string> = {
-  image: 'Photo',
-  video: 'Video',
-  audio: 'Audio',
-  pdf: 'PDF',
-  file: 'File',
-  contact: 'Contact',
+  image: "Photo",
+  video: "Video",
+  audio: "Audio",
+  pdf: "PDF",
+  file: "File",
+  contact: "Contact",
 };
 
 /** Quoted reply preview, used in both the composer and message bubbles. */
-export default function ReplyPreview({ reply, onCancel, isMine, onClick }: Props) {
-  const Icon = reply.attachmentKind ? KIND_ICON[reply.attachmentKind] || FileIcon : null;
-  const preview = reply.content || (reply.attachmentKind ? KIND_LABEL[reply.attachmentKind] : '');
+export default function ReplyPreview({
+  reply,
+  onCancel,
+  isMine,
+  onClick,
+}: Props) {
+  const Icon = reply.attachmentKind
+    ? KIND_ICON[reply.attachmentKind] || FileIcon
+    : null;
+  const hasContent = Boolean(reply.content?.trim());
 
   return (
     <div
       onClick={onClick}
       className={`flex items-start gap-2 pl-2 pr-2 py-1.5 rounded-md border-l-[3px] ${
         isMine
-          ? 'bg-primary-foreground/10 border-primary-foreground/60 text-primary-foreground'
-          : 'bg-background/60 border-primary text-foreground'
-      } ${onClick ? 'cursor-pointer hover:opacity-90' : ''}`}
+          ? "bg-primary-foreground/10 border-primary-foreground/60 text-primary-foreground"
+          : "bg-background/60 border-primary text-foreground"
+      } ${onClick ? "cursor-pointer hover:opacity-90" : ""}`}
     >
-      {!isMine && <Reply className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />}
+      {!isMine && (
+        <Reply className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+      )}
       <div className="min-w-0 flex-1">
-        <p className={`text-[11px] font-semibold truncate ${isMine ? 'text-primary-foreground' : 'text-primary'}`}>
+        <p
+          className={`text-[11px] font-semibold truncate ${isMine ? "text-primary-foreground" : "text-primary"}`}
+        >
           {reply.senderName}
         </p>
-        <p className={`text-[12px] truncate flex items-center gap-1 ${isMine ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+        <div
+          className={`text-[12px] flex items-center gap-1 ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+        >
           {Icon && <Icon className="h-3 w-3 shrink-0" />}
-          {preview || <span className="italic opacity-70">Message</span>}
-        </p>
+          {hasContent ? (
+            <ChatRichContent
+              content={reply.content}
+              className="text-[12px] line-clamp-1 prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0"
+            />
+          ) : (
+            <span className="italic opacity-70">
+              {reply.attachmentKind
+                ? KIND_LABEL[reply.attachmentKind]
+                : "Message"}
+            </span>
+          )}
+        </div>
       </div>
       {onCancel && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onCancel(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onCancel();
+          }}
           className="p-0.5 rounded hover:bg-accent shrink-0"
           aria-label="Cancel reply"
         >

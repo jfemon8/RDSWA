@@ -1,16 +1,33 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { AnimatePresence } from 'motion/react';
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { AnimatePresence } from "motion/react";
 import {
-  Reply, Smile, Forward, Star, Pin, Pencil, Trash2, EyeOff, Check, X, MoreVertical, Copy, ArrowRight,
-} from 'lucide-react';
-import ChatAttachmentView, { type ChatAttachmentData } from './ChatAttachmentView';
-import ReactionBar from './ReactionBar';
-import ReactionPicker from './ReactionPicker';
-import MessageContextMenu, { type ContextMenuAction } from './MessageContextMenu';
-import ReplyPreview, { type ReplyData } from './ReplyPreview';
-import ReadReceipt from './ReadReceipt';
-import { formatTime } from '@/lib/date';
+  Reply,
+  Smile,
+  Forward,
+  Star,
+  Pin,
+  Pencil,
+  Trash2,
+  EyeOff,
+  Check,
+  X,
+  MoreVertical,
+  Copy,
+  ArrowRight,
+} from "lucide-react";
+import ChatAttachmentView, {
+  type ChatAttachmentData,
+} from "./ChatAttachmentView";
+import ReactionBar from "./ReactionBar";
+import ReactionPicker from "./ReactionPicker";
+import MessageContextMenu, {
+  type ContextMenuAction,
+} from "./MessageContextMenu";
+import ReplyPreview, { type ReplyData } from "./ReplyPreview";
+import ReadReceipt from "./ReadReceipt";
+import ChatRichContent from "./ChatRichContent";
+import { formatTime } from "@/lib/date";
 
 /** Time windows mirroring the server, to keep in sync with communication.routes.ts. */
 export const EDIT_WINDOW_MS = 6 * 60 * 60 * 1000;
@@ -71,7 +88,8 @@ export interface MessageBubbleProps {
 }
 
 function isWithinMs(windowMs: number, sentAt: string | Date): boolean {
-  const t = typeof sentAt === 'string' ? new Date(sentAt).getTime() : sentAt.getTime();
+  const t =
+    typeof sentAt === "string" ? new Date(sentAt).getTime() : sentAt.getTime();
   return Date.now() - t <= windowMs;
 }
 
@@ -85,25 +103,51 @@ function isWithinMs(windowMs: number, sentAt: string | Date): boolean {
  */
 export default function MessageBubble(props: MessageBubbleProps) {
   const {
-    msg, groupedWithPrevious, isMine, isGroup, currentUserId, isAdmin, canPin, isRead,
-    onReply, onReact, onForward, onStar, onPin, onEdit, onDeleteEveryone, onDeleteForMe,
-    onImageClick, onJumpToMessage,
-    editingId, editContent, setEditContent, setEditingId, onSubmitEdit,
+    msg,
+    groupedWithPrevious,
+    isMine,
+    isGroup,
+    currentUserId,
+    isAdmin,
+    canPin,
+    isRead,
+    onReply,
+    onReact,
+    onForward,
+    onStar,
+    onPin,
+    onEdit,
+    onDeleteEveryone,
+    onDeleteForMe,
+    onImageClick,
+    onJumpToMessage,
+    editingId,
+    editContent,
+    setEditContent,
+    setEditingId,
+    onSubmitEdit,
   } = props;
 
-  const senderObj = typeof msg.sender === 'object' ? msg.sender : null;
-  const senderId = senderObj?._id || (typeof msg.sender === 'string' ? msg.sender : '');
-  const senderName = senderObj?.name || 'Unknown';
+  const senderObj = typeof msg.sender === "object" ? msg.sender : null;
+  const senderId =
+    senderObj?._id || (typeof msg.sender === "string" ? msg.sender : "");
+  const senderName = senderObj?.name || "Unknown";
 
   const [showPicker, setShowPicker] = useState(false);
-  const [contextAnchor, setContextAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [contextAnchor, setContextAnchor] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   // Deletion is limited to the sender inside the window or an admin, and "delete for me" is hidden from everyone else.
   const canEdit = isMine && isWithinMs(EDIT_WINDOW_MS, msg.createdAt);
-  const canDeleteEveryone = (isMine && isWithinMs(DELETE_EVERYONE_WINDOW_MS, msg.createdAt)) || !!isAdmin;
-  const canDeleteForMe = (isMine || !!isAdmin) && isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);
+  const canDeleteEveryone =
+    (isMine && isWithinMs(DELETE_EVERYONE_WINDOW_MS, msg.createdAt)) ||
+    !!isAdmin;
+  const canDeleteForMe =
+    (isMine || !!isAdmin) && isWithinMs(DELETE_FOR_ME_WINDOW_MS, msg.createdAt);
   const isStarred = !!currentUserId && msg.starredBy?.includes(currentUserId);
   const isPinned = !!msg.pinnedAt;
   const isEditing = editingId === msg._id;
@@ -118,20 +162,24 @@ export default function MessageBubble(props: MessageBubbleProps) {
     };
     // Defer one tick so the click that opened the picker doesn't immediately close it.
     const t = setTimeout(() => {
-      document.addEventListener('mousedown', handler);
-      document.addEventListener('touchstart', handler);
+      document.addEventListener("mousedown", handler);
+      document.addEventListener("touchstart", handler);
     }, 0);
     return () => {
       clearTimeout(t);
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
     };
   }, [showPicker]);
 
   const openContext = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    const target = (e as React.MouseEvent).clientX !== undefined
-      ? { x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY }
-      : { x: 100, y: 100 };
+    const target =
+      (e as React.MouseEvent).clientX !== undefined
+        ? {
+            x: (e as React.MouseEvent).clientX,
+            y: (e as React.MouseEvent).clientY,
+          }
+        : { x: 100, y: 100 };
     setContextAnchor(target);
   }, []);
 
@@ -148,36 +196,79 @@ export default function MessageBubble(props: MessageBubbleProps) {
   };
 
   const handleCopy = () => {
-    if (msg.content) navigator.clipboard.writeText(msg.content).catch(() => { /* ignore */ });
+    if (msg.content)
+      navigator.clipboard.writeText(msg.content).catch(() => {
+        /* ignore */
+      });
   };
 
   const contextActions: ContextMenuAction[] = [
-    { icon: Reply, label: 'Reply', onClick: () => onReply(msg) },
-    { icon: Smile, label: 'React', onClick: () => setShowPicker(true) },
-    { icon: Forward, label: 'Forward', onClick: () => onForward(msg) },
-    { icon: Star, label: isStarred ? 'Unstar' : 'Star', onClick: () => onStar(msg._id) },
-    { icon: Pin, label: isPinned ? 'Unpin' : 'Pin', onClick: () => onPin?.(msg._id), hidden: !canPin || !onPin },
-    { icon: Copy, label: 'Copy text', onClick: handleCopy, hidden: !msg.content },
-    { icon: Pencil, label: 'Edit', onClick: () => onEdit(msg), hidden: !canEdit },
-    { icon: Trash2, label: 'Delete for everyone', onClick: () => onDeleteEveryone(msg._id), destructive: true, hidden: !canDeleteEveryone },
-    { icon: EyeOff, label: 'Delete for me', onClick: () => onDeleteForMe(msg._id), destructive: true, hidden: !canDeleteForMe },
+    { icon: Reply, label: "Reply", onClick: () => onReply(msg) },
+    { icon: Smile, label: "React", onClick: () => setShowPicker(true) },
+    { icon: Forward, label: "Forward", onClick: () => onForward(msg) },
+    {
+      icon: Star,
+      label: isStarred ? "Unstar" : "Star",
+      onClick: () => onStar(msg._id),
+    },
+    {
+      icon: Pin,
+      label: isPinned ? "Unpin" : "Pin",
+      onClick: () => onPin?.(msg._id),
+      hidden: !canPin || !onPin,
+    },
+    {
+      icon: Copy,
+      label: "Copy text",
+      onClick: handleCopy,
+      hidden: !msg.content,
+    },
+    {
+      icon: Pencil,
+      label: "Edit",
+      onClick: () => onEdit(msg),
+      hidden: !canEdit,
+    },
+    {
+      icon: Trash2,
+      label: "Delete for everyone",
+      onClick: () => onDeleteEveryone(msg._id),
+      destructive: true,
+      hidden: !canDeleteEveryone,
+    },
+    {
+      icon: EyeOff,
+      label: "Delete for me",
+      onClick: () => onDeleteForMe(msg._id),
+      destructive: true,
+      hidden: !canDeleteForMe,
+    },
   ];
 
   return (
     <div
       id={`msg-${msg._id}`}
-      className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} ${groupedWithPrevious ? 'mt-0.5' : 'mt-2'}`}
-      onContextMenu={(e) => { e.preventDefault(); openContext(e); }}
+      className={`group relative flex ${isMine ? "justify-end" : "justify-start"} ${groupedWithPrevious ? "mt-0.5" : "mt-2"}`}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        openContext(e);
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchEnd}
     >
-      <div className={`flex items-end gap-2 min-w-0 max-w-[85%] sm:max-w-[70%] ${isMine ? 'flex-row-reverse' : ''}`}>
+      <div
+        className={`flex items-end gap-2 min-w-0 max-w-[85%] sm:max-w-[70%] ${isMine ? "flex-row-reverse" : ""}`}
+      >
         {/* Avatar (only for received messages, only on the first of a group) */}
         {!isMine && isGroup && !groupedWithPrevious && (
           <Link to={`/members/${senderId}`} className="shrink-0">
             {senderObj?.avatar ? (
-              <img src={senderObj.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+              <img
+                src={senderObj.avatar}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover"
+              />
             ) : (
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold">
                 {senderName[0]}
@@ -185,12 +276,19 @@ export default function MessageBubble(props: MessageBubbleProps) {
             )}
           </Link>
         )}
-        {!isMine && isGroup && groupedWithPrevious && <div className="w-8 shrink-0" />}
+        {!isMine && isGroup && groupedWithPrevious && (
+          <div className="w-8 shrink-0" />
+        )}
 
-        <div className={`relative flex flex-col ${isMine ? 'items-end' : 'items-start'} min-w-0`}>
+        <div
+          className={`relative flex flex-col ${isMine ? "items-end" : "items-start"} min-w-0`}
+        >
           {/* Sender name (group only, first of group) */}
           {!isMine && isGroup && !groupedWithPrevious && (
-            <Link to={`/members/${senderId}`} className="text-[11px] font-medium text-primary mb-0.5 ml-1 hover:underline">
+            <Link
+              to={`/members/${senderId}`}
+              className="text-[11px] font-medium text-primary mb-0.5 ml-1 hover:underline"
+            >
               {senderName}
             </Link>
           )}
@@ -200,11 +298,14 @@ export default function MessageBubble(props: MessageBubbleProps) {
             {showPicker && (
               <div
                 ref={pickerRef}
-                className={`absolute z-30 bottom-full mb-1 ${isMine ? 'right-0' : 'left-0'}`}
+                className={`absolute z-30 bottom-full mb-1 ${isMine ? "right-0" : "left-0"}`}
               >
                 <ReactionPicker
-                  align={isMine ? 'end' : 'start'}
-                  onPick={(emoji) => { onReact(msg._id, emoji); setShowPicker(false); }}
+                  align={isMine ? "end" : "start"}
+                  onPick={(emoji) => {
+                    onReact(msg._id, emoji);
+                    setShowPicker(false);
+                  }}
                 />
               </div>
             )}
@@ -225,7 +326,10 @@ export default function MessageBubble(props: MessageBubbleProps) {
               <InlineEditor
                 value={editContent}
                 onChange={setEditContent}
-                onCancel={() => { setEditingId(null); setEditContent(''); }}
+                onCancel={() => {
+                  setEditingId(null);
+                  setEditContent("");
+                }}
                 onSubmit={() => onSubmitEdit(msg._id, editContent)}
               />
             ) : (
@@ -233,13 +337,15 @@ export default function MessageBubble(props: MessageBubbleProps) {
                 // Anything that genuinely cannot wrap scrolls inside the bubble rather than widening it.
                 className={`min-w-0 max-w-full overflow-x-auto px-3 py-2 rounded-2xl text-sm shadow-sm ${
                   isMine
-                    ? 'bg-primary text-primary-foreground rounded-br-sm'
-                    : 'bg-muted rounded-bl-sm'
-                } ${isPinned ? 'ring-1 ring-amber-400/40' : ''}`}
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "bg-muted rounded-bl-sm"
+                } ${isPinned ? "ring-1 ring-amber-400/40" : ""}`}
               >
                 {/* Forwarded label */}
                 {msg.forwardedFrom && (
-                  <div className={`flex items-center gap-1 text-[10px] italic mb-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                  <div
+                    className={`flex items-center gap-1 text-[10px] italic mb-1 ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                  >
                     <ArrowRight className="h-3 w-3" /> Forwarded
                   </div>
                 )}
@@ -249,13 +355,17 @@ export default function MessageBubble(props: MessageBubbleProps) {
                     <ReplyPreview
                       reply={msg.replyTo}
                       isMine={isMine}
-                      onClick={msg.replyTo.messageId ? () => onJumpToMessage?.(msg.replyTo!.messageId!) : undefined}
+                      onClick={
+                        msg.replyTo.messageId
+                          ? () => onJumpToMessage?.(msg.replyTo!.messageId!)
+                          : undefined
+                      }
                     />
                   </div>
                 )}
                 {/* Attachments */}
                 {msg.attachments && msg.attachments.length > 0 && (
-                  <div className={`space-y-2 ${msg.content ? 'mb-2' : ''}`}>
+                  <div className={`space-y-2 ${msg.content ? "mb-2" : ""}`}>
                     {msg.attachments.map((att, ai) => (
                       <ChatAttachmentView
                         key={ai}
@@ -267,13 +377,11 @@ export default function MessageBubble(props: MessageBubbleProps) {
                   </div>
                 )}
                 {/* Text */}
-                {msg.content && (
-                  <p className="whitespace-pre-wrap" style={{ overflowWrap: 'anywhere' }}>
-                    {msg.content}
-                  </p>
-                )}
+                {msg.content && <ChatRichContent content={msg.content} />}
                 {/* Meta row */}
-                <div className={`flex items-center gap-1 text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70 justify-end' : 'text-muted-foreground'}`}>
+                <div
+                  className={`flex items-center gap-1 text-[10px] mt-1 ${isMine ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"}`}
+                >
                   {isPinned && <Pin className="h-3 w-3" />}
                   {isStarred && <Star className="h-3 w-3 fill-current" />}
                   <span>{formatTime(msg.createdAt)}</span>
@@ -296,7 +404,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
             reactions={(msg.reactions || []) as any}
             currentUserId={currentUserId}
             onToggle={(emoji) => onReact(msg._id, emoji)}
-            align={isMine ? 'end' : 'start'}
+            align={isMine ? "end" : "start"}
           />
         </div>
       </div>
@@ -315,7 +423,10 @@ export default function MessageBubble(props: MessageBubbleProps) {
 }
 
 function QuickActions({
-  onReply, onPicker, onMore, isMine,
+  onReply,
+  onPicker,
+  onMore,
+  isMine,
 }: {
   onReply: () => void;
   onPicker: () => void;
@@ -325,12 +436,15 @@ function QuickActions({
   return (
     <div
       className={`flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity ${
-        isMine ? 'order-first' : ''
+        isMine ? "order-first" : ""
       }`}
     >
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onPicker(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onPicker();
+        }}
         className="p-1 rounded hover:bg-accent text-muted-foreground"
         title="Add reaction"
       >
@@ -338,7 +452,10 @@ function QuickActions({
       </button>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onReply(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onReply();
+        }}
         className="p-1 rounded hover:bg-accent text-muted-foreground"
         title="Reply"
       >
@@ -346,7 +463,10 @@ function QuickActions({
       </button>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onMore(e); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onMore(e);
+        }}
         className="p-1 rounded hover:bg-accent text-muted-foreground"
         title="More"
       >
@@ -357,7 +477,10 @@ function QuickActions({
 }
 
 function InlineEditor({
-  value, onChange, onCancel, onSubmit,
+  value,
+  onChange,
+  onCancel,
+  onSubmit,
 }: {
   value: string;
   onChange: (s: string) => void;
@@ -371,8 +494,11 @@ function InlineEditor({
         onChange={(e) => onChange(e.target.value)}
         autoFocus
         onKeyDown={(e) => {
-          if (e.key === 'Enter') { e.preventDefault(); if (value.trim()) onSubmit(); }
-          if (e.key === 'Escape') onCancel();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (value.trim()) onSubmit();
+          }
+          if (e.key === "Escape") onCancel();
         }}
         className="px-2 py-1 border rounded text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
