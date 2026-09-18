@@ -151,6 +151,23 @@ export default function MessageBubble(props: MessageBubbleProps) {
   const isStarred = !!currentUserId && msg.starredBy?.includes(currentUserId);
   const isPinned = !!msg.pinnedAt;
   const isEditing = editingId === msg._id;
+  const legacyReactionEmoji: Record<string, string> = {
+    like: "👍",
+    love: "❤️",
+    care: "🙏",
+    haha: "😂",
+    wow: "😮",
+    sad: "😢",
+    angry: "😡",
+  };
+  const myReaction = (msg.reactions || []).find((reaction: any) => {
+    const reactionUser =
+      typeof reaction.user === "string" ? reaction.user : reaction.user?._id;
+    return reactionUser === currentUserId;
+  });
+  const selectedReaction = myReaction
+    ? legacyReactionEmoji[myReaction.emoji] || myReaction.emoji
+    : null;
 
   // Close the reaction picker when the user clicks/taps anywhere outside it.
   useEffect(() => {
@@ -294,23 +311,6 @@ export default function MessageBubble(props: MessageBubbleProps) {
           )}
 
           {/* Reaction picker, absolutely positioned so it pops above the bubble without pushing content, and closed by the outside-click effect. */}
-          <AnimatePresence>
-            {showPicker && (
-              <div
-                ref={pickerRef}
-                className={`absolute z-30 bottom-full mb-1 ${isMine ? "right-0" : "left-0"}`}
-              >
-                <ReactionPicker
-                  align={isMine ? "end" : "start"}
-                  onPick={(emoji) => {
-                    onReact(msg._id, emoji);
-                    setShowPicker(false);
-                  }}
-                />
-              </div>
-            )}
-          </AnimatePresence>
-
           <div className="flex items-end gap-1 min-w-0">
             {/* Hover-only quick action toolbar (sender side first) */}
             {isMine && !isEditing && (
@@ -319,6 +319,19 @@ export default function MessageBubble(props: MessageBubbleProps) {
                 onReply={() => onReply(msg)}
                 onPicker={() => setShowPicker((v) => !v)}
                 onMore={(e) => openContext(e)}
+                picker={
+                  showPicker ? (
+                    <ReactionPicker
+                      align="end"
+                      selectedEmoji={selectedReaction}
+                      onPick={(emoji) => {
+                        onReact(msg._id, emoji);
+                        setShowPicker(false);
+                      }}
+                    />
+                  ) : null
+                }
+                pickerRef={pickerRef}
               />
             )}
 
@@ -396,6 +409,19 @@ export default function MessageBubble(props: MessageBubbleProps) {
                 onReply={() => onReply(msg)}
                 onPicker={() => setShowPicker((v) => !v)}
                 onMore={(e) => openContext(e)}
+                picker={
+                  showPicker ? (
+                    <ReactionPicker
+                      align="start"
+                      selectedEmoji={selectedReaction}
+                      onPick={(emoji) => {
+                        onReact(msg._id, emoji);
+                        setShowPicker(false);
+                      }}
+                    />
+                  ) : null
+                }
+                pickerRef={pickerRef}
               />
             )}
           </div>
@@ -427,18 +453,30 @@ function QuickActions({
   onPicker,
   onMore,
   isMine,
+  picker,
+  pickerRef,
 }: {
   onReply: () => void;
   onPicker: () => void;
   onMore: (e: React.MouseEvent) => void;
   isMine?: boolean;
+  picker?: React.ReactNode;
+  pickerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div
-      className={`flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity ${
+      className={`relative flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity ${
         isMine ? "order-first" : ""
       }`}
     >
+      {picker && (
+        <div
+          ref={pickerRef}
+          className={`absolute bottom-full mb-1 z-30 ${isMine ? "right-0" : "left-0"}`}
+        >
+          {picker}
+        </div>
+      )}
       <button
         type="button"
         onClick={(e) => {

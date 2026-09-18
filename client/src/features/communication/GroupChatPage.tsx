@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { ChatSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
+import { ChatSkeleton, InlineListSkeleton } from "@/components/ui/Skeleton";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -43,6 +43,16 @@ const TYPE_ICONS: Record<string, typeof Globe> = {
   central: Globe,
   department: Building2,
   custom: Hash,
+};
+
+const LEGACY_REACTION_EMOJI: Record<string, string> = {
+  like: "👍",
+  love: "❤️",
+  care: "🙏",
+  haha: "😂",
+  wow: "😮",
+  sad: "😢",
+  angry: "😡",
 };
 
 export default function GroupChatPage() {
@@ -562,9 +572,13 @@ export default function GroupChatPage() {
                   ) : (
                     <Bell className="h-4 w-4 text-muted-foreground" />
                   )}
-                  {group.isMuted ? "Unmute notifications" : "Mute notifications"}
+                  {group.isMuted
+                    ? "Unmute notifications"
+                    : "Mute notifications"}
                 </button>
-                {(canLeave || isAdmin) && <div className="h-px bg-border my-1" />}
+                {(canLeave || isAdmin) && (
+                  <div className="h-px bg-border my-1" />
+                )}
                 {canLeave && (
                   <button
                     type="button"
@@ -750,7 +764,10 @@ export default function GroupChatPage() {
             readMessageIds={readMessageIds}
             onReply={handleReply}
             onReact={(messageId, emoji) =>
-              reactMutation.mutate({ messageId, emoji })
+              reactMutation.mutate({
+                messageId,
+                emoji: LEGACY_REACTION_EMOJI[emoji] || emoji,
+              })
             }
             onForward={(msg) => setForwardTarget(msg)}
             onStar={(messageId) => starMutation.mutate(messageId)}
