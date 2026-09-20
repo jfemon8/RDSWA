@@ -19,6 +19,22 @@ describe("ChatRichContent", () => {
     expect(container.querySelector("br")).toBeInTheDocument();
   });
 
+  it("formats Markdown the author typed inside editor HTML", () => {
+    // Announcements arrive as HTML with the title in front, so the markers sit in text nodes.
+    const { container } = render(
+      <ChatRichContent
+        content={"**Announcement title**\n\n<p>Read the <em>full</em> ~~draft~~ *today*</p>"}
+      />,
+    );
+
+    expect(container.querySelector("strong")).toHaveTextContent(
+      "Announcement title",
+    );
+    expect(container.querySelector("del")).toHaveTextContent("draft");
+    expect(container.textContent).not.toContain("**");
+    expect(container.textContent).not.toContain("~~");
+  });
+
   it("renders existing rich HTML without exposing unsafe tags", () => {
     const { container } = render(
       <ChatRichContent

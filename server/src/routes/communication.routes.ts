@@ -16,7 +16,13 @@ import {
   AuditLog,
 } from "../models";
 import { getClientIp } from "../middlewares/audit.middleware";
-import { UserRole, ROLE_HIERARCHY } from "@rdswa/shared";
+import {
+  UserRole,
+  ROLE_HIERARCHY,
+  REACTION_TYPES,
+  isKnownReaction,
+  normaliseReaction,
+} from "@rdswa/shared";
 import { notificationService } from "../services/notification.service";
 import { parsePagination, getSkip } from "../utils/pagination";
 import { escapeRegex } from "../utils/escapeRegex";
@@ -160,17 +166,21 @@ async function buildReplySnapshot(
   };
 }
 
-/** Allowed emoji reaction set, with anything else rejected. */
-const ALLOWED_REACTIONS = new Set([
-  "👍",
-  "❤️",
-  "😂",
-  "😮",
-  "😢",
-  "🙏",
-  "🔥",
-  "🎉",
-]);
+/** Chat and announcements share one reaction set, so a reaction is stored under its canonical name. */
+function toStoredReaction(value: string): string {
+  if (!isKnownReaction(value)) throw ApiError.badRequest("Unsupported reaction");
+  return normaliseReaction(value) as string;
+}
+
+/** Reactions as a chat bubble renders them: the canonical name plus the reactor. */
+function chatReactionsPayload(reactions: any[]) {
+  return (reactions || []).map((r: any) => ({
+    user: r.user?._id
+      ? { _id: r.user._id, name: r.user.name, avatar: r.user.avatar }
+      : r.user,
+    emoji: normaliseReaction(r.emoji) as string,
+  }));
+}
 
 /** Validates a new message's attachments, dropping unknown kinds and dating media for retention. */
 function buildAttachments(raw: any): any[] {
@@ -656,20 +666,19 @@ router.post(
         (r: any) => r.user.toString() !== userId,
       );
     } else {
+      const picked = toStoredReaction(emoji);
       // Taking a reaction back is always allowed, even one stored before the current set existed.
-      if (existing && existing.emoji === emoji) {
+      if (existing && normaliseReaction(existing.emoji) === picked) {
         message.reactions = message.reactions.filter(
           (r: any) => r.user.toString() !== userId,
         );
-      } else if (!ALLOWED_REACTIONS.has(emoji)) {
-        throw ApiError.badRequest("Unsupported reaction");
       } else if (existing) {
-        existing.emoji = emoji;
+        existing.emoji = picked;
         existing.reactedAt = new Date();
       } else {
         message.reactions.push({
           user: req.user._id as any,
-          emoji,
+          emoji: picked,
           reactedAt: new Date(),
         });
       }
@@ -677,12 +686,7 @@ router.post(
     await message.save();
     await message.populate("reactions.user", "name avatar");
 
-    const reactionsPayload = message.reactions.map((r: any) => ({
-      user: r.user._id
-        ? { _id: r.user._id, name: r.user.name, avatar: r.user.avatar }
-        : r.user,
-      emoji: r.emoji,
-    }));
+    const reactionsPayload = chatReactionsPayload(message.reactions as any);
     broadcastChatReaction(id as string, messageId as string, reactionsPayload);
 
     ApiResponse.success(res, { reactions: reactionsPayload });
@@ -1486,20 +1490,19 @@ router.post(
         (r: any) => r.user.toString() !== userId,
       );
     } else {
+      const picked = toStoredReaction(emoji);
       // Taking a reaction back is always allowed, even one stored before the current set existed.
-      if (existing && existing.emoji === emoji) {
+      if (existing && normaliseReaction(existing.emoji) === picked) {
         message.reactions = message.reactions.filter(
           (r: any) => r.user.toString() !== userId,
         );
-      } else if (!ALLOWED_REACTIONS.has(emoji)) {
-        throw ApiError.badRequest("Unsupported reaction");
       } else if (existing) {
-        existing.emoji = emoji;
+        existing.emoji = picked;
         existing.reactedAt = new Date();
       } else {
         message.reactions.push({
           user: req.user._id as any,
-          emoji,
+          emoji: picked,
           reactedAt: new Date(),
         });
       }
@@ -1507,12 +1510,7 @@ router.post(
     await message.save();
     await message.populate("reactions.user", "name avatar");
 
-    const reactionsPayload = message.reactions.map((r: any) => ({
-      user: r.user._id
-        ? { _id: r.user._id, name: r.user.name, avatar: r.user.avatar }
-        : r.user,
-      emoji: r.emoji,
-    }));
+    const reactionsPayload = chatReactionsPayload(message.reactions as any);
     const otherId =
       message.sender.toString() === userId
         ? message.recipient!.toString()
@@ -2339,32 +2337,9 @@ router.get(
   }),
 );
 
-/** The reaction set, mirroring the ones a social feed offers. */
-const REACTION_TYPES = ["like", "love", "care", "haha", "wow", "sad", "angry"];
-
 /** The stored id of a reaction's user, which may arrive raw or populated. */
 function reactorId(user: any): string {
   return (user?._id || user || '').toString();
-}
-
-/** Announcements reacted at through the chat route once stored a raw emoji, so old rows map back onto the named set. */
-const LEGACY_REACTION_EMOJI: Record<string, string> = {
-  '👍': 'like',
-  '❤️': 'love',
-  '🥰': 'care',
-  '🙏': 'care',
-  '😂': 'haha',
-  '😮': 'wow',
-  '🔥': 'wow',
-  '🎉': 'wow',
-  '😢': 'sad',
-  '😡': 'angry',
-};
-
-/** One canonical name per reaction, so a legacy emoji row counts in the same bucket as its named twin. */
-function normaliseReactionType(key: string): string {
-  if (REACTION_TYPES.includes(key)) return key;
-  return LEGACY_REACTION_EMOJI[key] || 'like';
 }
 
 /** Counts per reaction plus the viewer's own, which is all a reaction bar needs to render. */
@@ -2377,7 +2352,7 @@ function summariseReactions(
   for (const r of reactions || []) {
     const raw = (r.emoji || r.type) as string;
     if (!raw) continue;
-    const key = normaliseReactionType(raw);
+    const key = normaliseReaction(raw) as string;
     counts[key] = (counts[key] || 0) + 1;
     if (reactorId(r.user) === viewerId) mine = key;
   }
@@ -2409,7 +2384,7 @@ function listReactors(reactions: any[]) {
         new Date(a.reactedAt || 0).getTime(),
     )
     .map((reaction: any) => ({
-      type: normaliseReactionType(reaction.emoji || reaction.type),
+      type: normaliseReaction(reaction.emoji || reaction.type) as string,
       reactedAt: reaction.reactedAt,
       user: {
         _id: reaction.user._id,
@@ -2438,7 +2413,6 @@ router.get(
     ApiResponse.success(res, {
       ...message.toObject(),
       reactionSummary: summariseReactions(message.reactions as any, viewerId),
-      // The full reactor list, newest first, so the page can show who reacted with what.
       reactionUsers: listReactors(message.reactions as any),
     });
   }),
@@ -2492,6 +2466,16 @@ router.post(
       }),
     ) as any;
     await message.save();
+
+    // The same message also lives in a conversation, so its bubble hears about the reaction too.
+    if (message.group) {
+      await message.populate("reactions.user", "name avatar");
+      broadcastChatReaction(
+        message.group.toString(),
+        (message._id as any).toString(),
+        chatReactionsPayload(message.reactions as any),
+      );
+    }
 
     ApiResponse.success(
       res,

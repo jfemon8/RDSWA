@@ -27,6 +27,7 @@ import MessageContextMenu, {
 import ReplyPreview, { type ReplyData } from "./ReplyPreview";
 import ReadReceipt from "./ReadReceipt";
 import ChatRichContent from "./ChatRichContent";
+import { normaliseReaction } from "@/components/social/reactions";
 import { formatTime } from "@/lib/date";
 
 /** Time windows mirroring the server, to keep in sync with communication.routes.ts. */
@@ -140,6 +141,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
   } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const pickerTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Deletion is limited to the sender inside the window or an admin, and "delete for me" is hidden from everyone else.
   const canEdit = isMine && isWithinMs(EDIT_WINDOW_MS, msg.createdAt);
@@ -151,29 +153,22 @@ export default function MessageBubble(props: MessageBubbleProps) {
   const isStarred = !!currentUserId && msg.starredBy?.includes(currentUserId);
   const isPinned = !!msg.pinnedAt;
   const isEditing = editingId === msg._id;
-  const legacyReactionEmoji: Record<string, string> = {
-    like: "👍",
-    love: "❤️",
-    care: "🙏",
-    haha: "😂",
-    wow: "😮",
-    sad: "😢",
-    angry: "😡",
-  };
   const myReaction = (msg.reactions || []).find((reaction: any) => {
     const reactionUser =
       typeof reaction.user === "string" ? reaction.user : reaction.user?._id;
     return reactionUser === currentUserId;
   });
-  const selectedReaction = myReaction
-    ? legacyReactionEmoji[myReaction.emoji] || myReaction.emoji
-    : null;
+  // Older rows hold a raw emoji, so the picker matches on the canonical name.
+  const selectedReaction = normaliseReaction(myReaction?.emoji);
 
   // Close the reaction picker when the user clicks/taps anywhere outside it.
   useEffect(() => {
     if (!showPicker) return;
     const handler = (e: MouseEvent | TouchEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // The trigger counts as inside, or its own press would close the picker before it could toggle.
+      if (pickerTriggerRef.current?.contains(target)) return;
+      if (pickerRef.current && !pickerRef.current.contains(target)) {
         setShowPicker(false);
       }
     };
@@ -323,7 +318,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
                   showPicker ? (
                     <ReactionPicker
                       align="end"
-                      selectedEmoji={selectedReaction}
+                      selectedType={selectedReaction}
                       onPick={(emoji) => {
                         onReact(msg._id, emoji);
                         setShowPicker(false);
@@ -332,6 +327,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
                   ) : null
                 }
                 pickerRef={pickerRef}
+                triggerRef={pickerTriggerRef}
               />
             )}
 
@@ -413,7 +409,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
                   showPicker ? (
                     <ReactionPicker
                       align="start"
-                      selectedEmoji={selectedReaction}
+                      selectedType={selectedReaction}
                       onPick={(emoji) => {
                         onReact(msg._id, emoji);
                         setShowPicker(false);
@@ -422,6 +418,7 @@ export default function MessageBubble(props: MessageBubbleProps) {
                   ) : null
                 }
                 pickerRef={pickerRef}
+                triggerRef={pickerTriggerRef}
               />
             )}
           </div>
@@ -455,6 +452,7 @@ function QuickActions({
   isMine,
   picker,
   pickerRef,
+  triggerRef,
 }: {
   onReply: () => void;
   onPicker: () => void;
@@ -462,6 +460,7 @@ function QuickActions({
   isMine?: boolean;
   picker?: React.ReactNode;
   pickerRef: React.RefObject<HTMLDivElement | null>;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   return (
     <div
@@ -479,12 +478,15 @@ function QuickActions({
       )}
       <button
         type="button"
+        ref={triggerRef}
         onClick={(e) => {
           e.stopPropagation();
           onPicker();
         }}
         className="p-1 rounded hover:bg-accent text-muted-foreground"
         title="Add reaction"
+        aria-label="Add reaction"
+        aria-expanded={!!picker}
       >
         <Smile className="h-3.5 w-3.5" />
       </button>

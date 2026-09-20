@@ -3,7 +3,9 @@ import { Send, Loader2, X, Smile } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ChatAttachmentMenu, { type ChatAttachment } from "./ChatAttachmentMenu";
 import ReplyPreview, { type ReplyData } from "./ReplyPreview";
-import { REACTIONS } from "./ReactionPicker";
+
+/** Quick emoji for typing into a message, a wider set than the reactions. */
+const QUICK_EMOJI = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "🎉"] as const;
 
 interface Props {
   /** Called on send, with the composer clearing once the promise resolves. */
@@ -199,7 +201,7 @@ export default function ChatComposer({
                 exit={{ opacity: 0, y: 6, scale: 0.95 }}
                 className="absolute bottom-12 right-0 flex gap-1 px-2 py-1.5 bg-card border rounded-full shadow-lg z-10"
               >
-                {REACTIONS.map((emoji) => (
+                {QUICK_EMOJI.map((emoji) => (
                   <button
                     key={emoji}
                     type="button"

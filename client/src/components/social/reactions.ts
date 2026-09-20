@@ -1,15 +1,28 @@
-/** The reaction set offered on announcements and their comments, in picker order. */
-export const REACTIONS = [
-  { type: "like", emoji: "👍", label: "Like", color: "text-blue-600" },
-  { type: "love", emoji: "❤️", label: "Love", color: "text-red-500" },
-  { type: "care", emoji: "🥰", label: "Care", color: "text-amber-500" },
-  { type: "haha", emoji: "😂", label: "Haha", color: "text-amber-500" },
-  { type: "wow", emoji: "😮", label: "Wow", color: "text-amber-500" },
-  { type: "sad", emoji: "😢", label: "Sad", color: "text-amber-500" },
-  { type: "angry", emoji: "😡", label: "Angry", color: "text-orange-600" },
-] as const;
+import {
+  REACTIONS as SHARED_REACTIONS,
+  normaliseReaction,
+  type ReactionType,
+} from "@rdswa/shared";
 
-export type ReactionType = (typeof REACTIONS)[number]["type"];
+export { normaliseReaction };
+export type { ReactionType };
+
+/** The tint each reaction is labelled with, the one thing outside its shared definition. */
+const REACTION_COLORS: Record<string, string> = {
+  like: "text-blue-600",
+  love: "text-red-500",
+  care: "text-amber-500",
+  haha: "text-amber-500",
+  wow: "text-amber-500",
+  sad: "text-amber-500",
+  angry: "text-orange-600",
+};
+
+/** The reaction set offered on announcements, comments and chat, in picker order. */
+export const REACTIONS = SHARED_REACTIONS.map((r) => ({
+  ...r,
+  color: REACTION_COLORS[r.type],
+}));
 
 export interface ReactionSummary {
   counts: Record<string, number>;
@@ -29,8 +42,9 @@ export const EMPTY_SUMMARY: ReactionSummary = {
   mine: null,
 };
 
+/** Legacy rows still carry a raw emoji, so every lookup goes through the canonical name first. */
 export const reactionOf = (type: string | null | undefined) =>
-  REACTIONS.find((r) => r.type === type);
+  REACTIONS.find((r) => r.type === normaliseReaction(type));
 
 export interface TopReaction {
   type: string;
@@ -57,7 +71,7 @@ export function topReactionEntries(
   return out;
 }
 
-/** The reaction emojis to show on the count, most used first and capped like a social feed does. */
+/** Just the emojis of the top reactions, for callers that show no counts. */
 export function topReactions(summary: ReactionSummary, limit = 3): string[] {
   return topReactionEntries(summary, limit).map((r) => r.emoji);
 }

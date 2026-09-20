@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import api from "@/lib/api";
+import { reactionOf } from "@/components/social/reactions";
 import { formatDate, formatDateTime, formatTime } from "@/lib/date";
 import { proxyFileUrl } from "@/lib/fileProxy";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -716,10 +717,10 @@ export default function MonitorThreadPanel({
                         {m.reactions.map((r: any, i: number) => (
                           <span
                             key={i}
-                            title={r.user?.name}
+                            title={`${r.user?.name || "Someone"}: ${reactionOf(r.emoji)?.label || r.emoji}`}
                             className="text-xs px-1.5 py-0.5 rounded-full bg-muted border"
                           >
-                            {r.emoji}
+                            {reactionOf(r.emoji)?.emoji || r.emoji}
                           </span>
                         ))}
                       </div>

@@ -96,13 +96,33 @@ describe('reacting to a group message', () => {
     expect(message.reactions).toHaveLength(0);
   });
 
-  it('will not adopt an unsupported reaction left by someone else', async () => {
+  it('leaves someone else\'s reaction alone when adding its own', async () => {
     const message = messageWith([{ user: 'someone-else', emoji: 'like' }]);
     jest.spyOn(Message, 'findOne').mockResolvedValue(message as any);
 
     const res = await react('like');
 
-    expect(res.status).toBe(400);
-    expect(message.reactions).toHaveLength(1);
+    expect(res.status).toBe(200);
+    expect(message.reactions).toHaveLength(2);
+  });
+
+  it('stores an emoji under the name the announcement side uses', async () => {
+    const message = messageWith([]);
+    jest.spyOn(Message, 'findOne').mockResolvedValue(message as any);
+
+    const res = await react('👍');
+
+    expect(res.status).toBe(200);
+    expect(message.reactions[0]).toMatchObject({ emoji: 'like' });
+  });
+
+  it('takes back a legacy emoji row when the same reaction is picked by name', async () => {
+    const message = messageWith([{ user: USER_ID, emoji: '👍' }]);
+    jest.spyOn(Message, 'findOne').mockResolvedValue(message as any);
+
+    const res = await react('like');
+
+    expect(res.status).toBe(200);
+    expect(message.reactions).toHaveLength(0);
   });
 });

@@ -1,5 +1,5 @@
 import RichContent from "@/components/ui/RichContent";
-import { marked } from "marked";
+import { markdownToHtml } from "@/lib/markdown";
 
 interface ChatRichContentProps {
   content: string;
@@ -11,13 +11,5 @@ export default function ChatRichContent({
   content,
   className = "",
 }: ChatRichContentProps) {
-  const html = /<\/?[a-z][^>]*>/i.test(content)
-    ? content
-    : marked.parse(content.replace(/==([^=\n]+)==/g, "<mark>$1</mark>"), {
-        breaks: true,
-        gfm: true,
-        async: false,
-      });
-
-  return <RichContent html={html} className={className} />;
+  return <RichContent html={markdownToHtml(content)} className={className} />;
 }

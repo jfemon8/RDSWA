@@ -3,6 +3,7 @@ import { ChatSkeleton, InlineListSkeleton } from "@/components/ui/Skeleton";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { markdownToText } from "@/lib/markdown";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatSocket, useTypingState, usePresence } from "@/hooks/useSocket";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
@@ -683,7 +684,7 @@ export default function GroupChatPage() {
                               {m.sender?.name}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {m.content}
+                              {markdownToText(m.content)}
                             </p>
                           </button>
                         </li>
@@ -739,7 +740,7 @@ export default function GroupChatPage() {
                           {m.sender?.name}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {m.content || "(Attachment)"}
+                          {markdownToText(m.content) || "(Attachment)"}
                         </p>
                       </button>
                     </li>

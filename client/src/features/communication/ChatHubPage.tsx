@@ -29,7 +29,7 @@ import { hasMinRole } from "@/lib/roles";
 import { UserRole } from "@rdswa/shared";
 import CreateGroupForm from "@/components/chat/CreateGroupForm";
 import { formatDateCustom } from "@/lib/date";
-import { stripHtml } from "@/lib/stripHtml";
+import { markdownToText } from "@/lib/markdown";
 
 /** Unified chat hub listing DMs and groups, holding no chat state and only routing to the dedicated pages. */
 
@@ -78,7 +78,7 @@ function groupMessagePreview(msg: any, viewerId?: string): string {
 
 function lastMessagePreview(msg: any): string {
   if (!msg) return "No messages yet";
-  if (msg.content) return stripHtml(msg.content).replace(/\s+/g, " ").trim();
+  if (msg.content) return markdownToText(msg.content);
   if (msg.attachments?.length) {
     const kind = msg.attachments[0]?.kind || "file";
     return `📎 ${kind.charAt(0).toUpperCase() + kind.slice(1)}`;

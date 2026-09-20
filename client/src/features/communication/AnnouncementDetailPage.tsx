@@ -13,6 +13,7 @@ import {
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
+import { markdownToHtml } from "@/lib/markdown";
 import { formatDate } from "@/lib/date";
 import { FadeIn } from "@/components/reactbits";
 import RichContent from "@/components/ui/RichContent";
@@ -57,7 +58,7 @@ export default function AnnouncementDetailPage() {
     enabled: !!id,
   });
 
-  // The reactor list opens on a specific reaction when one of the emojis is what was pressed.
+  // Undefined keeps the list closed, null opens it on All, a name opens that reaction's tab.
   const [reactorsTab, setReactorsTab] = useState<string | null | undefined>(
     undefined,
   );
@@ -160,13 +161,12 @@ export default function AnnouncementDetailPage() {
 
             <div className="px-5 py-6 sm:px-8">
               <RichContent
-                html={body}
+                html={markdownToHtml(body)}
                 className="text-[15px] text-foreground leading-relaxed"
               />
             </div>
 
             <div className="px-5 sm:px-8 pb-5 sm:pb-6 space-y-3">
-              {/* Pressing the count opens the reactor list, the way a social feed does. */}
               {summary.total > 0 && (
                 <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

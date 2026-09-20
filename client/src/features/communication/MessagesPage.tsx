@@ -3,6 +3,7 @@ import { ChatSkeleton, InlineListSkeleton } from '@/components/ui/Skeleton';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { markdownToText } from '@/lib/markdown';
 import { useAuthStore } from '@/stores/authStore';
 import { useDMSocket, useTypingState, usePresence } from '@/hooks/useSocket';
 import { useBackNavigation } from '@/hooks/useBackNavigation';
@@ -453,7 +454,7 @@ function ChatView({
                             className="w-full text-left p-2 rounded hover:bg-accent"
                           >
                             <p className="text-xs font-medium truncate">{m.sender?.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{m.content}</p>
+                            <p className="text-xs text-muted-foreground truncate">{markdownToText(m.content)}</p>
                           </button>
                         </li>
                       ))}
