@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { motion } from "motion/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageSkeleton } from "@/components/ui/Skeleton";
 import { Link, useParams } from "react-router-dom";
@@ -9,19 +11,27 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import api from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { formatDate } from "@/lib/date";
 import { FadeIn } from "@/components/reactbits";
 import RichContent from "@/components/ui/RichContent";
 import ReactionButton from "@/components/social/ReactionButton";
 import CommentSection from "@/components/social/CommentSection";
-import { EMPTY_SUMMARY, topReactions } from "@/components/social/reactions";
+import ReactorsModal from "@/components/social/ReactorsModal";
+import {
+  EMPTY_SUMMARY,
+  reactionOf,
+  topReactionEntries,
+  type ReactionUser,
+} from "@/components/social/reactions";
 import { parseAnnouncement } from "./announcementFormat";
 
 export default function AnnouncementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const goBack = useBackNavigation("/dashboard/announcements");
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   const key = ["announcement", id];
   const { data, isLoading, error } = useQuery({
@@ -34,7 +44,10 @@ export default function AnnouncementDetailPage() {
   const reactMutation = useMutation({
     mutationFn: (type: string | null) =>
       api.post(`/communication/announcements/${id}/react`, { type }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: key }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ["announcement-reactors", id] });
+    },
   });
 
   const { data: comments = [] } = useQuery<any[]>({
@@ -43,6 +56,11 @@ export default function AnnouncementDetailPage() {
       (await api.get(`/communication/announcements/${id}/comments`)).data.data,
     enabled: !!id,
   });
+
+  // The reactor list opens on a specific reaction when one of the emojis is what was pressed.
+  const [reactorsTab, setReactorsTab] = useState<string | null | undefined>(
+    undefined,
+  );
 
   if (isLoading) return <PageSkeleton />;
 
@@ -66,21 +84,24 @@ export default function AnnouncementDetailPage() {
   const { title, body } = parseAnnouncement(data.content);
   const image = data.attachments?.find((a: any) => a.kind === "image");
   const summary = data.reactionSummary || EMPTY_SUMMARY;
-  const reactionUsers = (data.reactionUsers || []) as Array<{
-    type: string;
-    user: any;
-  }>;
-  const emojis = topReactions(summary);
+  const reactionUsers = (data.reactionUsers || []) as ReactionUser[];
+  const topReactions = topReactionEntries(summary);
   const commentCount = comments.reduce(
     (sum, c) => sum + 1 + (c.replies?.length || 0),
     0,
   );
 
-  const reactorLabel = summary.mine
-    ? summary.total > 1
-      ? `You and ${summary.total - 1} other${summary.total > 2 ? "s" : ""}`
-      : "You reacted"
-    : `${summary.total} ${summary.total === 1 ? "reaction" : "reactions"}`;
+  // "You, Rahim and 4 others" - the same shorthand a social feed puts under a post.
+  const named = reactionUsers
+    .filter((entry) => entry.user?._id !== user?._id)
+    .map((entry) => entry.user?.name?.split(" ")[0] || "Someone");
+  const leading = [...(summary.mine ? ["You"] : []), ...named.slice(0, 2)];
+  const remaining = summary.total - leading.length;
+  const reactorLabel = summary.total
+    ? remaining > 0
+      ? `${leading.join(", ")} and ${remaining} other${remaining > 1 ? "s" : ""}`
+      : leading.join(", ")
+    : "";
 
   return (
     <div className="container mx-auto">
@@ -144,44 +165,54 @@ export default function AnnouncementDetailPage() {
               />
             </div>
 
-            <div className="px-5 sm:px-8 pb-5 sm:pb-6 flex items-center justify-between gap-3 flex-wrap">
-              <ReactionButton
-                summary={summary}
-                onReact={(type) => reactMutation.mutate(type)}
-                disabled={reactMutation.isPending}
-              />
-              {reactionUsers.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {reactionUsers
-                    .slice(0, 3)
-                    .map((entry) => entry.user?.name || "Someone")
-                    .join(", ")}
-                  {reactionUsers.length > 3
-                    ? ` and ${reactionUsers.length - 3} more`
-                    : ""}{" "}
-                  reacted
-                </span>
-              )}
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                {summary.total > 0 && (
-                  <span className="flex items-center gap-1.5">
+            <div className="px-5 sm:px-8 pb-5 sm:pb-6 space-y-3">
+              {/* Pressing the count opens the reactor list, the way a social feed does. */}
+              {summary.total > 0 && (
+                <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="flex">
-                      {emojis.map((e, i) => (
-                        <span
-                          key={i}
+                      {topReactions.map((r) => (
+                        <motion.button
+                          key={r.type}
+                          type="button"
+                          onClick={() => setReactorsTab(r.type)}
+                          whileHover={{ scale: 1.25, y: -2 }}
+                          whileTap={{ scale: 1.05 }}
+                          title={`${r.count} ${reactionOf(r.type)?.label || "reaction"}`}
+                          aria-label={`See who reacted ${reactionOf(r.type)?.label || ""}`}
                           className="-ml-1.5 first:ml-0 text-base leading-none"
                         >
-                          {e}
-                        </span>
+                          {r.emoji}
+                        </motion.button>
                       ))}
                     </span>
-                    {reactorLabel}
+                    <button
+                      type="button"
+                      onClick={() => setReactorsTab(null)}
+                      className="hover:text-foreground hover:underline transition-colors"
+                    >
+                      {reactorLabel}
+                    </button>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    {commentCount} {commentCount === 1 ? "comment" : "comments"}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <ReactionButton
+                  summary={summary}
+                  onReact={(type) => reactMutation.mutate(type)}
+                  disabled={reactMutation.isPending}
+                />
+                {summary.total === 0 && (
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    {commentCount} {commentCount === 1 ? "comment" : "comments"}
                   </span>
                 )}
-                <span className="flex items-center gap-1.5">
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  {commentCount} {commentCount === 1 ? "comment" : "comments"}
-                </span>
               </div>
             </div>
           </article>
@@ -203,6 +234,13 @@ export default function AnnouncementDetailPage() {
           </section>
         </FadeIn>
       </div>
+
+      <ReactorsModal
+        open={reactorsTab !== undefined}
+        onClose={() => setReactorsTab(undefined)}
+        announcementId={id!}
+        initialType={reactorsTab ?? null}
+      />
     </div>
   );
 }

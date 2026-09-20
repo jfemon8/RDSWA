@@ -2342,6 +2342,31 @@ router.get(
 /** The reaction set, mirroring the ones a social feed offers. */
 const REACTION_TYPES = ["like", "love", "care", "haha", "wow", "sad", "angry"];
 
+/** The stored id of a reaction's user, which may arrive raw or populated. */
+function reactorId(user: any): string {
+  return (user?._id || user || '').toString();
+}
+
+/** Announcements reacted at through the chat route once stored a raw emoji, so old rows map back onto the named set. */
+const LEGACY_REACTION_EMOJI: Record<string, string> = {
+  '👍': 'like',
+  '❤️': 'love',
+  '🥰': 'care',
+  '🙏': 'care',
+  '😂': 'haha',
+  '😮': 'wow',
+  '🔥': 'wow',
+  '🎉': 'wow',
+  '😢': 'sad',
+  '😡': 'angry',
+};
+
+/** One canonical name per reaction, so a legacy emoji row counts in the same bucket as its named twin. */
+function normaliseReactionType(key: string): string {
+  if (REACTION_TYPES.includes(key)) return key;
+  return LEGACY_REACTION_EMOJI[key] || 'like';
+}
+
 /** Counts per reaction plus the viewer's own, which is all a reaction bar needs to render. */
 function summariseReactions(
   reactions: Array<{ user: any; emoji?: string; type?: string }>,
@@ -2350,10 +2375,11 @@ function summariseReactions(
   const counts: Record<string, number> = {};
   let mine: string | null = null;
   for (const r of reactions || []) {
-    const key = (r.emoji || r.type) as string;
-    if (!key) continue;
+    const raw = (r.emoji || r.type) as string;
+    if (!raw) continue;
+    const key = normaliseReactionType(raw);
     counts[key] = (counts[key] || 0) + 1;
-    if (r.user.toString() === viewerId) mine = key;
+    if (reactorId(r.user) === viewerId) mine = key;
   }
   return {
     counts,
@@ -2369,8 +2395,28 @@ function toggleReaction<T extends { user: any }>(
   type: string | null,
   make: (type: string) => T,
 ): T[] {
-  const others = reactions.filter((r) => r.user.toString() !== viewerId);
+  const others = reactions.filter((r) => reactorId(r.user) !== viewerId);
   return type ? [...others, make(type)] : others;
+}
+
+/** The reactor list a "who reacted" panel renders, newest first and without rows whose user is gone. */
+function listReactors(reactions: any[]) {
+  return (reactions || [])
+    .filter((reaction: any) => reaction.user?._id)
+    .sort(
+      (a: any, b: any) =>
+        new Date(b.reactedAt || 0).getTime() -
+        new Date(a.reactedAt || 0).getTime(),
+    )
+    .map((reaction: any) => ({
+      type: normaliseReactionType(reaction.emoji || reaction.type),
+      reactedAt: reaction.reactedAt,
+      user: {
+        _id: reaction.user._id,
+        name: reaction.user.name,
+        avatar: reaction.user.avatar,
+      },
+    }));
 }
 
 // Read one announcement, for its own page
@@ -2392,17 +2438,28 @@ router.get(
     ApiResponse.success(res, {
       ...message.toObject(),
       reactionSummary: summariseReactions(message.reactions as any, viewerId),
-      reactionUsers: (message.reactions || []).map((reaction: any) => ({
-        type: reaction.emoji || reaction.type,
-        user: reaction.user?._id
-          ? {
-              _id: reaction.user._id,
-              name: reaction.user.name,
-              avatar: reaction.user.avatar,
-            }
-          : reaction.user,
-      })),
+      // The full reactor list, newest first, so the page can show who reacted with what.
+      reactionUsers: listReactors(message.reactions as any),
     });
+  }),
+);
+
+// Everyone who reacted to an announcement, for the "who reacted" list
+router.get(
+  "/announcements/:id/reactions",
+  authenticate(),
+  asyncHandler(async (req, res) => {
+    if (!req.user) throw ApiError.unauthorized();
+    const message = await Message.findOne({
+      _id: req.params.id as string,
+      isDeleted: false,
+      isAnnouncement: true,
+    })
+      .select("reactions")
+      .populate("reactions.user", "name avatar");
+    if (!message) throw ApiError.notFound("Announcement not found");
+
+    ApiResponse.success(res, listReactors(message.reactions as any));
   }),
 );
 
