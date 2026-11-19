@@ -200,7 +200,7 @@ function VoteCard({ vote }: { vote: any }) {
 
   // Use live data if available, otherwise fall back to API data
   const displayOptions = liveOptions || vote.options || [];
-  const totalVotes = liveTotalVotes ?? (vote.options?.reduce((sum: number, o: any) => sum + (o.voteCount || 0), 0) || 1);
+  const totalVotes = liveTotalVotes ?? (vote.options?.reduce((sum: number, o: any) => sum + (o.voteCount || 0), 0) ?? 0);
   const displayTotal = totalVotes || 1;
 
   return (
