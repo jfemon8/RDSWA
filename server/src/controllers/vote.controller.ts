@@ -11,7 +11,8 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getById = asyncHandler(async (req: Request, res: Response) => {
-  const vote = await voteService.getById(req.params.id as string);
+  const userId = req.user ? (req.user._id as any).toString() : undefined;
+  const vote = await voteService.getById(req.params.id as string, userId, req.user?.role);
   ApiResponse.success(res, vote);
 });
 
@@ -39,7 +40,8 @@ export const skipVote = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getResults = asyncHandler(async (req: Request, res: Response) => {
-  const results = await voteService.getResults(req.params.id as string);
+  const userId = req.user ? (req.user._id as any).toString() : undefined;
+  const results = await voteService.getResults(req.params.id as string, userId, req.user?.role);
   ApiResponse.success(res, results);
 });
 

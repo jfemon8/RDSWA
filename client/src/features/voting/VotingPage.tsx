@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/queryKeys';
 
 import { Vote, Loader2, CheckCircle, Clock, BarChart3, Radio, Timer, SkipForward, Mail, Users } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import RichContent from '@/components/ui/RichContent';
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FadeIn, BlurText } from '@/components/reactbits';
@@ -209,7 +210,7 @@ function VoteCard({ vote }: { vote: any }) {
           <h3 className="font-semibold mb-1 text-foreground flex items-center gap-2">
             <Vote className="h-4 w-4 text-primary shrink-0" /> {vote.title}
           </h3>
-          {vote.description && <div className="text-sm text-muted-foreground mb-3 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: vote.description }} />}
+          {vote.description && <RichContent html={vote.description} className="text-sm text-muted-foreground mb-3" />}
         </div>
         {isActive && liveOptions && (
           <motion.div

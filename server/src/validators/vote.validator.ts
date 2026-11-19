@@ -1,9 +1,18 @@
 import { z } from 'zod';
 
+/** Case and spacing are ignored, so "Same", "same " and "Same" count as one option. */
+const normalizeOption = (text: string) => text.replace(/\s+/g, ' ').toLowerCase();
+
 const voteBaseSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().trim().min(1, 'Title is required'),
   description: z.string().optional(),
-  options: z.array(z.object({ text: z.string().min(1) })).min(2, 'At least 2 options required'),
+  options: z
+    .array(z.object({ text: z.string().trim().min(1, 'Option text is required') }))
+    .min(2, 'At least 2 options required')
+    .refine(
+      (opts) => new Set(opts.map((o) => normalizeOption(o.text))).size === opts.length,
+      'Options must be different from each other'
+    ),
   startTime: z.string().min(1, 'Start time is required').refine(
     (val) => !isNaN(Date.parse(val)),
     'Start time must be a valid date'

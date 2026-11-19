@@ -43,6 +43,11 @@ const SELECTABLE_ROLES = TIER_HIERARCHY.filter(
   (r) => r !== UserRole.GUEST && r !== UserRole.SUPER_ADMIN,
 );
 
+/** Trimmed option texts with blank and whitespace-only rows dropped. */
+function filledOptions(options: string[]): string[] {
+  return options.map((t) => t.trim()).filter(Boolean);
+}
+
 /** Convert datetime-local value to ISO string with timezone offset */
 function toISOWithTZ(localDatetime: string): string {
   if (!localDatetime) return localDatetime;
@@ -84,7 +89,7 @@ export default function AdminVotingPage() {
       form.eligibleVoters === "batch_specific" ? form.eligibleBatches : [],
     eligibleRoles:
       form.eligibleVoters === "role_specific" ? form.eligibleRoles : [],
-    options: form.options.filter(Boolean).map((text) => ({ text })),
+    options: filledOptions(form.options).map((text) => ({ text })),
   });
 
   const createMutation = useMutation({
@@ -194,8 +199,14 @@ export default function AdminVotingPage() {
     if (!form.title.trim()) errs.title = "Poll title is required";
     if (!form.startTime) errs.startTime = "Start time is required";
     if (!form.endTime) errs.endTime = "End time is required";
-    if (form.options.filter(Boolean).length < 2)
+    const optionTexts = filledOptions(form.options);
+    if (optionTexts.length < 2)
       errs.options = "At least 2 options are required";
+    else if (
+      new Set(optionTexts.map((t) => t.replace(/\s+/g, " ").toLowerCase()))
+        .size !== optionTexts.length
+    )
+      errs.options = "Options must be different from each other";
     if (
       form.eligibleVoters === "batch_specific" &&
       form.eligibleBatches.length === 0

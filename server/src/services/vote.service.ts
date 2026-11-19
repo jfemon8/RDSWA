@@ -4,10 +4,39 @@ import { UserRole, ROLE_HIERARCHY, isEligibleVoter } from '@rdswa/shared';
 import mongoose from 'mongoose';
 import { broadcastVoteUpdate, broadcastVoteStatus } from '../socket';
 
+function isModeratorPlus(role?: string): boolean {
+  return !!role && ROLE_HIERARCHY.indexOf(role as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
+}
+
+function hasParticipated(voters: Array<{ user: any }> | undefined, userId?: string): boolean {
+  return !!userId && (voters || []).some((v) => v.user?.toString() === userId);
+}
+
+/** Tallies follow the voting page: moderators always, everyone once published, otherwise only members who already voted or skipped. */
+function canSeeTallies(vote: { status: string; isResultPublic?: boolean }, participated: boolean, role?: string): boolean {
+  return isModeratorPlus(role) || vote.status === 'published' || !!vote.isResultPublic || participated;
+}
+
+/** Drops `voters` from a general-purpose response, since which option each member chose is for SuperAdmin alone, through stats. */
+function withoutVoters(vote: any): any {
+  const plain = typeof vote?.toObject === 'function' ? vote.toObject() : vote;
+  const { voters, ...rest } = plain;
+  return rest;
+}
+
+/** Shapes a poll for a member, hiding its tallies until they are allowed to see them. */
+function toMemberView(vote: any, userId?: string, role?: string): any {
+  const participated = hasParticipated(vote.voters, userId);
+  const view = { ...withoutVoters(vote), hasVoted: participated };
+  if (canSeeTallies(vote, participated, role)) return view;
+
+  const { totalVotes, ...hidden } = view;
+  return { ...hidden, options: (view.options || []).map(({ voteCount, ...o }: any) => o) };
+}
+
 export class VoteService {
   async list(userId?: string, requesterRole?: string): Promise<any[]> {
-    const isPrivileged = requesterRole && ROLE_HIERARCHY.indexOf(requesterRole as UserRole) >= ROLE_HIERARCHY.indexOf(UserRole.MODERATOR);
-    const statuses = isPrivileged
+    const statuses = isModeratorPlus(requesterRole)
       ? ['draft', 'active', 'closed', 'published']
       : ['active', 'closed', 'published'];
 
@@ -15,17 +44,16 @@ export class VoteService {
       .sort({ createdAt: -1 })
       .lean();
 
-    return votes.map((v) => {
-      const hasVoted = userId ? v.voters.some((voter: any) => voter.user.toString() === userId) : false;
-      const { voters, ...rest } = v;
-      return { ...rest, hasVoted };
-    });
+    return votes.map((v) => toMemberView(v, userId, requesterRole));
   }
 
-  async getById(id: string): Promise<IVoteDocument> {
-    const vote = await Vote.findOne({ _id: id, isDeleted: false });
+  async getById(id: string, userId?: string, requesterRole?: string): Promise<any> {
+    const filter: Record<string, unknown> = { _id: id, isDeleted: false };
+    if (!isModeratorPlus(requesterRole)) filter.status = { $ne: 'draft' };
+
+    const vote = await Vote.findOne(filter).lean();
     if (!vote) throw ApiError.notFound('Vote not found');
-    return vote;
+    return toMemberView(vote, userId, requesterRole);
   }
 
   async create(data: any, createdBy: string): Promise<IVoteDocument> {
@@ -121,11 +149,14 @@ export class VoteService {
     if (!recorded) throw ApiError.conflict('You have already voted or skipped');
   }
 
-  async getResults(id: string): Promise<any> {
+  async getResults(id: string, userId?: string, requesterRole?: string): Promise<any> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false });
     if (!vote) throw ApiError.notFound('Vote not found');
     if (vote.status === 'active' || vote.status === 'draft') {
       throw ApiError.badRequest('Results are not available yet');
+    }
+    if (!canSeeTallies(vote, hasParticipated(vote.voters, userId), requesterRole)) {
+      throw ApiError.forbidden('Results have not been published yet');
     }
 
     return {
@@ -196,7 +227,7 @@ export class VoteService {
     };
   }
 
-  async publishResults(id: string): Promise<IVoteDocument> {
+  async publishResults(id: string): Promise<any> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false });
     if (!vote) throw ApiError.notFound('Vote not found');
     if (vote.status !== 'closed') throw ApiError.badRequest('Vote must be closed first');
@@ -206,10 +237,10 @@ export class VoteService {
     await vote.save();
 
     broadcastVoteStatus(id, 'published');
-    return vote;
+    return withoutVoters(vote);
   }
 
-  async closeManually(id: string): Promise<IVoteDocument> {
+  async closeManually(id: string): Promise<any> {
     const vote = await Vote.findOne({ _id: id, isDeleted: false });
     if (!vote) throw ApiError.notFound('Vote not found');
     if (vote.status !== 'active') throw ApiError.badRequest('Only active votes can be closed');
@@ -218,7 +249,7 @@ export class VoteService {
     await vote.save();
 
     broadcastVoteStatus(id, 'closed');
-    return vote;
+    return withoutVoters(vote);
   }
 }
 

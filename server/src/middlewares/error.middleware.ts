@@ -27,6 +27,17 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
+  // A malformed id is the caller's mistake, so it gets a 400 rather than a 500.
+  if (err.name === 'CastError') {
+    const castErr = err as Error & { kind?: string; path?: string };
+    res.status(400).json({
+      success: false,
+      message: castErr.kind === 'ObjectId' ? 'Invalid ID format' : `Invalid value for ${castErr.path || 'field'}`,
+      ...(env.NODE_ENV === 'development' && { stack: err.stack }),
+    });
+    return;
+  }
+
   // Mongoose duplicate key error
   if (err.name === 'MongoServerError' && (err as any).code === 11000) {
     res.status(409).json({

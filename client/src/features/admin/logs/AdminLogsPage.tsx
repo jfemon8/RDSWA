@@ -17,6 +17,8 @@ import {
 import { formatDateTime } from "@/lib/date";
 import { useAccordionToggle } from '@/hooks/useAccordionScroll';
 import InfiniteScrollSentinel from "@/components/ui/InfiniteScrollSentinel";
+import RichContent from "@/components/ui/RichContent";
+import { stripHtml } from "@/lib/stripHtml";
 
 type Tab = "audit" | "login" | "suspicious";
 const TABS: readonly Tab[] = ["audit", "login", "suspicious"];
@@ -233,16 +235,8 @@ function AuditLogsTab() {
                             <span className="ml-1 text-[10px]">
                               -{" "}
                               <span className="font-medium text-foreground">
-                                {log.resourceName?.includes("<") ? (
-                                  <span
-                                    dangerouslySetInnerHTML={{
-                                      __html: log.resourceName,
-                                    }}
-                                  />
-                                ) : (
-                                  log.resourceName ||
-                                  `#${String(log.resourceId).slice(-6)}`
-                                )}
+                                {(log.resourceName && stripHtml(log.resourceName)) ||
+                                  `#${String(log.resourceId).slice(-6)}`}
                               </span>
                             </span>
                           )}
@@ -330,12 +324,7 @@ function AuditLogsTab() {
                                   if (val.includes("<")) {
                                     isHtmlString = true;
                                     display = (
-                                      <div
-                                        className="prose prose-sm dark:prose-invert max-w-none text-xs"
-                                        dangerouslySetInnerHTML={{
-                                          __html: val,
-                                        }}
-                                      />
+                                      <RichContent html={val} className="text-xs" />
                                     );
                                   } else {
                                     display = val;
